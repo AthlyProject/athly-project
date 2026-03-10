@@ -82,7 +82,7 @@ No authorization required
 
 ## equipmentsControllerCreateEquipment
 
-> equipmentsControllerCreateEquipment(body)
+> object equipmentsControllerCreateEquipment(createEquipmentInput)
 
 
 
@@ -100,8 +100,8 @@ async function example() {
   const api = new EquipmentsApi();
 
   const body = {
-    // object
-    body: Object,
+    // CreateEquipmentInput
+    createEquipmentInput: ...,
   } satisfies EquipmentsControllerCreateEquipmentRequest;
 
   try {
@@ -121,11 +121,11 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **createEquipmentInput** | [CreateEquipmentInput](CreateEquipmentInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+**object**
 
 ### Authorization
 
@@ -134,7 +134,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -212,7 +212,7 @@ No authorization required
 
 ## equipmentsControllerGetAllEquipments
 
-> equipmentsControllerGetAllEquipments()
+> Array&lt;object&gt; equipmentsControllerGetAllEquipments()
 
 
 
@@ -247,7 +247,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+**Array<object>**
 
 ### Authorization
 
@@ -256,7 +256,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -269,7 +269,7 @@ No authorization required
 
 ## equipmentsControllerGetEquipmentById
 
-> equipmentsControllerGetEquipmentById(uuid)
+> object equipmentsControllerGetEquipmentById(uuid)
 
 
 
@@ -312,7 +312,7 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+**object**
 
 ### Authorization
 
@@ -321,7 +321,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -334,7 +334,7 @@ No authorization required
 
 ## equipmentsControllerGetUserEquipments
 
-> equipmentsControllerGetUserEquipments()
+> Array&lt;object&gt; equipmentsControllerGetUserEquipments()
 
 
 
@@ -369,7 +369,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+**Array<object>**
 
 ### Authorization
 
@@ -378,7 +378,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -456,7 +456,7 @@ No authorization required
 
 ## equipmentsControllerUpdateEquipment
 
-> equipmentsControllerUpdateEquipment(uuid, body)
+> object equipmentsControllerUpdateEquipment(uuid, updateEquipmentInput)
 
 
 
@@ -476,8 +476,8 @@ async function example() {
   const body = {
     // string
     uuid: uuid_example,
-    // object
-    body: Object,
+    // UpdateEquipmentInput
+    updateEquipmentInput: ...,
   } satisfies EquipmentsControllerUpdateEquipmentRequest;
 
   try {
@@ -498,11 +498,11 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **uuid** | `string` |  | [Defaults to `undefined`] |
-| **body** | `object` |  | |
+| **updateEquipmentInput** | [UpdateEquipmentInput](UpdateEquipmentInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+**object**
 
 ### Authorization
 
@@ -511,7 +511,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

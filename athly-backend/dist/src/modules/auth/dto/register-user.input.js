@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RegisterUserInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class RegisterUserInput {
     email;
@@ -20,6 +21,9 @@ class RegisterUserInput {
     dateOfBirth;
     weight;
     height;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { email: { required: true, type: () => String, format: "email" }, userName: { required: true, type: () => String, minLength: 3, pattern: "/^[a-zA-Z0-9_-]+$/" }, name: { required: true, type: () => String, minLength: 2 }, password: { required: true, type: () => String, minLength: 8, pattern: "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/" }, confirmPassword: { required: true, type: () => String }, dateOfBirth: { required: true, type: () => String }, weight: { required: true, type: () => Number, minimum: 0 }, height: { required: true, type: () => Number, minimum: 0 } };
+    }
 }
 exports.RegisterUserInput = RegisterUserInput;
 __decorate([

@@ -78,8 +78,27 @@ let AiPlannerService = class AiPlannerService {
         });
         return {
             trainingPlan: { id: trainingPlan.id, status: trainingPlan.status },
-            weeklyGoal,
-            workouts,
+            weeklyGoal: {
+                id: weeklyGoal.id,
+                trainingPlanId: weeklyGoal.trainingPlanId,
+                weekStartDate: weeklyGoal.weekStartDate,
+                weekEndDate: weeklyGoal.weekEndDate,
+                status: weeklyGoal.status,
+                metrics: weeklyGoal.metrics,
+                createdAt: weeklyGoal.createdAt,
+                updatedAt: weeklyGoal.updatedAt,
+            },
+            workouts: workouts.map((w) => ({
+                id: w.id,
+                date: w.dateScheduled.toISOString().split('T')[0],
+                sportType: w.sportType,
+                title: w.title,
+                description: w.description ?? undefined,
+                blocks: w.blocks,
+                status: w.status,
+                intensity: w.intensity ?? undefined,
+                stravaActivityId: w.stravaActivityId ?? null,
+            })),
             analysis: plannerResult.analysis,
             isAssessment,
         };

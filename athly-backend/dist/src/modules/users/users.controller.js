@@ -13,7 +13,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const users_service_1 = require("./users.service");
 const update_profile_input_1 = require("./dto/update-profile.input");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -27,7 +29,7 @@ let UsersController = class UsersController {
     me(user) {
         return user;
     }
-    updateProfile(user, input) {
+    async updateProfile(user, input) {
         const { password, dateOfBirth, ...updateData } = input;
         const data = { ...updateData };
         if (dateOfBirth) {
@@ -39,21 +41,27 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Get)('me'),
+    (0, swagger_1.ApiOkResponse)({ type: user_model_1.UserModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/user.model").UserModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", user_model_1.UserModel)
 ], UsersController.prototype, "me", null);
 __decorate([
     (0, common_1.Put)('profile'),
+    (0, swagger_1.ApiOkResponse)({ type: user_model_1.UserModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/user.model").UserModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel,
         update_profile_input_1.UpdateProfileInput]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
 exports.UsersController = UsersController = __decorate([
+    (0, swagger_1.ApiTags)('users'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [users_service_1.UsersService])

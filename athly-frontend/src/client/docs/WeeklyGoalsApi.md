@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 ## weeklyGoalsControllerCreateWeeklyGoal
 
-> weeklyGoalsControllerCreateWeeklyGoal(body)
+> WeeklyGoalModel weeklyGoalsControllerCreateWeeklyGoal(createWeeklyGoalInput)
 
 
 
@@ -29,11 +29,15 @@ import type { WeeklyGoalsControllerCreateWeeklyGoalRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WeeklyGoalsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WeeklyGoalsApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // CreateWeeklyGoalInput
+    createWeeklyGoalInput: ...,
   } satisfies WeeklyGoalsControllerCreateWeeklyGoalRequest;
 
   try {
@@ -53,20 +57,20 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **createWeeklyGoalInput** | [CreateWeeklyGoalInput](CreateWeeklyGoalInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**WeeklyGoalModel**](WeeklyGoalModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -94,7 +98,11 @@ import type { WeeklyGoalsControllerDeleteWeeklyGoalRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WeeklyGoalsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WeeklyGoalsApi(config);
 
   const body = {
     // string
@@ -126,7 +134,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
@@ -144,7 +152,7 @@ No authorization required
 
 ## weeklyGoalsControllerGetWeeklyGoalById
 
-> weeklyGoalsControllerGetWeeklyGoalById(uuid)
+> WeeklyGoalModel weeklyGoalsControllerGetWeeklyGoalById(uuid)
 
 
 
@@ -159,7 +167,11 @@ import type { WeeklyGoalsControllerGetWeeklyGoalByIdRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WeeklyGoalsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WeeklyGoalsApi(config);
 
   const body = {
     // string
@@ -187,16 +199,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**WeeklyGoalModel**](WeeklyGoalModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -209,7 +221,7 @@ No authorization required
 
 ## weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan
 
-> weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan(trainingPlanId)
+> Array&lt;WeeklyGoalModel&gt; weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan(trainingPlanId)
 
 
 
@@ -224,7 +236,11 @@ import type { WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest } from ''
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WeeklyGoalsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WeeklyGoalsApi(config);
 
   const body = {
     // string
@@ -252,16 +268,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**Array&lt;WeeklyGoalModel&gt;**](WeeklyGoalModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -274,7 +290,7 @@ No authorization required
 
 ## weeklyGoalsControllerUpdateWeeklyGoal
 
-> weeklyGoalsControllerUpdateWeeklyGoal(uuid, body)
+> WeeklyGoalModel weeklyGoalsControllerUpdateWeeklyGoal(uuid, updateWeeklyGoalInput)
 
 
 
@@ -289,13 +305,17 @@ import type { WeeklyGoalsControllerUpdateWeeklyGoalRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WeeklyGoalsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WeeklyGoalsApi(config);
 
   const body = {
     // string
     uuid: uuid_example,
-    // object
-    body: Object,
+    // UpdateWeeklyGoalInput
+    updateWeeklyGoalInput: ...,
   } satisfies WeeklyGoalsControllerUpdateWeeklyGoalRequest;
 
   try {
@@ -316,20 +336,20 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **uuid** | `string` |  | [Defaults to `undefined`] |
-| **body** | `object` |  | |
+| **updateWeeklyGoalInput** | [UpdateWeeklyGoalInput](UpdateWeeklyGoalInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**WeeklyGoalModel**](WeeklyGoalModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

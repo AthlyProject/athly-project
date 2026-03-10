@@ -13,7 +13,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkoutsController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const workouts_service_1 = require("./workouts.service");
 const submit_workout_feedback_input_1 = require("./dto/submit-workout-feedback.input");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -21,6 +23,7 @@ const current_user_rest_decorator_1 = require("../auth/decorators/current-user-r
 const user_model_1 = require("../users/models/user.model");
 const workout_update_input_1 = require("./dto/workout-update-input");
 const create_workout_input_1 = require("./dto/create-workout.input");
+const workout_model_1 = require("./models/workout.model");
 let WorkoutsController = class WorkoutsController {
     workoutsService;
     constructor(workoutsService) {
@@ -57,76 +60,96 @@ let WorkoutsController = class WorkoutsController {
 exports.WorkoutsController = WorkoutsController;
 __decorate([
     (0, common_1.Get)('today'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "todayWorkout", null);
 __decorate([
     (0, common_1.Get)('history'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel, isArray: true }),
+    openapi.ApiResponse({ status: 200, type: [require("./models/workout.model").WorkoutModel] }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "workoutHistory", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, swagger_1.ApiCreatedResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 201, type: require("./models/workout.model").WorkoutModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, create_workout_input_1.CreateWorkoutInput]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "createWorkout", null);
 __decorate([
     (0, common_1.Get)('training-plan/:trainingPlanId'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel, isArray: true }),
+    openapi.ApiResponse({ status: 200, type: [require("./models/workout.model").WorkoutModel] }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('trainingPlanId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "workoutsByTrainingPlan", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "workout", null);
 __decorate([
     (0, common_1.Post)(':workoutId/feedback'),
+    (0, swagger_1.ApiCreatedResponse)({ type: workout_model_1.WorkoutFeedbackModel }),
+    openapi.ApiResponse({ status: 201, type: require("./models/workout.model").WorkoutFeedbackModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('workoutId')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String, submit_workout_feedback_input_1.SubmitWorkoutFeedbackInput]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "submitWorkoutFeedback", null);
 __decorate([
     (0, common_1.Patch)(':workoutId/complete'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/workout.model").WorkoutModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('workoutId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "completeWorkout", null);
 __decorate([
     (0, common_1.Patch)(':workoutId/skip'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/workout.model").WorkoutModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('workoutId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "skipWorkout", null);
 __decorate([
     (0, common_1.Put)(':workoutId'),
+    (0, swagger_1.ApiOkResponse)({ type: workout_model_1.WorkoutModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/workout.model").WorkoutModel }),
     __param(0, (0, common_1.Param)('workoutId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, workout_update_input_1.UpdateWorkoutInput]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "updateWorkout", null);
 exports.WorkoutsController = WorkoutsController = __decorate([
+    (0, swagger_1.ApiTags)('workouts'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('workouts'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [workouts_service_1.WorkoutsService])

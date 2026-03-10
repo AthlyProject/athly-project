@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 ## workoutsControllerCompleteWorkout
 
-> workoutsControllerCompleteWorkout(workoutId)
+> WorkoutModel workoutsControllerCompleteWorkout(workoutId)
 
 
 
@@ -33,7 +33,11 @@ import type { WorkoutsControllerCompleteWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
@@ -61,16 +65,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -83,7 +87,7 @@ No authorization required
 
 ## workoutsControllerCreateWorkout
 
-> workoutsControllerCreateWorkout(body)
+> WorkoutModel workoutsControllerCreateWorkout(createWorkoutInput)
 
 
 
@@ -98,11 +102,15 @@ import type { WorkoutsControllerCreateWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // CreateWorkoutInput
+    createWorkoutInput: ...,
   } satisfies WorkoutsControllerCreateWorkoutRequest;
 
   try {
@@ -122,20 +130,20 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **createWorkoutInput** | [CreateWorkoutInput](CreateWorkoutInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -148,7 +156,7 @@ No authorization required
 
 ## workoutsControllerSkipWorkout
 
-> workoutsControllerSkipWorkout(workoutId)
+> WorkoutModel workoutsControllerSkipWorkout(workoutId)
 
 
 
@@ -163,7 +171,11 @@ import type { WorkoutsControllerSkipWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
@@ -191,16 +203,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -213,7 +225,7 @@ No authorization required
 
 ## workoutsControllerSubmitWorkoutFeedback
 
-> workoutsControllerSubmitWorkoutFeedback(workoutId, body)
+> WorkoutFeedbackModel workoutsControllerSubmitWorkoutFeedback(workoutId, submitWorkoutFeedbackInput)
 
 
 
@@ -228,13 +240,17 @@ import type { WorkoutsControllerSubmitWorkoutFeedbackRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
     workoutId: workoutId_example,
-    // object
-    body: Object,
+    // SubmitWorkoutFeedbackInput
+    submitWorkoutFeedbackInput: ...,
   } satisfies WorkoutsControllerSubmitWorkoutFeedbackRequest;
 
   try {
@@ -255,20 +271,20 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **workoutId** | `string` |  | [Defaults to `undefined`] |
-| **body** | `object` |  | |
+| **submitWorkoutFeedbackInput** | [SubmitWorkoutFeedbackInput](SubmitWorkoutFeedbackInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutFeedbackModel**](WorkoutFeedbackModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -281,7 +297,7 @@ No authorization required
 
 ## workoutsControllerTodayWorkout
 
-> workoutsControllerTodayWorkout()
+> WorkoutModel workoutsControllerTodayWorkout()
 
 
 
@@ -296,7 +312,11 @@ import type { WorkoutsControllerTodayWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   try {
     const data = await api.workoutsControllerTodayWorkout();
@@ -316,16 +336,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -338,7 +358,7 @@ No authorization required
 
 ## workoutsControllerUpdateWorkout
 
-> workoutsControllerUpdateWorkout(workoutId, body)
+> WorkoutModel workoutsControllerUpdateWorkout(workoutId, updateWorkoutInput)
 
 
 
@@ -353,13 +373,17 @@ import type { WorkoutsControllerUpdateWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
     workoutId: workoutId_example,
-    // object
-    body: Object,
+    // UpdateWorkoutInput
+    updateWorkoutInput: ...,
   } satisfies WorkoutsControllerUpdateWorkoutRequest;
 
   try {
@@ -380,20 +404,20 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **workoutId** | `string` |  | [Defaults to `undefined`] |
-| **body** | `object` |  | |
+| **updateWorkoutInput** | [UpdateWorkoutInput](UpdateWorkoutInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -406,7 +430,7 @@ No authorization required
 
 ## workoutsControllerWorkout
 
-> workoutsControllerWorkout(id)
+> WorkoutModel workoutsControllerWorkout(id)
 
 
 
@@ -421,7 +445,11 @@ import type { WorkoutsControllerWorkoutRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
@@ -449,16 +477,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**WorkoutModel**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -471,7 +499,7 @@ No authorization required
 
 ## workoutsControllerWorkoutHistory
 
-> workoutsControllerWorkoutHistory()
+> Array&lt;WorkoutModel&gt; workoutsControllerWorkoutHistory()
 
 
 
@@ -486,7 +514,11 @@ import type { WorkoutsControllerWorkoutHistoryRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   try {
     const data = await api.workoutsControllerWorkoutHistory();
@@ -506,16 +538,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**Array&lt;WorkoutModel&gt;**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -528,7 +560,7 @@ No authorization required
 
 ## workoutsControllerWorkoutsByTrainingPlan
 
-> workoutsControllerWorkoutsByTrainingPlan(trainingPlanId)
+> Array&lt;WorkoutModel&gt; workoutsControllerWorkoutsByTrainingPlan(trainingPlanId)
 
 
 
@@ -543,7 +575,11 @@ import type { WorkoutsControllerWorkoutsByTrainingPlanRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new WorkoutsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new WorkoutsApi(config);
 
   const body = {
     // string
@@ -571,16 +607,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**Array&lt;WorkoutModel&gt;**](WorkoutModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

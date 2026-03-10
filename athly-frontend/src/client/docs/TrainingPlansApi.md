@@ -14,7 +14,7 @@ All URIs are relative to *http://localhost*
 
 ## trainingPlansControllerCreateTrainingPlan
 
-> trainingPlansControllerCreateTrainingPlan(body)
+> TrainingPlanModel trainingPlansControllerCreateTrainingPlan(createTrainingPlanInput)
 
 
 
@@ -29,11 +29,15 @@ import type { TrainingPlansControllerCreateTrainingPlanRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new TrainingPlansApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TrainingPlansApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // CreateTrainingPlanInput
+    createTrainingPlanInput: ...,
   } satisfies TrainingPlansControllerCreateTrainingPlanRequest;
 
   try {
@@ -53,20 +57,20 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **createTrainingPlanInput** | [CreateTrainingPlanInput](CreateTrainingPlanInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**TrainingPlanModel**](TrainingPlanModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -94,7 +98,11 @@ import type { TrainingPlansControllerDeleteTrainingPlanRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new TrainingPlansApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TrainingPlansApi(config);
 
   const body = {
     // string
@@ -126,7 +134,7 @@ example().catch(console.error);
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
@@ -144,7 +152,7 @@ No authorization required
 
 ## trainingPlansControllerGetMyTrainingPlan
 
-> trainingPlansControllerGetMyTrainingPlan()
+> TrainingPlanModel trainingPlansControllerGetMyTrainingPlan()
 
 
 
@@ -159,7 +167,11 @@ import type { TrainingPlansControllerGetMyTrainingPlanRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new TrainingPlansApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TrainingPlansApi(config);
 
   try {
     const data = await api.trainingPlansControllerGetMyTrainingPlan();
@@ -179,16 +191,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**TrainingPlanModel**](TrainingPlanModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -201,7 +213,7 @@ No authorization required
 
 ## trainingPlansControllerGetTrainingPlanById
 
-> trainingPlansControllerGetTrainingPlanById(id)
+> TrainingPlanModel trainingPlansControllerGetTrainingPlanById(id)
 
 
 
@@ -216,7 +228,11 @@ import type { TrainingPlansControllerGetTrainingPlanByIdRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new TrainingPlansApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TrainingPlansApi(config);
 
   const body = {
     // string
@@ -244,16 +260,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**TrainingPlanModel**](TrainingPlanModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -266,7 +282,7 @@ No authorization required
 
 ## trainingPlansControllerUpdateTrainingPlan
 
-> trainingPlansControllerUpdateTrainingPlan(id, body)
+> TrainingPlanModel trainingPlansControllerUpdateTrainingPlan(id, updateTrainingPlanInput)
 
 
 
@@ -281,13 +297,17 @@ import type { TrainingPlansControllerUpdateTrainingPlanRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new TrainingPlansApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new TrainingPlansApi(config);
 
   const body = {
     // string
     id: id_example,
-    // object
-    body: Object,
+    // UpdateTrainingPlanInput
+    updateTrainingPlanInput: ...,
   } satisfies TrainingPlansControllerUpdateTrainingPlanRequest;
 
   try {
@@ -308,20 +328,20 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **id** | `string` |  | [Defaults to `undefined`] |
-| **body** | `object` |  | |
+| **updateTrainingPlanInput** | [UpdateTrainingPlanInput](UpdateTrainingPlanInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**TrainingPlanModel**](TrainingPlanModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

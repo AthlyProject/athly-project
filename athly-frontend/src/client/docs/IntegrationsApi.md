@@ -16,7 +16,7 @@ All URIs are relative to *http://localhost*
 
 ## integrationsControllerConnectIntegration
 
-> integrationsControllerConnectIntegration(integrationId)
+> IntegrationModel integrationsControllerConnectIntegration(integrationId)
 
 
 
@@ -31,7 +31,11 @@ import type { IntegrationsControllerConnectIntegrationRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   const body = {
     // string
@@ -59,21 +63,22 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**IntegrationModel**](IntegrationModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -81,7 +86,7 @@ No authorization required
 
 ## integrationsControllerDisconnectIntegration
 
-> integrationsControllerDisconnectIntegration(integrationId)
+> IntegrationModel integrationsControllerDisconnectIntegration(integrationId)
 
 
 
@@ -96,7 +101,11 @@ import type { IntegrationsControllerDisconnectIntegrationRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   const body = {
     // string
@@ -124,16 +133,16 @@ example().catch(console.error);
 
 ### Return type
 
-`void` (Empty response body)
+[**IntegrationModel**](IntegrationModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -161,7 +170,11 @@ import type { IntegrationsControllerDisconnectStravaRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   try {
     const data = await api.integrationsControllerDisconnectStrava();
@@ -185,7 +198,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
@@ -196,6 +209,7 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -203,7 +217,7 @@ No authorization required
 
 ## integrationsControllerGetStravaAuthUrl
 
-> integrationsControllerGetStravaAuthUrl()
+> IntegrationsControllerGetStravaAuthUrl200Response integrationsControllerGetStravaAuthUrl()
 
 
 
@@ -218,7 +232,11 @@ import type { IntegrationsControllerGetStravaAuthUrlRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   try {
     const data = await api.integrationsControllerGetStravaAuthUrl();
@@ -238,16 +256,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**IntegrationsControllerGetStravaAuthUrl200Response**](IntegrationsControllerGetStravaAuthUrl200Response.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -260,7 +278,7 @@ No authorization required
 
 ## integrationsControllerHandleStravaCallback
 
-> integrationsControllerHandleStravaCallback(body)
+> IntegrationModel integrationsControllerHandleStravaCallback(stravaCallbackInput)
 
 
 
@@ -275,11 +293,15 @@ import type { IntegrationsControllerHandleStravaCallbackRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // StravaCallbackInput
+    stravaCallbackInput: ...,
   } satisfies IntegrationsControllerHandleStravaCallbackRequest;
 
   try {
@@ -299,25 +321,26 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **stravaCallbackInput** | [StravaCallbackInput](StravaCallbackInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**IntegrationModel**](IntegrationModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -325,7 +348,7 @@ No authorization required
 
 ## integrationsControllerIntegrations
 
-> integrationsControllerIntegrations()
+> Array&lt;IntegrationModel&gt; integrationsControllerIntegrations()
 
 
 
@@ -340,7 +363,11 @@ import type { IntegrationsControllerIntegrationsRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   try {
     const data = await api.integrationsControllerIntegrations();
@@ -360,16 +387,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**Array&lt;IntegrationModel&gt;**](IntegrationModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -382,7 +409,7 @@ No authorization required
 
 ## integrationsControllerSyncStrava
 
-> integrationsControllerSyncStrava()
+> IntegrationsControllerSyncStrava200Response integrationsControllerSyncStrava()
 
 
 
@@ -397,7 +424,11 @@ import type { IntegrationsControllerSyncStravaRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new IntegrationsApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new IntegrationsApi(config);
 
   try {
     const data = await api.integrationsControllerSyncStrava();
@@ -417,21 +448,22 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**IntegrationsControllerSyncStrava200Response**](IntegrationsControllerSyncStrava200Response.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

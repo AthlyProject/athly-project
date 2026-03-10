@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EquipmentsController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const equipments_service_1 = require("./equipments.service");
 const create_equipment_input_1 = require("./dto/create-equipment.input");
@@ -53,12 +54,14 @@ let EquipmentsController = class EquipmentsController {
 exports.EquipmentsController = EquipmentsController;
 __decorate([
     (0, common_1.Get)(),
+    openapi.ApiResponse({ status: 200, type: [require("./models/equipment.model").EquipmentModel] }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], EquipmentsController.prototype, "getAllEquipments", null);
 __decorate([
     (0, common_1.Get)('my-equipments'),
+    openapi.ApiResponse({ status: 200, type: [require("./models/equipment.model").EquipmentModel] }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
@@ -66,6 +69,7 @@ __decorate([
 ], EquipmentsController.prototype, "getUserEquipments", null);
 __decorate([
     (0, common_1.Get)(':uuid'),
+    openapi.ApiResponse({ status: 200, type: require("./models/equipment.model").EquipmentModel }),
     __param(0, (0, common_1.Param)('uuid')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -73,6 +77,7 @@ __decorate([
 ], EquipmentsController.prototype, "getEquipmentById", null);
 __decorate([
     (0, common_1.Post)(),
+    openapi.ApiResponse({ status: 201, type: require("./models/equipment.model").EquipmentModel }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_equipment_input_1.CreateEquipmentInput]),
@@ -80,6 +85,7 @@ __decorate([
 ], EquipmentsController.prototype, "createEquipment", null);
 __decorate([
     (0, common_1.Put)(':uuid'),
+    openapi.ApiResponse({ status: 200, type: require("./models/equipment.model").EquipmentModel }),
     __param(0, (0, common_1.Param)('uuid')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -88,6 +94,7 @@ __decorate([
 ], EquipmentsController.prototype, "updateEquipment", null);
 __decorate([
     (0, common_1.Delete)(':uuid'),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Param)('uuid')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -95,6 +102,7 @@ __decorate([
 ], EquipmentsController.prototype, "deleteEquipment", null);
 __decorate([
     (0, common_1.Post)(':equipmentId/add'),
+    openapi.ApiResponse({ status: 201 }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('equipmentId')),
     __metadata("design:type", Function),
@@ -103,6 +111,7 @@ __decorate([
 ], EquipmentsController.prototype, "addEquipmentToUser", null);
 __decorate([
     (0, common_1.Delete)(':equipmentId/remove'),
+    openapi.ApiResponse({ status: 200 }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('equipmentId')),
     __metadata("design:type", Function),

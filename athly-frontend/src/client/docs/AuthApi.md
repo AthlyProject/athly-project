@@ -11,7 +11,7 @@ All URIs are relative to *http://localhost*
 
 ## authControllerLogin
 
-> authControllerLogin(body)
+> AuthPayload authControllerLogin(loginInput)
 
 
 
@@ -29,8 +29,8 @@ async function example() {
   const api = new AuthApi();
 
   const body = {
-    // object
-    body: Object,
+    // LoginInput
+    loginInput: ...,
   } satisfies AuthControllerLoginRequest;
 
   try {
@@ -50,11 +50,11 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **loginInput** | [LoginInput](LoginInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**AuthPayload**](AuthPayload.md)
 
 ### Authorization
 
@@ -63,12 +63,13 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
@@ -76,7 +77,7 @@ No authorization required
 
 ## authControllerRegister
 
-> authControllerRegister(body)
+> AuthPayload authControllerRegister(registerUserInput)
 
 
 
@@ -94,8 +95,8 @@ async function example() {
   const api = new AuthApi();
 
   const body = {
-    // object
-    body: Object,
+    // RegisterUserInput
+    registerUserInput: ...,
   } satisfies AuthControllerRegisterRequest;
 
   try {
@@ -115,11 +116,11 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **registerUserInput** | [RegisterUserInput](RegisterUserInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**AuthPayload**](AuthPayload.md)
 
 ### Authorization
 
@@ -128,7 +129,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

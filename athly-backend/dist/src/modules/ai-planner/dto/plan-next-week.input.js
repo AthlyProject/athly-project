@@ -10,10 +10,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlanNextWeekInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class PlanNextWeekInput {
     numberOfRuns;
     weekStartDate;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { numberOfRuns: { required: false, type: () => Number, minimum: 1, maximum: 30 }, weekStartDate: { required: false, type: () => String } };
+    }
 }
 exports.PlanNextWeekInput = PlanNextWeekInput;
 __decorate([

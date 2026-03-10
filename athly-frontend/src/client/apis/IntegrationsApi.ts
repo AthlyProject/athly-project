@@ -14,6 +14,22 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  IntegrationModel,
+  IntegrationsControllerGetStravaAuthUrl200Response,
+  IntegrationsControllerSyncStrava200Response,
+  StravaCallbackInput,
+} from '../models/index';
+import {
+    IntegrationModelFromJSON,
+    IntegrationModelToJSON,
+    IntegrationsControllerGetStravaAuthUrl200ResponseFromJSON,
+    IntegrationsControllerGetStravaAuthUrl200ResponseToJSON,
+    IntegrationsControllerSyncStrava200ResponseFromJSON,
+    IntegrationsControllerSyncStrava200ResponseToJSON,
+    StravaCallbackInputFromJSON,
+    StravaCallbackInputToJSON,
+} from '../models/index';
 
 export interface IntegrationsControllerConnectIntegrationRequest {
     integrationId: string;
@@ -24,7 +40,7 @@ export interface IntegrationsControllerDisconnectIntegrationRequest {
 }
 
 export interface IntegrationsControllerHandleStravaCallbackRequest {
-    body: object;
+    stravaCallbackInput: StravaCallbackInput;
 }
 
 /**
@@ -47,6 +63,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/{integrationId}/connect`;
         urlPath = urlPath.replace(`{${"integrationId"}}`, encodeURIComponent(String(requestParameters['integrationId'])));
@@ -61,17 +85,18 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
     /**
      */
-    async integrationsControllerConnectIntegrationRaw(requestParameters: IntegrationsControllerConnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerConnectIntegrationRaw(requestParameters: IntegrationsControllerConnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntegrationModel>> {
         const requestOptions = await this.integrationsControllerConnectIntegrationRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IntegrationModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async integrationsControllerConnectIntegration(requestParameters: IntegrationsControllerConnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerConnectIntegrationRaw(requestParameters, initOverrides);
+    async integrationsControllerConnectIntegration(requestParameters: IntegrationsControllerConnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntegrationModel> {
+        const response = await this.integrationsControllerConnectIntegrationRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -89,6 +114,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/{integrationId}/disconnect`;
         urlPath = urlPath.replace(`{${"integrationId"}}`, encodeURIComponent(String(requestParameters['integrationId'])));
@@ -103,17 +136,18 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
     /**
      */
-    async integrationsControllerDisconnectIntegrationRaw(requestParameters: IntegrationsControllerDisconnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerDisconnectIntegrationRaw(requestParameters: IntegrationsControllerDisconnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntegrationModel>> {
         const requestOptions = await this.integrationsControllerDisconnectIntegrationRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IntegrationModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async integrationsControllerDisconnectIntegration(requestParameters: IntegrationsControllerDisconnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerDisconnectIntegrationRaw(requestParameters, initOverrides);
+    async integrationsControllerDisconnectIntegration(requestParameters: IntegrationsControllerDisconnectIntegrationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntegrationModel> {
+        const response = await this.integrationsControllerDisconnectIntegrationRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -124,6 +158,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/strava/disconnect`;
 
@@ -158,6 +200,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/strava/auth`;
 
@@ -171,27 +221,28 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
     /**
      */
-    async integrationsControllerGetStravaAuthUrlRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerGetStravaAuthUrlRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntegrationsControllerGetStravaAuthUrl200Response>> {
         const requestOptions = await this.integrationsControllerGetStravaAuthUrlRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IntegrationsControllerGetStravaAuthUrl200ResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async integrationsControllerGetStravaAuthUrl(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerGetStravaAuthUrlRaw(initOverrides);
+    async integrationsControllerGetStravaAuthUrl(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntegrationsControllerGetStravaAuthUrl200Response> {
+        const response = await this.integrationsControllerGetStravaAuthUrlRaw(initOverrides);
+        return await response.value();
     }
 
     /**
      * Creates request options for integrationsControllerHandleStravaCallback without sending the request
      */
     async integrationsControllerHandleStravaCallbackRequestOpts(requestParameters: IntegrationsControllerHandleStravaCallbackRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['stravaCallbackInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling integrationsControllerHandleStravaCallback().'
+                'stravaCallbackInput',
+                'Required parameter "stravaCallbackInput" was null or undefined when calling integrationsControllerHandleStravaCallback().'
             );
         }
 
@@ -201,6 +252,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/strava/callback`;
 
@@ -209,23 +268,24 @@ export class IntegrationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: StravaCallbackInputToJSON(requestParameters['stravaCallbackInput']),
         };
     }
 
     /**
      */
-    async integrationsControllerHandleStravaCallbackRaw(requestParameters: IntegrationsControllerHandleStravaCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerHandleStravaCallbackRaw(requestParameters: IntegrationsControllerHandleStravaCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntegrationModel>> {
         const requestOptions = await this.integrationsControllerHandleStravaCallbackRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IntegrationModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async integrationsControllerHandleStravaCallback(requestParameters: IntegrationsControllerHandleStravaCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerHandleStravaCallbackRaw(requestParameters, initOverrides);
+    async integrationsControllerHandleStravaCallback(requestParameters: IntegrationsControllerHandleStravaCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntegrationModel> {
+        const response = await this.integrationsControllerHandleStravaCallbackRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -236,6 +296,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations`;
 
@@ -249,17 +317,18 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
     /**
      */
-    async integrationsControllerIntegrationsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerIntegrationsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<IntegrationModel>>> {
         const requestOptions = await this.integrationsControllerIntegrationsRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(IntegrationModelFromJSON));
     }
 
     /**
      */
-    async integrationsControllerIntegrations(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerIntegrationsRaw(initOverrides);
+    async integrationsControllerIntegrations(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<IntegrationModel>> {
+        const response = await this.integrationsControllerIntegrationsRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -270,6 +339,14 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/integrations/strava/sync`;
 
@@ -283,17 +360,25 @@ export class IntegrationsApi extends runtime.BaseAPI {
 
     /**
      */
-    async integrationsControllerSyncStravaRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async integrationsControllerSyncStravaRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntegrationsControllerSyncStrava200Response>> {
         const requestOptions = await this.integrationsControllerSyncStravaRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => IntegrationsControllerSyncStrava200ResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async integrationsControllerSyncStrava(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.integrationsControllerSyncStravaRaw(initOverrides);
+    async integrationsControllerSyncStrava(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntegrationsControllerSyncStrava200Response | null | undefined > {
+        const response = await this.integrationsControllerSyncStravaRaw(initOverrides);
+        switch (response.raw.status) {
+            case 200:
+                return await response.value();
+            case 201:
+                return null;
+            default:
+                return await response.value();
+        }
     }
 
 }

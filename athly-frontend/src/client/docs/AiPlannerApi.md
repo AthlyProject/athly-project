@@ -10,7 +10,7 @@ All URIs are relative to *http://localhost*
 
 ## aiPlannerControllerPlanNextWeek
 
-> aiPlannerControllerPlanNextWeek(body)
+> AiPlannerResultModel aiPlannerControllerPlanNextWeek(planNextWeekInput)
 
 
 
@@ -25,11 +25,15 @@ import type { AiPlannerControllerPlanNextWeekRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new AiPlannerApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new AiPlannerApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // PlanNextWeekInput
+    planNextWeekInput: ...,
   } satisfies AiPlannerControllerPlanNextWeekRequest;
 
   try {
@@ -49,25 +53,26 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **planNextWeekInput** | [PlanNextWeekInput](PlanNextWeekInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**AiPlannerResultModel**](AiPlannerResultModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

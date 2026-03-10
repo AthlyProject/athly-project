@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateProfileInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class UpdateProfileInput {
@@ -22,6 +23,9 @@ class UpdateProfileInput {
     goals;
     availability;
     password;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { name: { required: false, type: () => String, minLength: 2 }, email: { required: false, type: () => String, format: "email" }, role: { required: false, type: () => Object }, dateOfBirth: { required: false, type: () => String }, weight: { required: false, type: () => Number, minimum: 0 }, height: { required: false, type: () => Number, minimum: 0 }, goals: { required: false, type: () => [String] }, availability: { required: false, type: () => Number, minimum: 0 }, password: { required: false, type: () => String, minLength: 8 } };
+    }
 }
 exports.UpdateProfileInput = UpdateProfileInput;
 __decorate([

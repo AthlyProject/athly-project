@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateWeeklyGoalInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class UpdateWeeklyGoalInput {
@@ -17,6 +18,9 @@ class UpdateWeeklyGoalInput {
     weekEndDate;
     status;
     metrics;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { weekStartDate: { required: false, type: () => String }, weekEndDate: { required: false, type: () => String }, status: { required: false, type: () => Object }, metrics: { required: false, type: () => Object } };
+    }
 }
 exports.UpdateWeeklyGoalInput = UpdateWeeklyGoalInput;
 __decorate([

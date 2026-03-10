@@ -14,9 +14,19 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  UpdateProfileInput,
+  UserModel,
+} from '../models/index';
+import {
+    UpdateProfileInputFromJSON,
+    UpdateProfileInputToJSON,
+    UserModelFromJSON,
+    UserModelToJSON,
+} from '../models/index';
 
 export interface UsersControllerUpdateProfileRequest {
-    body: object;
+    updateProfileInput: UpdateProfileInput;
 }
 
 /**
@@ -32,6 +42,14 @@ export class UsersApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/users/me`;
 
@@ -45,27 +63,28 @@ export class UsersApi extends runtime.BaseAPI {
 
     /**
      */
-    async usersControllerMeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async usersControllerMeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserModel>> {
         const requestOptions = await this.usersControllerMeRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async usersControllerMe(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.usersControllerMeRaw(initOverrides);
+    async usersControllerMe(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserModel> {
+        const response = await this.usersControllerMeRaw(initOverrides);
+        return await response.value();
     }
 
     /**
      * Creates request options for usersControllerUpdateProfile without sending the request
      */
     async usersControllerUpdateProfileRequestOpts(requestParameters: UsersControllerUpdateProfileRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['updateProfileInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling usersControllerUpdateProfile().'
+                'updateProfileInput',
+                'Required parameter "updateProfileInput" was null or undefined when calling usersControllerUpdateProfile().'
             );
         }
 
@@ -75,6 +94,14 @@ export class UsersApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/users/profile`;
 
@@ -83,23 +110,24 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: UpdateProfileInputToJSON(requestParameters['updateProfileInput']),
         };
     }
 
     /**
      */
-    async usersControllerUpdateProfileRaw(requestParameters: UsersControllerUpdateProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async usersControllerUpdateProfileRaw(requestParameters: UsersControllerUpdateProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserModel>> {
         const requestOptions = await this.usersControllerUpdateProfileRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => UserModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async usersControllerUpdateProfile(requestParameters: UsersControllerUpdateProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.usersControllerUpdateProfileRaw(requestParameters, initOverrides);
+    async usersControllerUpdateProfile(requestParameters: UsersControllerUpdateProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserModel> {
+        const response = await this.usersControllerUpdateProfileRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

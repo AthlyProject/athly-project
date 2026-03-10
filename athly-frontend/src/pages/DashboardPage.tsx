@@ -35,7 +35,7 @@ export function DashboardPage() {
   }, [setTodayWorkout, setCurrentPlan, setLoading])
 
   const completedCount = currentPlan?.weeks?.[0]?.workouts?.filter(
-    (w) => w.status === 'completed'
+    (w) => w.status === 'done'
   ).length ?? 0
   const totalCount = currentPlan?.weeks?.[0]?.workouts?.length ?? 5
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0

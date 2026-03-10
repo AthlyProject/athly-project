@@ -16,6 +16,16 @@ const sportConfig: Record<SportType, { label: string; color: string; emoji: stri
     color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50', 
     emoji: '🏊',
   },
+  triathlon: { 
+    label: 'Triathlon', 
+    color: 'bg-violet-500/20 text-violet-300 border-violet-500/50', 
+    emoji: '🏊',
+  },
+  duathlon: { 
+    label: 'Duathlon', 
+    color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50', 
+    emoji: '🏃',
+  },
   strength: { 
     label: 'Força', 
     color: 'bg-amber-500/20 text-amber-300 border-amber-500/50', 

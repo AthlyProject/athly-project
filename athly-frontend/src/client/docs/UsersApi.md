@@ -11,7 +11,7 @@ All URIs are relative to *http://localhost*
 
 ## usersControllerMe
 
-> usersControllerMe()
+> UserModel usersControllerMe()
 
 
 
@@ -26,7 +26,11 @@ import type { UsersControllerMeRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new UsersApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UsersApi(config);
 
   try {
     const data = await api.usersControllerMe();
@@ -46,16 +50,16 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-`void` (Empty response body)
+[**UserModel**](UserModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details
@@ -68,7 +72,7 @@ No authorization required
 
 ## usersControllerUpdateProfile
 
-> usersControllerUpdateProfile(body)
+> UserModel usersControllerUpdateProfile(updateProfileInput)
 
 
 
@@ -83,11 +87,15 @@ import type { UsersControllerUpdateProfileRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
-  const api = new UsersApi();
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: bearer
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new UsersApi(config);
 
   const body = {
-    // object
-    body: Object,
+    // UpdateProfileInput
+    updateProfileInput: ...,
   } satisfies UsersControllerUpdateProfileRequest;
 
   try {
@@ -107,20 +115,20 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | `object` |  | |
+| **updateProfileInput** | [UpdateProfileInput](UpdateProfileInput.md) |  | |
 
 ### Return type
 
-`void` (Empty response body)
+[**UserModel**](UserModel.md)
 
 ### Authorization
 
-No authorization required
+[bearer](../README.md#bearer)
 
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: Not defined
+- **Accept**: `application/json`
 
 
 ### HTTP response details

@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateTrainingPlanInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 class CreateTrainingPlanInput {
@@ -19,6 +20,9 @@ class CreateTrainingPlanInput {
     targetDate;
     sports;
     autoGenerate;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { startDate: { required: true, type: () => String }, objective: { required: true, type: () => String }, status: { required: true, type: () => Object }, targetDate: { required: false, type: () => String }, sports: { required: true, type: () => [Object] }, autoGenerate: { required: false, type: () => Boolean } };
+    }
 }
 exports.CreateTrainingPlanInput = CreateTrainingPlanInput;
 __decorate([

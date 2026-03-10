@@ -14,9 +14,22 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  CreateWeeklyGoalInput,
+  UpdateWeeklyGoalInput,
+  WeeklyGoalModel,
+} from '../models/index';
+import {
+    CreateWeeklyGoalInputFromJSON,
+    CreateWeeklyGoalInputToJSON,
+    UpdateWeeklyGoalInputFromJSON,
+    UpdateWeeklyGoalInputToJSON,
+    WeeklyGoalModelFromJSON,
+    WeeklyGoalModelToJSON,
+} from '../models/index';
 
 export interface WeeklyGoalsControllerCreateWeeklyGoalRequest {
-    body: object;
+    createWeeklyGoalInput: CreateWeeklyGoalInput;
 }
 
 export interface WeeklyGoalsControllerDeleteWeeklyGoalRequest {
@@ -33,7 +46,7 @@ export interface WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest {
 
 export interface WeeklyGoalsControllerUpdateWeeklyGoalRequest {
     uuid: string;
-    body: object;
+    updateWeeklyGoalInput: UpdateWeeklyGoalInput;
 }
 
 /**
@@ -45,10 +58,10 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
      * Creates request options for weeklyGoalsControllerCreateWeeklyGoal without sending the request
      */
     async weeklyGoalsControllerCreateWeeklyGoalRequestOpts(requestParameters: WeeklyGoalsControllerCreateWeeklyGoalRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['createWeeklyGoalInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling weeklyGoalsControllerCreateWeeklyGoal().'
+                'createWeeklyGoalInput',
+                'Required parameter "createWeeklyGoalInput" was null or undefined when calling weeklyGoalsControllerCreateWeeklyGoal().'
             );
         }
 
@@ -58,6 +71,14 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/weekly-goals`;
 
@@ -66,23 +87,24 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: CreateWeeklyGoalInputToJSON(requestParameters['createWeeklyGoalInput']),
         };
     }
 
     /**
      */
-    async weeklyGoalsControllerCreateWeeklyGoalRaw(requestParameters: WeeklyGoalsControllerCreateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async weeklyGoalsControllerCreateWeeklyGoalRaw(requestParameters: WeeklyGoalsControllerCreateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WeeklyGoalModel>> {
         const requestOptions = await this.weeklyGoalsControllerCreateWeeklyGoalRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WeeklyGoalModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async weeklyGoalsControllerCreateWeeklyGoal(requestParameters: WeeklyGoalsControllerCreateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.weeklyGoalsControllerCreateWeeklyGoalRaw(requestParameters, initOverrides);
+    async weeklyGoalsControllerCreateWeeklyGoal(requestParameters: WeeklyGoalsControllerCreateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WeeklyGoalModel> {
+        const response = await this.weeklyGoalsControllerCreateWeeklyGoalRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -100,6 +122,14 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/weekly-goals/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
@@ -142,6 +172,14 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/weekly-goals/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
@@ -156,17 +194,18 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
     /**
      */
-    async weeklyGoalsControllerGetWeeklyGoalByIdRaw(requestParameters: WeeklyGoalsControllerGetWeeklyGoalByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async weeklyGoalsControllerGetWeeklyGoalByIdRaw(requestParameters: WeeklyGoalsControllerGetWeeklyGoalByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WeeklyGoalModel>> {
         const requestOptions = await this.weeklyGoalsControllerGetWeeklyGoalByIdRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WeeklyGoalModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async weeklyGoalsControllerGetWeeklyGoalById(requestParameters: WeeklyGoalsControllerGetWeeklyGoalByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.weeklyGoalsControllerGetWeeklyGoalByIdRaw(requestParameters, initOverrides);
+    async weeklyGoalsControllerGetWeeklyGoalById(requestParameters: WeeklyGoalsControllerGetWeeklyGoalByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WeeklyGoalModel> {
+        const response = await this.weeklyGoalsControllerGetWeeklyGoalByIdRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -184,6 +223,14 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/weekly-goals/training-plan/{trainingPlanId}`;
         urlPath = urlPath.replace(`{${"trainingPlanId"}}`, encodeURIComponent(String(requestParameters['trainingPlanId'])));
@@ -198,17 +245,18 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
     /**
      */
-    async weeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRaw(requestParameters: WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async weeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRaw(requestParameters: WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<WeeklyGoalModel>>> {
         const requestOptions = await this.weeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(WeeklyGoalModelFromJSON));
     }
 
     /**
      */
-    async weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan(requestParameters: WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.weeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRaw(requestParameters, initOverrides);
+    async weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan(requestParameters: WeeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<WeeklyGoalModel>> {
+        const response = await this.weeklyGoalsControllerGetWeeklyGoalsByTrainingPlanRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -222,10 +270,10 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
+        if (requestParameters['updateWeeklyGoalInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling weeklyGoalsControllerUpdateWeeklyGoal().'
+                'updateWeeklyGoalInput',
+                'Required parameter "updateWeeklyGoalInput" was null or undefined when calling weeklyGoalsControllerUpdateWeeklyGoal().'
             );
         }
 
@@ -235,6 +283,14 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/weekly-goals/{uuid}`;
         urlPath = urlPath.replace(`{${"uuid"}}`, encodeURIComponent(String(requestParameters['uuid'])));
@@ -244,23 +300,24 @@ export class WeeklyGoalsApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: UpdateWeeklyGoalInputToJSON(requestParameters['updateWeeklyGoalInput']),
         };
     }
 
     /**
      */
-    async weeklyGoalsControllerUpdateWeeklyGoalRaw(requestParameters: WeeklyGoalsControllerUpdateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async weeklyGoalsControllerUpdateWeeklyGoalRaw(requestParameters: WeeklyGoalsControllerUpdateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WeeklyGoalModel>> {
         const requestOptions = await this.weeklyGoalsControllerUpdateWeeklyGoalRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WeeklyGoalModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async weeklyGoalsControllerUpdateWeeklyGoal(requestParameters: WeeklyGoalsControllerUpdateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.weeklyGoalsControllerUpdateWeeklyGoalRaw(requestParameters, initOverrides);
+    async weeklyGoalsControllerUpdateWeeklyGoal(requestParameters: WeeklyGoalsControllerUpdateWeeklyGoalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WeeklyGoalModel> {
+        const response = await this.weeklyGoalsControllerUpdateWeeklyGoalRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

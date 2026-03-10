@@ -10,11 +10,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubmitWorkoutFeedbackInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class SubmitWorkoutFeedbackInput {
     completed;
     effort;
     fatigue;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { completed: { required: true, type: () => Boolean }, effort: { required: true, type: () => Number, minimum: 1, maximum: 10 }, fatigue: { required: true, type: () => Number, minimum: 1, maximum: 10 } };
+    }
 }
 exports.SubmitWorkoutFeedbackInput = SubmitWorkoutFeedbackInput;
 __decorate([

@@ -14,9 +14,19 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  AiPlannerResultModel,
+  PlanNextWeekInput,
+} from '../models/index';
+import {
+    AiPlannerResultModelFromJSON,
+    AiPlannerResultModelToJSON,
+    PlanNextWeekInputFromJSON,
+    PlanNextWeekInputToJSON,
+} from '../models/index';
 
 export interface AiPlannerControllerPlanNextWeekRequest {
-    body: object;
+    planNextWeekInput: PlanNextWeekInput;
 }
 
 /**
@@ -28,10 +38,10 @@ export class AiPlannerApi extends runtime.BaseAPI {
      * Creates request options for aiPlannerControllerPlanNextWeek without sending the request
      */
     async aiPlannerControllerPlanNextWeekRequestOpts(requestParameters: AiPlannerControllerPlanNextWeekRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['planNextWeekInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling aiPlannerControllerPlanNextWeek().'
+                'planNextWeekInput',
+                'Required parameter "planNextWeekInput" was null or undefined when calling aiPlannerControllerPlanNextWeek().'
             );
         }
 
@@ -41,6 +51,14 @@ export class AiPlannerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/ai-planner/plan-next-week`;
 
@@ -49,23 +67,24 @@ export class AiPlannerApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: PlanNextWeekInputToJSON(requestParameters['planNextWeekInput']),
         };
     }
 
     /**
      */
-    async aiPlannerControllerPlanNextWeekRaw(requestParameters: AiPlannerControllerPlanNextWeekRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async aiPlannerControllerPlanNextWeekRaw(requestParameters: AiPlannerControllerPlanNextWeekRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AiPlannerResultModel>> {
         const requestOptions = await this.aiPlannerControllerPlanNextWeekRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => AiPlannerResultModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async aiPlannerControllerPlanNextWeek(requestParameters: AiPlannerControllerPlanNextWeekRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.aiPlannerControllerPlanNextWeekRaw(requestParameters, initOverrides);
+    async aiPlannerControllerPlanNextWeek(requestParameters: AiPlannerControllerPlanNextWeekRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AiPlannerResultModel> {
+        const response = await this.aiPlannerControllerPlanNextWeekRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

@@ -14,13 +14,26 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  AuthPayload,
+  LoginInput,
+  RegisterUserInput,
+} from '../models/index';
+import {
+    AuthPayloadFromJSON,
+    AuthPayloadToJSON,
+    LoginInputFromJSON,
+    LoginInputToJSON,
+    RegisterUserInputFromJSON,
+    RegisterUserInputToJSON,
+} from '../models/index';
 
 export interface AuthControllerLoginRequest {
-    body: object;
+    loginInput: LoginInput;
 }
 
 export interface AuthControllerRegisterRequest {
-    body: object;
+    registerUserInput: RegisterUserInput;
 }
 
 /**
@@ -32,10 +45,10 @@ export class AuthApi extends runtime.BaseAPI {
      * Creates request options for authControllerLogin without sending the request
      */
     async authControllerLoginRequestOpts(requestParameters: AuthControllerLoginRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['loginInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling authControllerLogin().'
+                'loginInput',
+                'Required parameter "loginInput" was null or undefined when calling authControllerLogin().'
             );
         }
 
@@ -53,33 +66,34 @@ export class AuthApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: LoginInputToJSON(requestParameters['loginInput']),
         };
     }
 
     /**
      */
-    async authControllerLoginRaw(requestParameters: AuthControllerLoginRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async authControllerLoginRaw(requestParameters: AuthControllerLoginRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthPayload>> {
         const requestOptions = await this.authControllerLoginRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => AuthPayloadFromJSON(jsonValue));
     }
 
     /**
      */
-    async authControllerLogin(requestParameters: AuthControllerLoginRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.authControllerLoginRaw(requestParameters, initOverrides);
+    async authControllerLogin(requestParameters: AuthControllerLoginRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthPayload> {
+        const response = await this.authControllerLoginRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
      * Creates request options for authControllerRegister without sending the request
      */
     async authControllerRegisterRequestOpts(requestParameters: AuthControllerRegisterRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['registerUserInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling authControllerRegister().'
+                'registerUserInput',
+                'Required parameter "registerUserInput" was null or undefined when calling authControllerRegister().'
             );
         }
 
@@ -97,23 +111,24 @@ export class AuthApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: RegisterUserInputToJSON(requestParameters['registerUserInput']),
         };
     }
 
     /**
      */
-    async authControllerRegisterRaw(requestParameters: AuthControllerRegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async authControllerRegisterRaw(requestParameters: AuthControllerRegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthPayload>> {
         const requestOptions = await this.authControllerRegisterRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => AuthPayloadFromJSON(jsonValue));
     }
 
     /**
      */
-    async authControllerRegister(requestParameters: AuthControllerRegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.authControllerRegisterRaw(requestParameters, initOverrides);
+    async authControllerRegister(requestParameters: AuthControllerRegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthPayload> {
+        const response = await this.authControllerRegisterRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

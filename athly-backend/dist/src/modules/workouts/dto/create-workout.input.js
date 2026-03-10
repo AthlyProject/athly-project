@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateWorkoutInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
@@ -24,6 +25,9 @@ class CreateWorkoutInput {
     blocks;
     status;
     intensity;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { date: { required: true, type: () => String }, trainingPlanId: { required: true, type: () => String }, weeklyGoalId: { required: false, type: () => String }, sportType: { required: true, type: () => Object }, title: { required: true, type: () => String }, description: { required: false, type: () => String }, blocks: { required: false, type: () => [require("./workout-update-input").WorkoutBlockInput] }, status: { required: true, type: () => Object }, intensity: { required: false, type: () => Number, minimum: 1, maximum: 10 } };
+    }
 }
 exports.CreateWorkoutInput = CreateWorkoutInput;
 __decorate([

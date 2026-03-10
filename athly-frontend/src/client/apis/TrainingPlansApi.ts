@@ -14,9 +14,22 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  CreateTrainingPlanInput,
+  TrainingPlanModel,
+  UpdateTrainingPlanInput,
+} from '../models/index';
+import {
+    CreateTrainingPlanInputFromJSON,
+    CreateTrainingPlanInputToJSON,
+    TrainingPlanModelFromJSON,
+    TrainingPlanModelToJSON,
+    UpdateTrainingPlanInputFromJSON,
+    UpdateTrainingPlanInputToJSON,
+} from '../models/index';
 
 export interface TrainingPlansControllerCreateTrainingPlanRequest {
-    body: object;
+    createTrainingPlanInput: CreateTrainingPlanInput;
 }
 
 export interface TrainingPlansControllerDeleteTrainingPlanRequest {
@@ -29,7 +42,7 @@ export interface TrainingPlansControllerGetTrainingPlanByIdRequest {
 
 export interface TrainingPlansControllerUpdateTrainingPlanRequest {
     id: string;
-    body: object;
+    updateTrainingPlanInput: UpdateTrainingPlanInput;
 }
 
 /**
@@ -41,10 +54,10 @@ export class TrainingPlansApi extends runtime.BaseAPI {
      * Creates request options for trainingPlansControllerCreateTrainingPlan without sending the request
      */
     async trainingPlansControllerCreateTrainingPlanRequestOpts(requestParameters: TrainingPlansControllerCreateTrainingPlanRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['createTrainingPlanInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling trainingPlansControllerCreateTrainingPlan().'
+                'createTrainingPlanInput',
+                'Required parameter "createTrainingPlanInput" was null or undefined when calling trainingPlansControllerCreateTrainingPlan().'
             );
         }
 
@@ -54,6 +67,14 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/training-plans`;
 
@@ -62,23 +83,24 @@ export class TrainingPlansApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: CreateTrainingPlanInputToJSON(requestParameters['createTrainingPlanInput']),
         };
     }
 
     /**
      */
-    async trainingPlansControllerCreateTrainingPlanRaw(requestParameters: TrainingPlansControllerCreateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async trainingPlansControllerCreateTrainingPlanRaw(requestParameters: TrainingPlansControllerCreateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrainingPlanModel>> {
         const requestOptions = await this.trainingPlansControllerCreateTrainingPlanRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => TrainingPlanModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async trainingPlansControllerCreateTrainingPlan(requestParameters: TrainingPlansControllerCreateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.trainingPlansControllerCreateTrainingPlanRaw(requestParameters, initOverrides);
+    async trainingPlansControllerCreateTrainingPlan(requestParameters: TrainingPlansControllerCreateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrainingPlanModel> {
+        const response = await this.trainingPlansControllerCreateTrainingPlanRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -96,6 +118,14 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/training-plans/{id}`;
         urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
@@ -131,6 +161,14 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/training-plans/me`;
 
@@ -144,17 +182,18 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
     /**
      */
-    async trainingPlansControllerGetMyTrainingPlanRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async trainingPlansControllerGetMyTrainingPlanRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrainingPlanModel>> {
         const requestOptions = await this.trainingPlansControllerGetMyTrainingPlanRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => TrainingPlanModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async trainingPlansControllerGetMyTrainingPlan(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.trainingPlansControllerGetMyTrainingPlanRaw(initOverrides);
+    async trainingPlansControllerGetMyTrainingPlan(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrainingPlanModel> {
+        const response = await this.trainingPlansControllerGetMyTrainingPlanRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -172,6 +211,14 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/training-plans/{id}`;
         urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
@@ -186,17 +233,18 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
     /**
      */
-    async trainingPlansControllerGetTrainingPlanByIdRaw(requestParameters: TrainingPlansControllerGetTrainingPlanByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async trainingPlansControllerGetTrainingPlanByIdRaw(requestParameters: TrainingPlansControllerGetTrainingPlanByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrainingPlanModel>> {
         const requestOptions = await this.trainingPlansControllerGetTrainingPlanByIdRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => TrainingPlanModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async trainingPlansControllerGetTrainingPlanById(requestParameters: TrainingPlansControllerGetTrainingPlanByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.trainingPlansControllerGetTrainingPlanByIdRaw(requestParameters, initOverrides);
+    async trainingPlansControllerGetTrainingPlanById(requestParameters: TrainingPlansControllerGetTrainingPlanByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrainingPlanModel> {
+        const response = await this.trainingPlansControllerGetTrainingPlanByIdRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -210,10 +258,10 @@ export class TrainingPlansApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
+        if (requestParameters['updateTrainingPlanInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling trainingPlansControllerUpdateTrainingPlan().'
+                'updateTrainingPlanInput',
+                'Required parameter "updateTrainingPlanInput" was null or undefined when calling trainingPlansControllerUpdateTrainingPlan().'
             );
         }
 
@@ -223,6 +271,14 @@ export class TrainingPlansApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/training-plans/{id}`;
         urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
@@ -232,23 +288,24 @@ export class TrainingPlansApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: UpdateTrainingPlanInputToJSON(requestParameters['updateTrainingPlanInput']),
         };
     }
 
     /**
      */
-    async trainingPlansControllerUpdateTrainingPlanRaw(requestParameters: TrainingPlansControllerUpdateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async trainingPlansControllerUpdateTrainingPlanRaw(requestParameters: TrainingPlansControllerUpdateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrainingPlanModel>> {
         const requestOptions = await this.trainingPlansControllerUpdateTrainingPlanRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => TrainingPlanModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async trainingPlansControllerUpdateTrainingPlan(requestParameters: TrainingPlansControllerUpdateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.trainingPlansControllerUpdateTrainingPlanRaw(requestParameters, initOverrides);
+    async trainingPlansControllerUpdateTrainingPlan(requestParameters: TrainingPlansControllerUpdateTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TrainingPlanModel> {
+        const response = await this.trainingPlansControllerUpdateTrainingPlanRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

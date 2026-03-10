@@ -13,12 +13,15 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IntegrationsController = void 0;
+const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const integrations_service_1 = require("./integrations.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
 const strava_callback_input_1 = require("./dto/strava-callback.input");
+const integration_model_1 = require("./models/integration.model");
 let IntegrationsController = class IntegrationsController {
     integrationsService;
     constructor(integrationsService) {
@@ -49,57 +52,73 @@ let IntegrationsController = class IntegrationsController {
 exports.IntegrationsController = IntegrationsController;
 __decorate([
     (0, common_1.Get)(),
+    (0, swagger_1.ApiOkResponse)({ type: integration_model_1.IntegrationModel, isArray: true }),
+    openapi.ApiResponse({ status: 200, type: [require("./models/integration.model").IntegrationModel] }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "integrations", null);
 __decorate([
     (0, common_1.Post)(':integrationId/connect'),
+    (0, swagger_1.ApiOkResponse)({ type: integration_model_1.IntegrationModel }),
+    openapi.ApiResponse({ status: 201, type: require("./models/integration.model").IntegrationModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('integrationId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "connectIntegration", null);
 __decorate([
     (0, common_1.Delete)(':integrationId/disconnect'),
+    (0, swagger_1.ApiOkResponse)({ type: integration_model_1.IntegrationModel }),
+    openapi.ApiResponse({ status: 200, type: require("./models/integration.model").IntegrationModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('integrationId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "disconnectIntegration", null);
 __decorate([
     (0, common_1.Get)('strava/auth'),
+    (0, swagger_1.ApiOkResponse)({ schema: { type: 'object', properties: { url: { type: 'string' } } } }),
+    openapi.ApiResponse({ status: 200 }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Object)
 ], IntegrationsController.prototype, "getStravaAuthUrl", null);
 __decorate([
     (0, common_1.Post)('strava/callback'),
+    (0, swagger_1.ApiOkResponse)({ type: integration_model_1.IntegrationModel }),
+    openapi.ApiResponse({ status: 201, type: require("./models/integration.model").IntegrationModel }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel,
         strava_callback_input_1.StravaCallbackInput]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "handleStravaCallback", null);
 __decorate([
     (0, common_1.Post)('strava/sync'),
+    (0, swagger_1.ApiOkResponse)({ schema: { type: 'object', properties: { synced: { type: 'number' } } } }),
+    openapi.ApiResponse({ status: 201 }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "syncStrava", null);
 __decorate([
     (0, common_1.Post)('strava/disconnect'),
+    (0, swagger_1.ApiOkResponse)(),
+    openapi.ApiResponse({ status: 201 }),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "disconnectStrava", null);
 exports.IntegrationsController = IntegrationsController = __decorate([
+    (0, swagger_1.ApiTags)('integrations'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('integrations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [integrations_service_1.IntegrationsService])

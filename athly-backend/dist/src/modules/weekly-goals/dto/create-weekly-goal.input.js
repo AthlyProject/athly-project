@@ -10,12 +10,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateWeeklyGoalInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class CreateWeeklyGoalInput {
     trainingPlanId;
     weekStartDate;
     weekEndDate;
     metrics;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { trainingPlanId: { required: true, type: () => String }, weekStartDate: { required: true, type: () => String }, weekEndDate: { required: true, type: () => String }, metrics: { required: false, type: () => Object } };
+    }
 }
 exports.CreateWeeklyGoalInput = CreateWeeklyGoalInput;
 __decorate([

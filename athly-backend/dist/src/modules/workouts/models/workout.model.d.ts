@@ -14,6 +14,8 @@ export declare class WorkoutModel {
     description?: string;
     blocks: WorkoutBlock[];
     status: WorkoutStatus;
+    trainingPlanId?: string;
+    weeklyGoalId?: string;
     intensity?: number;
     stravaActivityId?: string | null;
 }

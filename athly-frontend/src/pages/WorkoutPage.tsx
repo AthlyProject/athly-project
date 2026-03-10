@@ -15,6 +15,8 @@ const sportTypes = [
   "running",
   "cycling",
   "swimming",
+  "triathlon",
+  "duathlon",
   "strength",
   "crossfit",
   "yoga",
@@ -260,6 +262,8 @@ export function WorkoutPage() {
                   <option value="running">Corrida</option>
                   <option value="cycling">Ciclismo</option>
                   <option value="swimming">Natação</option>
+                  <option value="triathlon">Triathlon</option>
+                  <option value="duathlon">Duathlon</option>
                   <option value="strength">Força</option>
                   <option value="crossfit">Crossfit</option>
                   <option value="yoga">Yoga</option>

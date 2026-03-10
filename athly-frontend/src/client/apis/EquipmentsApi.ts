@@ -14,13 +14,23 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  CreateEquipmentInput,
+  UpdateEquipmentInput,
+} from '../models/index';
+import {
+    CreateEquipmentInputFromJSON,
+    CreateEquipmentInputToJSON,
+    UpdateEquipmentInputFromJSON,
+    UpdateEquipmentInputToJSON,
+} from '../models/index';
 
 export interface EquipmentsControllerAddEquipmentToUserRequest {
     equipmentId: string;
 }
 
 export interface EquipmentsControllerCreateEquipmentRequest {
-    body: object;
+    createEquipmentInput: CreateEquipmentInput;
 }
 
 export interface EquipmentsControllerDeleteEquipmentRequest {
@@ -37,7 +47,7 @@ export interface EquipmentsControllerRemoveEquipmentFromUserRequest {
 
 export interface EquipmentsControllerUpdateEquipmentRequest {
     uuid: string;
-    body: object;
+    updateEquipmentInput: UpdateEquipmentInput;
 }
 
 /**
@@ -91,10 +101,10 @@ export class EquipmentsApi extends runtime.BaseAPI {
      * Creates request options for equipmentsControllerCreateEquipment without sending the request
      */
     async equipmentsControllerCreateEquipmentRequestOpts(requestParameters: EquipmentsControllerCreateEquipmentRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['createEquipmentInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling equipmentsControllerCreateEquipment().'
+                'createEquipmentInput',
+                'Required parameter "createEquipmentInput" was null or undefined when calling equipmentsControllerCreateEquipment().'
             );
         }
 
@@ -112,23 +122,24 @@ export class EquipmentsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: CreateEquipmentInputToJSON(requestParameters['createEquipmentInput']),
         };
     }
 
     /**
      */
-    async equipmentsControllerCreateEquipmentRaw(requestParameters: EquipmentsControllerCreateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async equipmentsControllerCreateEquipmentRaw(requestParameters: EquipmentsControllerCreateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
         const requestOptions = await this.equipmentsControllerCreateEquipmentRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      */
-    async equipmentsControllerCreateEquipment(requestParameters: EquipmentsControllerCreateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.equipmentsControllerCreateEquipmentRaw(requestParameters, initOverrides);
+    async equipmentsControllerCreateEquipment(requestParameters: EquipmentsControllerCreateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.equipmentsControllerCreateEquipmentRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -194,17 +205,18 @@ export class EquipmentsApi extends runtime.BaseAPI {
 
     /**
      */
-    async equipmentsControllerGetAllEquipmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async equipmentsControllerGetAllEquipmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<object>>> {
         const requestOptions = await this.equipmentsControllerGetAllEquipmentsRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      */
-    async equipmentsControllerGetAllEquipments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.equipmentsControllerGetAllEquipmentsRaw(initOverrides);
+    async equipmentsControllerGetAllEquipments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<object>> {
+        const response = await this.equipmentsControllerGetAllEquipmentsRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -236,17 +248,18 @@ export class EquipmentsApi extends runtime.BaseAPI {
 
     /**
      */
-    async equipmentsControllerGetEquipmentByIdRaw(requestParameters: EquipmentsControllerGetEquipmentByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async equipmentsControllerGetEquipmentByIdRaw(requestParameters: EquipmentsControllerGetEquipmentByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
         const requestOptions = await this.equipmentsControllerGetEquipmentByIdRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      */
-    async equipmentsControllerGetEquipmentById(requestParameters: EquipmentsControllerGetEquipmentByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.equipmentsControllerGetEquipmentByIdRaw(requestParameters, initOverrides);
+    async equipmentsControllerGetEquipmentById(requestParameters: EquipmentsControllerGetEquipmentByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.equipmentsControllerGetEquipmentByIdRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -270,17 +283,18 @@ export class EquipmentsApi extends runtime.BaseAPI {
 
     /**
      */
-    async equipmentsControllerGetUserEquipmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async equipmentsControllerGetUserEquipmentsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<object>>> {
         const requestOptions = await this.equipmentsControllerGetUserEquipmentsRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      */
-    async equipmentsControllerGetUserEquipments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.equipmentsControllerGetUserEquipmentsRaw(initOverrides);
+    async equipmentsControllerGetUserEquipments(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<object>> {
+        const response = await this.equipmentsControllerGetUserEquipmentsRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -336,10 +350,10 @@ export class EquipmentsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
+        if (requestParameters['updateEquipmentInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling equipmentsControllerUpdateEquipment().'
+                'updateEquipmentInput',
+                'Required parameter "updateEquipmentInput" was null or undefined when calling equipmentsControllerUpdateEquipment().'
             );
         }
 
@@ -358,23 +372,24 @@ export class EquipmentsApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: UpdateEquipmentInputToJSON(requestParameters['updateEquipmentInput']),
         };
     }
 
     /**
      */
-    async equipmentsControllerUpdateEquipmentRaw(requestParameters: EquipmentsControllerUpdateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async equipmentsControllerUpdateEquipmentRaw(requestParameters: EquipmentsControllerUpdateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
         const requestOptions = await this.equipmentsControllerUpdateEquipmentRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      */
-    async equipmentsControllerUpdateEquipment(requestParameters: EquipmentsControllerUpdateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.equipmentsControllerUpdateEquipmentRaw(requestParameters, initOverrides);
+    async equipmentsControllerUpdateEquipment(requestParameters: EquipmentsControllerUpdateEquipmentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.equipmentsControllerUpdateEquipmentRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }

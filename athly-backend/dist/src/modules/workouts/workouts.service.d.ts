@@ -18,6 +18,8 @@ export declare class WorkoutsService {
         title: string;
         description?: string;
         blocks: import("./models/workout.model").WorkoutBlock[];
+        trainingPlanId?: string;
+        weeklyGoalId?: string;
         intensity?: number;
         stravaActivityId?: string | null;
     }[]>;

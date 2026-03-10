@@ -2,8 +2,7 @@ import type { User, UpdateProfileInput } from '@/types'
 import { api } from './api'
 
 export async function getProfile(): Promise<User> {
-  const user = await api.getMe()
-  return user
+  return api.users.usersControllerMe()
 }
 
 export async function updateProfile(data: Partial<User>): Promise<User> {
@@ -13,6 +12,7 @@ export async function updateProfile(data: Partial<User>): Promise<User> {
     goals: data.goals,
     availability: data.availability ?? undefined,
   }
-  const user = await api.updateProfile(input)
-  return user
+  return api.users.usersControllerUpdateProfile({
+    updateProfileInput: input
+  })
 }

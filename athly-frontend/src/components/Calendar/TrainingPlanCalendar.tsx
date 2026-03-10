@@ -49,7 +49,7 @@ function getWeeklyGoalForWeek(
   weekEnd: string
 ): WeeklyGoal | undefined {
   return weeklyGoals.find(
-    (wg) => wg.weekStartDate <= weekEnd && wg.weekEndDate >= weekStart
+    (wg) => toISO(wg.weekStartDate) <= weekEnd && toISO(wg.weekEndDate) >= weekStart
   );
 }
 
@@ -86,7 +86,7 @@ export function TrainingPlanCalendar({
           const { start: weekStart, end: weekEnd } = getWeekRange(week);
           const weekGoal = getWeeklyGoalForWeek(weeklyGoals, weekStart, weekEnd);
           const goalTitle =
-            (weekGoal?.metrics?.title as string) ||
+            ((weekGoal?.metrics as any)?.title as string) ||
             (weekGoal ? `Semana ${weekIndex + 1}` : null);
 
           return (

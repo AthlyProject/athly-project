@@ -10,9 +10,13 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StravaCallbackInput = void 0;
+const openapi = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class StravaCallbackInput {
     code;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { code: { required: true, type: () => String } };
+    }
 }
 exports.StravaCallbackInput = StravaCallbackInput;
 __decorate([

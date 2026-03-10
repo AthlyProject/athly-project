@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WorkoutBlockInput = exports.UpdateWorkoutInput = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
@@ -24,22 +25,26 @@ class UpdateWorkoutInput {
 }
 exports.UpdateWorkoutInput = UpdateWorkoutInput;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateWorkoutInput.prototype, "title", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateWorkoutInput.prototype, "description", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: () => [WorkoutBlockInput] }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => WorkoutBlockInput),
     __metadata("design:type", Array)
 ], UpdateWorkoutInput.prototype, "blocks", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
@@ -47,16 +52,19 @@ __decorate([
     __metadata("design:type", Number)
 ], UpdateWorkoutInput.prototype, "intensity", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.WorkoutStatus }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(client_1.WorkoutStatus),
     __metadata("design:type", String)
 ], UpdateWorkoutInput.prototype, "status", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.SportType }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(client_1.SportType),
     __metadata("design:type", String)
 ], UpdateWorkoutInput.prototype, "sportType", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -70,25 +78,30 @@ class WorkoutBlockInput {
 }
 exports.WorkoutBlockInput = WorkoutBlockInput;
 __decorate([
+    (0, swagger_1.ApiProperty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WorkoutBlockInput.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], WorkoutBlockInput.prototype, "duration", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], WorkoutBlockInput.prototype, "distance", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], WorkoutBlockInput.prototype, "targetPace", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

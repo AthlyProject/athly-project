@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
@@ -11,32 +10,27 @@ export declare class AiPlannerService {
     planNextWeek(userId: string, input: PlanNextWeekInput): Promise<{
         trainingPlan: {
             id: string;
-            status: import("@prisma/client").$Enums.TrainingPlanStatus;
+            status: any;
         };
         weeklyGoal: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             trainingPlanId: string;
-            status: import("@prisma/client").$Enums.WeeklyGoalStatus;
             weekStartDate: Date;
             weekEndDate: Date;
-            metrics: Prisma.JsonValue;
+            status: any;
+            metrics: any;
+            createdAt: Date;
+            updatedAt: Date;
         };
         workouts: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            userId: string;
-            trainingPlanId: string;
-            weeklyGoalId: string | null;
-            dateScheduled: Date;
-            sportType: import("@prisma/client").$Enums.SportType;
+            date: string;
+            sportType: any;
             title: string;
-            description: string | null;
-            blocks: Prisma.JsonValue;
-            status: import("@prisma/client").$Enums.WorkoutStatus;
-            intensity: number | null;
+            description: string | undefined;
+            blocks: any;
+            status: any;
+            intensity: number | undefined;
             stravaActivityId: string | null;
         }[];
         analysis: import("./types/planner.types").RunAnalysis;

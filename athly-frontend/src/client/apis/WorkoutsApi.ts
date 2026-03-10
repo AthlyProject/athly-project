@@ -14,13 +14,32 @@
 
 
 import * as runtime from '../runtime';
+import type {
+  CreateWorkoutInput,
+  SubmitWorkoutFeedbackInput,
+  UpdateWorkoutInput,
+  WorkoutFeedbackModel,
+  WorkoutModel,
+} from '../models/index';
+import {
+    CreateWorkoutInputFromJSON,
+    CreateWorkoutInputToJSON,
+    SubmitWorkoutFeedbackInputFromJSON,
+    SubmitWorkoutFeedbackInputToJSON,
+    UpdateWorkoutInputFromJSON,
+    UpdateWorkoutInputToJSON,
+    WorkoutFeedbackModelFromJSON,
+    WorkoutFeedbackModelToJSON,
+    WorkoutModelFromJSON,
+    WorkoutModelToJSON,
+} from '../models/index';
 
 export interface WorkoutsControllerCompleteWorkoutRequest {
     workoutId: string;
 }
 
 export interface WorkoutsControllerCreateWorkoutRequest {
-    body: object;
+    createWorkoutInput: CreateWorkoutInput;
 }
 
 export interface WorkoutsControllerSkipWorkoutRequest {
@@ -29,12 +48,12 @@ export interface WorkoutsControllerSkipWorkoutRequest {
 
 export interface WorkoutsControllerSubmitWorkoutFeedbackRequest {
     workoutId: string;
-    body: object;
+    submitWorkoutFeedbackInput: SubmitWorkoutFeedbackInput;
 }
 
 export interface WorkoutsControllerUpdateWorkoutRequest {
     workoutId: string;
-    body: object;
+    updateWorkoutInput: UpdateWorkoutInput;
 }
 
 export interface WorkoutsControllerWorkoutRequest {
@@ -65,6 +84,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/{workoutId}/complete`;
         urlPath = urlPath.replace(`{${"workoutId"}}`, encodeURIComponent(String(requestParameters['workoutId'])));
@@ -79,27 +106,28 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerCompleteWorkoutRaw(requestParameters: WorkoutsControllerCompleteWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerCompleteWorkoutRaw(requestParameters: WorkoutsControllerCompleteWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerCompleteWorkoutRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerCompleteWorkout(requestParameters: WorkoutsControllerCompleteWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerCompleteWorkoutRaw(requestParameters, initOverrides);
+    async workoutsControllerCompleteWorkout(requestParameters: WorkoutsControllerCompleteWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerCompleteWorkoutRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
      * Creates request options for workoutsControllerCreateWorkout without sending the request
      */
     async workoutsControllerCreateWorkoutRequestOpts(requestParameters: WorkoutsControllerCreateWorkoutRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
+        if (requestParameters['createWorkoutInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling workoutsControllerCreateWorkout().'
+                'createWorkoutInput',
+                'Required parameter "createWorkoutInput" was null or undefined when calling workoutsControllerCreateWorkout().'
             );
         }
 
@@ -109,6 +137,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts`;
 
@@ -117,23 +153,24 @@ export class WorkoutsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: CreateWorkoutInputToJSON(requestParameters['createWorkoutInput']),
         };
     }
 
     /**
      */
-    async workoutsControllerCreateWorkoutRaw(requestParameters: WorkoutsControllerCreateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerCreateWorkoutRaw(requestParameters: WorkoutsControllerCreateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerCreateWorkoutRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerCreateWorkout(requestParameters: WorkoutsControllerCreateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerCreateWorkoutRaw(requestParameters, initOverrides);
+    async workoutsControllerCreateWorkout(requestParameters: WorkoutsControllerCreateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerCreateWorkoutRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -151,6 +188,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/{workoutId}/skip`;
         urlPath = urlPath.replace(`{${"workoutId"}}`, encodeURIComponent(String(requestParameters['workoutId'])));
@@ -165,17 +210,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerSkipWorkoutRaw(requestParameters: WorkoutsControllerSkipWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerSkipWorkoutRaw(requestParameters: WorkoutsControllerSkipWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerSkipWorkoutRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerSkipWorkout(requestParameters: WorkoutsControllerSkipWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerSkipWorkoutRaw(requestParameters, initOverrides);
+    async workoutsControllerSkipWorkout(requestParameters: WorkoutsControllerSkipWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerSkipWorkoutRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -189,10 +235,10 @@ export class WorkoutsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
+        if (requestParameters['submitWorkoutFeedbackInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling workoutsControllerSubmitWorkoutFeedback().'
+                'submitWorkoutFeedbackInput',
+                'Required parameter "submitWorkoutFeedbackInput" was null or undefined when calling workoutsControllerSubmitWorkoutFeedback().'
             );
         }
 
@@ -202,6 +248,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/{workoutId}/feedback`;
         urlPath = urlPath.replace(`{${"workoutId"}}`, encodeURIComponent(String(requestParameters['workoutId'])));
@@ -211,23 +265,24 @@ export class WorkoutsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: SubmitWorkoutFeedbackInputToJSON(requestParameters['submitWorkoutFeedbackInput']),
         };
     }
 
     /**
      */
-    async workoutsControllerSubmitWorkoutFeedbackRaw(requestParameters: WorkoutsControllerSubmitWorkoutFeedbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerSubmitWorkoutFeedbackRaw(requestParameters: WorkoutsControllerSubmitWorkoutFeedbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutFeedbackModel>> {
         const requestOptions = await this.workoutsControllerSubmitWorkoutFeedbackRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutFeedbackModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerSubmitWorkoutFeedback(requestParameters: WorkoutsControllerSubmitWorkoutFeedbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerSubmitWorkoutFeedbackRaw(requestParameters, initOverrides);
+    async workoutsControllerSubmitWorkoutFeedback(requestParameters: WorkoutsControllerSubmitWorkoutFeedbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutFeedbackModel> {
+        const response = await this.workoutsControllerSubmitWorkoutFeedbackRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -238,6 +293,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/today`;
 
@@ -251,17 +314,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerTodayWorkoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerTodayWorkoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerTodayWorkoutRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerTodayWorkout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerTodayWorkoutRaw(initOverrides);
+    async workoutsControllerTodayWorkout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerTodayWorkoutRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -275,10 +339,10 @@ export class WorkoutsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['body'] == null) {
+        if (requestParameters['updateWorkoutInput'] == null) {
             throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling workoutsControllerUpdateWorkout().'
+                'updateWorkoutInput',
+                'Required parameter "updateWorkoutInput" was null or undefined when calling workoutsControllerUpdateWorkout().'
             );
         }
 
@@ -288,6 +352,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/{workoutId}`;
         urlPath = urlPath.replace(`{${"workoutId"}}`, encodeURIComponent(String(requestParameters['workoutId'])));
@@ -297,23 +369,24 @@ export class WorkoutsApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['body'] as any,
+            body: UpdateWorkoutInputToJSON(requestParameters['updateWorkoutInput']),
         };
     }
 
     /**
      */
-    async workoutsControllerUpdateWorkoutRaw(requestParameters: WorkoutsControllerUpdateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerUpdateWorkoutRaw(requestParameters: WorkoutsControllerUpdateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerUpdateWorkoutRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerUpdateWorkout(requestParameters: WorkoutsControllerUpdateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerUpdateWorkoutRaw(requestParameters, initOverrides);
+    async workoutsControllerUpdateWorkout(requestParameters: WorkoutsControllerUpdateWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerUpdateWorkoutRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -331,6 +404,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/{id}`;
         urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
@@ -345,17 +426,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerWorkoutRaw(requestParameters: WorkoutsControllerWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerWorkoutRaw(requestParameters: WorkoutsControllerWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WorkoutModel>> {
         const requestOptions = await this.workoutsControllerWorkoutRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => WorkoutModelFromJSON(jsonValue));
     }
 
     /**
      */
-    async workoutsControllerWorkout(requestParameters: WorkoutsControllerWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerWorkoutRaw(requestParameters, initOverrides);
+    async workoutsControllerWorkout(requestParameters: WorkoutsControllerWorkoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WorkoutModel> {
+        const response = await this.workoutsControllerWorkoutRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
     /**
@@ -366,6 +448,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/history`;
 
@@ -379,17 +469,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerWorkoutHistoryRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerWorkoutHistoryRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<WorkoutModel>>> {
         const requestOptions = await this.workoutsControllerWorkoutHistoryRequestOpts();
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(WorkoutModelFromJSON));
     }
 
     /**
      */
-    async workoutsControllerWorkoutHistory(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerWorkoutHistoryRaw(initOverrides);
+    async workoutsControllerWorkoutHistory(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<WorkoutModel>> {
+        const response = await this.workoutsControllerWorkoutHistoryRaw(initOverrides);
+        return await response.value();
     }
 
     /**
@@ -407,6 +498,14 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/workouts/training-plan/{trainingPlanId}`;
         urlPath = urlPath.replace(`{${"trainingPlanId"}}`, encodeURIComponent(String(requestParameters['trainingPlanId'])));
@@ -421,17 +520,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
 
     /**
      */
-    async workoutsControllerWorkoutsByTrainingPlanRaw(requestParameters: WorkoutsControllerWorkoutsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async workoutsControllerWorkoutsByTrainingPlanRaw(requestParameters: WorkoutsControllerWorkoutsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<WorkoutModel>>> {
         const requestOptions = await this.workoutsControllerWorkoutsByTrainingPlanRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.VoidApiResponse(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(WorkoutModelFromJSON));
     }
 
     /**
      */
-    async workoutsControllerWorkoutsByTrainingPlan(requestParameters: WorkoutsControllerWorkoutsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.workoutsControllerWorkoutsByTrainingPlanRaw(requestParameters, initOverrides);
+    async workoutsControllerWorkoutsByTrainingPlan(requestParameters: WorkoutsControllerWorkoutsByTrainingPlanRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<WorkoutModel>> {
+        const response = await this.workoutsControllerWorkoutsByTrainingPlanRaw(requestParameters, initOverrides);
+        return await response.value();
     }
 
 }
