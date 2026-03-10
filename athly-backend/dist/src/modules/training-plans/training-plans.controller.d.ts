@@ -1,6 +1,6 @@
 import { TrainingPlansService } from './training-plans.service';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
-import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
+import { CreateTrainingPlanInput } from './dto/create-training-plan.dto';
+import { UpdateTrainingPlanInput } from './dto/update-training-plan.dto';
 import { UserModel } from '../users/models/user.model';
 import { TrainingPlanModel } from './models/training-plan.model';
 export declare class TrainingPlansController {

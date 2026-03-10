@@ -16,8 +16,8 @@ exports.EquipmentsController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const equipments_service_1 = require("./equipments.service");
-const create_equipment_input_1 = require("./dto/create-equipment.input");
-const update_equipment_input_1 = require("./dto/update-equipment.input");
+const create_equipment_dto_1 = require("./dto/create-equipment.dto");
+const update_equipment_dto_1 = require("./dto/update-equipment.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
@@ -80,7 +80,7 @@ __decorate([
     openapi.ApiResponse({ status: 201, type: require("./models/equipment.model").EquipmentModel }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_equipment_input_1.CreateEquipmentInput]),
+    __metadata("design:paramtypes", [create_equipment_dto_1.CreateEquipmentInput]),
     __metadata("design:returntype", void 0)
 ], EquipmentsController.prototype, "createEquipment", null);
 __decorate([
@@ -89,7 +89,7 @@ __decorate([
     __param(0, (0, common_1.Param)('uuid')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_equipment_input_1.UpdateEquipmentInput]),
+    __metadata("design:paramtypes", [String, update_equipment_dto_1.UpdateEquipmentInput]),
     __metadata("design:returntype", void 0)
 ], EquipmentsController.prototype, "updateEquipment", null);
 __decorate([

@@ -20,7 +20,7 @@ const integrations_service_1 = require("./integrations.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
-const strava_callback_input_1 = require("./dto/strava-callback.input");
+const strava_callback_dto_1 = require("./dto/strava-callback.dto");
 const integration_model_1 = require("./models/integration.model");
 let IntegrationsController = class IntegrationsController {
     integrationsService;
@@ -95,7 +95,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel,
-        strava_callback_input_1.StravaCallbackInput]),
+        strava_callback_dto_1.StravaCallbackInput]),
     __metadata("design:returntype", Promise)
 ], IntegrationsController.prototype, "handleStravaCallback", null);
 __decorate([

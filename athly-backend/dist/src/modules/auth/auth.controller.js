@@ -17,9 +17,9 @@ const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("./auth.service");
-const login_input_1 = require("./dto/login.input");
-const register_user_input_1 = require("./dto/register-user.input");
-const auth_payload_1 = require("./dto/auth.payload");
+const login_dto_1 = require("./dto/login.dto");
+const register_user_dto_1 = require("./dto/register-user.dto");
+const auth_payload_dto_1 = require("./dto/auth-payload.dto");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -35,20 +35,20 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)('register'),
-    (0, swagger_1.ApiCreatedResponse)({ type: auth_payload_1.AuthPayload }),
-    openapi.ApiResponse({ status: 201, type: require("./dto/auth.payload").AuthPayload }),
+    (0, swagger_1.ApiCreatedResponse)({ type: auth_payload_dto_1.AuthPayload }),
+    openapi.ApiResponse({ status: 201, type: require("./dto/auth-payload.dto").AuthPayload }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [register_user_input_1.RegisterUserInput]),
+    __metadata("design:paramtypes", [register_user_dto_1.RegisterUserInput]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
     (0, common_1.Post)('login'),
-    (0, swagger_1.ApiOkResponse)({ type: auth_payload_1.AuthPayload }),
-    openapi.ApiResponse({ status: 201, type: require("./dto/auth.payload").AuthPayload }),
+    (0, swagger_1.ApiOkResponse)({ type: auth_payload_dto_1.AuthPayload }),
+    openapi.ApiResponse({ status: 201, type: require("./dto/auth-payload.dto").AuthPayload }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [login_input_1.LoginInput]),
+    __metadata("design:paramtypes", [login_dto_1.LoginInput]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 exports.AuthController = AuthController = __decorate([

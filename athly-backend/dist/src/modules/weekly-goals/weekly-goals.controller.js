@@ -17,8 +17,8 @@ const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const weekly_goals_service_1 = require("./weekly-goals.service");
-const create_weekly_goal_input_1 = require("./dto/create-weekly-goal.input");
-const update_weekly_goal_input_1 = require("./dto/update-weekly-goal.input");
+const create_weekly_goal_dto_1 = require("./dto/create-weekly-goal.dto");
+const update_weekly_goal_dto_1 = require("./dto/update-weekly-goal.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
@@ -72,7 +72,7 @@ __decorate([
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_model_1.UserModel, create_weekly_goal_input_1.CreateWeeklyGoalInput]),
+    __metadata("design:paramtypes", [user_model_1.UserModel, create_weekly_goal_dto_1.CreateWeeklyGoalInput]),
     __metadata("design:returntype", Promise)
 ], WeeklyGoalsController.prototype, "createWeeklyGoal", null);
 __decorate([
@@ -83,7 +83,7 @@ __decorate([
     __param(1, (0, common_1.Param)('uuid')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_model_1.UserModel, String, update_weekly_goal_input_1.UpdateWeeklyGoalInput]),
+    __metadata("design:paramtypes", [user_model_1.UserModel, String, update_weekly_goal_dto_1.UpdateWeeklyGoalInput]),
     __metadata("design:returntype", Promise)
 ], WeeklyGoalsController.prototype, "updateWeeklyGoal", null);
 __decorate([

@@ -2,7 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../users/users.service';
-import { RegisterUserInput } from './dto/register-user.input';
+import { RegisterUserInput } from './dto/register-user.dto';
 export declare class AuthService {
     private readonly prisma;
     private readonly usersService;

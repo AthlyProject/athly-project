@@ -12,7 +12,7 @@ import { IntegrationsService } from './integrations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
-import { StravaCallbackInput } from './dto/strava-callback.input';
+import { StravaCallbackInput } from './dto/strava-callback.dto';
 import { IntegrationModel } from './models/integration.model';
 
 @ApiTags('integrations')

@@ -6,7 +6,7 @@ import { Prisma, SportType, TrainingPlanStatus, WeeklyGoalStatus, WorkoutStatus 
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
-import { PlanNextWeekInput } from './dto/plan-next-week.input';
+import { PlanNextWeekInput } from './dto/plan-next-week.dto';
 import type { AiPlannerInput, PlannerResults, RunSummary } from './types/planner.types';
 
 @Injectable()

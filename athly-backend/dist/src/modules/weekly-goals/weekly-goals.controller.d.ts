@@ -1,6 +1,6 @@
 import { WeeklyGoalsService } from './weekly-goals.service';
-import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.input';
-import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.input';
+import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.dto';
+import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.dto';
 import { UserModel } from '../users/models/user.model';
 import { WeeklyGoalModel } from './models/weekly-goal.model';
 export declare class WeeklyGoalsController {

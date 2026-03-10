@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiCreatedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WeeklyGoalsService } from './weekly-goals.service';
-import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.input';
-import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.input';
+import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.dto';
+import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';

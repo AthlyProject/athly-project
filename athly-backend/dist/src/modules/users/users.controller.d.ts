@@ -1,5 +1,5 @@
 import { UsersService } from './users.service';
-import { UpdateProfileInput } from './dto/update-profile.input';
+import { UpdateProfileInput } from './dto/update-profile.dto';
 import { UserModel } from './models/user.model';
 export declare class UsersController {
     private readonly usersService;

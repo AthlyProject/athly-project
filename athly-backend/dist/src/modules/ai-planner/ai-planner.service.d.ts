@@ -1,7 +1,7 @@
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
-import { PlanNextWeekInput } from './dto/plan-next-week.input';
+import { PlanNextWeekInput } from './dto/plan-next-week.dto';
 export declare class AiPlannerService {
     private readonly prisma;
     private readonly stravaService;

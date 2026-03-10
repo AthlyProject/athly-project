@@ -11,7 +11,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { SportType, WorkoutStatus } from '@prisma/client';
-import { WorkoutBlockInput } from './workout-update-input';
+import { WorkoutBlockInput } from './workout-update.dto';
 
 export class CreateWorkoutInput {
   @IsString()

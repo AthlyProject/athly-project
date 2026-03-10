@@ -17,7 +17,7 @@ const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const users_service_1 = require("./users.service");
-const update_profile_input_1 = require("./dto/update-profile.input");
+const update_profile_dto_1 = require("./dto/update-profile.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("./models/user.model");
@@ -56,7 +56,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [user_model_1.UserModel,
-        update_profile_input_1.UpdateProfileInput]),
+        update_profile_dto_1.UpdateProfileInput]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
 exports.UsersController = UsersController = __decorate([

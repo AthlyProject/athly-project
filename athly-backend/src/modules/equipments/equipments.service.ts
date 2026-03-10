@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateEquipmentInput } from './dto/create-equipment.input';
-import { UpdateEquipmentInput } from './dto/update-equipment.input';
+import { CreateEquipmentInput } from './dto/create-equipment.dto';
+import { UpdateEquipmentInput } from './dto/update-equipment.dto';
 import { EquipmentModel } from './models/equipment.model';
 
 @Injectable()

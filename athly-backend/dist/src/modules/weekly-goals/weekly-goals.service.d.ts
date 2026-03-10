@@ -1,6 +1,6 @@
 import { PrismaService } from '../../database/prisma.service';
-import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.input';
-import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.input';
+import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.dto';
+import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.dto';
 import { WeeklyGoalModel } from './models/weekly-goal.model';
 export declare class WeeklyGoalsService {
     private readonly prisma;

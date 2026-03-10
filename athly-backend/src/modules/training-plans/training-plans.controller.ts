@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiCreatedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TrainingPlansService } from './training-plans.service';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
-import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
+import { CreateTrainingPlanInput } from './dto/create-training-plan.dto';
+import { UpdateTrainingPlanInput } from './dto/update-training-plan.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';

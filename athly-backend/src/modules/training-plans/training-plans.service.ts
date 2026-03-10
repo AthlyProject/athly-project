@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma, SportType } from '@prisma/client';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
-import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
+import { CreateTrainingPlanInput } from './dto/create-training-plan.dto';
+import { UpdateTrainingPlanInput } from './dto/update-training-plan.dto';
 import { TrainingPlanModel } from './models/training-plan.model';
 
 @Injectable()

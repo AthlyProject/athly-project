@@ -1,8 +1,8 @@
 import { WorkoutsService } from './workouts.service';
-import { SubmitWorkoutFeedbackInput } from './dto/submit-workout-feedback.input';
+import { SubmitWorkoutFeedbackInput } from './dto/submit-workout-feedback.dto';
 import { UserModel } from '../users/models/user.model';
-import { UpdateWorkoutInput } from './dto/workout-update-input';
-import { CreateWorkoutInput } from './dto/create-workout.input';
+import { UpdateWorkoutInput } from './dto/workout-update.dto';
+import { CreateWorkoutInput } from './dto/create-workout.dto';
 import { WorkoutModel, WorkoutFeedbackModel } from './models/workout.model';
 export declare class WorkoutsController {
     private readonly workoutsService;

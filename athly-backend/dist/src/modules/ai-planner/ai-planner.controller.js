@@ -17,7 +17,7 @@ const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const ai_planner_service_1 = require("./ai-planner.service");
-const plan_next_week_input_1 = require("./dto/plan-next-week.input");
+const plan_next_week_dto_1 = require("./dto/plan-next-week.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
@@ -39,7 +39,7 @@ __decorate([
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_model_1.UserModel, plan_next_week_input_1.PlanNextWeekInput]),
+    __metadata("design:paramtypes", [user_model_1.UserModel, plan_next_week_dto_1.PlanNextWeekInput]),
     __metadata("design:returntype", Promise)
 ], AiPlannerController.prototype, "planNextWeek", null);
 exports.AiPlannerController = AiPlannerController = __decorate([

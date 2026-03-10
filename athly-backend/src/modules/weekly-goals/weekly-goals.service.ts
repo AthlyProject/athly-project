@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, WeeklyGoalStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.input';
-import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.input';
+import { CreateWeeklyGoalInput } from './dto/create-weekly-goal.dto';
+import { UpdateWeeklyGoalInput } from './dto/update-weekly-goal.dto';
 import { WeeklyGoalModel } from './models/weekly-goal.model';
 
 @Injectable()

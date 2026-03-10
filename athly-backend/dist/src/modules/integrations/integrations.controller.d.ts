@@ -1,6 +1,6 @@
 import { IntegrationsService } from './integrations.service';
 import { UserModel } from '../users/models/user.model';
-import { StravaCallbackInput } from './dto/strava-callback.input';
+import { StravaCallbackInput } from './dto/strava-callback.dto';
 import { IntegrationModel } from './models/integration.model';
 export declare class IntegrationsController {
     private readonly integrationsService;

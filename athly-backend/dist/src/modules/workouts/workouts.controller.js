@@ -17,12 +17,12 @@ const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const workouts_service_1 = require("./workouts.service");
-const submit_workout_feedback_input_1 = require("./dto/submit-workout-feedback.input");
+const submit_workout_feedback_dto_1 = require("./dto/submit-workout-feedback.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
-const workout_update_input_1 = require("./dto/workout-update-input");
-const create_workout_input_1 = require("./dto/create-workout.input");
+const workout_update_dto_1 = require("./dto/workout-update.dto");
+const create_workout_dto_1 = require("./dto/create-workout.dto");
 const workout_model_1 = require("./models/workout.model");
 let WorkoutsController = class WorkoutsController {
     workoutsService;
@@ -83,7 +83,7 @@ __decorate([
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_model_1.UserModel, create_workout_input_1.CreateWorkoutInput]),
+    __metadata("design:paramtypes", [user_model_1.UserModel, create_workout_dto_1.CreateWorkoutInput]),
     __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "createWorkout", null);
 __decorate([
@@ -114,7 +114,7 @@ __decorate([
     __param(1, (0, common_1.Param)('workoutId')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_model_1.UserModel, String, submit_workout_feedback_input_1.SubmitWorkoutFeedbackInput]),
+    __metadata("design:paramtypes", [user_model_1.UserModel, String, submit_workout_feedback_dto_1.SubmitWorkoutFeedbackInput]),
     __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "submitWorkoutFeedback", null);
 __decorate([
@@ -144,7 +144,7 @@ __decorate([
     __param(0, (0, common_1.Param)('workoutId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, workout_update_input_1.UpdateWorkoutInput]),
+    __metadata("design:paramtypes", [String, workout_update_dto_1.UpdateWorkoutInput]),
     __metadata("design:returntype", Promise)
 ], WorkoutsController.prototype, "updateWorkout", null);
 exports.WorkoutsController = WorkoutsController = __decorate([

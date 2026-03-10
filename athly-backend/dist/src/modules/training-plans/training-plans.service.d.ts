@@ -1,6 +1,6 @@
 import { PrismaService } from '../../database/prisma.service';
-import { CreateTrainingPlanInput } from './dto/create-training-plan.input';
-import { UpdateTrainingPlanInput } from './dto/update-training-plan.input';
+import { CreateTrainingPlanInput } from './dto/create-training-plan.dto';
+import { UpdateTrainingPlanInput } from './dto/update-training-plan.dto';
 import { TrainingPlanModel } from './models/training-plan.model';
 export declare class TrainingPlansService {
     private readonly prisma;
