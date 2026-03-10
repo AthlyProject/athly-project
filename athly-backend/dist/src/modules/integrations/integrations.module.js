@@ -10,13 +10,16 @@ exports.IntegrationsModule = void 0;
 const common_1 = require("@nestjs/common");
 const integrations_service_1 = require("./integrations.service");
 const integrations_controller_1 = require("./integrations.controller");
+const strava_module_1 = require("../strava/strava.module");
 let IntegrationsModule = class IntegrationsModule {
 };
 exports.IntegrationsModule = IntegrationsModule;
 exports.IntegrationsModule = IntegrationsModule = __decorate([
     (0, common_1.Module)({
+        imports: [strava_module_1.StravaModule],
         controllers: [integrations_controller_1.IntegrationsController],
         providers: [integrations_service_1.IntegrationsService],
+        exports: [integrations_service_1.IntegrationsService],
     })
 ], IntegrationsModule);
 //# sourceMappingURL=integrations.module.js.map

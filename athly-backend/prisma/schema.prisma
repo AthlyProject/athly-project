@@ -107,9 +107,10 @@ model Workout {
   title          String
   description    String?
   blocks         Json
-  status         WorkoutStatus
-  intensity      Int?
-  createdAt      DateTime      @default(now()) @map("created_at")
+  status           WorkoutStatus
+  intensity        Int?
+  stravaActivityId String?       @unique @map("strava_activity_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -155,11 +156,16 @@ model WorkoutFeedback {
 }
 
 model Integration {
-  id        String          @id
-  name      String
-  icon      String
-  connected Boolean
-  type      IntegrationType
+  id              String          @id @default(uuid())
+  name            String
+  icon            String
+  connected       Boolean         @default(false)
+  type            IntegrationType
+  accessToken     String?         @map("access_token")
+  refreshToken    String?         @map("refresh_token")
+  tokenExpiresAt  DateTime?       @map("token_expires_at")
+  stravaAthleteId String?         @map("strava_athlete_id")
+  scope           String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @map("user_id")

@@ -13,71 +13,106 @@ function classifyAthlete(avgPace) {
         return 'unknown';
     const totalSec = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
     if (totalSec > 345)
-        return 'Beginner (slower than 5:45/km) — prioritize volume and consistency';
+        return 'Iniciante (mais lento que 5:45/km) — priorizar volume e consistência';
     if (totalSec > 312)
-        return 'Progressing (5:13–5:44/km) — increase interval intensity';
-    return 'Goal within reach (≤ 5:12/km) — refine race pace and pacing strategy';
+        return 'Em evolução (5:13–5:44/km) — aumentar intensidade dos intervalos';
+    return 'Meta ao alcance (≤ 5:12/km) — refinar o pace de corrida e estratégia de ritmo';
 }
-function buildAssessmentPrompt(weekDates) {
+const EFFORT_ZONES = `
+<effort_zones>
+| RPE | Zona            | Descrição                                          | Uso típico                   |
+|-----|-----------------|----------------------------------------------------|------------------------------|
+| 2-3 | Recuperação     | Muito fácil, conversa completa sem dificuldade     | Aquecimento, volta à calma   |
+| 4-5 | Aeróbico/Fácil  | Confortável, fala frases completas                 | Corridas de base             |
+| 6   | Moderado        | Frases curtas, esforço perceptível                 | Corridas progressivas        |
+| 7   | Limiar Lático   | Difícil, apenas frases curtíssimas                 | Intervalos de tempo/tempo    |
+| 8-9 | Intenso         | Muito difícil, palavras isoladas                   | Intervalos de velocidade     |
+| 10  | Máximo          | All-out, sem falar                                 | Sprints curtos apenas        |
+</effort_zones>`;
+function buildAssessmentPrompt(weekDates, trainingDays) {
+    const restDays = 7 - trainingDays;
+    const workoutTemplates = buildAssessmentWorkoutTemplates(trainingDays);
     return `<role>
-You are an expert running coach onboarding a new athlete who has no running history recorded on Strava yet.
-Your goal is to design 5 assessment workouts spread across the next week to safely measure their current fitness level before prescribing a personalised training plan.
-Tone: welcoming, encouraging, and clear — this athlete is just starting their journey.
+Você é um treinador de corrida experiente recebendo um novo atleta que ainda não tem histórico de corridas registrado no Strava.
+Seu objetivo é criar ${trainingDays} treinos de avaliação distribuídos ao longo da próxima semana para medir com segurança o nível de condicionamento físico atual antes de prescrever um plano de treino personalizado.
+Tom: acolhedor, encorajador e claro — este atleta está iniciando sua jornada.
 </role>
 
-<context>
-The athlete has no previous running data available. Before creating a personalised plan aimed at running 5 km in under 26 minutes, you must first assess:
-1. Their aerobic base (easy-pace run)
-2. Their lactate threshold (tempo effort)
-3. Their speed ceiling (short intervals)
-4. Their muscular endurance (longer easy run)
-5. Their recovery capacity (light jog or walk-run)
+<language>
+OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco, fitnessInsights e o campo period.
+Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
+</language>
 
-The remaining 2 days of the week must be full rest days.
-Week to plan: ${weekDates[0]} (Monday) through ${weekDates[6]} (Sunday).
+<context>
+O atleta não possui dados de corrida anteriores. Antes de criar um plano personalizado com o objetivo de correr 5 km em menos de 26 minutos, é necessário avaliar:
+1. A base aeróbica (corrida em ritmo fácil)
+2. O limiar lático (esforço de tempo)
+3. O teto de velocidade (intervalos curtos)
+4. A resistência muscular (corrida longa fácil)
+5. A capacidade de recuperação (trote leve ou corrida-caminhada) — apenas se trainingDays >= 5
+
+Os ${restDays} dias restantes da semana devem ser dias de descanso completo.
+Semana a planejar: ${weekDates[0]} (Segunda) até ${weekDates[6]} (Domingo).
 </context>
 
+${EFFORT_ZONES}
+
+<assessment_workouts>
+Estes são os treinos de avaliação que você deve distribuir nos ${trainingDays} dias de treino:
+${workoutTemplates}
+
+Distribua os treinos de forma inteligente ao longo da semana:
+- Nunca coloque dois treinos intensos (RPE >= 7) em dias consecutivos.
+- Alterne sempre entre dias de treino e descanso quando possível.
+- O treino de velocidade (intervalos) deve vir após pelo menos 1 dia de descanso ou treino fácil.
+</assessment_workouts>
+
 <constraints>
-- Generate EXACTLY 5 workout days and 2 rest days — 7 entries total.
-- Keep all distances conservative (1–5 km) since there is no baseline data.
-- Use RPE (1–10 scale) for effort guidance since there is no heart rate history.
-- sportType must be exactly one of: "running" | "walking" | "other". Use "running" for workout days, "other" for rest days.
-- intensity must be a number from 1 to 10. Rest days = 1, easy sessions = 3, moderate = 6, high = 9.
-- trend must be "maintaining" (no history to determine otherwise).
-- Set runsAnalyzed to 0, period to "No data", avgDistanceKm to 0, avgPace to "N/A", avgHeartRate to null, totalDistanceKm to 0.
-- fitnessInsights must explain that no data was found and that these 5 sessions are an assessment baseline.
-- blocks must be an array of objects with: type ("warmup"|"main"|"cooldown"|"rest"), and any applicable: distanceKm, durationMinutes, targetPace, instructions.
-- Rest days must have blocks: [{ "type": "rest", "instructions": "Full rest day. No running." }].
+- Gere EXATAMENTE ${trainingDays} dias de treino e ${restDays} dias de descanso — 7 entradas no total.
+- Mantenha todas as distâncias conservadoras (1–6 km) já que não há dados de linha de base.
+- Use RPE (escala 1–10) para guia de esforço, pois não há histórico de frequência cardíaca.
+- sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
+- intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 8.
+- trend deve ser "maintaining" (sem histórico para determinar).
+- Defina runsAnalyzed como 0, period como "Sem dados", avgDistanceKm como 0, avgPace como "N/A", avgHeartRate como null, totalDistanceKm como 0.
+- fitnessInsights deve explicar em português que nenhum dado foi encontrado e que essas sessões são a linha de base de avaliação.
+- blocks deve ser um array de objetos com: type ("warmup"|"main"|"cooldown"|"rest"), e quando aplicável: distanceKm, durationMinutes, targetPace, instructions.
+- OBRIGATÓRIO para blocos "warmup": durationMinutes >= 8 OU distanceKm >= 1.0.
+- OBRIGATÓRIO para blocos "main": durationMinutes >= 10 OU distanceKm >= 1.0.
+- OBRIGATÓRIO para blocos "cooldown": durationMinutes >= 5 OU distanceKm >= 0.5.
+- Para blocos "main" de intervalos: especifique no campo instructions o número de repetições, distância por repetição, RPE alvo e tempo de recuperação entre as repetições.
+- Dias de descanso devem ter blocks: [{ "type": "rest", "instructions": "Dia de descanso completo. Sem corrida." }].
+- Como não há dados históricos, NÃO prescreva paces específicos no campo targetPace. Use RPE e descrições de esforço nas instructions. Você PODE incluir faixas de pace estimadas como referência (ex: "algo em torno de 6:30-7:00/km se parecer RPE 4-5"), mas deixe claro que o atleta deve priorizar o esforço percebido.
 </constraints>
 
 <output_schema>
-Return ONLY this JSON — no markdown fences, no extra text:
+Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
     "runsAnalyzed": 0,
-    "period": "No data",
+    "period": "Sem dados",
     "avgDistanceKm": 0,
     "avgPace": "N/A",
     "avgHeartRate": null,
     "totalDistanceKm": 0,
     "trend": "maintaining",
-    "fitnessInsights": "<explanation that no Strava data was found and these 5 sessions are the assessment baseline>"
+    "fitnessInsights": "<explicação em português de que nenhum dado Strava foi encontrado e que essas sessões são a linha de base de avaliação>"
   },
   "weekPlan": [
     {
       "date": "<YYYY-MM-DD>",
       "dayOfWeek": "<Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday>",
-      "title": "<workout title>",
-      "description": "<overall session description with RPE target>",
+      "title": "<título do treino em português>",
+      "description": "<descrição geral da sessão com meta de RPE em português>",
       "sportType": "<running|walking|other>",
-      "intensity": <number 1-10>,
+      "intensity": <número 1-10>,
       "blocks": [
         {
           "type": "<warmup|main|cooldown|rest>",
-          "distanceKm": <number — optional>,
-          "durationMinutes": <number — optional>,
-          "targetPace": "<M:SS /km — optional>",
-          "instructions": "<coaching instruction>"
+          "distanceKm": <número — opcional>,
+          "durationMinutes": <número — opcional>,
+          "targetPace": "<M:SS /km — opcional>",
+          "instructions": "<instrução de treino em português>"
         }
       ]
     }
@@ -85,89 +120,133 @@ Return ONLY this JSON — no markdown fences, no extra text:
 }
 </output_schema>`;
 }
+function buildAssessmentWorkoutTemplates(trainingDays) {
+    const templates = [
+        `1. Teste de Base Aeróbica (fácil):
+   - Aquecimento: 8 min caminhada/trote suave (RPE 2-3)
+   - Principal: 20-25 min corrida fácil (RPE 4-5, ritmo conversacional — consiga falar frases completas)
+   - Volta à calma: 5 min caminhada (RPE 2)
+   - Objetivo: estabelecer o pace de base fácil do atleta. Sem pressão de velocidade.`,
+        `2. Teste de Limiar Lático (tempo):
+   - Aquecimento: 10 min trote fácil (RPE 3-4)
+   - Principal: 15 min em ritmo "difícil mas sustentável" (RPE 7 — consiga dizer apenas frases curtíssimas)
+   - Volta à calma: 5 min caminhada (RPE 2)
+   - Objetivo: estimar o pace de limiar lático. Instrua o atleta a manter o mesmo ritmo durante todo o bloco principal.`,
+        `3. Avaliação de Velocidade (intervalos):
+   - Aquecimento: 10 min trote fácil (RPE 3)
+   - Principal: 6 repetições de 400m (RPE 8-9 — muito difícil, palavras isoladas), com 90 segundos de caminhada de recuperação entre cada repetição
+   - Volta à calma: 5 min caminhada (RPE 2)
+   - Objetivo: medir o teto de velocidade e a capacidade de recuperação. Instrua o atleta a correr cada repetição no máximo esforço sustentável.`,
+        `4. Teste de Resistência (progressivo):
+   - Aquecimento: 8 min trote fácil (RPE 3)
+   - Principal: 30-35 min corrida iniciando em RPE 4, progredindo para RPE 6 nos últimos 10 min
+   - Volta à calma: 5 min caminhada (RPE 2)
+   - Objetivo: avaliar resistência muscular e capacidade de manter o ritmo. O atleta deve sentir os últimos 10 min como "moderadamente difícil".`,
+        `5. Recuperação e Técnica (strides):
+   - Aquecimento: 8 min trote muito leve (RPE 2-3)
+   - Principal: 20 min trote fácil (RPE 3) com 4 acelerações de 20 segundos (strides a RPE 7) no final, com 60 segundos de caminhada entre cada uma
+   - Volta à calma: 5 min caminhada (RPE 2)
+   - Objetivo: avaliar a forma de corrida sob fadiga leve e confirmar a capacidade de recuperação.`,
+    ];
+    return templates.slice(0, trainingDays).join('\n\n');
+}
 function buildPlannerPrompt(input) {
-    const { runSummaries, avgDistKm, avgPace, avgHR, maxDistKm, totalDistKm, weekDates } = input;
+    const { runSummaries, avgDistKm, avgPace, avgHR, maxDistKm, totalDistKm, weekDates, trainingDays } = input;
+    const restDays = 7 - trainingDays;
     const athleteClass = classifyAthlete(avgPace);
     const hrCtx = avgHR
         ? `${avgHR} bpm`
-        : 'not available — prescribe effort by RPE (1–10 scale)';
+        : 'não disponível — prescreva esforço por RPE (escala 1–10)';
     return `<role>
-You are an expert running coach. Your athlete's goal is to run ${GOAL.distanceKm}km in under ${GOAL.targetTimeMin} minutes (target pace: ${GOAL.targetPace}).
-Tone: direct, motivating, and data-driven — like a track and field coach.
-Current athlete classification: ${athleteClass}.
+Você é um treinador de corrida experiente. O objetivo do seu atleta é correr ${GOAL.distanceKm}km em menos de ${GOAL.targetTimeMin} minutos (pace alvo: ${GOAL.targetPace}).
+Tom: direto, motivador e orientado por dados — como um treinador de atletismo.
+Classificação atual do atleta: ${athleteClass}.
 </role>
 
+<language>
+OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco e fitnessInsights.
+Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
+</language>
+
 <athlete_data>
-Recent runs analyzed (last ${runSummaries.length} runs):
+Corridas recentes analisadas (últimas ${runSummaries.length} corridas):
 ${JSON.stringify(runSummaries, null, 2)}
 
-Summary stats:
-- Average distance: ${avgDistKm.toFixed(2)} km
-- Average pace: ${avgPace}
-- Average heart rate: ${hrCtx}
-- Longest recent run: ${maxDistKm.toFixed(2)} km
-- Total distance analyzed: ${totalDistKm.toFixed(2)} km
-- Week to plan: ${weekDates[0]} (Monday) through ${weekDates[6]} (Sunday)
+Estatísticas resumidas:
+- Distância média: ${avgDistKm.toFixed(2)} km
+- Pace médio: ${avgPace}
+- Frequência cardíaca média: ${hrCtx}
+- Maior corrida recente: ${maxDistKm.toFixed(2)} km
+- Distância total analisada: ${totalDistKm.toFixed(2)} km
+- Semana a planejar: ${weekDates[0]} (Segunda) até ${weekDates[6]} (Domingo)
+- Dias de treino disponíveis: ${trainingDays} dias (${restDays} dias de descanso)
 </athlete_data>
 
 <task>
-1. Analyze the athlete's fitness level, pace trend, and training patterns.
-2. Build a balanced 7-day plan (${weekDates[0]} to ${weekDates[6]}) following periodization principles toward the sub-${GOAL.targetTimeMin}min ${GOAL.distanceKm}km goal.
-3. Derive all distances and paces from the athlete's actual data — never invent numbers.
-4. Return ONLY the JSON object described in <output_schema>. No markdown, no prose, no extra keys.
+1. Analise o nível de condicionamento físico, tendência de pace e padrões de treino do atleta.
+2. Monte um plano equilibrado de 7 dias (${weekDates[0]} a ${weekDates[6]}) seguindo princípios de periodização em direção ao objetivo de sub-${GOAL.targetTimeMin}min nos ${GOAL.distanceKm}km.
+3. Derive todas as distâncias e paces dos dados reais do atleta — nunca invente números.
+4. Respeite ESTRITAMENTE a disponibilidade: inclua EXATAMENTE ${trainingDays} dias de treino e ${restDays} dias de descanso.
+5. Retorne APENAS o objeto JSON descrito em <output_schema>. Sem markdown, sem prosa, sem keys extras.
 </task>
 
+${EFFORT_ZONES}
+
 <reference_paces>
-| Session type     | Target pace  |
-|------------------|--------------|
-| Intervals (400m) | 4:45–5:00/km |
-| Tempo run        | 5:12–5:20/km |
-| Long run         | 6:00–6:30/km |
-| Recovery         | 6:30–7:00/km |
-| Rest day         | —            |
+| Tipo de sessão     | Pace alvo    |
+|--------------------|--------------|
+| Intervalos (400m)  | 4:45–5:00/km |
+| Tempo run          | 5:12–5:20/km |
+| Corrida longa      | 6:00–6:30/km |
+| Recuperação        | 6:30–7:00/km |
+| Descanso           | —            |
 </reference_paces>
 
 <constraints>
-- Never increase weekly volume by more than 10% above the athlete's recent average.
-- Interval sessions must include a 10-min warm-up and 5-min cool-down (reflected in blocks).
-- If HR data is unavailable, prescribe effort by RPE in the instructions field.
-- Rest days are non-negotiable — include at least one full rest day.
-- weekPlan must contain EXACTLY 7 entries, one per day from ${weekDates[0]} to ${weekDates[6]}.
-- sportType must be exactly one of: "running" | "walking" | "other". Use "running" for workout days, "other" for rest days.
-- intensity must be a number from 1 to 10. Rest days = 1, easy sessions = 3, moderate = 6, high = 9.
-- trend must be exactly one of: "improving (volume)" | "improving (intensity)" | "maintaining" | "declining".
-- blocks must be an array of objects with: type ("warmup"|"main"|"cooldown"|"rest"), and any applicable: distanceKm, durationMinutes, targetPace, instructions.
-- Rest days must have blocks: [{ "type": "rest", "instructions": "Full rest day. No running." }].
+- Nunca aumente o volume semanal em mais de 10% acima da média recente do atleta.
+- Sessões de intervalos devem incluir aquecimento de 10 min e volta à calma de 5 min (refletido nos blocks).
+- Se dados de FC não estiverem disponíveis, prescreva o esforço por RPE no campo instructions.
+- Dias de descanso são inegociáveis — inclua EXATAMENTE ${restDays} dias de descanso completo.
+- weekPlan deve conter EXATAMENTE 7 entradas, uma por dia de ${weekDates[0]} a ${weekDates[6]}.
+- sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
+- intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 9.
+- trend deve ser exatamente um de: "improving (volume)" | "improving (intensity)" | "maintaining" | "declining".
+- blocks deve ser um array de objetos com: type ("warmup"|"main"|"cooldown"|"rest"), e quando aplicável: distanceKm, durationMinutes, targetPace, instructions.
+- OBRIGATÓRIO para blocos "main": durationMinutes >= 20 OU distanceKm >= 2.0. Nunca deixe blocos "main" vazios.
+- Corridas longas: mínimo de 30 minutos no bloco "main".
+- Corridas de recuperação/fácil: mínimo de 20 minutos no bloco "main".
+- Sessões de intervalos: especifique no campo instructions o número de repetições, distância, pace alvo e tempo de descanso entre as repetições.
+- Dias de descanso devem ter blocks: [{ "type": "rest", "instructions": "Dia de descanso completo. Sem corrida." }].
 </constraints>
 
 <output_schema>
-Return ONLY this JSON — no markdown fences, no extra text:
+Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
-    "runsAnalyzed": <number>,
-    "period": "<date of first run> — <date of last run>",
-    "avgDistanceKm": <number>,
+    "runsAnalyzed": <número>,
+    "period": "<data da primeira corrida> — <data da última corrida>",
+    "avgDistanceKm": <número>,
     "avgPace": "<M:SS /km>",
-    "avgHeartRate": <number | null>,
-    "totalDistanceKm": <number>,
+    "avgHeartRate": <número | null>,
+    "totalDistanceKm": <número>,
     "trend": "<improving (volume) | improving (intensity) | maintaining | declining>",
-    "fitnessInsights": "<2–3 sentences: current fitness diagnosis, key pattern, and one concrete focus area to reach sub-${GOAL.targetTimeMin}min>"
+    "fitnessInsights": "<2–3 frases em português: diagnóstico atual do condicionamento, padrão-chave identificado e uma área de foco concreta para chegar ao sub-${GOAL.targetTimeMin}min>"
   },
   "weekPlan": [
     {
       "date": "<YYYY-MM-DD>",
       "dayOfWeek": "<Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday>",
-      "title": "<workout title>",
-      "description": "<overall session description with specific coaching instruction>",
+      "title": "<título do treino em português>",
+      "description": "<descrição geral da sessão com instrução específica de treino em português>",
       "sportType": "<running|walking|other>",
-      "intensity": <number 1-10>,
+      "intensity": <número 1-10>,
       "blocks": [
         {
           "type": "<warmup|main|cooldown|rest>",
-          "distanceKm": <number — optional>,
-          "durationMinutes": <number — optional>,
-          "targetPace": "<M:SS /km — optional>",
-          "instructions": "<specific coaching instruction for this block>"
+          "distanceKm": <número — opcional>,
+          "durationMinutes": <número — opcional>,
+          "targetPace": "<M:SS /km — opcional>",
+          "instructions": "<instrução específica de treino em português>"
         }
       ]
     }

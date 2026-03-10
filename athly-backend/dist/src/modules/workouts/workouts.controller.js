@@ -35,6 +35,9 @@ let WorkoutsController = class WorkoutsController {
     createWorkout(user, input) {
         return this.workoutsService.createWorkout(user.id, input);
     }
+    workoutsByTrainingPlan(user, trainingPlanId) {
+        return this.workoutsService.getWorkoutsByTrainingPlan(user.id, trainingPlanId);
+    }
     workout(user, id) {
         return this.workoutsService.getWorkoutById(user.id, id);
     }
@@ -74,6 +77,14 @@ __decorate([
     __metadata("design:paramtypes", [user_model_1.UserModel, create_workout_input_1.CreateWorkoutInput]),
     __metadata("design:returntype", void 0)
 ], WorkoutsController.prototype, "createWorkout", null);
+__decorate([
+    (0, common_1.Get)('training-plan/:trainingPlanId'),
+    __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('trainingPlanId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_model_1.UserModel, String]),
+    __metadata("design:returntype", void 0)
+], WorkoutsController.prototype, "workoutsByTrainingPlan", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),

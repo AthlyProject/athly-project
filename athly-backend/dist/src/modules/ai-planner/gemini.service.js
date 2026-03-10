@@ -44,9 +44,9 @@ let GeminiService = class GeminiService {
         }
         return this.parseAndValidate(responseText);
     }
-    async generateAssessmentPlan(weekDates) {
+    async generateAssessmentPlan(weekDates, trainingDays) {
         const model = this.getModel();
-        const prompt = (0, planner_prompt_1.buildAssessmentPrompt)(weekDates);
+        const prompt = (0, planner_prompt_1.buildAssessmentPrompt)(weekDates, trainingDays);
         let responseText;
         try {
             const result = await model.generateContent(prompt);

@@ -45,6 +45,7 @@ export interface Workout {
   intensity?: number
   trainingPlanId?: string
   weeklyGoalId?: string
+  stravaActivityId?: string | null
 }
 
 // Weekly Goal (backend: API exposes id as uuid)
@@ -65,7 +66,15 @@ export interface Week {
   workouts: Workout[]
 }
 
-// Training Plan
+// Backend Training Plan (as returned by API — no weeks)
+export interface BackendTrainingPlan {
+  id: string
+  startDate: string
+  objective?: string
+  status?: string
+}
+
+// Training Plan (frontend assembled — includes weeks)
 export interface TrainingPlan {
   id: string
   startDate: string
@@ -87,6 +96,7 @@ export interface Integration {
   icon: string
   connected: boolean
   type: IntegrationType
+  stravaAthleteId?: string | null
 }
 
 // Input types

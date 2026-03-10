@@ -6,6 +6,6 @@ export declare class GeminiService {
     constructor(configService: ConfigService);
     private getModel;
     generatePlan(input: AiPlannerInput): Promise<PlannerResults>;
-    generateAssessmentPlan(weekDates: string[]): Promise<PlannerResults>;
+    generateAssessmentPlan(weekDates: string[], trainingDays: number): Promise<PlannerResults>;
     private parseAndValidate;
 }

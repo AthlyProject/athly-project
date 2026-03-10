@@ -33,6 +33,7 @@ export declare class AiPlannerController {
             blocks: import("@prisma/client/runtime/client").JsonValue;
             status: import("@prisma/client").$Enums.WorkoutStatus;
             intensity: number | null;
+            stravaActivityId: string | null;
         }[];
         analysis: import("./types/planner.types").RunAnalysis;
         isAssessment: boolean;

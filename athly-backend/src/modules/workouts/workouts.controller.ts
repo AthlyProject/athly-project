@@ -27,6 +27,14 @@ export class WorkoutsController {
     return this.workoutsService.createWorkout(user.id, input);
   }
 
+  @Get('training-plan/:trainingPlanId')
+  workoutsByTrainingPlan(
+    @CurrentUser() user: UserModel,
+    @Param('trainingPlanId') trainingPlanId: string,
+  ) {
+    return this.workoutsService.getWorkoutsByTrainingPlan(user.id, trainingPlanId);
+  }
+
   @Get(':id')
   workout(@CurrentUser() user: UserModel, @Param('id') id: string) {
     return this.workoutsService.getWorkoutById(user.id, id);

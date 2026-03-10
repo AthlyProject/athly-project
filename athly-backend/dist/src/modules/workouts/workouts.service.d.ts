@@ -9,6 +9,7 @@ export declare class WorkoutsService {
     getTodayWorkout(userId: string): Promise<WorkoutModel | null>;
     getWorkoutById(userId: string, id: string): Promise<WorkoutModel | null>;
     createWorkout(userId: string, input: CreateWorkoutInput): Promise<WorkoutModel>;
+    getWorkoutsByTrainingPlan(userId: string, trainingPlanId: string): Promise<WorkoutModel[]>;
     getWorkoutHistory(userId: string): Promise<{
         status: "done";
         id: string;
@@ -18,6 +19,7 @@ export declare class WorkoutsService {
         description?: string;
         blocks: import("./models/workout.model").WorkoutBlock[];
         intensity?: number;
+        stravaActivityId?: string | null;
     }[]>;
     submitWorkoutFeedback(userId: string, workoutId: string, input: SubmitWorkoutFeedbackInput): Promise<WorkoutFeedbackModel>;
     completeWorkout(userId: string, workoutId: string): Promise<WorkoutModel>;

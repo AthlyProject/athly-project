@@ -5,4 +5,5 @@ export declare class IntegrationModel {
     icon: string;
     connected: boolean;
     type: IntegrationType;
+    stravaAthleteId?: string | null;
 }

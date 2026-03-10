@@ -15,6 +15,7 @@ export declare class WorkoutModel {
     blocks: WorkoutBlock[];
     status: WorkoutStatus;
     intensity?: number;
+    stravaActivityId?: string | null;
 }
 export declare class WeekModel {
     number: number;

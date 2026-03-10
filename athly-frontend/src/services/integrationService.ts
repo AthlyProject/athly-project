@@ -3,8 +3,7 @@ import { api } from './api'
 
 export async function getIntegrations(): Promise<Integration[]> {
   try {
-    const integrations = await api.getIntegrations()
-    return integrations
+    return await api.getIntegrations()
   } catch (error) {
     console.error('Failed to get integrations:', error)
     return []
@@ -12,11 +11,30 @@ export async function getIntegrations(): Promise<Integration[]> {
 }
 
 export async function connectIntegration(integrationId: string): Promise<Integration> {
-  const integration = await api.connectIntegration(integrationId)
-  return integration
+  return api.connectIntegration(integrationId)
 }
 
 export async function disconnectIntegration(integrationId: string): Promise<Integration> {
-  const integration = await api.disconnectIntegration(integrationId)
-  return integration
+  return api.disconnectIntegration(integrationId)
+}
+
+export async function initiateStravaOAuth(): Promise<void> {
+  const { url } = await api.getStravaAuthUrl()
+  window.location.href = url
+}
+
+export async function handleStravaCallback(code: string): Promise<Integration> {
+  return api.handleStravaCallback(code)
+}
+
+export async function syncStrava(): Promise<{ synced: number }> {
+  return api.syncStrava()
+}
+
+export async function disconnectStrava(): Promise<void> {
+  return api.disconnectStrava()
+}
+
+export function isStravaConnected(integrations: Integration[]): boolean {
+  return integrations.some((i) => i.type === 'strava' && i.connected)
 }

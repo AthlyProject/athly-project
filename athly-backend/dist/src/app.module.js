@@ -20,6 +20,7 @@ const equipments_module_1 = require("./modules/equipments/equipments.module");
 const weekly_goals_module_1 = require("./modules/weekly-goals/weekly-goals.module");
 const training_plans_module_1 = require("./modules/training-plans/training-plans.module");
 const ai_planner_module_1 = require("./modules/ai-planner/ai-planner.module");
+const strava_module_1 = require("./modules/strava/strava.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             weekly_goals_module_1.WeeklyGoalsModule,
             training_plans_module_1.TrainingPlansModule,
             ai_planner_module_1.AiPlannerModule,
+            strava_module_1.StravaModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

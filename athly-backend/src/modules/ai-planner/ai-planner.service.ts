@@ -18,7 +18,6 @@ export class AiPlannerService {
   ) {}
 
   async planNextWeek(userId: string, input: PlanNextWeekInput) {
-    const numberOfRuns = input.numberOfRuns ?? 5;
     const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
     const weekDates = this.getWeekDates(startMonday);
     const weekStartDate = new Date(weekDates[0]!);
@@ -30,23 +29,30 @@ export class AiPlannerService {
     // 2. Check for existing WeeklyGoal overlap for this week
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
 
-    // 3. Fetch recent Strava activities
-    const activities = await this.stravaService.getRecentActivities(30);
+    // 3. Fetch user availability from DB
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { availability: true },
+    });
+    const trainingDays = user?.availability ?? 5;
+
+    // 4. Fetch recent Strava activities (per-user token via IntegrationsService)
+    const activities = await this.stravaService.getRecentActivities(userId, 30);
     const runs = activities
       .filter(
         (a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun',
       )
-      .slice(0, numberOfRuns);
+      .slice(0, trainingDays);
 
-    // 4. Build AI input or use assessment path
+    // 5. Build AI input or use assessment path
     let plannerResult: PlannerResults;
     let isAssessment = false;
 
     if (runs.length === 0) {
       isAssessment = true;
-      plannerResult = await this.geminiService.generateAssessmentPlan(weekDates);
+      plannerResult = await this.geminiService.generateAssessmentPlan(weekDates, trainingDays);
     } else {
-      const aiInput = this.buildAiInput(runs, weekDates);
+      const aiInput = this.buildAiInput(runs, weekDates, trainingDays);
       plannerResult = await this.geminiService.generatePlan(aiInput);
     }
 
@@ -155,6 +161,7 @@ export class AiPlannerService {
   private buildAiInput(
     runs: Awaited<ReturnType<InstanceType<typeof StravaService>['getRecentActivities']>>,
     weekDates: string[],
+    trainingDays: number,
   ): AiPlannerInput {
     const totalDist = runs.reduce((sum, r) => sum + (r.distance ?? 0), 0);
     const avgDistKm = totalDist / runs.length / 1000;
@@ -188,6 +195,7 @@ export class AiPlannerService {
       maxDistKm,
       totalDistKm,
       weekDates,
+      trainingDays,
     };
   }
 

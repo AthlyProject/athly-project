@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Section } from "@/components/layout";
 import { GradientText } from "@/components/ui/GradientText";
 import { Button } from "@/components/ui/Button";
 import { TrainingPlanCalendar } from "@/components/Calendar/TrainingPlanCalendar";
-import { mockWeeklyGoals, mockWorkouts } from "@/mocks/data";
+import { getCalendarData } from "@/services/workoutService";
+import type { WeeklyGoal, Workout } from "@/types";
 
 export function TrainingPlanCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    getCalendarData()
+      .then((data) => {
+        if (data) {
+          setWeeklyGoals(data.weeklyGoals);
+          setWorkouts(data.workouts);
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const goPrev = () => {
     setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1));
@@ -56,11 +72,17 @@ export function TrainingPlanCalendarPage() {
         </p>
       </Section>
 
-      <TrainingPlanCalendar
-        currentMonth={currentMonth}
-        weeklyGoals={mockWeeklyGoals}
-        workouts={mockWorkouts}
-      />
+      {isLoading ? (
+        <div className="py-16 text-center text-[var(--color-text-tertiary)]">
+          Carregando calendário...
+        </div>
+      ) : (
+        <TrainingPlanCalendar
+          currentMonth={currentMonth}
+          weeklyGoals={weeklyGoals}
+          workouts={workouts}
+        />
+      )}
     </div>
   );
 }

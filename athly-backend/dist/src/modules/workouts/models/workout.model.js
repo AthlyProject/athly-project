@@ -18,6 +18,7 @@ class WorkoutModel {
     blocks;
     status;
     intensity;
+    stravaActivityId;
 }
 exports.WorkoutModel = WorkoutModel;
 class WeekModel {

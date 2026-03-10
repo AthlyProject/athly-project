@@ -31,6 +31,27 @@ export function WorkoutCard({ workout, compact }: WorkoutCardProps) {
     }
   }
 
+  const getOriginBadge = () => {
+    if (workout.stravaActivityId) {
+      return (
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+          style={{ backgroundColor: '#FC4C02', color: '#fff' }}
+        >
+          🏃 Strava
+        </span>
+      )
+    }
+    if (workout.status === 'scheduled' || workout.weeklyGoalId) {
+      return (
+        <Badge variant="primary" size="sm">
+          ✨ IA
+        </Badge>
+      )
+    }
+    return null
+  }
+
   return (
     <Link to={`/workout/${workout.id}`} className="block">
       <Card className="group hover:border-[var(--color-primary-500)] hover:shadow-[var(--shadow-neon)] transition-all duration-300">
@@ -39,6 +60,7 @@ export function WorkoutCard({ workout, compact }: WorkoutCardProps) {
             <div className="flex flex-wrap items-center gap-2">
               <SportBadge type={workout.sportType} />
               {getStatusBadge()}
+              {getOriginBadge()}
             </div>
             <h3 className="mt-3 font-bold text-[var(--color-text-primary)] text-lg group-hover:text-gradient transition-all">
               {workout.title}

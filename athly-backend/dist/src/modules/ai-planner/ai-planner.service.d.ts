@@ -37,6 +37,7 @@ export declare class AiPlannerService {
             blocks: Prisma.JsonValue;
             status: import("@prisma/client").$Enums.WorkoutStatus;
             intensity: number | null;
+            stravaActivityId: string | null;
         }[];
         analysis: import("./types/planner.types").RunAnalysis;
         isAssessment: boolean;

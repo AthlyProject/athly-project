@@ -1,4 +1,4 @@
-import type { RunSummary } from "../types/planner.js";
+import type { RunSummary } from '../types/planner.js';
 
 /**
  * Builds a prompt for athletes with no running history in Strava.
@@ -6,7 +6,7 @@ import type { RunSummary } from "../types/planner.js";
  * before creating a personalised plan.
  */
 export function buildAssessmentPrompt(weekDates: string[]): string {
-    return `<role>
+  return `<role>
 You are an expert running coach onboarding a new athlete who has no running history recorded on Strava yet.
 Your goal is to design 5 assessment workouts spread across the next week to safely measure their current fitness level before prescribing a personalised training plan.
 Tone: welcoming, encouraging, and clear — this athlete is just starting their journey.
@@ -80,7 +80,7 @@ export interface AiPlannerInput {
 const GOAL = {
   distanceKm: 5,
   targetTimeMin: 26,
-  targetPace: "5:12/km",
+  targetPace: '5:12/km',
 } as const;
 
 /**
@@ -89,33 +89,19 @@ const GOAL = {
  */
 function classifyAthlete(avgPace: string): string {
   const match = avgPace.match(/^(\d+):(\d{2})/);
-  if (!match) return "unknown";
-  const totalSec = parseInt(match[1]!, 10) * 60 + parseInt(match[2]!, 10);
-  if (totalSec > 345)
-    return "Beginner (slower than 5:45/km) — prioritize volume and consistency";
-  if (totalSec > 312)
-    return "Progressing (5:13–5:44/km) — increase interval intensity";
-  return "Goal within reach (≤ 5:12/km) — refine race pace and pacing strategy";
-}
-
+  if (!match) return 'unknown';
+  const totalSec = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  if (totalSec > 345)  (total'ec > 312) return 'Progressing (5:13–5:44/km) — increase interval i'tensity';
+  return 'Goal within''
+''
 /**
  * Builds the structured coaching prompt sent to the Gemini model.
  * Returns ONLY a JSON string matching PlannerResults { analysis: RunAnalysis, weekPlan: WorkoutDay[] }.
  */
 export function buildPlannerPrompt(input: AiPlannerInput): string {
-  const {
-    runSummaries,
-    avgDistKm,
-    avgPace,
-    avgHR,
-    maxDistKm,
-    totalDistKm,
-    weekDates,
-  } = input;
+  const { runSummaries, avgDistKm, avgPace, avgHR, maxDistKm, totalDistKm, weekDates } = input;
   const athleteClass = classifyAthlete(avgPace);
-  const hrCtx = avgHR
-    ? `${avgHR} bpm`
-    : "not available — prescribe effort by RPE (1–10 scale)";
+  const hrCtx = avgHR ? `${avgHR} bpm` : 'not available — prescribe effort by RPE (1–10 scale)';
 
   return `<role>
 You are an expert running coach. Your athlete's goal is to run ${GOAL.distanceKm}km in under ${GOAL.targetTimeMin} minutes (target pace: ${GOAL.targetPace}).

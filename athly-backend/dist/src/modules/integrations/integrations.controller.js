@@ -18,6 +18,7 @@ const integrations_service_1 = require("./integrations.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const current_user_rest_decorator_1 = require("../auth/decorators/current-user-rest.decorator");
 const user_model_1 = require("../users/models/user.model");
+const strava_callback_input_1 = require("./dto/strava-callback.input");
 let IntegrationsController = class IntegrationsController {
     integrationsService;
     constructor(integrationsService) {
@@ -31,6 +32,18 @@ let IntegrationsController = class IntegrationsController {
     }
     disconnectIntegration(user, integrationId) {
         return this.integrationsService.disconnectIntegration(user.id, integrationId);
+    }
+    getStravaAuthUrl() {
+        return { url: this.integrationsService.getStravaAuthUrl() };
+    }
+    handleStravaCallback(user, input) {
+        return this.integrationsService.handleStravaCallback(user.id, input.code);
+    }
+    syncStrava(user) {
+        return this.integrationsService.syncStravaActivities(user.id);
+    }
+    disconnectStrava(user) {
+        return this.integrationsService.disconnectStrava(user.id);
     }
 };
 exports.IntegrationsController = IntegrationsController;
@@ -57,6 +70,35 @@ __decorate([
     __metadata("design:paramtypes", [user_model_1.UserModel, String]),
     __metadata("design:returntype", void 0)
 ], IntegrationsController.prototype, "disconnectIntegration", null);
+__decorate([
+    (0, common_1.Get)('strava/auth'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], IntegrationsController.prototype, "getStravaAuthUrl", null);
+__decorate([
+    (0, common_1.Post)('strava/callback'),
+    __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_model_1.UserModel,
+        strava_callback_input_1.StravaCallbackInput]),
+    __metadata("design:returntype", void 0)
+], IntegrationsController.prototype, "handleStravaCallback", null);
+__decorate([
+    (0, common_1.Post)('strava/sync'),
+    __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_model_1.UserModel]),
+    __metadata("design:returntype", void 0)
+], IntegrationsController.prototype, "syncStrava", null);
+__decorate([
+    (0, common_1.Post)('strava/disconnect'),
+    __param(0, (0, current_user_rest_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_model_1.UserModel]),
+    __metadata("design:returntype", void 0)
+], IntegrationsController.prototype, "disconnectStrava", null);
 exports.IntegrationsController = IntegrationsController = __decorate([
     (0, common_1.Controller)('integrations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

@@ -30,6 +30,7 @@ export interface AiPlannerInput {
     maxDistKm: number;
     totalDistKm: number;
     weekDates: string[];
+    trainingDays: number;
 }
 export interface RunAnalysis {
     runsAnalyzed: number;

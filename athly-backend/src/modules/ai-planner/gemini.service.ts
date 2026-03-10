@@ -39,9 +39,9 @@ export class GeminiService {
     return this.parseAndValidate(responseText);
   }
 
-  async generateAssessmentPlan(weekDates: string[]): Promise<PlannerResults> {
+  async generateAssessmentPlan(weekDates: string[], trainingDays: number): Promise<PlannerResults> {
     const model = this.getModel();
-    const prompt = buildAssessmentPrompt(weekDates);
+    const prompt = buildAssessmentPrompt(weekDates, trainingDays);
 
     let responseText: string;
     try {

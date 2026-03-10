@@ -7,6 +7,7 @@ class IntegrationModel {
     icon;
     connected;
     type;
+    stravaAthleteId;
 }
 exports.IntegrationModel = IntegrationModel;
 //# sourceMappingURL=integration.model.js.map

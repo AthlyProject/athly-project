@@ -13,6 +13,7 @@
 **Arquivo:** `athly-backend/.env.example`
 
 Adicionar:
+
 ```
 STRAVA_CLIENT_ID=
 STRAVA_CLIENT_SECRET=
@@ -21,6 +22,7 @@ ANTHROPIC_API_KEY=
 ```
 
 **Arquivo:** `athly-frontend/.env.example`
+
 ```
 VITE_STRAVA_CLIENT_ID=
 VITE_STRAVA_REDIRECT_URI=http://localhost:5173/oauth/strava/callback
@@ -35,6 +37,7 @@ VITE_STRAVA_REDIRECT_URI=http://localhost:5173/oauth/strava/callback
 **Arquivo:** `athly-backend/src/modules/integrations/integrations.controller.ts`
 
 Adicionar endpoint que retorna a URL de autorização OAuth do Strava:
+
 ```
 https://www.strava.com/oauth/authorize?client_id={STRAVA_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=activity:read_all
 ```
@@ -56,6 +59,7 @@ Recebe `{ code: string }` no body. Chama `integrationsService.handleStravaCallba
 **Arquivo:** `athly-backend/src/modules/integrations/integrations.service.ts`
 
 `handleStravaCallback(userId, code)`:
+
 1. POST para `https://www.strava.com/oauth/token` com `client_id`, `client_secret`, `code`, `grant_type: authorization_code`
 2. Recebe `access_token`, `refresh_token`, `expires_at`, `athlete.id`
 3. Upsert em `Integration` com `type: strava`, `connected: true`, tokens e `stravaAthleteId`
@@ -70,15 +74,16 @@ Recebe `{ code: string }` no body. Chama `integrationsService.handleStravaCallba
 **Arquivo:** `athly-frontend/src/services/integrationService.ts`
 
 Adicionar:
+
 ```typescript
 export const initiateStravaOAuth = async (): Promise<void> => {
-  const { data } = await api.get('/integrations/strava/auth')
-  window.location.href = data.url
-}
+  const { data } = await api.get("/integrations/strava/auth");
+  window.location.href = data.url;
+};
 
 export const handleStravaCallback = async (code: string): Promise<void> => {
-  await api.post('/integrations/strava/callback', { code })
-}
+  await api.post("/integrations/strava/callback", { code });
+};
 ```
 
 **Arquivo:** `athly-frontend/src/pages/SettingsPage.tsx`
@@ -104,6 +109,7 @@ export const handleStravaCallback = async (code: string): Promise<void> => {
 **Arquivo:** `athly-backend/prisma/schema.prisma`
 
 Adicionar na model `Integration`:
+
 ```prisma
 accessToken      String?   @map("access_token")
 refreshToken     String?   @map("refresh_token")
@@ -112,6 +118,7 @@ stravaAthleteId  String?   @map("strava_athlete_id")
 ```
 
 Executar:
+
 ```bash
 cd athly-backend
 npx prisma migrate dev --name add_strava_oauth_fields
@@ -126,11 +133,13 @@ npx prisma migrate dev --name add_strava_oauth_fields
 **Arquivo:** `athly-backend/prisma/schema.prisma`
 
 Adicionar na model `Workout`:
+
 ```prisma
 stravaActivityId String? @unique @map("strava_activity_id")
 ```
 
 Executar:
+
 ```bash
 npx prisma migrate dev --name add_strava_activity_id
 ```
@@ -144,6 +153,7 @@ npx prisma migrate dev --name add_strava_activity_id
 ### TASK-007: Criar módulo StravaModule
 
 **Criar:** `athly-backend/src/modules/strava/strava.module.ts`
+
 ```typescript
 @Module({
   imports: [PrismaModule, ConfigModule],
@@ -166,6 +176,7 @@ Registrar no `athly-backend/src/app.module.ts`.
 **Arquivo:** `athly-backend/src/modules/strava/strava.service.ts`
 
 `syncActivities(userId: string)`:
+
 1. Buscar `Integration` do usuário com `type: strava`
 2. Se `tokenExpiresAt < now`, chamar `refreshStravaToken(integration)` primeiro
 3. GET `https://www.strava.com/api/v3/athlete/activities?per_page=60&after={30_dias_atras_unix}`
@@ -184,6 +195,7 @@ Registrar no `athly-backend/src/app.module.ts`.
      - `userId`: userId
 
 **Mapeamento de tipos Strava → SportType:**
+
 ```
 Run → running
 Ride/VirtualRide → cycling
@@ -203,6 +215,7 @@ Walk → walking
 **Arquivo:** `athly-backend/src/modules/strava/strava.service.ts`
 
 `refreshStravaToken(integration: Integration)`:
+
 1. POST `https://www.strava.com/oauth/token` com `grant_type: refresh_token`
 2. Atualizar `Integration` com novos `accessToken`, `refreshToken`, `tokenExpiresAt`
 
@@ -254,6 +267,7 @@ npm install @anthropic-ai/sdk
 ### TASK-013: Criar AiModule e AiService
 
 **Criar:** `athly-backend/src/modules/ai/ai.module.ts`
+
 ```typescript
 @Module({
   imports: [PrismaModule, ConfigModule],
@@ -285,6 +299,7 @@ Registrar `AiModule` em `athly-backend/src/app.module.ts`.
    - `Workout[]`: últimos 30 workouts com `status: done` (Strava + manuais)
 
 2. Montar system prompt:
+
 ```
 Você é um personal trainer especialista. Seu trabalho é criar planos de treino semanais personalizados.
 Retorne APENAS um JSON válido seguindo exatamente o schema fornecido, sem texto adicional.
@@ -293,13 +308,14 @@ Retorne APENAS um JSON válido seguindo exatamente o schema fornecido, sem texto
 3. Montar user message com dados do atleta e histórico.
 
 4. Chamar Claude:
+
 ```typescript
 const response = await anthropic.messages.create({
-  model: 'claude-sonnet-4-6',
+  model: "claude-sonnet-4-6",
   max_tokens: 4096,
   system: systemPrompt,
-  messages: [{ role: 'user', content: userMessage }],
-})
+  messages: [{ role: "user", content: userMessage }],
+});
 ```
 
 5. Parsear JSON da resposta. Se inválido, lançar erro descritivo.
@@ -321,6 +337,7 @@ Adicionar rota `POST /training-plans/generate` (protegida por auth guard).
 **Arquivo:** `athly-backend/src/modules/training-plans/training-plans.service.ts`
 
 `generatePlan(userId: string)`:
+
 1. Chamar `aiService.generateWeeklyPlan(userId)`
 2. Criar `WeeklyGoal` com datas e metrics retornados
 3. Criar `Workout[]` com `status: scheduled`, associados ao `WeeklyGoal` e `TrainingPlan`
@@ -367,6 +384,7 @@ Adicionar `ScheduleModule.forRoot()` nos imports de `athly-backend/src/app.modul
 **Arquivo:** `athly-backend/src/modules/training-plans/training-plans.service.ts`
 
 Adicionar método com decorator:
+
 ```typescript
 @Cron('0 6 * * 1') // toda segunda-feira às 06:00
 async weeklyPlanCron() {
@@ -387,6 +405,7 @@ Importar `Cron` de `@nestjs/schedule`.
 **Arquivo:** `athly-frontend/src/pages/PlanPage.tsx` (ou equivalente)
 
 Adicionar indicador visual de origem do workout:
+
 - Strava sync: ícone Strava laranja + "Sincronizado"
 - IA gerado: ícone robot/sparkle + "Gerado por IA"
 - Manual: sem badge extra

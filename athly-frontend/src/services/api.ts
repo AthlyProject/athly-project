@@ -7,7 +7,8 @@ import type {
   AuthPayload,
   User,
   Workout,
-  TrainingPlan,
+  BackendTrainingPlan,
+  WeeklyGoal,
   WorkoutFeedback,
   Integration,
   UpdateProfileInput,
@@ -97,8 +98,16 @@ class ApiClient {
     return this.request<Workout[]>('/workouts/history')
   }
 
-  async getTrainingPlan(): Promise<TrainingPlan> {
-    return this.request<TrainingPlan>('/workouts/training-plan')
+  async getTrainingPlanMe(): Promise<BackendTrainingPlan | null> {
+    return this.request<BackendTrainingPlan | null>('/training-plans/me')
+  }
+
+  async getWeeklyGoalsByPlan(planId: string): Promise<WeeklyGoal[]> {
+    return this.request<WeeklyGoal[]>(`/weekly-goals/training-plan/${planId}`)
+  }
+
+  async getWorkoutsByTrainingPlan(planId: string): Promise<Workout[]> {
+    return this.request<Workout[]>(`/workouts/training-plan/${planId}`)
   }
 
   async updateWorkout(workoutId: string, data: UpdateWorkoutInput): Promise<Workout> {
@@ -144,6 +153,38 @@ class ApiClient {
   async disconnectIntegration(integrationId: string): Promise<Integration> {
     return this.request<Integration>(`/integrations/${integrationId}/disconnect`, {
       method: 'DELETE',
+    })
+  }
+
+  // ===== STRAVA OAUTH =====
+  async getStravaAuthUrl(): Promise<{ url: string }> {
+    return this.request<{ url: string }>('/integrations/strava/auth')
+  }
+
+  async handleStravaCallback(code: string): Promise<Integration> {
+    return this.request<Integration>('/integrations/strava/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  }
+
+  async syncStrava(): Promise<{ synced: number }> {
+    return this.request<{ synced: number }>('/integrations/strava/sync', {
+      method: 'POST',
+    })
+  }
+
+  async disconnectStrava(): Promise<void> {
+    return this.request<void>('/integrations/strava/disconnect', {
+      method: 'POST',
+    })
+  }
+
+  // ===== AI PLANNER =====
+  async planNextWeek(params?: { numberOfRuns?: number; weekStartDate?: string }) {
+    return this.request('/ai-planner/plan-next-week', {
+      method: 'POST',
+      body: JSON.stringify(params ?? {}),
     })
   }
 }

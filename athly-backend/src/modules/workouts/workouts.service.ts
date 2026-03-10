@@ -62,6 +62,14 @@ export class WorkoutsService {
     return this.mapWorkout(workout);
   }
 
+  async getWorkoutsByTrainingPlan(userId: string, trainingPlanId: string): Promise<WorkoutModel[]> {
+    const workouts = await this.prisma.workout.findMany({
+      where: { userId, trainingPlanId },
+      orderBy: { dateScheduled: 'asc' },
+    });
+    return workouts.map((workout) => this.mapWorkout(workout));
+  }
+
   async getWorkoutHistory(userId: string) {
     const workouts = await this.prisma.workout.findMany({
       where: { userId, status: { in: ['done', 'partial'] } },
@@ -158,6 +166,7 @@ export class WorkoutsService {
     blocks: Prisma.JsonValue;
     status: WorkoutModel['status'];
     intensity: number | null;
+    stravaActivityId?: string | null;
   }): WorkoutModel {
     return {
       id: workout.id,
@@ -168,6 +177,7 @@ export class WorkoutsService {
       blocks: (workout.blocks as unknown as WorkoutModel['blocks']) ?? [],
       status: workout.status,
       intensity: workout.intensity ?? undefined,
+      stravaActivityId: workout.stravaActivityId ?? null,
     };
   }
 

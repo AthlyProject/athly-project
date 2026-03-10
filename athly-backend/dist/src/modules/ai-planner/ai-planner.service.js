@@ -25,25 +25,29 @@ let AiPlannerService = class AiPlannerService {
         this.geminiService = geminiService;
     }
     async planNextWeek(userId, input) {
-        const numberOfRuns = input.numberOfRuns ?? 5;
         const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
         const weekDates = this.getWeekDates(startMonday);
         const weekStartDate = new Date(weekDates[0]);
         const weekEndDate = new Date(weekDates[6]);
         const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]);
         await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
-        const activities = await this.stravaService.getRecentActivities(30);
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { availability: true },
+        });
+        const trainingDays = user?.availability ?? 5;
+        const activities = await this.stravaService.getRecentActivities(userId, 30);
         const runs = activities
             .filter((a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun')
-            .slice(0, numberOfRuns);
+            .slice(0, trainingDays);
         let plannerResult;
         let isAssessment = false;
         if (runs.length === 0) {
             isAssessment = true;
-            plannerResult = await this.geminiService.generateAssessmentPlan(weekDates);
+            plannerResult = await this.geminiService.generateAssessmentPlan(weekDates, trainingDays);
         }
         else {
-            const aiInput = this.buildAiInput(runs, weekDates);
+            const aiInput = this.buildAiInput(runs, weekDates, trainingDays);
             plannerResult = await this.geminiService.generatePlan(aiInput);
         }
         const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
@@ -120,7 +124,7 @@ let AiPlannerService = class AiPlannerService {
         await this.prisma.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
         await this.prisma.weeklyGoal.delete({ where: { id: existing.id } });
     }
-    buildAiInput(runs, weekDates) {
+    buildAiInput(runs, weekDates, trainingDays) {
         const totalDist = runs.reduce((sum, r) => sum + (r.distance ?? 0), 0);
         const avgDistKm = totalDist / runs.length / 1000;
         const avgSpeed = runs.reduce((sum, r) => sum + (r.average_speed ?? 0), 0) / runs.length;
@@ -148,6 +152,7 @@ let AiPlannerService = class AiPlannerService {
             maxDistKm,
             totalDistKm,
             weekDates,
+            trainingDays,
         };
     }
     formatPace(speedMs) {

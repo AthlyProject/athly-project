@@ -16,8 +16,10 @@ export declare class WorkoutsController {
         description?: string;
         blocks: import("./models/workout.model").WorkoutBlock[];
         intensity?: number;
+        stravaActivityId?: string | null;
     }[]>;
     createWorkout(user: UserModel, input: CreateWorkoutInput): Promise<import("./models/workout.model").WorkoutModel>;
+    workoutsByTrainingPlan(user: UserModel, trainingPlanId: string): Promise<import("./models/workout.model").WorkoutModel[]>;
     workout(user: UserModel, id: string): Promise<import("./models/workout.model").WorkoutModel | null>;
     submitWorkoutFeedback(user: UserModel, workoutId: string, input: SubmitWorkoutFeedbackInput): Promise<import("./models/workout.model").WorkoutFeedbackModel>;
     completeWorkout(user: UserModel, workoutId: string): Promise<import("./models/workout.model").WorkoutModel>;

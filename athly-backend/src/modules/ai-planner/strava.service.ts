@@ -1,33 +1,32 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException, HttpException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, HttpException } from '@nestjs/common';
+import { IntegrationsService } from '../integrations/integrations.service';
 import type { StravaActivity } from './types/planner.types';
+
+const STRAVA_BASE = 'https://www.strava.com/api/v3';
 
 @Injectable()
 export class StravaService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly integrationsService: IntegrationsService) {}
 
-  async getRecentActivities(count: number): Promise<StravaActivity[]> {
-    const token = this.configService.get<string>('STRAVA_ACCESS_TOKEN');
-    if (!token) {
-      throw new InternalServerErrorException('STRAVA_ACCESS_TOKEN is not configured.');
+  async getRecentActivities(userId: string, count: number): Promise<StravaActivity[]> {
+    let accessToken: string;
+    try {
+      accessToken = await this.integrationsService.getValidStravaToken(userId);
+    } catch {
+      // Strava not connected — return empty (triggers assessment plan)
+      return [];
     }
 
-    const url = `https://www.strava.com/api/v3/athlete/activities?per_page=${count}`;
+    const url = `${STRAVA_BASE}/athlete/activities?per_page=${count}`;
     const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     if (response.status === 401) {
-      const body = await response.json().catch(() => ({})) as {
-        errors?: { code?: string }[];
-      };
+      const body = await response.json().catch(() => ({})) as { errors?: { code?: string }[] };
       const code = body?.errors?.[0]?.code;
-      // "missing" means the token lacks the activity:read scope or the athlete
-      // has no readable activities — fall back to assessment plan instead of failing.
-      if (code === 'missing') {
-        return [];
-      }
-      throw new UnauthorizedException('Strava token is expired or invalid. Please reconnect your Strava account.');
+      if (code === 'missing') return [];
+      return [];
     }
 
     if (response.status === 429) {
