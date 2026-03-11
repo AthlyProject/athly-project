@@ -6,7 +6,7 @@ import { Prisma, SportType, TrainingPlanStatus, WeeklyGoalStatus, WorkoutStatus 
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
-import { PlanNextWeekInput } from './dto/plan-next-week.input';
+import { PlanNextWeekInput } from './dto/plan-next-week.dto';
 import type { AiPlannerInput, PlannerResults, RunSummary } from './types/planner.types';
 
 @Injectable()
@@ -91,9 +91,28 @@ export class AiPlannerService {
     });
 
     return {
-      trainingPlan: { id: trainingPlan.id, status: trainingPlan.status },
-      weeklyGoal,
-      workouts,
+      trainingPlan: { id: trainingPlan.id, status: trainingPlan.status as any },
+      weeklyGoal: {
+        id: weeklyGoal.id,
+        trainingPlanId: weeklyGoal.trainingPlanId,
+        weekStartDate: weeklyGoal.weekStartDate,
+        weekEndDate: weeklyGoal.weekEndDate,
+        status: weeklyGoal.status as any,
+        metrics: weeklyGoal.metrics as any,
+        createdAt: weeklyGoal.createdAt,
+        updatedAt: weeklyGoal.updatedAt,
+      },
+      workouts: workouts.map((w) => ({
+        id: w.id,
+        date: w.dateScheduled.toISOString().split('T')[0],
+        sportType: w.sportType as any,
+        title: w.title,
+        description: w.description ?? undefined,
+        blocks: w.blocks as any,
+        status: w.status as any,
+        intensity: w.intensity ?? undefined,
+        stravaActivityId: w.stravaActivityId ?? null,
+      })),
       analysis: plannerResult.analysis,
       isAssessment,
     };

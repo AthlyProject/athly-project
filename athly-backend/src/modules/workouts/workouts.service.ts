@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { SubmitWorkoutFeedbackInput } from './dto/submit-workout-feedback.input';
+import { SubmitWorkoutFeedbackInput } from './dto/submit-workout-feedback.dto';
 import { Prisma, WorkoutStatus } from '@prisma/client';
 import { WorkoutFeedbackModel, WorkoutModel } from './models/workout.model';
-import { UpdateWorkoutInput } from './dto/workout-update-input';
-import { CreateWorkoutInput } from './dto/create-workout.input';
+import { UpdateWorkoutInput } from './dto/workout-update.dto';
+import { CreateWorkoutInput } from './dto/create-workout.dto';
 
 @Injectable()
 export class WorkoutsService {

@@ -1,1 +1,0 @@
-{"version":3,"file":"current-user-rest.decorator.js","sourceRoot":"","sources":["../../../../../src/modules/auth/decorators/current-user-rest.decorator.ts"],"names":[],"mappings":";;;AAAA,2CAAwE;AAE3D,QAAA,WAAW,GAAG,IAAA,6BAAoB,EAC7C,CAAC,KAAc,EAAE,OAAyB,EAAE,EAAE;IAC5C,MAAM,OAAO,GAAG,OAAO,CAAC,YAAY,EAAE,CAAC,UAAU,EAAE,CAAC;IACpD,OAAO,OAAO,CAAC,IAAI,CAAC;AACtB,CAAC,CACF,CAAC"}

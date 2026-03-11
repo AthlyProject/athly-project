@@ -140,7 +140,7 @@ export function SettingsPage() {
                   )}
                   {stravaConnected && stravaIntegration?.stravaAthleteId && (
                     <span className="text-xs text-[var(--color-text-tertiary)]">
-                      ID: {stravaIntegration.stravaAthleteId}
+                      ID: {String(stravaIntegration.stravaAthleteId)}
                     </span>
                   )}
                 </div>

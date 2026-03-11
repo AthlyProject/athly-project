@@ -18,9 +18,9 @@ export function WorkoutCard({ workout, compact }: WorkoutCardProps) {
 
   const getStatusBadge = () => {
     switch (workout.status) {
-      case 'completed':
+      case 'done':
         return <Badge variant="success" size="sm">✓ Concluído</Badge>
-      case 'in_progress':
+      case 'scheduled':
         return <Badge variant="primary" size="sm">Em andamento</Badge>
       case 'partial':
         return <Badge variant="warning" size="sm">Parcial</Badge>

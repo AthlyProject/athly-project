@@ -27,7 +27,7 @@ export function HistoryPage() {
     )
   }
 
-  const completedWorkouts = workouts.filter((w) => w.status === 'completed')
+  const completedWorkouts = workouts.filter((w) => w.status === 'done')
   const partialWorkouts = workouts.filter((w) => w.status === 'partial')
   const totalDistance = workouts.reduce((sum, w) => {
     return sum + (w.blocks?.reduce((bs, b) => bs + (b.distance || 0), 0) || 0)

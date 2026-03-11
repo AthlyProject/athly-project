@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { EquipmentsService } from './equipments.service';
-import { CreateEquipmentInput } from './dto/create-equipment.input';
-import { UpdateEquipmentInput } from './dto/update-equipment.input';
+import { CreateEquipmentInput } from './dto/create-equipment.dto';
+import { UpdateEquipmentInput } from './dto/update-equipment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';

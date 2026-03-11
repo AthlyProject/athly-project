@@ -6,9 +6,8 @@ import { SkeletonWorkout } from "@/components/ui/Skeleton";
 import { Section } from "@/components/layout";
 import { StravaAuthModal } from "@/components/StravaAuthModal";
 import { useWorkoutStore } from "@/store/workoutStore";
-import { getCurrentTrainingPlan } from "@/services/workoutService";
+import { getCurrentTrainingPlan, planNextWeek } from "@/services/workoutService";
 import { getIntegrations, isStravaConnected } from "@/services/integrationService";
-import { api } from "@/services/api";
 import type { Integration } from "@/types";
 import toast from "react-hot-toast";
 
@@ -40,7 +39,7 @@ export function PlanPage() {
   async function generatePlan() {
     try {
       setGenerating(true);
-      await api.planNextWeek();
+      await planNextWeek();
       toast.success("Plano gerado com sucesso!");
       const plan = await getCurrentTrainingPlan();
       setCurrentPlan(plan);
@@ -67,7 +66,7 @@ export function PlanPage() {
 
   const weeks = currentPlan?.weeks ?? [];
   const workouts = weeks[selectedWeek]?.workouts ?? [];
-  const completedCount = workouts.filter((w) => w.status === "completed").length;
+  const completedCount = workouts.filter((w) => w.status === "done").length;
 
   return (
     <>

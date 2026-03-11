@@ -3,8 +3,7 @@ import { api } from './api'
 
 export async function getWorkoutHistory(): Promise<Workout[]> {
   try {
-    const workouts = await api.getWorkoutHistory()
-    return workouts
+    return await api.workouts.workoutsControllerWorkoutHistory()
   } catch (error) {
     console.error('Failed to get workout history:', error)
     return []

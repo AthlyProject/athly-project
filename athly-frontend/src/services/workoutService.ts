@@ -3,8 +3,7 @@ import { api } from './api'
 
 export async function getTodayWorkout(): Promise<Workout | null> {
   try {
-    const workout = await api.getTodayWorkout()
-    return workout
+    return await api.workouts.workoutsControllerTodayWorkout()
   } catch (error) {
     console.error('Failed to get today workout:', error)
     return null
@@ -13,8 +12,7 @@ export async function getTodayWorkout(): Promise<Workout | null> {
 
 export async function getWorkoutById(id: string): Promise<Workout | null> {
   try {
-    const workout = await api.getWorkout(id)
-    return workout
+    return await api.workouts.workoutsControllerWorkout({ id })
   } catch (error) {
     console.error('Failed to get workout:', error)
     return null
@@ -23,19 +21,17 @@ export async function getWorkoutById(id: string): Promise<Workout | null> {
 
 export async function getCurrentTrainingPlan(): Promise<TrainingPlan | null> {
   try {
-    const plan = await api.getTrainingPlanMe()
+    const plan = await api.trainingPlans.trainingPlansControllerGetMyTrainingPlan()
     if (!plan) return null
 
     const [weeklyGoals, workouts] = await Promise.all([
-      api.getWeeklyGoalsByPlan(plan.id),
-      api.getWorkoutsByTrainingPlan(plan.id),
+      api.weeklyGoals.weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan({ trainingPlanId: plan.id }),
+      api.workouts.workoutsControllerWorkoutsByTrainingPlan({ trainingPlanId: plan.id }),
     ])
 
     // Group workouts by weeklyGoalId and build Week[]
-    // Backend WeeklyGoal returns `id` in JSON; frontend type uses `uuid`
     const weeks = weeklyGoals.map((wg, index) => {
-      const goalId = (wg as unknown as { id: string }).id ?? wg.uuid
-      const weekWorkouts = workouts.filter((w) => w.weeklyGoalId === goalId)
+      const weekWorkouts = workouts.filter((w) => w.weeklyGoalId === wg.id)
       return {
         number: index + 1,
         workouts: weekWorkouts,
@@ -66,26 +62,13 @@ export async function getCurrentTrainingPlan(): Promise<TrainingPlan | null> {
 
 export async function getCalendarData(): Promise<{ weeklyGoals: WeeklyGoal[]; workouts: Workout[] } | null> {
   try {
-    const plan = await api.getTrainingPlanMe()
+    const plan = await api.trainingPlans.trainingPlansControllerGetMyTrainingPlan()
     if (!plan) return null
 
-    const [rawWeeklyGoals, workouts] = await Promise.all([
-      api.getWeeklyGoalsByPlan(plan.id),
-      api.getWorkoutsByTrainingPlan(plan.id),
+    const [weeklyGoals, workouts] = await Promise.all([
+      api.weeklyGoals.weeklyGoalsControllerGetWeeklyGoalsByTrainingPlan({ trainingPlanId: plan.id }),
+      api.workouts.workoutsControllerWorkoutsByTrainingPlan({ trainingPlanId: plan.id }),
     ])
-
-    // Map backend `id` to frontend `uuid` field
-    const weeklyGoals: WeeklyGoal[] = rawWeeklyGoals.map((wg) => {
-      const raw = wg as unknown as { id: string; weekStartDate: string; weekEndDate: string }
-      return {
-        uuid: raw.id,
-        trainingPlanId: plan.id,
-        weekStartDate: raw.weekStartDate,
-        weekEndDate: raw.weekEndDate,
-        status: wg.status,
-        metrics: wg.metrics,
-      }
-    })
 
     return { weeklyGoals, workouts }
   } catch (error) {
@@ -103,18 +86,18 @@ export async function submitWorkoutFeedback(
     effort: feedback.effort,
     fatigue: feedback.fatigue,
   }
-  const result = await api.submitWorkoutFeedback(workoutId, input)
-  return result
+  return api.workouts.workoutsControllerSubmitWorkoutFeedback({
+    workoutId,
+    submitWorkoutFeedbackInput: input
+  })
 }
 
 export async function completeWorkout(workoutId: string): Promise<Workout> {
-  const workout = await api.completeWorkout(workoutId)
-  return workout
+  return api.workouts.workoutsControllerCompleteWorkout({ workoutId })
 }
 
 export async function skipWorkout(workoutId: string): Promise<Workout> {
-  const workout = await api.skipWorkout(workoutId)
-  return workout
+  return api.workouts.workoutsControllerSkipWorkout({ workoutId })
 }
 
 export async function updateWorkout(
@@ -132,6 +115,14 @@ export async function updateWorkout(
     description: input.description,
     blocks: input.blocks,
   }
-  const workout = await api.updateWorkout(workoutId, updateInput)
-  return workout
+  return api.workouts.workoutsControllerUpdateWorkout({
+    workoutId,
+    updateWorkoutInput: updateInput
+  })
+}
+
+export async function planNextWeek(params?: { numberOfRuns?: number; weekStartDate?: string }) {
+  return api.aiPlanner.aiPlannerControllerPlanNextWeek({
+    planNextWeekInput: params ?? {}
+  })
 }

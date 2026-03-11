@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: iafit-postgres
+    restart: unless-stopped
+    env_file:
+      - ./athly-backend/.env
+    ports:
+      - '5432:5432'
+    volumes:
+      - iafit_db:/var/lib/postgresql/data
+
+  backend:
+    build: 
+      context: ./athly-backend
+    container_name: iafit-backend
+    restart: always
+    ports:
+      - '4000:4000'
+    command: npm run dev
+    volumes:
+      - ./athly-backend:/app
+      - /app/node_modules
+    env_file:
+      - ./athly-backend/.env
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/iafit"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./athly-frontend
+    container_name: iafit-frontend
+    restart: always
+    ports:
+      - '5173:5173'
+    command: npm run dev
+    volumes:
+      - ./athly-frontend:/app
+      - /app/node_modules
+    env_file:
+      - ./athly-frontend/.env
+    depends_on:
+      - backend
+
+volumes:
+  iafit_db:
