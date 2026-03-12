@@ -1,0 +1,55 @@
+name: AthlyRunner
+options:
+  bundleIdPrefix: com.athly
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.4"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  AthlyRunner:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: AthlyRunner
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.athly.runner
+        SWIFT_STRICT_CONCURRENCY: complete
+    info:
+      path: AthlyRunner/Info.plist
+      properties:
+        CFBundleDisplayName: Athly Runner
+        CFBundleDevelopmentRegion: pt-BR
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIRequiredDeviceCapabilities:
+          - armv7
+          - location-services
+          - gps
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSLocationWhenInUseUsageDescription: "Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada."
+        NSLocationAlwaysUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano."
+        UIUserInterfaceStyle: Dark
+        UIBackgroundModes:
+          - location
+        UIAppFonts:
+          - SpaceGrotesk-Regular.ttf
+          - SpaceGrotesk-Medium.ttf
+          - SpaceGrotesk-SemiBold.ttf
+          - SpaceGrotesk-Bold.ttf
+    entitlements:
+      path: AthlyRunner/AthlyRunner.entitlements
