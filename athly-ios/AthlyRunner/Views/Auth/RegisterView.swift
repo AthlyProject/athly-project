@@ -19,82 +19,86 @@ struct RegisterView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
-                    Text("Criar conta")
-                        .font(.title)
-                        .fontWeight(.bold)
+            ZStack {
+                AthlyTheme.Color.backgroundDark
+                    .ignoresSafeArea()
 
-                    Text("Comece a registrar suas corridas")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 32)
+                ScrollView {
+                    VStack(spacing: AthlyTheme.Spacing.md) {
+                        VStack(spacing: 8) {
+                            Text("Criar conta")
+                                .font(AthlyTheme.Typography.heading(28))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
 
-                VStack(spacing: 16) {
-                    TextField("Nome", text: $name)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(.name)
-
-                    TextField("Email", text: $email)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-
-                    SecureField("Senha", text: $password)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(.newPassword)
-
-                    SecureField("Confirmar senha", text: $confirmPassword)
-                        .textFieldStyle(.roundedBorder)
-                        .textContentType(.newPassword)
-
-                    if !confirmPassword.isEmpty && !passwordsMatch {
-                        Text("As senhas não coincidem")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-
-                    if let error = authViewModel.errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    Button {
-                        Task {
-                            await authViewModel.register(name: name, email: email, password: password)
-                            if authViewModel.isAuthenticated {
-                                dismiss()
-                            }
+                            Text("Comece a registrar suas corridas")
+                                .font(AthlyTheme.Typography.body(15))
+                                .foregroundStyle(AthlyTheme.Color.textSecondary)
                         }
-                    } label: {
-                        Group {
-                            if authViewModel.isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Registrar")
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isFormValid ? Color.accentColor : Color.gray)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(!isFormValid || authViewModel.isLoading)
-                }
-                .padding(.horizontal, 24)
+                        .padding(.top, AthlyTheme.Spacing.lg)
 
-                Spacer()
+                        VStack(spacing: 12) {
+                            TextField("Nome", text: $name)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .textContentType(.name)
+
+                            TextField("Email", text: $email)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+
+                            SecureField("Senha", text: $password)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .textContentType(.newPassword)
+
+                            SecureField("Confirmar senha", text: $confirmPassword)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .textContentType(.newPassword)
+
+                            if !confirmPassword.isEmpty && !passwordsMatch {
+                                Text("As senhas não coincidem")
+                                    .font(AthlyTheme.Typography.body(12))
+                                    .foregroundStyle(AthlyTheme.Color.error)
+                            }
+
+                            if let error = authViewModel.errorMessage {
+                                Text(error)
+                                    .font(AthlyTheme.Typography.body(12))
+                                    .foregroundStyle(AthlyTheme.Color.error)
+                                    .multilineTextAlignment(.center)
+                            }
+
+                            Button {
+                                Task {
+                                    await authViewModel.register(name: name, email: email, password: password)
+                                    if authViewModel.isAuthenticated {
+                                        dismiss()
+                                    }
+                                }
+                            } label: {
+                                Group {
+                                    if authViewModel.isLoading {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Text("Registrar")
+                                    }
+                                }
+                            }
+                            .buttonStyle(AthlyGradientButtonStyle())
+                            .disabled(!isFormValid || authViewModel.isLoading)
+                            .opacity(!isFormValid || authViewModel.isLoading ? 0.6 : 1)
+                        }
+                        .padding(.horizontal, AthlyTheme.Spacing.md)
+
+                        Spacer()
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancelar") { dismiss() }
+                        .foregroundStyle(AthlyTheme.Color.primary)
                 }
             }
         }

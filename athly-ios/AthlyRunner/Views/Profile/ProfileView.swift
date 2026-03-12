@@ -9,32 +9,46 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                // Stats section
-                Section("Estatisticas gerais") {
-                    statsRow(icon: "figure.run", label: "Total de corridas", value: "\(allRuns.count)")
-                    statsRow(icon: "ruler", label: "Distancia total", value: String(format: "%.1f km", totalDistance))
-                    statsRow(icon: "clock", label: "Tempo total", value: formatDuration(totalTime))
-                    statsRow(icon: "speedometer", label: "Pace medio", value: formatPace(averagePace))
-                    statsRow(icon: "mountain.2", label: "Elevacao total", value: String(format: "%.0f m", totalElevation))
-                }
+            ZStack {
+                AthlyTheme.Color.backgroundDark
+                    .ignoresSafeArea()
 
-                // Account
-                Section("Conta") {
-                    Button("Sair", role: .destructive) {
-                        authViewModel.logout()
+                List {
+                    // Stats section
+                    Section("Estatisticas gerais") {
+                        statsRow(icon: "figure.run", label: "Total de corridas", value: "\(allRuns.count)")
+                        statsRow(icon: "ruler", label: "Distancia total", value: String(format: "%.1f km", totalDistance))
+                        statsRow(icon: "clock", label: "Tempo total", value: formatDuration(totalTime))
+                        statsRow(icon: "speedometer", label: "Pace medio", value: formatPace(averagePace))
+                        statsRow(icon: "mountain.2", label: "Elevacao total", value: String(format: "%.0f m", totalElevation))
                     }
-                }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
 
-                // App info
-                Section("Sobre") {
-                    HStack {
-                        Text("Versao")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundStyle(.secondary)
+                    // Account
+                    Section("Conta") {
+                        Button("Sair", role: .destructive) {
+                            authViewModel.logout()
+                        }
+                        .foregroundStyle(AthlyTheme.Color.error)
                     }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
+                    // App info
+                    Section("Sobre") {
+                        HStack {
+                            Text("Versao")
+                                .font(AthlyTheme.Typography.body())
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            Spacer()
+                            Text("1.0.0")
+                                .font(AthlyTheme.Typography.medium(16))
+                                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        }
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
                 }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Perfil")
         }
@@ -43,16 +57,18 @@ struct ProfileView: View {
     private func statsRow(icon: String, label: String, value: String) -> some View {
         HStack {
             Image(systemName: icon)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(AthlyTheme.Color.primary)
                 .frame(width: 28)
 
             Text(label)
+                .font(AthlyTheme.Typography.body())
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
 
             Spacer()
 
             Text(value)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
+                .font(AthlyTheme.Typography.medium(16))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
     }
 

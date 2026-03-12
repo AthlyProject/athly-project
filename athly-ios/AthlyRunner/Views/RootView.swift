@@ -11,6 +11,7 @@ struct RootView: View {
                 LoginView()
             }
         }
+        .background(AthlyTheme.Color.backgroundDark.ignoresSafeArea())
         .animation(.easeInOut, value: authViewModel.isAuthenticated)
     }
 }

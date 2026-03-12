@@ -5,7 +5,6 @@ struct RunStartView: View {
     @StateObject private var viewModel: RunViewModel
 
     init() {
-        // Will be properly initialized with locationManager in .onAppear
         _viewModel = StateObject(wrappedValue: RunViewModel(locationManager: LocationManager()))
     }
 
@@ -34,16 +33,39 @@ struct RunStartView: View {
     }
 
     private var preRunView: some View {
-        VStack(spacing: 32) {
-            Spacer()
+        ZStack {
+            AthlyTheme.Color.backgroundDark
+                .ignoresSafeArea()
 
-            if !locationManager.hasPermission {
-                permissionView
-            } else {
-                readyView
+            // Ambient top-left purple
+            RadialGradient(
+                colors: [AthlyTheme.Color.primary.opacity(0.20), Color.clear],
+                center: .init(x: 0.2, y: 0.1),
+                startRadius: 0,
+                endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            // Ambient bottom-right cyan
+            RadialGradient(
+                colors: [AthlyTheme.Color.secondary.opacity(0.12), Color.clear],
+                center: .init(x: 0.85, y: 0.9),
+                startRadius: 0,
+                endRadius: 250
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: AthlyTheme.Spacing.lg) {
+                Spacer()
+
+                if !locationManager.hasPermission {
+                    permissionView
+                } else {
+                    readyView
+                }
+
+                Spacer()
             }
-
-            Spacer()
         }
     }
 
@@ -51,23 +73,24 @@ struct RunStartView: View {
         VStack(spacing: 20) {
             Image(systemName: "location.slash.circle.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.orange)
+                .foregroundStyle(AthlyTheme.Color.warning)
 
             Text("Permissao de localizacao necessaria")
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(AthlyTheme.Typography.semibold(20))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .multilineTextAlignment(.center)
 
             Text("Para rastrear sua corrida, precisamos acessar sua localizacao.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(AthlyTheme.Typography.body(15))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
             Button("Permitir localizacao") {
                 locationManager.requestAlwaysPermission()
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(AthlyPrimaryButtonStyle())
+            .padding(.horizontal, 40)
         }
     }
 
@@ -76,11 +99,12 @@ struct RunStartView: View {
             VStack(spacing: 8) {
                 Image(systemName: "figure.run")
                     .font(.system(size: 64))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                    .shadow(color: AthlyTheme.Color.primary.opacity(0.5), radius: 20)
 
                 Text("Pronto para correr?")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(AthlyTheme.Typography.heading(22))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
             }
 
             Button {
@@ -88,13 +112,16 @@ struct RunStartView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: 120, height: 120)
-                        .shadow(color: .accentColor.opacity(0.4), radius: 16, y: 8)
+                        .fill(AthlyTheme.Gradient.neon)
+                        .frame(width: 130, height: 130)
+                        .shadow(color: AthlyTheme.Color.primary.opacity(0.6), radius: 24, y: 8)
+
+                    Circle()
+                        .stroke(AthlyTheme.Color.primaryNeon.opacity(0.3), lineWidth: 2)
+                        .frame(width: 148, height: 148)
 
                     Text("INICIAR")
-                        .font(.title3)
-                        .fontWeight(.bold)
+                        .font(AthlyTheme.Typography.heading(18))
                         .foregroundStyle(.white)
                 }
             }

@@ -33,7 +33,7 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UILaunchScreen:
-          UIColorName: AccentColor
+          UIColorName: LaunchBackground
         UIRequiredDeviceCapabilities:
           - armv7
           - location-services
@@ -43,7 +43,13 @@ targets:
         NSLocationWhenInUseUsageDescription: "Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real."
         NSLocationAlwaysAndWhenInUseUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada."
         NSLocationAlwaysUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano."
+        UIUserInterfaceStyle: Dark
         UIBackgroundModes:
           - location
+        UIAppFonts:
+          - SpaceGrotesk-Regular.ttf
+          - SpaceGrotesk-Medium.ttf
+          - SpaceGrotesk-SemiBold.ttf
+          - SpaceGrotesk-Bold.ttf
     entitlements:
       path: AthlyRunner/AthlyRunner.entitlements

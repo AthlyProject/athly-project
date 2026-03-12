@@ -43,7 +43,6 @@ struct RunTrackingView: View {
 
     private var metricsPanel: some View {
         VStack(spacing: 0) {
-            // Main metrics
             HStack(spacing: 0) {
                 metricItem(
                     value: viewModel.tracker.formattedDuration,
@@ -54,21 +53,17 @@ struct RunTrackingView: View {
             .padding(.top, 20)
 
             HStack(spacing: 0) {
-                metricItem(
-                    value: viewModel.tracker.formattedDistance,
-                    label: "KM"
-                )
+                metricItem(value: viewModel.tracker.formattedDistance, label: "KM")
 
                 Divider()
                     .frame(height: 50)
+                    .background(AthlyTheme.Color.borderDark)
 
-                metricItem(
-                    value: viewModel.tracker.formattedPace,
-                    label: "PACE /KM"
-                )
+                metricItem(value: viewModel.tracker.formattedPace, label: "PACE /KM")
 
                 Divider()
                     .frame(height: 50)
+                    .background(AthlyTheme.Color.borderDark)
 
                 metricItem(
                     value: String(format: "%.0f", viewModel.tracker.elevationGain),
@@ -77,21 +72,36 @@ struct RunTrackingView: View {
             }
             .padding(.vertical, 12)
         }
-        .background(.ultraThinMaterial)
+        .background(
+            ZStack {
+                AthlyTheme.Color.surfaceCard
+                LinearGradient(
+                    colors: [AthlyTheme.Color.primary.opacity(0.1), AthlyTheme.Color.secondary.opacity(0.04)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AthlyTheme.Gradient.gradientBorder, lineWidth: 1)
+        )
+        .shadow(color: AthlyTheme.Color.primary.opacity(0.3), radius: 14, y: 4)
         .padding(.horizontal, 16)
     }
 
     private func metricItem(value: String, label: String, large: Bool = false) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(large ? .system(size: 48, weight: .bold, design: .monospaced) : .system(size: 28, weight: .bold, design: .monospaced))
+                .font(.custom("SpaceGrotesk-Bold", size: large ? 48 : 28).monospacedDigit())
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
                 .minimumScaleFactor(0.7)
 
             Text(label)
-                .font(.caption2)
-                .fontWeight(.medium)
-                .foregroundStyle(.secondary)
+                .font(AthlyTheme.Typography.label())
+                .textCase(.uppercase)
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -105,7 +115,7 @@ struct RunTrackingView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(.red)
+                            .fill(AthlyTheme.Color.error)
                             .frame(width: 64, height: 64)
 
                         Image(systemName: "stop.fill")
@@ -120,8 +130,9 @@ struct RunTrackingView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(.green)
+                            .fill(AthlyTheme.Gradient.neon)
                             .frame(width: 80, height: 80)
+                            .shadow(color: AthlyTheme.Color.primaryNeon.opacity(0.4), radius: 12, y: 6)
 
                         Image(systemName: "play.fill")
                             .font(.title)
@@ -135,9 +146,9 @@ struct RunTrackingView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(.orange)
+                            .fill(AthlyTheme.Color.warning)
                             .frame(width: 80, height: 80)
-                            .shadow(color: .orange.opacity(0.4), radius: 12, y: 6)
+                            .shadow(color: AthlyTheme.Color.warning.opacity(0.4), radius: 12, y: 6)
 
                         Image(systemName: "pause.fill")
                             .font(.title)

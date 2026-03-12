@@ -3,7 +3,11 @@ import Foundation
 actor APIClient {
     static let shared = APIClient()
 
+    #if targetEnvironment(simulator)
     private var baseURL: String = "http://localhost:4000"
+    #else
+    private var baseURL: String = "http://192.168.18.220:4000"
+    #endif
     private var accessToken: String?
     private var refreshToken: String?
 
@@ -55,6 +59,41 @@ actor APIClient {
         try await get("/users/me")
     }
 
+    // MARK: - Training Plan Endpoints
+
+    func getMyTrainingPlan() async throws -> TrainingPlanResponse {
+        try await get("/training-plans/me")
+    }
+
+    func getWeeklyGoals(trainingPlanId: String) async throws -> [WeeklyGoalResponse] {
+        try await get("/weekly-goals/training-plan/\(trainingPlanId)")
+    }
+
+    func getTodayWorkout() async throws -> WorkoutModel? {
+        do {
+            let workout: WorkoutModel = try await get("/workouts/today")
+            return workout
+        } catch APIError.notFound {
+            return nil
+        }
+    }
+
+    func getWorkoutsByTrainingPlan(trainingPlanId: String) async throws -> [WorkoutModel] {
+        try await get("/workouts/training-plan/\(trainingPlanId)")
+    }
+
+    func completeWorkout(workoutId: String) async throws -> WorkoutModel {
+        try await patch("/workouts/\(workoutId)/complete")
+    }
+
+    func skipWorkout(workoutId: String) async throws -> WorkoutModel {
+        try await patch("/workouts/\(workoutId)/skip")
+    }
+
+    func planNextWeek(_ request: PlanNextWeekRequest) async throws -> PlanNextWeekResponse {
+        try await post("/ai-planner/plan-next-week", body: request)
+    }
+
     // MARK: - HTTP
 
     private func get<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {
@@ -65,6 +104,12 @@ actor APIClient {
     private func post<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true) async throws -> T {
         var request = try buildRequest(path: path, method: "POST", authenticated: authenticated)
         request.httpBody = try JSONEncoder().encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await execute(request)
+    }
+
+    private func patch<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {
+        var request = try buildRequest(path: path, method: "PATCH", authenticated: authenticated)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return try await execute(request)
     }

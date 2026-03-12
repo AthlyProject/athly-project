@@ -2,29 +2,27 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var locationManager: LocationManager
+    @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
-        TabView {
-            DashboardView()
-                .tabItem {
-                    Label("Inicio", systemImage: "house.fill")
-                }
-
-            RunStartView()
-                .tabItem {
-                    Label("Correr", systemImage: "figure.run")
-                }
-
-            HistoryView()
-                .tabItem {
-                    Label("Historico", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                }
-
-            ProfileView()
-                .tabItem {
-                    Label("Perfil", systemImage: "person.fill")
-                }
+        Group {
+            switch selectedTab {
+            case .dashboard:
+                DashboardView()
+            case .plan:
+                PlanView()
+            case .run:
+                RunStartView()
+            case .history:
+                HistoryView()
+            case .profile:
+                ProfileView()
+            }
         }
-        .tint(Color("AccentColor"))
+        .safeAreaInset(edge: .bottom) {
+            FloatingTabBar(selectedTab: $selectedTab)
+                .padding(.bottom, 8)
+        }
+        .ignoresSafeArea(.keyboard)
     }
 }

@@ -12,10 +12,10 @@ struct RunMapView: View {
             // User location
             UserAnnotation()
 
-            // Route polyline
+            // Route polyline — cyan neon
             if coordinates.count >= 2 {
                 MapPolyline(coordinates: coordinates)
-                    .stroke(Color.accentColor, lineWidth: 4)
+                    .stroke(AthlyTheme.Color.secondaryNeon, lineWidth: 4)
             }
 
             // Start marker
@@ -23,7 +23,7 @@ struct RunMapView: View {
                 Annotation("Inicio", coordinate: first) {
                     ZStack {
                         Circle()
-                            .fill(.green)
+                            .fill(AthlyTheme.Color.success)
                             .frame(width: 16, height: 16)
                         Circle()
                             .stroke(.white, lineWidth: 2)
@@ -32,7 +32,7 @@ struct RunMapView: View {
                 }
             }
         }
-        .mapStyle(.standard(elevation: .realistic))
+        .mapStyle(.standard(emphasis: .muted))
         .mapControls {
             MapUserLocationButton()
             MapCompass()

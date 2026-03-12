@@ -7,18 +7,26 @@ struct HistoryView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if runs.isEmpty {
-                    ContentUnavailableView(
-                        "Sem corridas",
-                        systemImage: "figure.run",
-                        description: Text("Suas corridas aparecerao aqui apos registra-las.")
-                    )
-                } else {
-                    List(runs) { run in
-                        runRow(run)
+            ZStack {
+                AthlyTheme.Color.backgroundDark
+                    .ignoresSafeArea()
+
+                Group {
+                    if runs.isEmpty {
+                        ContentUnavailableView(
+                            "Sem corridas",
+                            systemImage: "figure.run",
+                            description: Text("Suas corridas aparecerao aqui apos registra-las.")
+                        )
+                    } else {
+                        List(runs) { run in
+                            runRow(run)
+                                .listRowBackground(AthlyTheme.Color.surfaceDark)
+                                .listRowSeparatorTint(AthlyTheme.Color.borderDark)
+                        }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
                     }
-                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Historico")
@@ -29,16 +37,17 @@ struct HistoryView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "figure.run")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(AthlyTheme.Color.primary)
 
                 Text("Corrida")
-                    .fontWeight(.semibold)
+                    .font(AthlyTheme.Typography.semibold(17))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
 
                 Spacer()
 
                 Text(run.startDate.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
             }
 
             HStack(spacing: 20) {
@@ -46,18 +55,18 @@ struct HistoryView: View {
                 Label(run.formattedDuration, systemImage: "clock")
                 Label(run.formattedPace + " /km", systemImage: "speedometer")
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(AthlyTheme.Typography.body(12))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
 
             HStack(spacing: 8) {
                 if run.synced {
                     Label("Sincronizado", systemImage: "checkmark.icloud")
-                        .font(.caption2)
-                        .foregroundStyle(.green)
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.success)
                 } else {
                     Label("Local", systemImage: "iphone")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.warning)
                 }
             }
         }
