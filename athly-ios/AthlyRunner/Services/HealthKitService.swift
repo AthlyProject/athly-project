@@ -1,8 +1,19 @@
 import Foundation
 import HealthKit
 
+// MARK: - Protocol (permite trocar por mock no simulador)
+
+/// Fonte de dados de corridas: Health real ou mock (simulador).
+/// Sendable para uso seguro em ViewModel @MainActor com async/await.
+protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
+    var isHealthDataAvailable: Bool { get }
+    func requestAuthorization() async throws
+    func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
+}
+
 /// Serviço para leitura de corridas do Health Store (somente leitura, testes de integração).
-final class HealthKitService: Sendable {
+/// @unchecked Sendable: HKHealthStore não é Sendable; uso é isolado a chamadas async do próprio tipo.
+final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Sendable {
 
     private let store = HKHealthStore()
 

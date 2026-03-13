@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0365DDE0D12FD9921E153C17 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771F104A20AD0B32E98D4010 /* HistoryView.swift */; };
+		0FF1F3FF02B3171C4D7A7F99 /* MockHealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */; };
 		17BC451DE0C5E1DBB273517E /* Split.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66361EBC40114CD841921015 /* Split.swift */; };
 		17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D70C702152900AE2BB882B /* PlanView.swift */; };
 		18C75BABD693992233C4A216 /* CalendarGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCB149AB3D32A7CEC7DB593 /* CalendarGridView.swift */; };
@@ -48,6 +49,7 @@
 
 /* Begin PBXFileReference section */
 		03D63F8FA8D5D21765CDAAFA /* AthlyRunner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AthlyRunner.entitlements; sourceTree = "<group>"; };
+		10367608EAEC829637CA0AD2 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		15EE092CB97CBB29AF5AE98A /* RunViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunViewModel.swift; sourceTree = "<group>"; };
 		182ACC312B7C55B46D3231F6 /* HealthKitRunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsView.swift; sourceTree = "<group>"; };
 		1BEC4388E2A9A0B3925B6714 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -76,7 +78,8 @@
 		9D3D908C678C0EEA90262783 /* RunSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryView.swift; sourceTree = "<group>"; };
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
-		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
 		B92F9D576847F505274A2EE1 /* RunStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStartView.swift; sourceTree = "<group>"; };
 		BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsViewModel.swift; sourceTree = "<group>"; };
 		BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
@@ -168,10 +171,19 @@
 			path = Profile;
 			sourceTree = "<group>";
 		};
+		8F1D031D3472F47F5367AE03 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				10367608EAEC829637CA0AD2 /* Config.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		9AE8184FA3903A9DAE0D2AC9 = {
 			isa = PBXGroup;
 			children = (
 				DE9FA122E76E013BE159D6C3 /* AthlyRunner */,
+				8F1D031D3472F47F5367AE03 /* Config */,
 				66FC1FF256058F36AE740FA8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -182,6 +194,7 @@
 				9CDA0DF1AE05993FC853D7DB /* APIClient.swift */,
 				D83E95AB1CF3059ACB41221C /* HealthKitService.swift */,
 				D92E1532A4AC761644476855 /* LocationManager.swift */,
+				AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */,
 				7983CD8541D4919DA78D7FA0 /* RunTracker.swift */,
 			);
 			path = Services;
@@ -299,6 +312,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					DB2561B82C567797BDCC4C4E = {
+						DevelopmentTeam = "";
+					};
+				};
 			};
 			buildConfigurationList = AD8858011B5208CA18A12727 /* Build configuration list for PBXProject "AthlyRunner" */;
 			developmentRegion = en;
@@ -352,6 +370,7 @@
 				CDA5F332B67001C3012D371F /* LocationManager.swift in Sources */,
 				7DDF780541F6F9791EE17382 /* LoginView.swift in Sources */,
 				53A17950A26E4479593ACBAE /* MainTabView.swift in Sources */,
+				0FF1F3FF02B3171C4D7A7F99 /* MockHealthKitService.swift in Sources */,
 				17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */,
 				89541A62B716A2302CADF335 /* ProfileView.swift in Sources */,
 				7D7F6E472C1957BDB6430CC0 /* RegisterView.swift in Sources */,
@@ -379,6 +398,7 @@
 /* Begin XCBuildConfiguration section */
 		063877D3C9AD99D819B0EC8C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 10367608EAEC829637CA0AD2 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -437,6 +457,7 @@
 		};
 		1FD9D75D62CF5013EC66C379 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 10367608EAEC829637CA0AD2 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -506,14 +527,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.athly.runner;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -526,14 +546,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.athly.runner;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";

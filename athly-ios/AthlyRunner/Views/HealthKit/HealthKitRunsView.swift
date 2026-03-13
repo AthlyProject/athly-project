@@ -1,7 +1,13 @@
 import SwiftUI
 
 struct HealthKitRunsView: View {
-    @StateObject private var viewModel = HealthKitRunsViewModel(healthKitService: HealthKitService())
+    @StateObject private var viewModel: HealthKitRunsViewModel = {
+        #if targetEnvironment(simulator)
+        return HealthKitRunsViewModel(healthKitService: MockHealthKitService())
+        #else
+        return HealthKitRunsViewModel(healthKitService: HealthKitService())
+        #endif
+    }()
 
     var body: some View {
         ZStack {

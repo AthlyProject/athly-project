@@ -1,0 +1,4 @@
+// Bundle ID padrão. Para outro dev/team, crie Config/User.xcconfig (adicione ao .gitignore) com:
+//   ATHLY_BUNDLE_ID = com.athly.runner.dev
+ATHLY_BUNDLE_ID = com.athly.runner
+#include? "User.xcconfig"

@@ -1,1 +1,4 @@
 .idea
+
+# Bundle ID local (outro dev/team)
+athly-ios/Config/User.xcconfig

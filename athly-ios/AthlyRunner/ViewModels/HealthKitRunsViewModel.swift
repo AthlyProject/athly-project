@@ -14,9 +14,9 @@ final class HealthKitRunsViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
 
-    private let healthKitService: HealthKitService
+    private let healthKitService: any HealthKitRunningWorkoutsProviding
 
-    init(healthKitService: HealthKitService = HealthKitService()) {
+    init(healthKitService: any HealthKitRunningWorkoutsProviding = HealthKitService()) {
         self.healthKitService = healthKitService
     }
 

@@ -1,3 +1,6 @@
+# Bundle ID vem de Config/Config.xcconfig (default: com.athly.runner).
+# Se outro dev tiver "cannot be registered to your development team", criar Config/User.xcconfig
+# com ATHLY_BUNDLE_ID = com.athly.runner.dev e adicionar Config/User.xcconfig ao .gitignore.
 name: AthlyRunner
 options:
   bundleIdPrefix: com.athly
@@ -5,6 +8,10 @@ options:
     iOS: "17.0"
   xcodeVersion: "16.4"
   generateEmptyDirectories: true
+
+configFiles:
+  Debug: Config/Config.xcconfig
+  Release: Config/Config.xcconfig
 
 settings:
   base:
@@ -23,7 +30,7 @@ targets:
           - "Info.plist"
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.athly.runner
+        PRODUCT_BUNDLE_IDENTIFIER: $(ATHLY_BUNDLE_ID)
         SWIFT_STRICT_CONCURRENCY: complete
     info:
       path: AthlyRunner/Info.plist
