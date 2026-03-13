@@ -10,6 +10,7 @@
 
 ### TASK-001: Adicionar variáveis de ambiente Strava
 
+k
 **Arquivo:** `athly-backend/.env.example`
 
 Adicionar:
