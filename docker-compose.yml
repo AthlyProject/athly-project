@@ -13,6 +13,7 @@ services:
   backend:
     build: 
       context: ./athly-backend
+      dockerfile: Dockerfile.dev
     container_name: iafit-backend
     restart: always
     ports:
@@ -31,6 +32,7 @@ services:
   frontend:
     build:
       context: ./athly-frontend
+      dockerfile: Dockerfile.dev
     container_name: iafit-frontend
     restart: always
     ports:
