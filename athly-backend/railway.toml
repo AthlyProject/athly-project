@@ -1,0 +1,7 @@
+[build]
+builder = "DOCKER"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+releaseCommand = "npx prisma migrate deploy"
+startCommand = "node dist/main.js"
