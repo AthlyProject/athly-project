@@ -1,10 +1,8 @@
 import Foundation
-import SwiftData
 import CoreLocation
 
-@Model
-final class RunSession {
-    var id: UUID
+final class RunSession: Identifiable, Codable {
+    let id: UUID
     var startDate: Date
     var endDate: Date?
     var distanceMeters: Double
@@ -15,10 +13,7 @@ final class RunSession {
     var status: String // active, paused, completed
     var sportType: String // running, walking, trail
 
-    @Relationship(deleteRule: .cascade)
     var routePoints: [RoutePoint]
-
-    @Relationship(deleteRule: .cascade)
     var splits: [Split]
 
     // Sync with backend

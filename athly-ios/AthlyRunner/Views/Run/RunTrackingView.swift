@@ -1,5 +1,4 @@
 import SwiftUI
-import MapKit
 
 struct RunTrackingView: View {
     @ObservedObject var viewModel: RunViewModel
@@ -7,19 +6,37 @@ struct RunTrackingView: View {
 
     var body: some View {
         ZStack {
-            // Map
-            RunMapView(
-                coordinates: viewModel.tracker.routeCoordinates,
-                isTracking: viewModel.isRunning
-            )
-            .ignoresSafeArea(edges: .top)
+            // Background
+            AthlyTheme.Color.backgroundDark
+                .ignoresSafeArea()
 
-            // Metrics overlay
-            VStack {
+            // Ambient glow
+            RadialGradient(
+                colors: [AthlyTheme.Color.primary.opacity(0.12), Color.clear],
+                center: .init(x: 0.2, y: 0.15),
+                startRadius: 0,
+                endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [AthlyTheme.Color.secondary.opacity(0.08), Color.clear],
+                center: .init(x: 0.85, y: 0.85),
+                startRadius: 0,
+                endRadius: 250
+            )
+            .ignoresSafeArea()
+
+            // Metrics fullscreen
+            VStack(spacing: 0) {
                 Spacer()
-                metricsPanel
+                mainTimeDisplay
+                Spacer()
+                metricsGrid
+                Spacer()
                 controlsPanel
             }
+            .padding(.bottom, 16)
         }
         .navigationBarHidden(true)
         .confirmationDialog(
@@ -41,42 +58,63 @@ struct RunTrackingView: View {
         }
     }
 
-    private var metricsPanel: some View {
-        VStack(spacing: 0) {
+    // MARK: - Main time display (large centered)
+
+    private var mainTimeDisplay: some View {
+        VStack(spacing: 6) {
+            Text(viewModel.tracker.formattedDuration)
+                .font(.custom("SpaceGrotesk-Bold", size: 72).monospacedDigit())
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .minimumScaleFactor(0.6)
+
+            Text("TEMPO")
+                .font(AthlyTheme.Typography.label())
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+    }
+
+    // MARK: - Metrics grid
+
+    private var metricsGrid: some View {
+        VStack(spacing: 20) {
             HStack(spacing: 0) {
                 metricItem(
-                    value: viewModel.tracker.formattedDuration,
-                    label: "TEMPO",
-                    large: true
+                    value: viewModel.tracker.formattedDistance,
+                    label: "KM",
+                    icon: "ruler"
+                )
+
+                metricDivider
+
+                metricItem(
+                    value: viewModel.tracker.formattedPace,
+                    label: "PACE /KM",
+                    icon: "speedometer"
                 )
             }
-            .padding(.top, 20)
 
             HStack(spacing: 0) {
-                metricItem(value: viewModel.tracker.formattedDistance, label: "KM")
-
-                Divider()
-                    .frame(height: 50)
-                    .background(AthlyTheme.Color.borderDark)
-
-                metricItem(value: viewModel.tracker.formattedPace, label: "PACE /KM")
-
-                Divider()
-                    .frame(height: 50)
-                    .background(AthlyTheme.Color.borderDark)
-
                 metricItem(
                     value: String(format: "%.0f", viewModel.tracker.elevationGain),
-                    label: "ELEV (M)"
+                    label: "ELEVACAO (M)",
+                    icon: "mountain.2"
+                )
+
+                metricDivider
+
+                metricItem(
+                    value: String(format: "%.0f", viewModel.tracker.calories),
+                    label: "KCAL",
+                    icon: "flame"
                 )
             }
-            .padding(.vertical, 12)
         }
+        .padding(AthlyTheme.Spacing.sm)
         .background(
             ZStack {
                 AthlyTheme.Color.surfaceCard
                 LinearGradient(
-                    colors: [AthlyTheme.Color.primary.opacity(0.1), AthlyTheme.Color.secondary.opacity(0.04)],
+                    colors: [AthlyTheme.Color.primary.opacity(0.08), AthlyTheme.Color.secondary.opacity(0.04)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -87,24 +125,36 @@ struct RunTrackingView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AthlyTheme.Gradient.gradientBorder, lineWidth: 1)
         )
-        .shadow(color: AthlyTheme.Color.primary.opacity(0.3), radius: 14, y: 4)
+        .shadow(color: AthlyTheme.Color.primary.opacity(0.2), radius: 14, y: 4)
         .padding(.horizontal, 16)
     }
 
-    private func metricItem(value: String, label: String, large: Bool = false) -> some View {
-        VStack(spacing: 4) {
+    private func metricItem(value: String, label: String, icon: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(AthlyTheme.Color.primary)
+
             Text(value)
-                .font(.custom("SpaceGrotesk-Bold", size: large ? 48 : 28).monospacedDigit())
+                .font(.custom("SpaceGrotesk-Bold", size: 32).monospacedDigit())
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                 .minimumScaleFactor(0.7)
 
             Text(label)
                 .font(AthlyTheme.Typography.label())
-                .textCase(.uppercase)
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
     }
+
+    private var metricDivider: some View {
+        Rectangle()
+            .fill(AthlyTheme.Color.borderDark)
+            .frame(width: 1, height: 60)
+    }
+
+    // MARK: - Controls
 
     private var controlsPanel: some View {
         HStack(spacing: 40) {
@@ -158,7 +208,6 @@ struct RunTrackingView: View {
             }
         }
         .padding(.vertical, 24)
-        .padding(.bottom, 16)
     }
 }
 

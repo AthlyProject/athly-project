@@ -1,10 +1,9 @@
 import SwiftUI
-import SwiftData
 import MapKit
 
 struct RunSummaryView: View {
     @ObservedObject var viewModel: RunViewModel
-    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var runStore: RunStore
 
     var body: some View {
         ZStack {
@@ -53,7 +52,7 @@ struct RunSummaryView: View {
                     VStack(spacing: 12) {
                         Button {
                             Task {
-                                await viewModel.saveRun(modelContext: modelContext)
+                                await viewModel.saveRun(runStore: runStore)
                             }
                         } label: {
                             HStack {
@@ -85,24 +84,8 @@ struct RunSummaryView: View {
 
     private func summaryMap(locations: [CLLocation]) -> some View {
         let coords = locations.map { $0.coordinate }
-
-        return Map {
-            MapPolyline(coordinates: coords)
-                .stroke(AthlyTheme.Color.secondaryNeon, lineWidth: 3)
-
-            if let first = coords.first {
-                Annotation("", coordinate: first) {
-                    Circle().fill(AthlyTheme.Color.success).frame(width: 10, height: 10)
-                }
-            }
-            if let last = coords.last {
-                Annotation("", coordinate: last) {
-                    Circle().fill(AthlyTheme.Color.error).frame(width: 10, height: 10)
-                }
-            }
-        }
-        .mapStyle(.standard(emphasis: .muted))
-        .disabled(true)
+        return SummaryMapView(coordinates: coords)
+            .allowsHitTesting(false)
     }
 
     private func statsGrid(result: RunResult) -> some View {

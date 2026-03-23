@@ -1,11 +1,11 @@
 import SwiftUI
-import SwiftData
 
 @main
 struct AthlyRunnerApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var planViewModel = TrainingPlanViewModel()
+    @StateObject private var runStore = RunStore()
 
     init() {
         configureUIKitAppearance()
@@ -17,9 +17,9 @@ struct AthlyRunnerApp: App {
                 .environmentObject(authViewModel)
                 .environmentObject(locationManager)
                 .environmentObject(planViewModel)
+                .environmentObject(runStore)
                 .preferredColorScheme(.dark)
         }
-        .modelContainer(for: [RunSession.self, RoutePoint.self, Split.self])
     }
 
     private func configureUIKitAppearance() {

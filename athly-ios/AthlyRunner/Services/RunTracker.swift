@@ -1,7 +1,6 @@
 import Foundation
 import CoreLocation
 import Combine
-import SwiftData
 
 @MainActor
 final class RunTracker: ObservableObject {

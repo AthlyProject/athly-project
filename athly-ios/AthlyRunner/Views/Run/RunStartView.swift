@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 struct RunStartView: View {
     @EnvironmentObject var locationManager: LocationManager
@@ -32,26 +33,28 @@ struct RunStartView: View {
         }
     }
 
+    // MARK: - Pre-run view with location map snapshot
+
     private var preRunView: some View {
         ZStack {
-            AthlyTheme.Color.backgroundDark
-                .ignoresSafeArea()
+            // Static map showing user's current location
+            if let location = locationManager.currentLocation {
+                LocationSnapshotMap(coordinate: location.coordinate)
+                    .ignoresSafeArea()
+            } else {
+                AthlyTheme.Color.backgroundDark
+                    .ignoresSafeArea()
+            }
 
-            // Ambient top-left purple
-            RadialGradient(
-                colors: [AthlyTheme.Color.primary.opacity(0.20), Color.clear],
-                center: .init(x: 0.2, y: 0.1),
-                startRadius: 0,
-                endRadius: 300
-            )
-            .ignoresSafeArea()
-
-            // Ambient bottom-right cyan
-            RadialGradient(
-                colors: [AthlyTheme.Color.secondary.opacity(0.12), Color.clear],
-                center: .init(x: 0.85, y: 0.9),
-                startRadius: 0,
-                endRadius: 250
+            // Dark overlay for readability
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.3),
+                    Color.black.opacity(0.6),
+                    Color.black.opacity(0.85)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
             )
             .ignoresSafeArea()
 
@@ -65,6 +68,18 @@ struct RunStartView: View {
                 }
 
                 Spacer()
+            }
+        }
+        .onAppear {
+            // Request location early so map can show user position
+            if locationManager.hasPermission {
+                locationManager.startTracking()
+            }
+        }
+        .onDisappear {
+            // Stop tracking when leaving pre-run (tracking restarts in RunTracker.start())
+            if !viewModel.isActive {
+                locationManager.stopTracking()
             }
         }
     }
@@ -96,17 +111,34 @@ struct RunStartView: View {
 
     private var readyView: some View {
         VStack(spacing: 40) {
+            // Location info
             VStack(spacing: 8) {
-                Image(systemName: "figure.run")
-                    .font(.system(size: 64))
-                    .foregroundStyle(AthlyTheme.Color.primary)
-                    .shadow(color: AthlyTheme.Color.primary.opacity(0.5), radius: 20)
+                if locationManager.currentLocation != nil {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(AthlyTheme.Color.success)
+                            .frame(width: 8, height: 8)
+                        Text("GPS ativo")
+                            .font(AthlyTheme.Typography.body(14))
+                            .foregroundStyle(AthlyTheme.Color.success)
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .tint(AthlyTheme.Color.warning)
+                        Text("Buscando GPS...")
+                            .font(AthlyTheme.Typography.body(14))
+                            .foregroundStyle(AthlyTheme.Color.warning)
+                    }
+                }
 
                 Text("Pronto para correr?")
-                    .font(AthlyTheme.Typography.heading(22))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    .font(AthlyTheme.Typography.heading(26))
+                    .foregroundStyle(.white)
             }
 
+            // Start button
             Button {
                 viewModel.startRun()
             } label: {
@@ -125,7 +157,35 @@ struct RunStartView: View {
                         .foregroundStyle(.white)
                 }
             }
+            .disabled(locationManager.currentLocation == nil)
+            .opacity(locationManager.currentLocation == nil ? 0.5 : 1.0)
         }
+    }
+}
+
+// MARK: - Static map centered on user location
+
+private struct LocationSnapshotMap: UIViewRepresentable {
+    let coordinate: CLLocationCoordinate2D
+
+    func makeUIView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+        mapView.isScrollEnabled = false
+        mapView.isZoomEnabled = false
+        mapView.isRotateEnabled = false
+        mapView.isPitchEnabled = false
+        mapView.showsUserLocation = true
+        mapView.pointOfInterestFilter = .excludingAll
+        return mapView
+    }
+
+    func updateUIView(_ mapView: MKMapView, context: Context) {
+        let region = MKCoordinateRegion(
+            center: coordinate,
+            latitudinalMeters: 400,
+            longitudinalMeters: 400
+        )
+        mapView.setRegion(region, animated: false)
     }
 }
 
@@ -133,5 +193,6 @@ struct RunStartView: View {
 extension RunViewModel {
     func updateLocationManager(_ manager: LocationManager) {
         self.tracker = RunTracker(locationManager: manager)
+        bindTracker()
     }
 }

@@ -1,15 +1,11 @@
 import Foundation
-import SwiftData
 
-@Model
-final class Split {
-    var id: UUID
-    var kilometer: Int
-    var durationSeconds: Double
-    var paceSecondsPerKm: Double
-    var elevationDelta: Double
-
-    var runSession: RunSession?
+struct Split: Identifiable, Codable {
+    let id: UUID
+    let kilometer: Int
+    let durationSeconds: Double
+    let paceSecondsPerKm: Double
+    let elevationDelta: Double
 
     init(kilometer: Int, durationSeconds: Double, elevationDelta: Double = 0) {
         self.id = UUID()

@@ -73,11 +73,20 @@ struct HealthKitRunsView: View {
     }
 
     private var emptyContent: some View {
-        ContentUnavailableView(
-            "Nenhuma corrida encontrada",
-            systemImage: "figure.run",
-            description: Text("Nao ha corridas no Apple Health neste dispositivo. No simulador pode nao haver dados.")
-        )
+        VStack(spacing: 12) {
+            Image(systemName: "figure.run")
+                .font(.system(size: 48))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+            Text("Nenhuma corrida encontrada")
+                .font(AthlyTheme.Typography.semibold(17))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+            Text("Nao ha corridas no Apple Health neste dispositivo. No simulador pode nao haver dados.")
+                .font(AthlyTheme.Typography.body(15))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var healthUnavailableContent: some View {
@@ -207,8 +216,10 @@ struct HealthKitRunCard: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        HealthKitRunsView()
+struct HealthKitRunsView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationStack {
+            HealthKitRunsView()
+        }
     }
 }

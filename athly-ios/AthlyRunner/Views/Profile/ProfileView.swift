@@ -1,11 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var runStore: RunStore
 
-    @Query(sort: \RunSession.startDate, order: .reverse)
-    private var allRuns: [RunSession]
+    private var allRuns: [RunSession] { runStore.sortedSessions }
 
     var body: some View {
         NavigationStack {

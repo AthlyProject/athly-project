@@ -1,12 +1,11 @@
 import SwiftUI
-import SwiftData
 
 struct DashboardView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var authVM: AuthViewModel
+    @EnvironmentObject var runStore: RunStore
 
-    @Query(sort: \RunSession.startDate, order: .reverse)
-    private var recentRuns: [RunSession]
+    private var recentRuns: [RunSession] { runStore.sortedSessions }
 
     var body: some View {
         NavigationStack {

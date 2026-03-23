@@ -6,7 +6,7 @@ actor APIClient {
     #if targetEnvironment(simulator)
     private var baseURL: String = "http://localhost:4000"
     #else
-    private var baseURL: String = "http://192.168.18.220:4000"
+    private var baseURL: String = "https://athly-project-production.up.railway.app"
     #endif
     private var accessToken: String?
     private var refreshToken: String?
@@ -38,8 +38,8 @@ actor APIClient {
         return response
     }
 
-    func register(name: String, email: String, password: String) async throws -> AuthResponse {
-        let body = RegisterRequest(name: name, email: email, password: password)
+    func register(email: String, userName: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async throws -> AuthResponse {
+        let body = RegisterRequest(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
         let response: AuthResponse = try await post("/auth/register", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
@@ -198,9 +198,14 @@ struct LoginRequest: Encodable {
 }
 
 struct RegisterRequest: Encodable {
-    let name: String
     let email: String
+    let userName: String
+    let name: String
     let password: String
+    let confirmPassword: String
+    let dateOfBirth: String
+    let weight: Double
+    let height: Double
 }
 
 struct AuthResponse: Decodable {

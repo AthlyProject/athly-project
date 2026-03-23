@@ -1,6 +1,6 @@
 import Foundation
-import SwiftData
 import CoreLocation
+import Combine
 
 @MainActor
 final class RunViewModel: ObservableObject {
@@ -11,10 +11,21 @@ final class RunViewModel: ObservableObject {
     @Published var saveError: String?
 
     private let locationManager: LocationManager
+    private var trackerCancellable: AnyCancellable?
 
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
         self.tracker = RunTracker(locationManager: locationManager)
+        bindTracker()
+    }
+
+    /// Forward tracker's objectWillChange so SwiftUI re-renders this ViewModel's observers.
+    func bindTracker() {
+        trackerCancellable = tracker.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
     }
 
     var isRunning: Bool { tracker.state == .running }
@@ -49,7 +60,7 @@ final class RunViewModel: ObservableObject {
         lastRunResult = nil
     }
 
-    func saveRun(modelContext: ModelContext) async {
+    func saveRun(runStore: RunStore) async {
         guard let result = lastRunResult else { return }
 
         isSaving = true
@@ -68,7 +79,6 @@ final class RunViewModel: ObservableObject {
 
         for location in result.locations {
             let point = RoutePoint(location: location)
-            point.runSession = session
             session.routePoints.append(point)
         }
 
@@ -78,12 +88,10 @@ final class RunViewModel: ObservableObject {
                 durationSeconds: splitData.durationSeconds,
                 elevationDelta: splitData.elevationDelta
             )
-            split.runSession = session
             session.splits.append(split)
         }
 
-        modelContext.insert(session)
-        try? modelContext.save()
+        runStore.add(session)
 
         // Sync with backend
         do {
@@ -115,7 +123,7 @@ final class RunViewModel: ObservableObject {
             let response = try await APIClient.shared.saveRun(request)
             session.backendId = response.id
             session.synced = true
-            try? modelContext.save()
+            runStore.update(session)
         } catch {
             // Saved locally, will sync later
             saveError = "Salvo localmente. Sincroniza quando houver conexão."

@@ -14,6 +14,7 @@
 		18C75BABD693992233C4A216 /* CalendarGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCB149AB3D32A7CEC7DB593 /* CalendarGridView.swift */; };
 		1E42A70DA532CAD8DC394FE1 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */; };
 		25BA612E21D10FA02AE20D6B /* RoutePoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FD217AB0DE86A175983B8C /* RoutePoint.swift */; };
+		2909803E90B8EF3BCEC76C55 /* SummaryMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */; };
 		2B10C2AB31963A90746F1D2A /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947409A7BAC5D8E1DB25EE28 /* Theme.swift */; };
 		3BEE8A4830AA285F63D25824 /* StatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51D6AF998073CEAB51467BD1 /* StatusBadgeView.swift */; };
 		44D4C6DC63D15FECA7227252 /* TrainingPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A54761B0A247CE0E595ACE /* TrainingPlanViewModel.swift */; };
@@ -33,6 +34,7 @@
 		89541A62B716A2302CADF335 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43825FAB86DD6123B208E2F0 /* ProfileView.swift */; };
 		8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4F37700F3E2C1413DE8816 /* RunSession.swift */; };
 		90A87901FE81F1FE5D992E66 /* HealthKitRunItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */; };
+		94056B892C9012DA74021779 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */; };
 		97DA447E4B2C777C7B5FC162 /* RunTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */; };
 		A271E861EBADC0AA295CB857 /* SportBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76040706569D260F613A6C4A /* SportBadgeView.swift */; };
 		A439736DB08A1F67171BC6A8 /* HealthKitRunsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */; };
@@ -55,6 +57,7 @@
 		15EE092CB97CBB29AF5AE98A /* RunViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunViewModel.swift; sourceTree = "<group>"; };
 		182ACC312B7C55B46D3231F6 /* HealthKitRunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsView.swift; sourceTree = "<group>"; };
 		1BEC4388E2A9A0B3925B6714 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
 		21885B168F66B38BD6D0490A /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
 		252708FAD954D99A5CADB708 /* WorkoutCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCardView.swift; sourceTree = "<group>"; };
 		2C4E36E26B0934C42F267557 /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
@@ -81,8 +84,9 @@
 		9D3D908C678C0EEA90262783 /* RunSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryView.swift; sourceTree = "<group>"; };
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
-		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
+		AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryMapView.swift; sourceTree = "<group>"; };
 		B92F9D576847F505274A2EE1 /* RunStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStartView.swift; sourceTree = "<group>"; };
 		BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsViewModel.swift; sourceTree = "<group>"; };
 		BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
@@ -156,6 +160,7 @@
 				FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */,
 				76040706569D260F613A6C4A /* SportBadgeView.swift */,
 				51D6AF998073CEAB51467BD1 /* StatusBadgeView.swift */,
+				AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */,
 				252708FAD954D99A5CADB708 /* WorkoutCardView.swift */,
 			);
 			path = Components;
@@ -201,6 +206,7 @@
 				D83E95AB1CF3059ACB41221C /* HealthKitService.swift */,
 				D92E1532A4AC761644476855 /* LocationManager.swift */,
 				AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */,
+				1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */,
 				7983CD8541D4919DA78D7FA0 /* RunTracker.swift */,
 			);
 			path = Services;
@@ -318,11 +324,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1640;
-				TargetAttributes = {
-					DB2561B82C567797BDCC4C4E = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = AD8858011B5208CA18A12727 /* Build configuration list for PBXProject "AthlyRunner" */;
 			developmentRegion = en;
@@ -386,6 +387,7 @@
 				CECFC240FDA8E8ABFED896FF /* RunMapView.swift in Sources */,
 				8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */,
 				FD1AA740098898F1F9380EB7 /* RunStartView.swift in Sources */,
+				94056B892C9012DA74021779 /* RunStore.swift in Sources */,
 				ED4482753DC50D2EE3836C51 /* RunSummaryView.swift in Sources */,
 				5F39F8206181384CFD49E697 /* RunTracker.swift in Sources */,
 				97DA447E4B2C777C7B5FC162 /* RunTrackingView.swift in Sources */,
@@ -393,6 +395,7 @@
 				17BC451DE0C5E1DBB273517E /* Split.swift in Sources */,
 				A271E861EBADC0AA295CB857 /* SportBadgeView.swift in Sources */,
 				3BEE8A4830AA285F63D25824 /* StatusBadgeView.swift in Sources */,
+				2909803E90B8EF3BCEC76C55 /* SummaryMapView.swift in Sources */,
 				CF0A75EC9DFE71921931EADE /* TextFieldStyles.swift in Sources */,
 				2B10C2AB31963A90746F1D2A /* Theme.swift in Sources */,
 				44D4C6DC63D15FECA7227252 /* TrainingPlanViewModel.swift in Sources */,
@@ -451,7 +454,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -516,7 +519,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -535,13 +538,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.athly.runner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -554,13 +558,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.athly.runner;
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";

@@ -30,14 +30,14 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
-    func register(name: String, email: String, password: String) async {
+    func register(email: String, userName: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.register(name: name, email: email, password: password)
+            let response = try await APIClient.shared.register(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
-            userName = name
+            self.userName = name
             isAuthenticated = true
         } catch {
             errorMessage = error.localizedDescription

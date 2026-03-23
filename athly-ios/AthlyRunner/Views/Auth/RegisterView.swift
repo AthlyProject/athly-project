@@ -5,16 +5,27 @@ struct RegisterView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var name = ""
+    @State private var userName = ""
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
+    @State private var dateOfBirth = Date()
+    @State private var weightText = ""
+    @State private var heightText = ""
 
     private var passwordsMatch: Bool {
         !password.isEmpty && password == confirmPassword
     }
 
     private var isFormValid: Bool {
-        !name.isEmpty && !email.isEmpty && passwordsMatch
+        !name.isEmpty && !userName.isEmpty && !email.isEmpty && passwordsMatch
+        && !weightText.isEmpty && !heightText.isEmpty
+    }
+
+    private var dateOfBirthString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: dateOfBirth)
     }
 
     var body: some View {
@@ -37,9 +48,14 @@ struct RegisterView: View {
                         .padding(.top, AthlyTheme.Spacing.lg)
 
                         VStack(spacing: 12) {
-                            TextField("Nome", text: $name)
+                            TextField("Nome completo", text: $name)
                                 .textFieldStyle(AthlyTextFieldStyle())
                                 .textContentType(.name)
+
+                            TextField("Username", text: $userName)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .textContentType(.username)
+                                .autocapitalization(.none)
 
                             TextField("Email", text: $email)
                                 .textFieldStyle(AthlyTextFieldStyle())
@@ -47,7 +63,7 @@ struct RegisterView: View {
                                 .keyboardType(.emailAddress)
                                 .autocapitalization(.none)
 
-                            SecureField("Senha", text: $password)
+                            SecureField("Senha (mínimo 8 caracteres)", text: $password)
                                 .textFieldStyle(AthlyTextFieldStyle())
                                 .textContentType(.newPassword)
 
@@ -61,6 +77,20 @@ struct RegisterView: View {
                                     .foregroundStyle(AthlyTheme.Color.error)
                             }
 
+                            DatePicker("Data de nascimento", selection: $dateOfBirth, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+
+                            TextField("Peso (kg)", text: $weightText)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .keyboardType(.decimalPad)
+
+                            TextField("Altura (cm)", text: $heightText)
+                                .textFieldStyle(AthlyTextFieldStyle())
+                                .keyboardType(.decimalPad)
+
                             if let error = authViewModel.errorMessage {
                                 Text(error)
                                     .font(AthlyTheme.Typography.body(12))
@@ -70,7 +100,18 @@ struct RegisterView: View {
 
                             Button {
                                 Task {
-                                    await authViewModel.register(name: name, email: email, password: password)
+                                    let weight = Double(weightText) ?? 0
+                                    let height = Double(heightText) ?? 0
+                                    await authViewModel.register(
+                                        email: email,
+                                        userName: userName,
+                                        name: name,
+                                        password: password,
+                                        confirmPassword: confirmPassword,
+                                        dateOfBirth: dateOfBirthString,
+                                        weight: weight,
+                                        height: height
+                                    )
                                     if authViewModel.isAuthenticated {
                                         dismiss()
                                     }

@@ -1,18 +1,14 @@
 import Foundation
-import SwiftData
 import CoreLocation
 
-@Model
-final class RoutePoint {
-    var id: UUID
-    var latitude: Double
-    var longitude: Double
-    var altitude: Double
-    var timestamp: Date
-    var speed: Double
-    var horizontalAccuracy: Double
-
-    var runSession: RunSession?
+struct RoutePoint: Identifiable, Codable {
+    let id: UUID
+    let latitude: Double
+    let longitude: Double
+    let altitude: Double
+    let timestamp: Date
+    let speed: Double
+    let horizontalAccuracy: Double
 
     init(location: CLLocation) {
         self.id = UUID()

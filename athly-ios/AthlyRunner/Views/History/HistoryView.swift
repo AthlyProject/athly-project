@@ -1,9 +1,9 @@
 import SwiftUI
-import SwiftData
 
 struct HistoryView: View {
-    @Query(sort: \RunSession.startDate, order: .reverse)
-    private var runs: [RunSession]
+    @EnvironmentObject private var runStore: RunStore
+
+    private var runs: [RunSession] { runStore.sortedSessions }
 
     var body: some View {
         NavigationStack {
@@ -13,11 +13,19 @@ struct HistoryView: View {
 
                 Group {
                     if runs.isEmpty {
-                        ContentUnavailableView(
-                            "Sem corridas",
-                            systemImage: "figure.run",
-                            description: Text("Suas corridas aparecerao aqui apos registra-las.")
-                        )
+                        VStack(spacing: 12) {
+                            Image(systemName: "figure.run")
+                                .font(.system(size: 48))
+                                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                            Text("Sem corridas")
+                                .font(AthlyTheme.Typography.semibold(17))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            Text("Suas corridas aparecerao aqui apos registra-las.")
+                                .font(AthlyTheme.Typography.body(15))
+                                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         List(runs) { run in
                             runRow(run)
