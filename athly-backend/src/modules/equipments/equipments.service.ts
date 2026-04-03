@@ -39,10 +39,7 @@ export class EquipmentsService {
     return this.mapEquipment(equipment);
   }
 
-  async updateEquipment(
-    uuid: string,
-    input: UpdateEquipmentDto,
-  ): Promise<EquipmentModel> {
+  async updateEquipment(uuid: string, input: UpdateEquipmentDto): Promise<EquipmentModel> {
     const equipment = await this.prisma.equipment.update({
       where: { uuid },
       data: input,
@@ -66,10 +63,7 @@ export class EquipmentsService {
     });
   }
 
-  async removeEquipmentFromUser(
-    userId: string,
-    equipmentId: string,
-  ): Promise<void> {
+  async removeEquipmentFromUser(userId: string, equipmentId: string): Promise<void> {
     await this.prisma.userEquipment.delete({
       where: {
         userId_equipmentId: {

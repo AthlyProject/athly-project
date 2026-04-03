@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiCreatedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WeeklyGoalsService } from './weekly-goals.service';
 import { CreateWeeklyGoalDto } from './dto/create-weekly-goal.dto';
@@ -35,13 +26,19 @@ export class WeeklyGoalsController {
 
   @Get(':uuid')
   @ApiOkResponse({ type: WeeklyGoalModel })
-  getWeeklyGoalById(@CurrentUser() user: UserModel, @Param('uuid') uuid: string): Promise<WeeklyGoalModel | null> {
+  getWeeklyGoalById(
+    @CurrentUser() user: UserModel,
+    @Param('uuid') uuid: string,
+  ): Promise<WeeklyGoalModel | null> {
     return this.weeklyGoalsService.getWeeklyGoalById(user.id, uuid);
   }
 
   @Post()
   @ApiCreatedResponse({ type: WeeklyGoalModel })
-  createWeeklyGoal(@CurrentUser() user: UserModel, @Body() input: CreateWeeklyGoalDto): Promise<WeeklyGoalModel> {
+  createWeeklyGoal(
+    @CurrentUser() user: UserModel,
+    @Body() input: CreateWeeklyGoalDto,
+  ): Promise<WeeklyGoalModel> {
     return this.weeklyGoalsService.createWeeklyGoal(user.id, input);
   }
 

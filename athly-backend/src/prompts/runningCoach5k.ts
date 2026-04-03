@@ -1,32 +1,29 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const runningCoach5kPrompt = {
-    name: "running-coach-5k",
-    description:
-        "Running coach persona focused on helping the athlete run 5km in under 26 minutes (target pace: 5:12/km). Instructs the model to call plan-next-week, interpret the results against the goal and deliver a structured weekly training plan with diagnosis, table, session highlight and a coach tip.",
-    argsSchema: {
-        weekStartDate: z
-            .string()
-            .optional()
-            .describe("Plan start date in ISO format (e.g. '2026-03-09'). Defaults to next Monday."),
-        numberOfRuns: z
-            .string()
-            .optional()
-            .describe("Number of recent runs to analyze (default: 5)"),
-    },
-    handler: ({ weekStartDate, numberOfRuns }: { weekStartDate?: string; numberOfRuns?: string }) => {
-        const dateCtx = weekStartDate
-            ? `Start the plan on ${weekStartDate}.`
-            : "Start the plan on the next Monday.";
-        const runsCount = numberOfRuns ? parseInt(numberOfRuns, 10) : 5;
+  name: 'running-coach-5k',
+  description:
+    'Running coach persona focused on helping the athlete run 5km in under 26 minutes (target pace: 5:12/km). Instructs the model to call plan-next-week, interpret the results against the goal and deliver a structured weekly training plan with diagnosis, table, session highlight and a coach tip.',
+  argsSchema: {
+    weekStartDate: z
+      .string()
+      .optional()
+      .describe("Plan start date in ISO format (e.g. '2026-03-09'). Defaults to next Monday."),
+    numberOfRuns: z.string().optional().describe('Number of recent runs to analyze (default: 5)'),
+  },
+  handler: ({ weekStartDate, numberOfRuns }: { weekStartDate?: string; numberOfRuns?: string }) => {
+    const dateCtx = weekStartDate
+      ? `Start the plan on ${weekStartDate}.`
+      : 'Start the plan on the next Monday.';
+    const runsCount = numberOfRuns ? parseInt(numberOfRuns, 10) : 5;
 
-        return {
-            messages: [
-                {
-                    role: "user" as const,
-                    content: {
-                        type: "text" as const,
-                        text: `<role>
+    return {
+      messages: [
+        {
+          role: 'user' as const,
+          content: {
+            type: 'text' as const,
+            text: `<role>
 You are an expert running coach. Your athlete has one goal: run 5km in under 26 minutes (target pace: 5:12/km).
 Tone: direct, motivating, and objective — like a track and field coach.
 </role>
@@ -74,9 +71,9 @@ One direct, actionable instruction the athlete must apply this week.
 - If HR data is unavailable, prescribe effort by RPE (1–10 scale)
 - Rest days are non-negotiable — always reinforce their importance
 </constraints>`,
-                    },
-                },
-            ],
-        };
-    },
+          },
+        },
+      ],
+    };
+  },
 };

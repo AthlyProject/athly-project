@@ -152,7 +152,7 @@ export class AuthService {
     const athleteId = tokens.athlete?.id?.toString();
 
     if (!athleteId) {
-       throw new UnauthorizedException('Strava payload did not contain athlete id.');
+      throw new UnauthorizedException('Strava payload did not contain athlete id.');
     }
 
     // 2. See if Integration exists
@@ -193,35 +193,37 @@ export class AuthService {
           password: hashedPassword,
           integrations: {
             create: {
-               name: 'Strava',
-               icon: '🏃',
-               type: 'strava',
-               connected: true,
-               accessToken: tokens.access_token,
-               refreshToken: tokens.refresh_token,
-               tokenExpiresAt: new Date(tokens.expires_at * 1000),
-               stravaAthleteId: athleteId,
-               scope: 'activity:read_all',
-            }
-          }
+              name: 'Strava',
+              icon: '🏃',
+              type: 'strava',
+              connected: true,
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+              tokenExpiresAt: new Date(tokens.expires_at * 1000),
+              stravaAthleteId: athleteId,
+              scope: 'activity:read_all',
+            },
+          },
         },
       });
       userId = newUser.id;
     }
 
     // 4. Fetch User, create session, return
-    const userRecord = await this.prisma.user.findUnique({ where: { id: userId }});
+    const userRecord = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!userRecord) {
-       throw new InternalServerErrorException('Error creating/querying Strava user');
+      throw new InternalServerErrorException('Error creating/querying Strava user');
     }
 
     const accessToken = this.signAccessToken(userRecord);
     const refreshToken = await this.createSession(userRecord);
 
     // Fire-and-forget sync
-    this.stravaService.syncActivities(userId, tokens.access_token).catch((err: Error) =>
-      console.error(`[Strava Auth] Background sync failed for user ${userId}:`, err.message),
-    );
+    this.stravaService
+      .syncActivities(userId, tokens.access_token)
+      .catch((err: Error) =>
+        console.error(`[Strava Auth] Background sync failed for user ${userId}:`, err.message),
+      );
 
     return {
       user: this.usersService.toUserModel(userRecord),

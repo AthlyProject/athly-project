@@ -17,13 +17,19 @@ export class AiPlannerController {
 
   @Post('plan-next-week')
   @ApiOkResponse({ type: AiPlannerResultModel })
-  planNextWeek(@CurrentUser() user: UserModel, @Body() input: PlanNextWeekDto): Promise<AiPlannerResultModel> {
+  planNextWeek(
+    @CurrentUser() user: UserModel,
+    @Body() input: PlanNextWeekDto,
+  ): Promise<AiPlannerResultModel> {
     return this.aiPlannerService.planNextWeek(user.id, input) as Promise<AiPlannerResultModel>;
   }
 
   @Post('plan-from-health')
   @ApiOkResponse({ type: AiPlannerResultModel })
-  planFromHealth(@CurrentUser() user: UserModel, @Body() input: PlanFromHealthDto): Promise<AiPlannerResultModel> {
+  planFromHealth(
+    @CurrentUser() user: UserModel,
+    @Body() input: PlanFromHealthDto,
+  ): Promise<AiPlannerResultModel> {
     return this.aiPlannerService.planFromHealth(user.id, input) as Promise<AiPlannerResultModel>;
   }
 }

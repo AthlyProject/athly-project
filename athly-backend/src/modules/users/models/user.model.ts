@@ -28,4 +28,7 @@ export class UserModel {
 
   @ApiPropertyOptional({ type: Number })
   availability?: number | null;
+
+  @ApiProperty()
+  assessmentCompleted: boolean;
 }

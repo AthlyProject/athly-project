@@ -23,7 +23,7 @@ export class StravaService {
     });
 
     if (response.status === 401) {
-      const body = await response.json().catch(() => ({})) as { errors?: { code?: string }[] };
+      const body = (await response.json().catch(() => ({}))) as { errors?: { code?: string }[] };
       const code = body?.errors?.[0]?.code;
       if (code === 'missing') return [];
       return [];

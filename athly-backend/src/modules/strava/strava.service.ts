@@ -71,7 +71,7 @@ export class StravaService {
     });
 
     if (!response.ok) {
-      const body = await response.json().catch(() => ({})) as { errors?: { code?: string }[] };
+      const body = (await response.json().catch(() => ({}))) as { errors?: { code?: string }[] };
       const code = body?.errors?.[0]?.code;
       if (code === 'missing') return [];
       throw new HttpException(`Strava API error: ${response.statusText}`, response.status);

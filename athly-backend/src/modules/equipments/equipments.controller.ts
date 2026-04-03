@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { EquipmentsService } from './equipments.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
@@ -41,10 +32,7 @@ export class EquipmentsController {
   }
 
   @Put(':uuid')
-  updateEquipment(
-    @Param('uuid') uuid: string,
-    @Body() input: UpdateEquipmentDto,
-  ) {
+  updateEquipment(@Param('uuid') uuid: string, @Body() input: UpdateEquipmentDto) {
     return this.equipmentsService.updateEquipment(uuid, input);
   }
 
@@ -54,10 +42,7 @@ export class EquipmentsController {
   }
 
   @Post(':equipmentId/add')
-  addEquipmentToUser(
-    @CurrentUser() user: UserModel,
-    @Param('equipmentId') equipmentId: string,
-  ) {
+  addEquipmentToUser(@CurrentUser() user: UserModel, @Param('equipmentId') equipmentId: string) {
     return this.equipmentsService.addEquipmentToUser(user.id, equipmentId);
   }
 

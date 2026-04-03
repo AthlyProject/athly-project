@@ -12,6 +12,7 @@ import { WeeklyGoalsModule } from './modules/weekly-goals/weekly-goals.module';
 import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
 import { AiPlannerModule } from './modules/ai-planner/ai-planner.module';
 import { StravaModule } from './modules/strava/strava.module';
+import { AssessmentModule } from './modules/assessment/assessment.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { StravaModule } from './modules/strava/strava.module';
     TrainingPlansModule,
     AiPlannerModule,
     StravaModule,
+    AssessmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -17,10 +17,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'dev_secret_change_me'),
         signOptions: {
-          expiresIn: config.get<string>(
-            'JWT_EXPIRES_IN',
-            '1h',
-          ) as unknown as number,
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '1h') as unknown as number,
         },
       }),
     }),

@@ -23,13 +23,19 @@ export class TrainingPlansController {
 
   @Get(':id')
   @ApiOkResponse({ type: TrainingPlanModel })
-  getTrainingPlanById(@CurrentUser() user: UserModel, @Param('id') id: string): Promise<TrainingPlanModel | null> {
+  getTrainingPlanById(
+    @CurrentUser() user: UserModel,
+    @Param('id') id: string,
+  ): Promise<TrainingPlanModel | null> {
     return this.trainingPlansService.getTrainingPlanById(user.id, id);
   }
 
   @Post()
   @ApiCreatedResponse({ type: TrainingPlanModel })
-  createTrainingPlan(@CurrentUser() user: UserModel, @Body() input: CreateTrainingPlanDto): Promise<TrainingPlanModel> {
+  createTrainingPlan(
+    @CurrentUser() user: UserModel,
+    @Body() input: CreateTrainingPlanDto,
+  ): Promise<TrainingPlanModel> {
     return this.trainingPlansService.createTrainingPlan(user.id, input);
   }
 

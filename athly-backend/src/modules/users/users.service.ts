@@ -46,13 +46,11 @@ export class UsersService {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email;
     if (data.role !== undefined) updateData.role = data.role;
-    if (data.dateOfBirth !== undefined)
-      updateData.dateOfBirth = data.dateOfBirth;
+    if (data.dateOfBirth !== undefined) updateData.dateOfBirth = data.dateOfBirth;
     if (data.weight !== undefined) updateData.weight = data.weight;
     if (data.height !== undefined) updateData.height = data.height;
     if (data.goals !== undefined) updateData.goals = data.goals;
-    if (data.availability !== undefined)
-      updateData.availability = data.availability;
+    if (data.availability !== undefined) updateData.availability = data.availability;
     if (password !== undefined) {
       updateData.password = (await bcrypt.hash(password, 10)) as string;
     }
@@ -87,6 +85,7 @@ export class UsersService {
       height: user.height ?? undefined,
       goals: user.goals ?? [],
       availability: user.availability ?? null,
+      assessmentCompleted: user.assessmentCompleted,
     };
   }
 }

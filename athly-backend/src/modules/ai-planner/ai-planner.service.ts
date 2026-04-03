@@ -1,8 +1,11 @@
+import { Injectable, ConflictException } from '@nestjs/common';
 import {
-  Injectable,
-  ConflictException,
-} from '@nestjs/common';
-import { Prisma, SportType, TrainingPlanStatus, WeeklyGoalStatus, WorkoutStatus } from '@prisma/client';
+  Prisma,
+  SportType,
+  TrainingPlanStatus,
+  WeeklyGoalStatus,
+  WorkoutStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
@@ -21,11 +24,11 @@ export class AiPlannerService {
   async planNextWeek(userId: string, input: PlanNextWeekDto) {
     const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
     const weekDates = this.getWeekDates(startMonday);
-    const weekStartDate = new Date(weekDates[0]!);
-    const weekEndDate = new Date(weekDates[6]!);
+    const weekStartDate = new Date(weekDates[0]);
+    const weekEndDate = new Date(weekDates[6]);
 
     // 1. Find or create TrainingPlan
-    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]!);
+    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]);
 
     // 2. Check for existing WeeklyGoal overlap for this week
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
@@ -40,9 +43,7 @@ export class AiPlannerService {
     // 4. Fetch recent Strava activities (per-user token via IntegrationsService)
     const activities = await this.stravaService.getRecentActivities(userId, 30);
     const runs = activities
-      .filter(
-        (a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun',
-      )
+      .filter((a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun')
       .slice(0, trainingDays);
 
     // 5. Build AI input or use assessment path
@@ -77,7 +78,7 @@ export class AiPlannerService {
               weeklyGoalId: weeklyGoal.id,
               userId,
               dateScheduled: new Date(day.date),
-              sportType: day.sportType as SportType,
+              sportType: day.sportType,
               title: day.title,
               description: day.description,
               blocks: day.blocks as unknown as Prisma.InputJsonValue,
@@ -122,10 +123,10 @@ export class AiPlannerService {
   async planFromHealth(userId: string, input: PlanFromHealthDto) {
     const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
     const weekDates = this.getWeekDates(startMonday);
-    const weekStartDate = new Date(weekDates[0]!);
-    const weekEndDate = new Date(weekDates[6]!);
+    const weekStartDate = new Date(weekDates[0]);
+    const weekEndDate = new Date(weekDates[6]);
 
-    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]!);
+    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]);
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
 
     const user = await this.prisma.user.findUnique({
@@ -156,7 +157,7 @@ export class AiPlannerService {
               weeklyGoalId: weeklyGoal.id,
               userId,
               dateScheduled: new Date(day.date),
-              sportType: day.sportType as SportType,
+              sportType: day.sportType,
               title: day.title,
               description: day.description,
               blocks: day.blocks as unknown as Prisma.InputJsonValue,
@@ -227,7 +228,9 @@ export class AiPlannerService {
       };
     });
 
-    const paceSum = runs.filter((r) => r.averagePaceSecondsPerKm != null && r.averagePaceSecondsPerKm > 0);
+    const paceSum = runs.filter(
+      (r) => r.averagePaceSecondsPerKm != null && r.averagePaceSecondsPerKm > 0,
+    );
     const avgPaceSecondsPerKm =
       paceSum.length > 0
         ? paceSum.reduce((s, r) => s + (r.averagePaceSecondsPerKm ?? 0), 0) / paceSum.length
@@ -284,11 +287,7 @@ export class AiPlannerService {
     });
   }
 
-  private async checkWeekOverlap(
-    trainingPlanId: string,
-    weekStartDate: Date,
-    weekEndDate: Date,
-  ) {
+  private async checkWeekOverlap(trainingPlanId: string, weekStartDate: Date, weekEndDate: Date) {
     const existing = await this.prisma.weeklyGoal.findFirst({
       where: {
         trainingPlanId,
@@ -376,7 +375,7 @@ export class AiPlannerService {
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      return d.toISOString().split('T')[0]!;
+      return d.toISOString().split('T')[0];
     });
   }
 }

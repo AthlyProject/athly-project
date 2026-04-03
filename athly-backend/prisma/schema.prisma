@@ -61,20 +61,21 @@ enum WeeklyGoalStatus {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  name         String
-  username     String    @unique
-  email        String    @unique
-  password     String
-  role         RoleEnum  @default(STANDARD)
-  dateOfBirth  DateTime? @map("date_of_birth")
-  weight       Float?
-  height       Float?
-  goals        String[]
-  availability Int?
-  imc          Float?
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id                   String    @id @default(uuid())
+  name                 String
+  username             String    @unique
+  email                String    @unique
+  password             String
+  role                 RoleEnum  @default(STANDARD)
+  dateOfBirth          DateTime? @map("date_of_birth")
+  weight               Float?
+  height               Float?
+  goals                String[]
+  availability         Int?
+  imc                  Float?
+  assessmentCompleted  Boolean   @default(false) @map("assessment_completed")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   sessions      Session[]
   workouts      Workout[]
@@ -82,6 +83,7 @@ model User {
   trainingPlans TrainingPlan[]
   integrations  Integration[]
   equipments    UserEquipment[]
+  assessment    Assessment?
 
   @@map("users")
 }
@@ -212,4 +214,16 @@ model WeeklyGoal {
   workouts     Workout[]
 
   @@map("weekly_goals")
+}
+
+model Assessment {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  answers   Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assessments")
 }

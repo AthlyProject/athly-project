@@ -11,7 +11,7 @@ const GOAL = {
 function classifyAthlete(avgPace: string): string {
   const match = avgPace.match(/^(\d+):(\d{2})/);
   if (!match) return 'unknown';
-  const totalSec = parseInt(match[1]!, 10) * 60 + parseInt(match[2]!, 10);
+  const totalSec = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
   if (totalSec > 345) return 'Iniciante (mais lento que 5:45/km) — priorizar volume e consistência';
   if (totalSec > 312) return 'Em evolução (5:13–5:44/km) — aumentar intensidade dos intervalos';
   return 'Meta ao alcance (≤ 5:12/km) — refinar o pace de corrida e estratégia de ritmo';
@@ -169,12 +169,19 @@ function buildAssessmentWorkoutTemplates(trainingDays: number): string {
  * Asks Gemini to generate a personalized 7-day plan based on recent data.
  */
 export function buildPlannerPrompt(input: AiPlannerInput): string {
-  const { runSummaries, avgDistKm, avgPace, avgHR, maxDistKm, totalDistKm, weekDates, trainingDays } = input;
+  const {
+    runSummaries,
+    avgDistKm,
+    avgPace,
+    avgHR,
+    maxDistKm,
+    totalDistKm,
+    weekDates,
+    trainingDays,
+  } = input;
   const restDays = 7 - trainingDays;
   const athleteClass = classifyAthlete(avgPace);
-  const hrCtx = avgHR
-    ? `${avgHR} bpm`
-    : 'não disponível — prescreva esforço por RPE (escala 1–10)';
+  const hrCtx = avgHR ? `${avgHR} bpm` : 'não disponível — prescreva esforço por RPE (escala 1–10)';
 
   return `<role>
 Você é um treinador de corrida experiente. O objetivo do seu atleta é correr ${GOAL.distanceKm}km em menos de ${GOAL.targetTimeMin} minutos (pace alvo: ${GOAL.targetPace}).

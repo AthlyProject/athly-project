@@ -22,7 +22,7 @@ export class IntegrationsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly stravaService: StravaService,
-  ) { }
+  ) {}
 
   async getIntegrations(userId: string): Promise<IntegrationModel[]> {
     const integrations = await this.prisma.integration.findMany({ where: { userId } });
@@ -129,9 +129,11 @@ export class IntegrationsService {
     }
 
     // Fire-and-forget sync after connecting
-    this.stravaService.syncActivities(userId, tokens.access_token).catch((err: Error) =>
-      console.error(`[Strava] Background sync failed for user ${userId}:`, err.message),
-    );
+    this.stravaService
+      .syncActivities(userId, tokens.access_token)
+      .catch((err: Error) =>
+        console.error(`[Strava] Background sync failed for user ${userId}:`, err.message),
+      );
 
     return this.toModel(integration);
   }
@@ -167,10 +169,12 @@ export class IntegrationsService {
     // Refresh if expires within 5 minutes
     const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
     if (integration.tokenExpiresAt && integration.tokenExpiresAt < fiveMinutesFromNow) {
-      const refreshed = await this.refreshStravaToken(integration as {
-        id: string;
-        refreshToken: string | null;
-      });
+      const refreshed = await this.refreshStravaToken(
+        integration as {
+          id: string;
+          refreshToken: string | null;
+        },
+      );
       return refreshed;
     }
 

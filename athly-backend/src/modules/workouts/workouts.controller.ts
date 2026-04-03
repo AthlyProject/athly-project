@@ -30,7 +30,10 @@ export class WorkoutsController {
 
   @Post()
   @ApiCreatedResponse({ type: WorkoutModel })
-  createWorkout(@CurrentUser() user: UserModel, @Body() input: CreateWorkoutDto): Promise<WorkoutModel> {
+  createWorkout(
+    @CurrentUser() user: UserModel,
+    @Body() input: CreateWorkoutDto,
+  ): Promise<WorkoutModel> {
     return this.workoutsService.createWorkout(user.id, input);
   }
 
@@ -61,19 +64,28 @@ export class WorkoutsController {
 
   @Patch(':workoutId/complete')
   @ApiOkResponse({ type: WorkoutModel })
-  completeWorkout(@CurrentUser() user: UserModel, @Param('workoutId') workoutId: string): Promise<WorkoutModel> {
+  completeWorkout(
+    @CurrentUser() user: UserModel,
+    @Param('workoutId') workoutId: string,
+  ): Promise<WorkoutModel> {
     return this.workoutsService.completeWorkout(user.id, workoutId);
   }
 
   @Patch(':workoutId/skip')
   @ApiOkResponse({ type: WorkoutModel })
-  skipWorkout(@CurrentUser() user: UserModel, @Param('workoutId') workoutId: string): Promise<WorkoutModel> {
+  skipWorkout(
+    @CurrentUser() user: UserModel,
+    @Param('workoutId') workoutId: string,
+  ): Promise<WorkoutModel> {
     return this.workoutsService.skipWorkout(user.id, workoutId);
   }
 
   @Put(':workoutId')
   @ApiOkResponse({ type: WorkoutModel })
-  updateWorkout(@Param('workoutId') workoutId: string, @Body() input: UpdateWorkoutDto): Promise<WorkoutModel> {
+  updateWorkout(
+    @Param('workoutId') workoutId: string,
+    @Body() input: UpdateWorkoutDto,
+  ): Promise<WorkoutModel> {
     return this.workoutsService.updateWorkout(workoutId, input);
   }
 }

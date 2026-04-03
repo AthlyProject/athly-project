@@ -76,20 +76,5 @@ export const planNextWeekTool = {
         isError: true,
       };
     }
-      ...(savedId ? { saved_id: savedId } : {}),
-        ...(isAssessment ? { is_assessment: true } : {}),
-      };
-
-      return {
-        content: [{ type: 'text' as const, text: JSON.stringify(response, null, 2) }],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      console.error('Error in plan-next-week tool:', errorMessage);
-      return {
-        content: [{ type: 'text' as const, text: `❌ API Error: ${errorMessage}` }],
-        isError: true,
-      };
-    }
   },
 };

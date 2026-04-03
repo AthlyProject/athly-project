@@ -91,9 +91,10 @@ function classifyAthlete(avgPace: string): string {
   const match = avgPace.match(/^(\d+):(\d{2})/);
   if (!match) return 'unknown';
   const totalSec = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-  if (totalSec > 345)  (total'ec > 312) return 'Progressing (5:13–5:44/km) — increase interval i'tensity';
-  return 'Goal within''
-''
+  if (totalSec > 345) return 'Progressing (5:13–5:44/km) — increase interval intensity';
+  if (totalSec > 312) return 'Goal within reach (4:45–5:12/km) — focus on pacing';
+  return 'Goal within reach (4:45–5:12/km) — focus on pacing';
+}
 /**
  * Builds the structured coaching prompt sent to the Gemini model.
  * Returns ONLY a JSON string matching PlannerResults { analysis: RunAnalysis, weekPlan: WorkoutDay[] }.

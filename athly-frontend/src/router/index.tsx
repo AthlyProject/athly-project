@@ -16,10 +16,21 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { TrainingPlanCalendarPage } from "@/pages/TrainingPlanCalendarPage";
 import { DesignSystemPage } from "@/pages/DesignSystemPage";
 import { OAuthCallbackPage } from "@/pages/OAuthCallbackPage";
+import { AssessmentPage } from "@/pages/AssessmentPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user && !user.assessmentCompleted) return <Navigate to="/assessment" replace />;
+  return <>{children}</>;
+}
+
+function AssessmentGuard({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user && user.assessmentCompleted) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -38,6 +49,16 @@ export const router = createBrowserRouter([
       <AuthLayout>
         <RegisterPage />
       </AuthLayout>
+    ),
+  },
+  {
+    path: "/assessment",
+    element: (
+      <AssessmentGuard>
+        <AuthLayout>
+          <AssessmentPage />
+        </AuthLayout>
+      </AssessmentGuard>
     ),
   },
   {
