@@ -1,14 +1,21 @@
 import { z } from 'zod';
 import { getAthleteZones as fetchAthleteZones, StravaAthleteZones } from '../stravaClient.js';
-import { formatDuration } from '../server.js'; // Shared helper
+// Local helper
+function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null) return 'N/A';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+}
 
 const name = 'get-athlete-zones';
 const description = "Retrieves the authenticated athlete's configured heart rate and power zones.";
 
 // No input schema needed for this tool
 const inputSchema = z.object({});
-
-type GetAthleteZonesInput = z.infer<typeof inputSchema>;
 
 // Helper to format a single zone range
 function formatZoneRange(zone: { min: number; max?: number }): string {
@@ -69,7 +76,7 @@ export const getAthleteZonesTool = {
   name,
   description: description + '\n\nOutput includes both a formatted summary and the raw JSON data.',
   inputSchema,
-  execute: async (_input: GetAthleteZonesInput) => {
+  execute: async () => {
     const token = process.env.STRAVA_ACCESS_TOKEN;
 
     if (!token) {

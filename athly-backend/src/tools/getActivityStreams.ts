@@ -205,44 +205,50 @@ export function formatStreamDataCompact(stream: BaseStream, data: any[]): any {
 
 export function formatStreamDataVerbose(stream: BaseStream, data: any[]): any {
   switch (stream.type) {
-    case 'latlng':
+    case 'latlng': {
       const latlngData = data as [number, number][];
       return latlngData.map(([lat, lng]) => ({
         latitude: Number(lat.toFixed(6)),
         longitude: Number(lng.toFixed(6)),
       }));
+    }
 
-    case 'time':
+    case 'time': {
       const timeData = data as number[];
       return timeData.map((seconds) => ({
         seconds_from_start: seconds,
         formatted: new Date(seconds * 1000).toISOString().substr(11, 8),
       }));
+    }
 
-    case 'distance':
+    case 'distance': {
       const distanceData = data as number[];
       return distanceData.map((meters) => ({
         meters,
         kilometers: Number((meters / 1000).toFixed(2)),
       }));
+    }
 
-    case 'velocity_smooth':
+    case 'velocity_smooth': {
       const velocityData = data as number[];
       return velocityData.map((mps) => ({
         meters_per_second: mps,
         kilometers_per_hour: Number((mps * 3.6).toFixed(1)),
       }));
+    }
 
     case 'heartrate':
     case 'cadence':
     case 'watts':
-    case 'temp':
+    case 'temp': {
       const numericData = data as number[];
       return numericData.map((v) => Number(v));
+    }
 
-    case 'grade_smooth':
+    case 'grade_smooth': {
       const gradeData = data as number[];
       return gradeData.map((grade) => Number(grade.toFixed(1)));
+    }
 
     case 'moving':
       return data as boolean[];
@@ -491,7 +497,7 @@ export const getActivityStreamsTool = {
 
         // Add type-specific statistics
         switch (stream.type) {
-          case 'heartrate':
+          case 'heartrate': {
             const hrData = data as number[];
             stats = {
               ...stats,
@@ -500,7 +506,8 @@ export const getActivityStreamsTool = {
               avg: Math.round(hrData.reduce((a, b) => a + b, 0) / hrData.length),
             };
             break;
-          case 'watts':
+          }
+          case 'watts': {
             const powerData = data as number[];
             stats = {
               ...stats,
@@ -509,7 +516,8 @@ export const getActivityStreamsTool = {
               normalized_power: calculateNormalizedPower(powerData),
             };
             break;
-          case 'velocity_smooth':
+          }
+          case 'velocity_smooth': {
             const velocityData = data as number[];
             stats = {
               ...stats,
@@ -520,6 +528,7 @@ export const getActivityStreamsTool = {
                 ) / 10,
             };
             break;
+          }
         }
 
         streamStats[stream.type] = stats;

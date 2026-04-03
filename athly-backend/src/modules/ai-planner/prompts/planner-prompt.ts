@@ -1,4 +1,4 @@
-import type { AiPlannerInput, RunSummary } from '../types/planner.types';
+import type { AiPlannerInput } from '../types/planner.types';
 
 export type { AiPlannerInput };
 

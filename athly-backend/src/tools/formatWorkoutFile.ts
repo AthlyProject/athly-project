@@ -177,7 +177,7 @@ export const formatWorkoutFile = {
       }
 
       // Should never reach here due to zod validation
-      throw new Error(`Unsupported format: ${format}`);
+      throw new Error(`Unsupported format: ${String(format)}`);
     } catch (error) {
       return {
         content: [

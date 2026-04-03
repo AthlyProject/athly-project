@@ -13,7 +13,6 @@ export function TrainingPlanCalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
     getCalendarData()
       .then((data) => {
         if (data) {

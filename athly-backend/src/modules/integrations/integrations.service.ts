@@ -26,7 +26,7 @@ export class IntegrationsService {
 
   async getIntegrations(userId: string): Promise<IntegrationModel[]> {
     const integrations = await this.prisma.integration.findMany({ where: { userId } });
-    return integrations.map(this.toModel);
+    return integrations.map((i) => this.toModel(i));
   }
 
   async connectIntegration(userId: string, id: string) {

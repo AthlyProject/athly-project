@@ -125,7 +125,7 @@ export const getActivityPhotosTool = {
         if (photo.urls && Object.keys(photo.urls).length > 0) {
           details.push(`  URLs:`);
           for (const [sizeKey, url] of Object.entries(photo.urls)) {
-            details.push(`    ${sizeKey}: ${url}`);
+            details.push(`    ${sizeKey}: ${String(url)}`);
           }
         }
 

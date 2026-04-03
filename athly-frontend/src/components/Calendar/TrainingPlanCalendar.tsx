@@ -86,7 +86,7 @@ export function TrainingPlanCalendar({
           const { start: weekStart, end: weekEnd } = getWeekRange(week);
           const weekGoal = getWeeklyGoalForWeek(weeklyGoals, weekStart, weekEnd);
           const goalTitle =
-            ((weekGoal?.metrics as any)?.title as string) ||
+            ((weekGoal?.metrics as Record<string, unknown>)?.title as string) ||
             (weekGoal ? `Semana ${weekIndex + 1}` : null);
 
           return (

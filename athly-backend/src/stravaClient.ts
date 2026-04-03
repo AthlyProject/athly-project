@@ -11,7 +11,7 @@ export const stravaApi = axios.create({
 
 stravaApi.interceptors.request.use(
   (config) => config,
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error instanceof Error ? error : new Error(String(error))),
 );
 
 /**

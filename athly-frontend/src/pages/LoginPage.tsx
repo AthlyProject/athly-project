@@ -107,7 +107,7 @@ export function LoginPage() {
                   try {
                     const { url } = await getStravaAuthUrl();
                     window.location.href = url;
-                  } catch (err) {
+                  } catch {
                     setLoading(false);
                     toast.error("Erro ao redirecionar para o Strava.");
                   }
