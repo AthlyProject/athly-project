@@ -1,28 +1,28 @@
-# AiPlannerApi
+# AssessmentApi
 
 All URIs are relative to *http://localhost*
 
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
-| [**aiPlannerControllerPlanFromHealth**](AiPlannerApi.md#aiplannercontrollerplanfromhealth) | **POST** /ai-planner/plan-from-health |  |
-| [**aiPlannerControllerPlanNextWeek**](AiPlannerApi.md#aiplannercontrollerplannextweek) | **POST** /ai-planner/plan-next-week |  |
+| [**assessmentControllerFindMine**](AssessmentApi.md#assessmentcontrollerfindmine) | **GET** /assessment | Get the current user assessment answers |
+| [**assessmentControllerSubmit**](AssessmentApi.md#assessmentcontrollersubmit) | **POST** /assessment | Submit the onboarding assessment |
 
 
 
-## aiPlannerControllerPlanFromHealth
+## assessmentControllerFindMine
 
-> AiPlannerResultModel aiPlannerControllerPlanFromHealth(planFromHealthDto)
+> object assessmentControllerFindMine()
 
-
+Get the current user assessment answers
 
 ### Example
 
 ```ts
 import {
   Configuration,
-  AiPlannerApi,
+  AssessmentApi,
 } from '';
-import type { AiPlannerControllerPlanFromHealthRequest } from '';
+import type { AssessmentControllerFindMineRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
@@ -30,15 +30,10 @@ async function example() {
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
   });
-  const api = new AiPlannerApi(config);
-
-  const body = {
-    // PlanFromHealthDto
-    planFromHealthDto: ...,
-  } satisfies AiPlannerControllerPlanFromHealthRequest;
+  const api = new AssessmentApi(config);
 
   try {
-    const data = await api.aiPlannerControllerPlanFromHealth(body);
+    const data = await api.assessmentControllerFindMine();
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -51,14 +46,11 @@ example().catch(console.error);
 
 ### Parameters
 
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **planFromHealthDto** | [PlanFromHealthDto](PlanFromHealthDto.md) |  | |
+This endpoint does not need any parameter.
 
 ### Return type
 
-[**AiPlannerResultModel**](AiPlannerResultModel.md)
+**object**
 
 ### Authorization
 
@@ -66,7 +58,7 @@ example().catch(console.error);
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
+- **Content-Type**: Not defined
 - **Accept**: `application/json`
 
 
@@ -74,25 +66,24 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** |  |  -  |
-| **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
-## aiPlannerControllerPlanNextWeek
+## assessmentControllerSubmit
 
-> AiPlannerResultModel aiPlannerControllerPlanNextWeek(planNextWeekDto)
+> assessmentControllerSubmit(submitAssessmentDto)
 
-
+Submit the onboarding assessment
 
 ### Example
 
 ```ts
 import {
   Configuration,
-  AiPlannerApi,
+  AssessmentApi,
 } from '';
-import type { AiPlannerControllerPlanNextWeekRequest } from '';
+import type { AssessmentControllerSubmitRequest } from '';
 
 async function example() {
   console.log("🚀 Testing  SDK...");
@@ -100,15 +91,15 @@ async function example() {
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
   });
-  const api = new AiPlannerApi(config);
+  const api = new AssessmentApi(config);
 
   const body = {
-    // PlanNextWeekDto
-    planNextWeekDto: ...,
-  } satisfies AiPlannerControllerPlanNextWeekRequest;
+    // SubmitAssessmentDto
+    submitAssessmentDto: ...,
+  } satisfies AssessmentControllerSubmitRequest;
 
   try {
-    const data = await api.aiPlannerControllerPlanNextWeek(body);
+    const data = await api.assessmentControllerSubmit(body);
     console.log(data);
   } catch (error) {
     console.error(error);
@@ -124,11 +115,11 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **planNextWeekDto** | [PlanNextWeekDto](PlanNextWeekDto.md) |  | |
+| **submitAssessmentDto** | [SubmitAssessmentDto](SubmitAssessmentDto.md) |  | |
 
 ### Return type
 
-[**AiPlannerResultModel**](AiPlannerResultModel.md)
+`void` (Empty response body)
 
 ### Authorization
 
@@ -137,13 +128,12 @@ example().catch(console.error);
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: `application/json`
+- **Accept**: Not defined
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** |  |  -  |
 | **201** |  |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)

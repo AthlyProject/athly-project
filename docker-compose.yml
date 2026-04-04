@@ -24,8 +24,6 @@ services:
       - /app/node_modules
     env_file:
       - ./athly-backend/.env
-    environment:
-      DATABASE_URL: "postgresql://postgres:postgres@db:5432/iafit"
     depends_on:
       - db
 

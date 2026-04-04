@@ -63,7 +63,7 @@ export interface UpdateProfileDto {
     goals?: Array<string>;
     /**
      * 
-     * @type {number}
+     * @type {Array<string>}
      * @memberof UpdateProfileDto
      */
     availableDays?: Array<string>;

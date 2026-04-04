@@ -1,40 +1,28 @@
 
-# UserModel
+# TrainingPlanningDto
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`id` | string
-`name` | string
-`email` | string
-`role` | string
-`dateOfBirth` | Date
-`weight` | number
-`height` | number
-`goals` | Array&lt;string&gt;
 `availableDays` | Array&lt;string&gt;
-`assessmentCompleted` | boolean
+`startDate` | string
+`hasTargetDate` | string
+`targetDate` | string
 
 ## Example
 
 ```typescript
-import type { UserModel } from ''
+import type { TrainingPlanningDto } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "id": null,
-  "name": null,
-  "email": null,
-  "role": null,
-  "dateOfBirth": null,
-  "weight": null,
-  "height": null,
-  "goals": null,
   "availableDays": null,
-  "assessmentCompleted": null,
-} satisfies UserModel
+  "startDate": null,
+  "hasTargetDate": null,
+  "targetDate": null,
+} satisfies TrainingPlanningDto
 
 console.log(example)
 
@@ -43,7 +31,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as UserModel
+const exampleParsed = JSON.parse(exampleJSON) as TrainingPlanningDto
 console.log(exampleParsed)
 ```
 

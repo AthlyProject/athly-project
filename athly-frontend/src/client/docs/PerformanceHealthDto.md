@@ -1,38 +1,30 @@
 
-# UpdateProfileDto
+# PerformanceHealthDto
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`name` | string
-`email` | string
-`role` | string
-`dateOfBirth` | string
-`weight` | number
-`height` | number
-`goals` | Array&lt;string&gt;
-`availableDays` | Array&lt;string&gt;
-`password` | string
+`referenceDistance` | string
+`bestTime` | string
+`sleepQuality` | number
+`hasChronicPain` | string
+`chronicPainDescription` | string
 
 ## Example
 
 ```typescript
-import type { UpdateProfileDto } from ''
+import type { PerformanceHealthDto } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "name": null,
-  "email": null,
-  "role": null,
-  "dateOfBirth": null,
-  "weight": null,
-  "height": null,
-  "goals": null,
-  "availableDays": null,
-  "password": null,
-} satisfies UpdateProfileDto
+  "referenceDistance": null,
+  "bestTime": null,
+  "sleepQuality": null,
+  "hasChronicPain": null,
+  "chronicPainDescription": null,
+} satisfies PerformanceHealthDto
 
 console.log(example)
 
@@ -41,7 +33,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as UpdateProfileDto
+const exampleParsed = JSON.parse(exampleJSON) as PerformanceHealthDto
 console.log(exampleParsed)
 ```
 

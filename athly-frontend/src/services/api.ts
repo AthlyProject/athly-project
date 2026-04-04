@@ -8,6 +8,7 @@ import {
   IntegrationsApi,
   AiPlannerApi,
   EquipmentsApi,
+  AssessmentApi,
 } from '../client'
 
 const BASE_URL = import.meta.env.VITE_BACKEND_API_URL;
@@ -53,6 +54,7 @@ class ApiManager {
   public integrations = new IntegrationsApi(this.createConfig())
   public aiPlanner = new AiPlannerApi(this.createConfig())
   public equipments = new EquipmentsApi(this.createConfig())
+  public assessment = new AssessmentApi(this.createConfig())
 
   private updateApis() {
     const newConfig = this.config
@@ -64,6 +66,7 @@ class ApiManager {
     this.integrations = new IntegrationsApi(newConfig)
     this.aiPlanner = new AiPlannerApi(newConfig)
     this.equipments = new EquipmentsApi(newConfig)
+    this.assessment = new AssessmentApi(newConfig)
   }
 }
 

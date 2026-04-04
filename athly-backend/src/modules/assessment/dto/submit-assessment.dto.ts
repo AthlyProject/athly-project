@@ -89,14 +89,24 @@ export class ParqDto {
   otherReasonToAvoidExercise?: boolean;
 }
 
+export class GoalsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  practicesRegularly?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  targetDistance?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  motivations?: string[];
+}
+
 export class SubmitAssessmentDto {
-  @ApiProperty()
+  @ApiProperty({ type: GoalsDto })
   @IsObject()
-  goals: {
-    practicesRegularly?: string;
-    targetDistance?: string;
-    motivations?: string[];
-  };
+  goals: GoalsDto;
 
   @ApiProperty()
   @IsObject()

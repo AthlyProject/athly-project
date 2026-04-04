@@ -68,17 +68,17 @@ export interface UserModel {
      */
     goals?: Array<string>;
     /**
-     *
+     * 
      * @type {Array<string>}
      * @memberof UserModel
      */
     availableDays?: Array<string>;
     /**
-     *
+     * 
      * @type {boolean}
      * @memberof UserModel
      */
-    assessmentCompleted?: boolean;
+    assessmentCompleted: boolean;
 }
 
 
@@ -101,6 +101,7 @@ export function instanceOfUserModel(value: object): value is UserModel {
     if (!('name' in value) || value['name'] === undefined) return false;
     if (!('email' in value) || value['email'] === undefined) return false;
     if (!('role' in value) || value['role'] === undefined) return false;
+    if (!('assessmentCompleted' in value) || value['assessmentCompleted'] === undefined) return false;
     return true;
 }
 
@@ -123,7 +124,7 @@ export function UserModelFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'height': json['height'] == null ? undefined : json['height'],
         'goals': json['goals'] == null ? undefined : json['goals'],
         'availableDays': json['availableDays'] == null ? undefined : json['availableDays'],
-        'assessmentCompleted': json['assessmentCompleted'] == null ? undefined : json['assessmentCompleted'],
+        'assessmentCompleted': json['assessmentCompleted'],
     };
 }
 

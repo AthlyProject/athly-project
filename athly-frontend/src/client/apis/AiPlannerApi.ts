@@ -16,14 +16,21 @@
 import * as runtime from '../runtime';
 import type {
   AiPlannerResultModel,
+  PlanFromHealthDto,
   PlanNextWeekDto,
 } from '../models/index';
 import {
     AiPlannerResultModelFromJSON,
     AiPlannerResultModelToJSON,
+    PlanFromHealthDtoFromJSON,
+    PlanFromHealthDtoToJSON,
     PlanNextWeekDtoFromJSON,
     PlanNextWeekDtoToJSON,
 } from '../models/index';
+
+export interface AiPlannerControllerPlanFromHealthRequest {
+    planFromHealthDto: PlanFromHealthDto;
+}
 
 export interface AiPlannerControllerPlanNextWeekRequest {
     planNextWeekDto: PlanNextWeekDto;
@@ -33,6 +40,59 @@ export interface AiPlannerControllerPlanNextWeekRequest {
  * 
  */
 export class AiPlannerApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for aiPlannerControllerPlanFromHealth without sending the request
+     */
+    async aiPlannerControllerPlanFromHealthRequestOpts(requestParameters: AiPlannerControllerPlanFromHealthRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['planFromHealthDto'] == null) {
+            throw new runtime.RequiredError(
+                'planFromHealthDto',
+                'Required parameter "planFromHealthDto" was null or undefined when calling aiPlannerControllerPlanFromHealth().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/ai-planner/plan-from-health`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: PlanFromHealthDtoToJSON(requestParameters['planFromHealthDto']),
+        };
+    }
+
+    /**
+     */
+    async aiPlannerControllerPlanFromHealthRaw(requestParameters: AiPlannerControllerPlanFromHealthRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AiPlannerResultModel>> {
+        const requestOptions = await this.aiPlannerControllerPlanFromHealthRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AiPlannerResultModelFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async aiPlannerControllerPlanFromHealth(requestParameters: AiPlannerControllerPlanFromHealthRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AiPlannerResultModel> {
+        const response = await this.aiPlannerControllerPlanFromHealthRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for aiPlannerControllerPlanNextWeek without sending the request

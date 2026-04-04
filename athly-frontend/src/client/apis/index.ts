@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './AiPlannerApi';
 export * from './AppApi';
+export * from './AssessmentApi';
 export * from './AuthApi';
 export * from './EquipmentsApi';
 export * from './IntegrationsApi';
