@@ -1,0 +1,58 @@
+name: Deploy Frontend to AWS S3 and CloudFront
+
+on:
+  push:
+    branches:
+      - main # Altere para a branch que desejar disparar o deploy
+    paths:
+      - 'athly-frontend/**' # Apenas roda a action se houver mudança nesta pasta
+  workflow_dispatch: # Permite disparar o deploy manualmente
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    # Define o contexto de execução para a pasta do frontend
+    defaults:
+      run:
+        working-directory: ./athly-frontend
+
+    steps:
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Versão recomendada (pode alterar caso precise)
+          cache: 'npm'
+          cache-dependency-path: './athly-frontend/package-lock.json'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🛠️ Build Project
+        run: npm run build
+        env:
+          # Caso use variáveis de ambiente no frontend (.env), mapeie elas aqui:
+          # VITE_BACKEND_API_URL: ${{ secrets.VITE_BACKEND_API_URL }}
+          NODE_ENV: production
+
+      - name: ☁️ Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }} # EX: us-east-1
+
+      - name: 🚀 Deploy to S3 bucket
+        # --delete garante que arquivos antigos que não existem mais sejam apagados do S3
+        run: aws s3 sync dist s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+
+      - name: 🔄 Invalidate CloudFront
+        # Invalida o cache no CDN para garantir que os usuários vejam a versão nova
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
