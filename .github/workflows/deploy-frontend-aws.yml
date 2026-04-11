@@ -36,7 +36,7 @@ jobs:
         run: npm run build
         env:
           # Caso use variáveis de ambiente no frontend (.env), mapeie elas aqui:
-          # VITE_BACKEND_API_URL: ${{ secrets.VITE_BACKEND_API_URL }}
+          VITE_BACKEND_API_URL: ${{ secrets.VITE_BACKEND_API_URL }}
           NODE_ENV: production
 
       - name: ☁️ Configure AWS Credentials
