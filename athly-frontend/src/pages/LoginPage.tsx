@@ -5,6 +5,7 @@ import { Button, Card, GradientText, Badge, Divider } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/authStore";
 import { login, getStravaAuthUrl } from "@/services/authService";
+import { REGISTRATION_ENABLED } from "@/config/features";
 import toast from "react-hot-toast";
 
 export function LoginPage() {
@@ -120,15 +121,17 @@ export function LoginPage() {
               </Button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-[var(--color-text-tertiary)]">
-              Não tem uma conta?{" "}
-              <Link
-                to="/register"
-                className="text-[var(--color-primary)] hover:text-[var(--color-primary-400)] font-semibold transition-colors"
-              >
-                Criar conta
-              </Link>
-            </p>
+            {REGISTRATION_ENABLED && (
+              <p className="mt-6 text-center text-sm text-[var(--color-text-tertiary)]">
+                Não tem uma conta?{" "}
+                <Link
+                  to="/register"
+                  className="text-[var(--color-primary)] hover:text-[var(--color-primary-400)] font-semibold transition-colors"
+                >
+                  Criar conta
+                </Link>
+              </p>
+            )}
           </div>
         </Card>
 

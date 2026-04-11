@@ -4,6 +4,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
 import { LandingPage } from "@/pages/landing/LandingPage";
+import { REGISTRATION_ENABLED } from "@/config/features";
 
 // Pages - lazy loaded for better performance
 import { LoginPage } from "@/pages/LoginPage";
@@ -49,14 +50,18 @@ export const router = createBrowserRouter([
       </AuthLayout>
     ),
   },
-  {
-    path: "/register",
-    element: (
-      <AuthLayout>
-        <RegisterPage />
-      </AuthLayout>
-    ),
-  },
+  ...(REGISTRATION_ENABLED
+    ? [
+        {
+          path: "/register",
+          element: (
+            <AuthLayout>
+              <RegisterPage />
+            </AuthLayout>
+          ),
+        },
+      ]
+    : []),
   {
     path: "/assessment",
     element: (
