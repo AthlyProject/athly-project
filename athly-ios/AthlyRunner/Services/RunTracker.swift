@@ -28,9 +28,9 @@ final class RunTracker: ObservableObject {
 
     private let locationManager: LocationManager
 
-    // Pace smoothing buffer
-    private var recentSpeeds: [Double] = []
-    private let speedBufferSize = 5
+    // Sliding window for real-time pace (GPS timestamp-based)
+    private var paceWindow: [CLLocation] = []
+    private let paceWindowSeconds: Double = 20
 
     enum RunState {
         case idle, running, paused, finished
@@ -52,7 +52,7 @@ final class RunTracker: ObservableObject {
         lastAltitude = nil
         locations = []
         routeCoordinates = []
-        recentSpeeds = []
+        paceWindow = []
 
         locationManager.startTracking()
         startTimer()
@@ -84,16 +84,20 @@ final class RunTracker: ObservableObject {
         locationManager.stopTracking()
         locationCancellable?.cancel()
 
+        let stopTime = Date()
         if let pauseStart {
-            pausedDuration += Date().timeIntervalSince(pauseStart)
+            pausedDuration += stopTime.timeIntervalSince(pauseStart)
         }
 
+        let finalDuration = stopTime.timeIntervalSince(startTime ?? stopTime) - pausedDuration
+        let finalPace = distanceMeters > 0 ? finalDuration / (distanceMeters / 1000.0) : 0
+
         let result = RunResult(
-            startDate: startTime ?? Date(),
-            endDate: Date(),
+            startDate: startTime ?? stopTime,
+            endDate: stopTime,
             distanceMeters: distanceMeters,
-            durationSeconds: elapsedTime,
-            averagePaceSecondsPerKm: averagePaceSecondsPerKm,
+            durationSeconds: finalDuration,
+            averagePaceSecondsPerKm: finalPace,
             elevationGainMeters: elevationGain,
             caloriesBurned: calories,
             locations: locations,
@@ -130,7 +134,7 @@ final class RunTracker: ObservableObject {
         lastLocation = nil
         lastAltitude = nil
         locations = []
-        recentSpeeds = []
+        paceWindow = []
     }
 
     private func startTimer() {
@@ -181,14 +185,21 @@ final class RunTracker: ObservableObject {
                 }
             }
 
-            // Current pace (smoothed)
-            if location.speed > 0.3 { // moving threshold ~1 km/h
-                recentSpeeds.append(location.speed)
-                if recentSpeeds.count > speedBufferSize {
-                    recentSpeeds.removeFirst()
+            // Current pace — sliding time-window from GPS coordinates (same method as splits)
+            paceWindow.append(location)
+            while let first = paceWindow.first,
+                  location.timestamp.timeIntervalSince(first.timestamp) > paceWindowSeconds {
+                paceWindow.removeFirst()
+            }
+            if paceWindow.count >= 2 {
+                var windowDist: Double = 0
+                for i in 1..<paceWindow.count {
+                    windowDist += paceWindow[i].distance(from: paceWindow[i - 1])
                 }
-                let avgSpeed = recentSpeeds.reduce(0, +) / Double(recentSpeeds.count)
-                currentPaceSecondsPerKm = 1000.0 / avgSpeed
+                let windowTime = paceWindow.last!.timestamp.timeIntervalSince(paceWindow.first!.timestamp)
+                if windowDist > 5, windowTime > 0 {
+                    currentPaceSecondsPerKm = (windowTime / windowDist) * 1000.0
+                }
             }
 
             // Average pace

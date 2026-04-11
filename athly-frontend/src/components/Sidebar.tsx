@@ -6,12 +6,12 @@ import { GradientText } from "@/components/ui/GradientText";
 import { Badge } from "@/components/ui/Badge";
 
 const navItems: { to: string; label: string; icon: LucideIcon }[] = [
-  { to: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { to: "/plan", label: "Plano", icon: CalendarDays },
-  { to: "/training-plan", label: "Calendário", icon: Calendar },
-  { to: "/history", label: "Histórico", icon: TrendingUp },
-  { to: "/profile", label: "Perfil", icon: User },
-  { to: "/settings", label: "Config", icon: Settings },
+  { to: "/app/dashboard", label: "Dashboard", icon: BarChart3 },
+  { to: "/app/plan", label: "Plano", icon: CalendarDays },
+  { to: "/app/training-plan", label: "Calendário", icon: Calendar },
+  { to: "/app/history", label: "Histórico", icon: TrendingUp },
+  { to: "/app/profile", label: "Perfil", icon: User },
+  { to: "/app/settings", label: "Config", icon: Settings },
 ];
 
 export function Sidebar() {

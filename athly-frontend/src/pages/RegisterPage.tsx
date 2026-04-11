@@ -124,7 +124,7 @@ export function RegisterPage() {
         refreshToken: payload.refreshToken,
       });
       toast.success("Conta criada com sucesso!");
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Falha ao criar conta.";

@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
+import { LandingPage } from "@/pages/landing/LandingPage";
 
 // Pages - lazy loaded for better performance
 import { LoginPage } from "@/pages/LoginPage";
@@ -31,11 +32,15 @@ function AssessmentGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user && user.assessmentCompleted) return <Navigate to="/dashboard" replace />;
+  if (user && user.assessmentCompleted) return <Navigate to="/app/dashboard" replace />;
   return <>{children}</>;
 }
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
   {
     path: "/login",
     element: (
@@ -63,14 +68,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/",
+    path: "/app",
     element: (
       <ProtectedRoute>
         <MainLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { index: true, element: <Navigate to="/app/dashboard" replace /> },
       { path: "dashboard", element: <DashboardPage /> },
       { path: "plan", element: <PlanPage /> },
       { path: "training-plan", element: <TrainingPlanCalendarPage /> },
@@ -83,5 +88,5 @@ export const router = createBrowserRouter([
   },
   { path: "/oauth/strava/callback", element: <OAuthCallbackPage /> },
   { path: "design-system", element: <DesignSystemPage /> },
-  { path: "*", element: <Navigate to="/dashboard" replace /> },
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);

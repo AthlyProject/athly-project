@@ -137,7 +137,7 @@ export function WorkoutPage() {
         <p className="text-center text-slate-600 dark:text-slate-400">
           Treino não encontrado
         </p>
-        <Button onClick={() => navigate("/dashboard")} className="mt-4">
+        <Button onClick={() => navigate("/app/dashboard")} className="mt-4">
           Voltar
         </Button>
       </Card>
@@ -601,21 +601,21 @@ export function WorkoutPage() {
             <Button
               fullWidth
               size="lg"
-              onClick={() => navigate(`/feedback/${workout.id}`)}
+              onClick={() => navigate(`/app/feedback/${workout.id}`)}
             >
               Concluir treino
             </Button>
             <Button
               variant="secondary"
               fullWidth
-              onClick={() => navigate(`/feedback/${workout.id}?partial=true`)}
+              onClick={() => navigate(`/app/feedback/${workout.id}?partial=true`)}
             >
               Treino parcial
             </Button>
             <Button
               variant="ghost"
               fullWidth
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/app/dashboard")}
             >
               Pular treino
             </Button>

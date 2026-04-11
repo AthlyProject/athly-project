@@ -11,6 +11,7 @@
 		0FF1F3FF02B3171C4D7A7F99 /* MockHealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */; };
 		17BC451DE0C5E1DBB273517E /* Split.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66361EBC40114CD841921015 /* Split.swift */; };
 		17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D70C702152900AE2BB882B /* PlanView.swift */; };
+		AA1B2C3D4E5F6A7B8C9D0E1F /* CreatePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2C3D4E5F6A7B8C9D0E1F2A /* CreatePlanView.swift */; };
 		18C75BABD693992233C4A216 /* CalendarGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCB149AB3D32A7CEC7DB593 /* CalendarGridView.swift */; };
 		1E42A70DA532CAD8DC394FE1 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */; };
 		25BA612E21D10FA02AE20D6B /* RoutePoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FD217AB0DE86A175983B8C /* RoutePoint.swift */; };
@@ -47,6 +48,7 @@
 		E41779D400C5E24ECA4A374E /* AnalysisSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAAA9A2AF9EC88986BC2748 /* AnalysisSummaryCard.swift */; };
 		ED4482753DC50D2EE3836C51 /* RunSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D3D908C678C0EEA90262783 /* RunSummaryView.swift */; };
 		F2E0F9D61677CA3CA95C7EC1 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA0DF1AE05993FC853D7DB /* APIClient.swift */; };
+		F76F88E62F8482A300FDA273 /* RunSessionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76F88E52F8482A300FDA273 /* RunSessionDetailView.swift */; };
 		FB3F24AF2893567AD0E78E94 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB42F5D6A90B8ED4DAE9C47 /* Assets.xcassets */; };
 		FD1AA740098898F1F9380EB7 /* RunStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B92F9D576847F505274A2EE1 /* RunStartView.swift */; };
 /* End PBXBuildFile section */
@@ -83,6 +85,7 @@
 		9CDA0DF1AE05993FC853D7DB /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		9D3D908C678C0EEA90262783 /* RunSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryView.swift; sourceTree = "<group>"; };
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
+		BB2C3D4E5F6A7B8C9D0E1F2A /* CreatePlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePlanView.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
 		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
@@ -96,6 +99,7 @@
 		D83E95AB1CF3059ACB41221C /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		D92E1532A4AC761644476855 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		ECBE3A9D2964D2510C343AF4 /* TextFieldStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldStyles.swift; sourceTree = "<group>"; };
+		F76F88E52F8482A300FDA273 /* RunSessionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSessionDetailView.swift; sourceTree = "<group>"; };
 		FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingTabBar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,6 +110,7 @@
 				CCC11FC7C664AF6DBDB67914 /* CalendarDayCellView.swift */,
 				3DCB149AB3D32A7CEC7DB593 /* CalendarGridView.swift */,
 				A0D70C702152900AE2BB882B /* PlanView.swift */,
+				BB2C3D4E5F6A7B8C9D0E1F2A /* CreatePlanView.swift */,
 				857478532FADD1CC52B19758 /* WorkoutDetailView.swift */,
 			);
 			path = Plan;
@@ -216,6 +221,7 @@
 			isa = PBXGroup;
 			children = (
 				771F104A20AD0B32E98D4010 /* HistoryView.swift */,
+				F76F88E52F8482A300FDA273 /* RunSessionDetailView.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -380,6 +386,7 @@
 				53A17950A26E4479593ACBAE /* MainTabView.swift in Sources */,
 				0FF1F3FF02B3171C4D7A7F99 /* MockHealthKitService.swift in Sources */,
 				17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */,
+				AA1B2C3D4E5F6A7B8C9D0E1F /* CreatePlanView.swift in Sources */,
 				89541A62B716A2302CADF335 /* ProfileView.swift in Sources */,
 				7D7F6E472C1957BDB6430CC0 /* RegisterView.swift in Sources */,
 				8563D9904DA5E813F86AF29D /* RootView.swift in Sources */,
@@ -388,6 +395,7 @@
 				8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */,
 				FD1AA740098898F1F9380EB7 /* RunStartView.swift in Sources */,
 				94056B892C9012DA74021779 /* RunStore.swift in Sources */,
+				F76F88E62F8482A300FDA273 /* RunSessionDetailView.swift in Sources */,
 				ED4482753DC50D2EE3836C51 /* RunSummaryView.swift in Sources */,
 				5F39F8206181384CFD49E697 /* RunTracker.swift in Sources */,
 				97DA447E4B2C777C7B5FC162 /* RunTrackingView.swift in Sources */,

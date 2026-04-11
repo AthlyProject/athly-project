@@ -5,6 +5,7 @@ struct PlanView: View {
 
     @State private var viewMode: ViewMode = .list
     @State private var calendarMonth: Date = Date()
+    @State private var showCreatePlan = false
 
     enum ViewMode: String, CaseIterable {
         case list = "Lista"
@@ -43,6 +44,10 @@ struct PlanView: View {
             }
             .navigationTitle("Plano")
             .task { await planVM.loadData() }
+            .sheet(isPresented: $showCreatePlan) {
+                CreatePlanView()
+                    .environmentObject(planVM)
+            }
             .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
                 Button("OK") { planVM.errorMessage = nil }
             } message: {
@@ -356,20 +361,43 @@ struct PlanView: View {
 
     private var noPlanState: some View {
         VStack(spacing: 20) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 48))
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-            Text("Sem plano de treino")
-                .font(AthlyTheme.Typography.semibold(17))
+            Image(systemName: "figure.run.circle")
+                .font(.system(size: 56))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [AthlyTheme.Color.primary, AthlyTheme.Color.secondary],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Text("Crie seu plano de corrida")
+                .font(AthlyTheme.Typography.bold(20))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
-            Text("Use seus dados do Apple Health para criar seu primeiro plano, ou crie um no aplicativo web.")
+
+            Text("Diga qual é seu objetivo e a IA vai criar um plano de treino personalizado para você.")
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .multilineTextAlignment(.center)
+
+            Button {
+                showCreatePlan = true
+            } label: {
+                HStack {
+                    Image(systemName: "sparkles")
+                    Text("Definir meu objetivo")
+                }
+            }
+            .buttonStyle(AthlyGradientButtonStyle())
+            .padding(.top, 4)
+
+            Text("ou")
+                .font(AthlyTheme.Typography.body(13))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+
             generateFromHealthButton
-                .padding(.top, 8)
         }
-        .padding(40)
+        .padding(32)
         .frame(maxWidth: .infinity)
         .athlyCard()
         .padding(.horizontal, AthlyTheme.Spacing.sm)

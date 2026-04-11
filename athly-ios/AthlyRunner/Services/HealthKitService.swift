@@ -85,6 +85,15 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
 
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.addMetadata([
+                "activeDurationSeconds": result.durationSeconds,
+                "averagePaceSecondsPerKm": result.averagePaceSecondsPerKm
+            ]) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
+
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
             builder.endCollection(withEnd: result.endDate) { _, error in
                 if let error { cont.resume(throwing: error) } else { cont.resume() }
             }
@@ -127,12 +136,16 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     private func map(_ workout: HKWorkout) -> HealthKitRunItem {
-        let durationSeconds = workout.duration
         let distanceMeters = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+        let activeDuration = workout.metadata?["activeDurationSeconds"] as? Double ?? workout.duration
         let averagePaceSecondsPerKm: Double = {
+            if let stored = workout.metadata?["averagePaceSecondsPerKm"] as? Double, stored > 0 {
+                return stored
+            }
             guard distanceMeters > 0 else { return 0 }
-            return (durationSeconds / (distanceMeters / 1000.0))
+            return activeDuration / (distanceMeters / 1000.0)
         }()
+        let durationSeconds = activeDuration
         let activeEnergyBurned = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
         let elevationGainMeters: Double? = nil // HKWorkout não expõe elevação direta; seria via HKQuantityTypeIdentifier.flightsClimbed ou route
 

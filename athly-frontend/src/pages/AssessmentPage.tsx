@@ -162,7 +162,7 @@ export function AssessmentPage() {
         setUser({ ...user, assessmentCompleted: true });
       }
       toast.success("Questionário enviado! Bem-vindo(a) à Athly 🎉");
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao enviar questionário.");
     } finally {

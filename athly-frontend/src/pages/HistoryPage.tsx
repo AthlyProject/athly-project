@@ -63,7 +63,7 @@ export function HistoryPage() {
             <p className="text-[var(--color-text-secondary)] mb-6 max-w-md mx-auto">
               Comece sua jornada agora e acompanhe seu progresso aqui!
             </p>
-            <Link to="/plan">
+            <Link to="/app/plan">
               <Button variant="gradient" size="lg" glow>
                 <Rocket className="h-5 w-5 inline mr-2" />Ver plano de treinos
               </Button>

@@ -191,7 +191,7 @@ export function ProfilePage() {
             <Save className="h-5 w-5 inline mr-2" />Salvar alterações
           </Button>
 
-          <Link to="/settings" className="block">
+          <Link to="/app/settings" className="block">
             <Button variant="outline" fullWidth size="lg">
               <Settings className="h-5 w-5 inline mr-2" />Configurações e integrações
             </Button>

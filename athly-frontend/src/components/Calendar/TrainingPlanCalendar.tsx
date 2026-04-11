@@ -128,7 +128,7 @@ export function TrainingPlanCalendar({
                       {dayWorkouts.map((workout) => (
                         <Link
                           key={workout.id}
-                          to={`/workout/${workout.id}`}
+                          to={`/app/workout/${workout.id}`}
                           className="block"
                         >
                           <Card

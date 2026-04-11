@@ -151,12 +151,12 @@ import { GradientText } from '@/components/ui/GradientText'
 ## 📐 Espaçamento
 
 ```css
---spacing-xs: 0.25rem   /* 4px */
---spacing-sm: 0.5rem    /* 8px */
---spacing-md: 1rem      /* 16px */
---spacing-lg: 1.5rem    /* 24px */
---spacing-xl: 2rem      /* 32px */
---spacing-2xl: 3rem     /* 48px */
+--space-xs: 0.25rem     /* 4px */
+--space-sm: 0.5rem      /* 8px */
+--space-md: 1rem        /* 16px */
+--space-lg: 1.5rem      /* 24px */
+--space-xl: 2rem        /* 32px */
+--space-2xl: 3rem       /* 48px */
 ```
 
 ## 🔤 Tipografia

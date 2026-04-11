@@ -112,6 +112,31 @@ actor APIClient {
         try await post("/ai-planner/plan-from-health", body: request)
     }
 
+    // MARK: - Goals Endpoints
+
+    func createGoal(_ request: CreateGoalRequest) async throws -> CreateGoalResponse {
+        try await post("/goals", body: request)
+    }
+
+    func getActiveGoal() async throws -> CreateGoalResponse? {
+        let req = try buildRequest(path: "/goals/active", method: "GET", authenticated: true)
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        switch httpResponse.statusCode {
+        case 200...299:
+            if data.isEmpty { return nil }
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            decoder.dateDecodingStrategy = .iso8601
+            return try? decoder.decode(CreateGoalResponse.self, from: data)
+        case 404: return nil
+        case 401: throw APIError.unauthorized
+        default:
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw APIError.serverError(httpResponse.statusCode, message)
+        }
+    }
+
     // MARK: - HTTP
 
     private func get<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {

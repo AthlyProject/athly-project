@@ -54,7 +54,7 @@ export function WorkoutCard({ workout, compact }: WorkoutCardProps) {
   }
 
   return (
-    <Link to={`/workout/${workout.id}`} className="block">
+    <Link to={`/app/workout/${workout.id}`} className="block">
       <Card className="group hover:border-[var(--color-primary-500)] hover:shadow-[var(--shadow-neon)] transition-all duration-300">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">

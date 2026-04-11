@@ -27,7 +27,7 @@ export function LoginPage() {
         accessToken: payload.accessToken,
         refreshToken: payload.refreshToken,
       });
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch {
       toast.error("Falha no login. Verifique suas credenciais.");
     } finally {

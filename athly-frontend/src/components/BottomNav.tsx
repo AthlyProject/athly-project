@@ -3,11 +3,11 @@ import type { LucideIcon } from "lucide-react";
 import { Home, CalendarDays, Calendar, TrendingUp, User } from "lucide-react";
 
 const navItems: { to: string; label: string; icon: LucideIcon }[] = [
-  { to: "/dashboard", label: "Home", icon: Home },
-  { to: "/plan", label: "Plano", icon: CalendarDays },
-  { to: "/training-plan", label: "Calendário", icon: Calendar },
-  { to: "/history", label: "Histórico", icon: TrendingUp },
-  { to: "/profile", label: "Perfil", icon: User },
+  { to: "/app/dashboard", label: "Home", icon: Home },
+  { to: "/app/plan", label: "Plano", icon: CalendarDays },
+  { to: "/app/training-plan", label: "Calendário", icon: Calendar },
+  { to: "/app/history", label: "Histórico", icon: TrendingUp },
+  { to: "/app/profile", label: "Perfil", icon: User },
 ];
 
 export function BottomNav() {

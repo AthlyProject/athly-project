@@ -1,7 +1,18 @@
 import type { AiPlannerInput, PreviousWeekAnalysis } from '../types/planner.types';
 import type { FormattedZones } from '../../effort-zones/types/effort-zone.types';
+import type { ParsedGoal } from './goal-parser-prompt';
 
 export type { AiPlannerInput };
+
+export interface UserProfileContext {
+  sleepQuality?: number;
+  hasChronicPain?: boolean;
+  chronicPainDescription?: string;
+  canRun3km?: string;
+  runningExperience?: string;
+  motivations?: string[];
+  parqFlags?: string[];
+}
 
 const DAY_NAME_MAP: Record<string, string> = {
   monday: 'Segunda',
@@ -12,15 +23,6 @@ const DAY_NAME_MAP: Record<string, string> = {
   saturday: 'Sábado',
   sunday: 'Domingo',
 };
-
-function classifyAthlete(avgPace: string): string {
-  const match = avgPace.match(/^(\d+):(\d{2})/);
-  if (!match) return 'unknown';
-  const totalSec = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-  if (totalSec > 345) return 'Iniciante (mais lento que 5:45/km) — priorizar volume e consistência';
-  if (totalSec > 312) return 'Em evolução (5:13–5:44/km) — aumentar intensidade dos intervalos';
-  return 'Meta ao alcance (≤ 5:12/km) — refinar o pace de corrida e estratégia de ritmo';
-}
 
 function formatAvailableDays(availableDays: string[]): string {
   return availableDays.map((d) => DAY_NAME_MAP[d] || d).join(', ');
@@ -51,6 +53,59 @@ Considere estes dados ao planejar a próxima semana:
 </previous_week_review>`;
 }
 
+function buildGoalSection(goal: ParsedGoal): string {
+  const lines = [`Objetivo do atleta: ${goal.summary}`];
+  if (goal.targetDistance) lines.push(`- Distância alvo: ${goal.targetDistance}`);
+  if (goal.targetTime) lines.push(`- Tempo alvo: ${goal.targetTime}`);
+  if (goal.eventDate) lines.push(`- Data do evento: ${goal.eventDate}`);
+  if (goal.eventName) lines.push(`- Evento: ${goal.eventName}`);
+  if (goal.experienceLevel) {
+    const levelMap: Record<string, string> = {
+      beginner: 'Iniciante',
+      intermediate: 'Intermediário',
+      advanced: 'Avançado',
+    };
+    lines.push(`- Nível inferido: ${levelMap[goal.experienceLevel] ?? goal.experienceLevel}`);
+  }
+  return `<user_goal>\n${lines.join('\n')}\n</user_goal>`;
+}
+
+function buildUserProfileSection(profile: UserProfileContext): string {
+  const lines: string[] = [];
+
+  if (profile.sleepQuality !== undefined) {
+    lines.push(`- Qualidade do sono: ${profile.sleepQuality}/10`);
+  }
+  if (profile.hasChronicPain) {
+    lines.push(`- Dor crônica: sim${profile.chronicPainDescription ? ` (${profile.chronicPainDescription})` : ''}`);
+  }
+  if (profile.canRun3km) {
+    lines.push(`- Consegue correr 3km sem parar: ${profile.canRun3km === 'yes' ? 'sim' : 'ainda não'}`);
+  }
+  if (profile.runningExperience) {
+    const expMap: Record<string, string> = {
+      '<6m': 'menos de 6 meses',
+      '6-12m': '6 a 12 meses',
+      '1-3y': '1 a 3 anos',
+      '>3y': 'mais de 3 anos',
+    };
+    lines.push(`- Experiência de corrida: ${expMap[profile.runningExperience] ?? profile.runningExperience}`);
+  }
+  if (profile.motivations?.length) {
+    lines.push(`- Motivações: ${profile.motivations.join(', ')}`);
+  }
+  if (profile.parqFlags?.length) {
+    lines.push(`\nALERTA DE SAÚDE (PAR-Q): O atleta reportou as seguintes condições:`);
+    for (const flag of profile.parqFlags) {
+      lines.push(`  ⚠️ ${flag}`);
+    }
+    lines.push(`Prescreva treinos CONSERVADORES e inclua advertências de segurança nas instruções.`);
+  }
+
+  if (lines.length === 0) return '';
+  return `<user_profile>\n${lines.join('\n')}\n</user_profile>`;
+}
+
 const REASONING_INSTRUCTION = `
 <reasoning_requirement>
 Para CADA dia de treino (não descanso), inclua um campo "reasoning" no JSON explicando:
@@ -70,14 +125,22 @@ export function buildAssessmentPrompt(
   trainingDays: number,
   availableDays: string[],
   effortZones: FormattedZones,
+  goal?: ParsedGoal | null,
+  userProfile?: UserProfileContext | null,
 ): string {
   const restDays = 7 - trainingDays;
   const daysList = formatAvailableDays(availableDays);
   const workoutTemplates = buildAssessmentWorkoutTemplates(trainingDays);
 
+  const goalSection = goal ? buildGoalSection(goal) : '';
+  const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
+
+  const goalSummary = goal?.summary ?? 'começar a correr';
+
   return `<role>
 Você é um treinador de corrida experiente recebendo um novo atleta que ainda não tem histórico de corridas registrado.
 Seu objetivo é criar ${trainingDays} treinos de avaliação distribuídos ao longo da próxima semana para medir com segurança o nível de condicionamento físico atual antes de prescrever um plano de treino personalizado.
+O objetivo declarado do atleta é: ${goalSummary}.
 Tom: acolhedor, encorajador e claro — este atleta está iniciando sua jornada.
 </role>
 
@@ -85,6 +148,10 @@ Tom: acolhedor, encorajador e claro — este atleta está iniciando sua jornada.
 OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco, fitnessInsights, reasoning e o campo period.
 Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
 </language>
+
+${goalSection}
+
+${profileSection}
 
 <context>
 O atleta não possui dados de corrida anteriores. Antes de criar um plano personalizado, é necessário avaliar:
@@ -213,6 +280,8 @@ export function buildPlannerPrompt(
   input: AiPlannerInput,
   effortZones: FormattedZones,
   previousWeekAnalysis?: PreviousWeekAnalysis | null,
+  goal?: ParsedGoal | null,
+  userProfile?: UserProfileContext | null,
 ): string {
   const {
     runSummaries,
@@ -226,7 +295,6 @@ export function buildPlannerPrompt(
     availableDays,
   } = input;
   const restDays = 7 - trainingDays;
-  const athleteClass = classifyAthlete(avgPace);
   const hrCtx = avgHR ? `${avgHR} bpm` : 'não disponível — prescreva esforço por RPE (escala 1–10)';
   const daysList = formatAvailableDays(availableDays);
 
@@ -234,16 +302,25 @@ export function buildPlannerPrompt(
     ? buildPreviousWeekSection(previousWeekAnalysis)
     : '';
 
+  const goalSection = goal ? buildGoalSection(goal) : '';
+  const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
+
+  const goalSummary = goal?.summary ?? 'evoluir como corredor';
+
   return `<role>
 Você é um treinador de corrida experiente. Crie um plano de treino personalizado baseado nos dados reais do atleta.
 Tom: direto, motivador e orientado por dados — como um treinador de atletismo.
-Classificação atual do atleta: ${athleteClass}.
+Objetivo do atleta: ${goalSummary}.
 </role>
 
 <language>
 OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco, fitnessInsights e reasoning.
 Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
 </language>
+
+${goalSection}
+
+${profileSection}
 
 <athlete_data>
 Corridas recentes analisadas (últimas ${runSummaries.length} corridas):
@@ -261,7 +338,7 @@ Estatísticas resumidas:
 
 <task>
 1. Analise o nível de condicionamento físico, tendência de pace e padrões de treino do atleta.
-2. Monte um plano equilibrado de 7 dias (${weekDates[0]} a ${weekDates[6]}) seguindo princípios de periodização.
+2. Monte um plano equilibrado de 7 dias (${weekDates[0]} a ${weekDates[6]}) seguindo princípios de periodização e alinhado ao objetivo declarado.
 3. Derive todas as distâncias e paces dos dados reais do atleta e das zonas personalizadas abaixo.
 4. Respeite ESTRITAMENTE a disponibilidade: treinos SOMENTE nos dias ${daysList}. Os demais dias são descanso obrigatório.
 5. Retorne APENAS o objeto JSON descrito em <output_schema>. Sem markdown, sem prosa, sem keys extras.
@@ -302,7 +379,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
     "avgHeartRate": <número | null>,
     "totalDistanceKm": <número>,
     "trend": "<improving (volume) | improving (intensity) | maintaining | declining>",
-    "fitnessInsights": "<2–3 frases em português: diagnóstico atual do condicionamento, padrão-chave identificado e uma área de foco concreta>"
+    "fitnessInsights": "<2–3 frases em português: diagnóstico atual do condicionamento, padrão-chave identificado e uma área de foco concreta alinhada ao objetivo>"
   },
   "weekPlan": [
     {

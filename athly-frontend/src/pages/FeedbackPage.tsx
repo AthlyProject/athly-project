@@ -29,7 +29,7 @@ export function FeedbackPage() {
         fatigue,
       })
       toast.success('Feedback enviado!')
-      navigate('/dashboard')
+      navigate('/app/dashboard')
     } catch {
       toast.error('Erro ao enviar feedback')
     } finally {
@@ -200,7 +200,7 @@ export function FeedbackPage() {
             type="button"
             variant="ghost"
             fullWidth
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/app/dashboard')}
           >
             Pular por agora
           </Button>

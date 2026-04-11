@@ -14,6 +14,8 @@ import { AiPlannerModule } from './modules/ai-planner/ai-planner.module';
 import { StravaModule } from './modules/strava/strava.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
 import { EffortZoneModule } from './modules/effort-zones/effort-zone.module';
+import { GoalsModule } from './modules/goals/goals.module';
+import { WaitlistModule } from './modules/waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { EffortZoneModule } from './modules/effort-zones/effort-zone.module';
     StravaModule,
     AssessmentModule,
     EffortZoneModule,
+    GoalsModule,
+    WaitlistModule,
   ],
   controllers: [AppController],
   providers: [AppService],

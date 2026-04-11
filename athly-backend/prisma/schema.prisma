@@ -85,6 +85,7 @@ model User {
   equipments    UserEquipment[]
   assessment    Assessment?
   effortZones   UserEffortZone[]
+  userGoals     UserGoal[]
 
   @@map("users")
 }
@@ -140,6 +141,8 @@ model TrainingPlan {
   weeklyGoals  WeeklyGoal[]
   status       TrainingPlanStatus @default(DRAFT) @map("status")
   workouts     Workout[]
+  userGoalId   String?            @map("user_goal_id")
+  userGoal     UserGoal?          @relation(fields: [userGoalId], references: [id], onDelete: SetNull)
 
   @@map("training_plans")
 }
@@ -260,6 +263,21 @@ model UserEffortZone {
   @@map("user_effort_zones")
 }
 
+model UserGoal {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  rawText    String   @map("raw_text")
+  parsedGoal Json     @map("parsed_goal")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingPlans TrainingPlan[]
+
+  @@map("user_goals")
+}
+
 model AiReasoning {
   id             String     @id @default(uuid())
   workoutId      String     @unique @map("workout_id")
@@ -274,4 +292,13 @@ model AiReasoning {
   weeklyGoal WeeklyGoal @relation(fields: [weeklyGoalId], references: [id], onDelete: Cascade)
 
   @@map("ai_reasonings")
+}
+
+model WaitlistEntry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_entries")
 }

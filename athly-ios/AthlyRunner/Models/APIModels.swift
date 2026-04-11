@@ -252,6 +252,31 @@ struct AiPlannerResponse: Decodable, Sendable {
     let analysis: RunAnalysis
 }
 
+// MARK: - User Goal
+
+struct ParsedGoal: Codable, Sendable {
+    let isRunningRelated: Bool
+    let targetDistance: String?
+    let targetTime: String?
+    let eventDate: String?
+    let eventName: String?
+    let experienceLevel: String?
+    let summary: String
+    let rejectionReason: String?
+}
+
+struct CreateGoalRequest: Encodable, Sendable {
+    let goalText: String
+}
+
+struct CreateGoalResponse: Decodable, Sendable {
+    let id: String
+    let rawText: String
+    let parsedGoal: ParsedGoal
+    let active: Bool
+    let createdAt: String
+}
+
 // MARK: - Week (assembled on client)
 
 struct Week: Identifiable, Sendable {

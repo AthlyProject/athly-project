@@ -4,16 +4,17 @@ struct MainTabView: View {
     @EnvironmentObject var locationManager: LocationManager
     @State private var selectedTab: AppTab = .dashboard
     @State private var isRunInProgress = false
+    @State private var pendingWorkoutId: String?
 
     var body: some View {
         Group {
             switch selectedTab {
             case .dashboard:
-                DashboardView()
+                DashboardView(selectedTab: $selectedTab, pendingWorkoutId: $pendingWorkoutId)
             case .plan:
                 PlanView()
             case .run:
-                RunStartView(isRunInProgress: $isRunInProgress)
+                RunStartView(isRunInProgress: $isRunInProgress, pendingWorkoutId: $pendingWorkoutId)
             case .history:
                 HistoryView()
             case .profile:

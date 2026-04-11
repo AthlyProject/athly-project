@@ -46,7 +46,7 @@ struct WorkoutCardView: View {
 
                 // Intensity
                 if let intensity = workout.intensity {
-                    Label("Intensidade \(intensity)", systemImage: "bolt.fill")
+                    Label("Intensidade \(Int(intensity))", systemImage: "bolt.fill")
                         .font(AthlyTheme.Typography.body(12))
                         .foregroundStyle(intensityColor(intensity))
                 }

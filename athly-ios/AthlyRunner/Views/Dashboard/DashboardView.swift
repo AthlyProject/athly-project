@@ -4,6 +4,8 @@ struct DashboardView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var runStore: RunStore
+    @Binding var selectedTab: AppTab
+    @Binding var pendingWorkoutId: String?
 
     private var recentRuns: [RunSession] { runStore.sortedSessions }
 
@@ -22,7 +24,7 @@ struct DashboardView: View {
                     ],
                     center: .init(x: 0.05, y: 0.0),
                     startRadius: 0,
-                    endRadius: 200   // era 350 — menor = mais contido
+                    endRadius: 200
                 )
                 .ignoresSafeArea()
 
@@ -34,7 +36,7 @@ struct DashboardView: View {
                     ],
                     center: .init(x: 1.0, y: 1.0),
                     startRadius: 0,
-                    endRadius: 160   // era 280
+                    endRadius: 160
                 )
                 .ignoresSafeArea()
 
@@ -47,7 +49,6 @@ struct DashboardView: View {
                             greetingSection
                             todayWorkoutSection
                             weeklyProgressCard
-                            quickActionsRow
                             activityBarsCard
                         }
                         .padding(AthlyTheme.Spacing.sm)
@@ -122,14 +123,18 @@ struct DashboardView: View {
                             .foregroundStyle(AthlyTheme.Color.textPrimary)
                     }
                     Spacer()
-                    StatusBadgeView(status: workout.status)
                 }
 
                 WorkoutCardView(workout: workout, compact: true)
 
                 if workout.status == .scheduled {
-                    Button("Iniciar treino agora") {}
-                        .buttonStyle(AthlyGradientButtonStyle())
+                    Button("Iniciar treino agora") {
+                        pendingWorkoutId = workout.id
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTab = .run
+                        }
+                    }
+                    .buttonStyle(AthlyGradientButtonStyle())
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
@@ -158,7 +163,7 @@ struct DashboardView: View {
         .athlyCard()
     }
 
-    // MARK: - Weekly Progress (insight card with stronger gradient)
+    // MARK: - Weekly Progress
 
     private var weeklyProgressCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -168,9 +173,15 @@ struct DashboardView: View {
                         .font(AthlyTheme.Typography.label())
                         .foregroundStyle(AthlyTheme.Color.primary)
 
-                    Text("\(planVM.completedThisWeek) / \(planVM.totalThisWeek) treinos")
-                        .font(AthlyTheme.Typography.heading(22))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    if planVM.totalThisWeek == 0 {
+                        Text("Nenhum treino planejado")
+                            .font(AthlyTheme.Typography.heading(22))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    } else {
+                        Text("\(planVM.completedThisWeek) / \(planVM.totalThisWeek) treinos")
+                            .font(AthlyTheme.Typography.heading(22))
+                            .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    }
                 }
                 Spacer()
 
@@ -248,56 +259,6 @@ struct DashboardView: View {
                 .font(AthlyTheme.Typography.body(11))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
-        .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Quick Actions
-
-    private var quickActionsRow: some View {
-        HStack(spacing: 12) {
-            quickActionButton(
-                icon: "list.bullet.clipboard",
-                label: "Ver plano",
-                color: AthlyTheme.Color.primary
-            ) {}
-
-            quickActionButton(
-                icon: "clock.arrow.trianglehead.counterclockwise.rotate.90",
-                label: "Histórico",
-                color: AthlyTheme.Color.secondary
-            ) {}
-        }
-    }
-
-    private func quickActionButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(color.opacity(0.15))
-                        .frame(width: 32, height: 32)
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-                Text(label)
-                    .font(AthlyTheme.Typography.semibold(15))
-                    .foregroundStyle(color)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(color.opacity(0.5))
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(color.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button))
-            .overlay(
-                RoundedRectangle(cornerRadius: AthlyTheme.Radius.button)
-                    .stroke(color.opacity(0.25), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
     }
 

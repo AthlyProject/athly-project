@@ -11,6 +11,11 @@ final class RunViewModel: ObservableObject {
     @Published var isSaved = false
     @Published var saveError: String?
 
+    /// ID do workout agendado que originou esta corrida (definido quando o usuario
+    /// clica "Iniciar treino agora" na dashboard). Usado para marcar o workout como
+    /// concluido apos salvar a corrida.
+    var pendingWorkoutId: String?
+
     private let locationManager: LocationManager
     private let healthKitService = HealthKitService()
     private var trackerCancellable: AnyCancellable?
@@ -141,6 +146,16 @@ final class RunViewModel: ObservableObject {
         } catch {
             // Saved locally, will sync later
             saveError = "Salvo localmente. Sincroniza quando houver conexão."
+        }
+
+        // Mark the scheduled workout as done if this run was started from the dashboard
+        if let workoutId = pendingWorkoutId {
+            do {
+                _ = try await APIClient.shared.completeWorkout(workoutId: workoutId)
+            } catch {
+                // Best-effort: workout completion failure does not block the run save
+            }
+            pendingWorkoutId = nil
         }
 
         isSaving = false

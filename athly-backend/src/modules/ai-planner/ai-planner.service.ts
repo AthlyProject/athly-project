@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
+import { AssessmentService } from '../assessment/assessment.service';
 import { PlanNextWeekDto } from './dto/plan-next-week.dto';
 import { PlanFromHealthDto } from './dto/plan-from-health.dto';
 import type {
@@ -19,6 +20,8 @@ import type {
   RunSummary,
 } from './types/planner.types';
 import type { RunDataForZones } from '../effort-zones/types/effort-zone.types';
+import type { ParsedGoal } from './prompts/goal-parser-prompt';
+import type { UserProfileContext } from './prompts/planner-prompt';
 
 const PROMPT_VERSION = 'v2.0';
 const MODEL_USED = 'gemini-2.5-flash';
@@ -34,6 +37,7 @@ export class AiPlannerService {
     private readonly stravaService: StravaService,
     private readonly geminiService: GeminiService,
     private readonly effortZoneService: EffortZoneService,
+    private readonly assessmentService: AssessmentService,
   ) {}
 
   async planNextWeek(userId: string, input: PlanNextWeekDto) {
@@ -42,27 +46,37 @@ export class AiPlannerService {
     const weekStartDate = new Date(weekDates[0]);
     const weekEndDate = new Date(weekDates[6]);
 
-    // 1. Find or create TrainingPlan
-    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]);
+    // 1. Fetch active goal and assessment for context (before creating training plan)
+    const [activeGoalRecord, assessmentRecord, user] = await Promise.all([
+      this.prisma.userGoal.findFirst({ where: { userId, active: true }, orderBy: { createdAt: 'desc' } }),
+      this.assessmentService.findByUser(userId),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { availableDays: true, dateOfBirth: true } }),
+    ]);
+    const activeGoal = activeGoalRecord ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal) : null;
+    const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
 
-    // 2. Check for existing WeeklyGoal overlap for this week
+    // 2. Find or create TrainingPlan (using goal for objective)
+    const trainingPlan = await this.resolveTrainingPlan(
+      userId,
+      weekDates[0],
+      activeGoalRecord?.id,
+      activeGoal?.summary,
+    );
+
+    // 3. Check for existing WeeklyGoal overlap for this week
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
 
-    // 3. Fetch user available days from DB
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { availableDays: true, dateOfBirth: true },
-    });
+    // 4. Fetch user available days from DB
     const availableDays = user?.availableDays?.length ? user.availableDays : DEFAULT_AVAILABLE_DAYS;
     const trainingDays = availableDays.length;
 
-    // 4. Fetch recent Strava activities
+    // 5. Fetch recent Strava activities
     const activities = await this.stravaService.getRecentActivities(userId, 30);
     const runs = activities
       .filter((a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun')
       .slice(0, trainingDays);
 
-    // 5. Calculate effort zones
+    // 6. Calculate effort zones
     const runsForZones: RunDataForZones[] = runs.map((r) => ({
       distanceMeters: r.distance ?? 0,
       durationSeconds: r.moving_time ?? 0,
@@ -71,19 +85,19 @@ export class AiPlannerService {
     }));
     const effortZones = await this.effortZoneService.getOrCalculateForUser(userId, runsForZones, 'strava');
 
-    // 6. Build previous week analysis
+    // 7. Build previous week analysis
     const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
 
-    // 7. Build AI input or use assessment path
+    // 8. Build AI input or use assessment path
     let plannerResult: PlannerResults;
     let isAssessment = false;
 
     if (runs.length === 0) {
       isAssessment = true;
-      plannerResult = await this.geminiService.generateAssessmentPlan(weekDates, trainingDays, availableDays, effortZones);
+      plannerResult = await this.geminiService.generateAssessmentPlan(weekDates, trainingDays, availableDays, effortZones, activeGoal, userProfile);
     } else {
       const aiInput = this.buildAiInput(runs, weekDates, trainingDays, availableDays);
-      plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis);
+      plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis, activeGoal, userProfile);
     }
 
     // 8. Persist: WeeklyGoal → Workouts → AiReasoning (in transaction)
@@ -184,14 +198,24 @@ export class AiPlannerService {
     const weekStartDate = new Date(weekDates[0]);
     const weekEndDate = new Date(weekDates[6]);
 
-    const trainingPlan = await this.resolveTrainingPlan(userId, weekDates[0]);
+    // Fetch active goal and assessment for context (before creating training plan)
+    const [activeGoalRecord, assessmentRecord, userHealth] = await Promise.all([
+      this.prisma.userGoal.findFirst({ where: { userId, active: true }, orderBy: { createdAt: 'desc' } }),
+      this.assessmentService.findByUser(userId),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { availableDays: true } }),
+    ]);
+    const activeGoal = activeGoalRecord ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal) : null;
+    const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
+
+    const trainingPlan = await this.resolveTrainingPlan(
+      userId,
+      weekDates[0],
+      activeGoalRecord?.id,
+      activeGoal?.summary,
+    );
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { availableDays: true },
-    });
-    const availableDays = user?.availableDays?.length ? user.availableDays : DEFAULT_AVAILABLE_DAYS;
+    const availableDays = userHealth?.availableDays?.length ? userHealth.availableDays : DEFAULT_AVAILABLE_DAYS;
     const trainingDays = availableDays.length;
 
     // Calculate effort zones from health runs
@@ -207,7 +231,7 @@ export class AiPlannerService {
     const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
 
     const aiInput = this.buildAiInputFromHealthRuns(input.runs, weekDates, trainingDays, availableDays);
-    const plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis);
+    const plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis, activeGoal, userProfile);
 
     const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
       const weeklyGoal = await tx.weeklyGoal.create({
@@ -296,6 +320,35 @@ export class AiPlannerService {
       })),
       analysis: plannerResult.analysis,
       isAssessment: false,
+    };
+  }
+
+  private buildUserProfile(answers: any): UserProfileContext {
+    const parqFlagMap: Record<string, string> = {
+      heartCondition: 'Condição cardíaca diagnosticada por médico',
+      chestPainDuringActivity: 'Dor no peito durante atividade física',
+      chestPainLastMonth: 'Dor no peito no último mês',
+      dizzinessOrLossOfConsciousness: 'Tonturas ou perda de consciência',
+      boneJointProblem: 'Problema ósseo ou articular que piora com exercício',
+      takingBloodPressureMeds: 'Medicação para pressão arterial',
+      otherReasonToAvoidExercise: 'Outro motivo para evitar exercício físico',
+    };
+
+    const parqFlags: string[] = [];
+    if (answers?.parq) {
+      for (const [key, label] of Object.entries(parqFlagMap)) {
+        if (answers.parq[key] === true) parqFlags.push(label);
+      }
+    }
+
+    return {
+      sleepQuality: answers?.performanceHealth?.sleepQuality,
+      hasChronicPain: answers?.performanceHealth?.hasChronicPain === 'yes',
+      chronicPainDescription: answers?.performanceHealth?.chronicPainDescription,
+      canRun3km: answers?.activityHistory?.canRun3km,
+      runningExperience: answers?.activityHistory?.runningExperience,
+      motivations: answers?.goals?.motivations,
+      parqFlags,
     };
   }
 
@@ -436,7 +489,7 @@ export class AiPlannerService {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  private async resolveTrainingPlan(userId: string, weekStartDate: string) {
+  private async resolveTrainingPlan(userId: string, weekStartDate: string, activeGoalId?: string, goalSummary?: string) {
     const existing = await this.prisma.trainingPlan.findUnique({ where: { userId } });
 
     if (existing) {
@@ -451,6 +504,14 @@ export class AiPlannerService {
       if (existing.status === TrainingPlanStatus.LOCKED) {
         throw new ConflictException('Training plan is locked and cannot be modified.');
       }
+      // Update goal reference if provided and not yet linked
+      if (activeGoalId && existing.userGoalId !== activeGoalId) {
+        await this.prisma.trainingPlan.update({
+          where: { id: existing.id },
+          data: { userGoalId: activeGoalId, objective: goalSummary ?? existing.objective },
+        });
+        return { ...existing, userGoalId: activeGoalId, objective: goalSummary ?? existing.objective };
+      }
       return existing;
     }
 
@@ -458,10 +519,11 @@ export class AiPlannerService {
       data: {
         userId,
         startDate: weekStartDate,
-        objective: 'AI-generated running plan',
+        objective: goalSummary ?? 'Plano de corrida gerado por IA',
         status: TrainingPlanStatus.ACTIVE,
         sports: [SportType.running],
         autoGenerate: true,
+        userGoalId: activeGoalId ?? null,
       },
     });
   }

@@ -21,13 +21,13 @@ export function OAuthCallbackPage() {
 
     if (error) {
       toast.error('Autorização Strava cancelada.')
-      navigate(isAuth ? '/settings' : '/login', { replace: true })
+      navigate(isAuth ? '/app/settings' : '/login', { replace: true })
       return
     }
 
     if (!code) {
       toast.error('Código de autorização não encontrado.')
-      navigate(isAuth ? '/settings' : '/login', { replace: true })
+      navigate(isAuth ? '/app/settings' : '/login', { replace: true })
       return
     }
 
@@ -35,11 +35,11 @@ export function OAuthCallbackPage() {
       handleStravaCallback(code)
         .then(() => {
           toast.success('Strava conectado com sucesso! Sincronizando atividades...')
-          navigate('/settings', { replace: true })
+          navigate('/app/settings', { replace: true })
         })
         .catch((err: Error) => {
           toast.error(err.message ?? 'Erro ao conectar Strava.')
-          navigate('/settings', { replace: true })
+          navigate('/app/settings', { replace: true })
         })
     } else {
       stravaLogin(code)
@@ -50,7 +50,7 @@ export function OAuthCallbackPage() {
             refreshToken: payload.refreshToken,
           })
           toast.success('Login com Strava realizado com sucesso!')
-          navigate('/dashboard', { replace: true })
+          navigate('/app/dashboard', { replace: true })
         })
         .catch((err: Error) => {
           toast.error(err.message ?? 'Erro ao fazer login com Strava.')

@@ -79,7 +79,7 @@ export function DashboardPage() {
               <Flame className="h-9 w-9 text-orange-400" />
             </div>
             <WorkoutCard workout={todayWorkout} />
-            <Link to={`/workout/${todayWorkout.id}`} className="mt-6 block">
+            <Link to={`/app/workout/${todayWorkout.id}`} className="mt-6 block">
               <Button variant="gradient" fullWidth size="lg" glow>
                 <Rocket className="h-5 w-5 inline mr-2" />Iniciar treino agora
               </Button>
@@ -161,12 +161,12 @@ export function DashboardPage() {
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <Link to="/plan" className="flex-1">
+        <Link to="/app/plan" className="flex-1">
           <Button variant="outline" fullWidth size="lg">
             <CalendarDays className="h-5 w-5 inline mr-2" />Ver plano completo
           </Button>
         </Link>
-        <Link to="/history" className="flex-1">
+        <Link to="/app/history" className="flex-1">
           <Button variant="ghost" fullWidth size="lg">
             <BarChart3 className="h-5 w-5 inline mr-2" />Histórico
           </Button>

@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AiPlannerInput, PlannerResults, PreviousWeekAnalysis } from './types/planner.types';
 import type { FormattedZones } from '../effort-zones/types/effort-zone.types';
-import { buildPlannerPrompt, buildAssessmentPrompt } from './prompts/planner-prompt';
+import { buildPlannerPrompt, buildAssessmentPrompt, type UserProfileContext } from './prompts/planner-prompt';
+import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
 
 @Injectable()
 export class GeminiService {
@@ -28,9 +29,11 @@ export class GeminiService {
     input: AiPlannerInput,
     effortZones: FormattedZones,
     previousWeekAnalysis?: PreviousWeekAnalysis | null,
+    goal?: ParsedGoal | null,
+    userProfile?: UserProfileContext | null,
   ): Promise<PlannerResults> {
     const model = this.getModel();
-    const prompt = buildPlannerPrompt(input, effortZones, previousWeekAnalysis);
+    const prompt = buildPlannerPrompt(input, effortZones, previousWeekAnalysis, goal, userProfile);
 
     let responseText: string;
     try {
@@ -50,9 +53,11 @@ export class GeminiService {
     trainingDays: number,
     availableDays: string[],
     effortZones: FormattedZones,
+    goal?: ParsedGoal | null,
+    userProfile?: UserProfileContext | null,
   ): Promise<PlannerResults> {
     const model = this.getModel();
-    const prompt = buildAssessmentPrompt(weekDates, trainingDays, availableDays, effortZones);
+    const prompt = buildAssessmentPrompt(weekDates, trainingDays, availableDays, effortZones, goal, userProfile);
 
     let responseText: string;
     try {
@@ -65,6 +70,34 @@ export class GeminiService {
     }
 
     return this.parseAndValidate(responseText);
+  }
+
+  async parseGoal(goalText: string): Promise<ParsedGoal> {
+    const model = this.getModel();
+    const prompt = buildGoalParserPrompt(goalText);
+
+    let responseText: string;
+    try {
+      const result = await model.generateContent(prompt);
+      responseText = result.response.text();
+    } catch (err) {
+      throw new BadGatewayException(
+        `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    let parsed: ParsedGoal;
+    try {
+      parsed = JSON.parse(responseText) as ParsedGoal;
+    } catch {
+      throw new BadGatewayException('Gemini AI returned an invalid JSON response for goal parsing.');
+    }
+
+    if (typeof parsed.isRunningRelated !== 'boolean' || !parsed.summary) {
+      throw new BadGatewayException('Gemini AI goal parsing response is missing required fields.');
+    }
+
+    return parsed;
   }
 
   private parseAndValidate(responseText: string): PlannerResults {
