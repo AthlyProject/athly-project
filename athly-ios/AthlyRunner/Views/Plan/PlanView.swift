@@ -6,6 +6,7 @@ struct PlanView: View {
     @State private var viewMode: ViewMode = .list
     @State private var calendarMonth: Date = Date()
     @State private var showCreatePlan = false
+    @State private var workoutToComplete: WorkoutModel?
 
     enum ViewMode: String, CaseIterable {
         case list = "Lista"
@@ -48,6 +49,22 @@ struct PlanView: View {
                 CreatePlanView()
                     .environmentObject(planVM)
             }
+            .sheet(item: $workoutToComplete) { workout in
+                WorkoutCompletionSheet(
+                    workout: workout,
+                    onComplete: { healthRun in
+                        workoutToComplete = nil
+                        Task {
+                            if let run = healthRun {
+                                await planVM.completeWorkoutWithHealthData(workout, healthRun: run)
+                            } else {
+                                await planVM.completeWorkout(workout)
+                            }
+                        }
+                    },
+                    onDismiss: { workoutToComplete = nil }
+                )
+            }
             .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
                 Button("OK") { planVM.errorMessage = nil }
             } message: {
@@ -64,6 +81,14 @@ struct PlanView: View {
                 if let plan = planVM.trainingPlanResponse {
                     // Plan header
                     planHeaderCard(plan)
+
+                    // AI Weekly Goal cards (current week)
+                    if let currentGoal = planVM.currentWeekGoal {
+                        WeeklyGoalInsightCard(goal: currentGoal)
+                            .padding(.horizontal, AthlyTheme.Spacing.sm)
+                        PreviousWeekFeedbackCard(goal: currentGoal)
+                            .padding(.horizontal, AthlyTheme.Spacing.sm)
+                    }
 
                     if let analysis = planVM.lastAnalysis {
                         AnalysisSummaryCard(analysis: analysis)
@@ -221,9 +246,9 @@ struct PlanView: View {
                     .contextMenu {
                         if workout.status == .scheduled {
                             Button {
-                                Task { await planVM.completeWorkout(workout) }
+                                workoutToComplete = workout
                             } label: {
-                                Label("Marcar como concluído", systemImage: "checkmark.circle")
+                                Label("Concluir treino", systemImage: "checkmark.circle")
                             }
                             Button {
                                 Task { await planVM.skipWorkout(workout) }
@@ -324,9 +349,9 @@ struct PlanView: View {
                 .contextMenu {
                     if workout.status == .scheduled {
                         Button {
-                            Task { await planVM.completeWorkout(workout) }
+                            workoutToComplete = workout
                         } label: {
-                            Label("Marcar como concluído", systemImage: "checkmark.circle")
+                            Label("Concluir treino", systemImage: "checkmark.circle")
                         }
                         Button {
                             Task { await planVM.skipWorkout(workout) }
@@ -372,7 +397,7 @@ struct PlanView: View {
                 )
 
             Text("Crie seu plano de corrida")
-                .font(AthlyTheme.Typography.bold(20))
+                .font(AthlyTheme.Typography.heading(20))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
 
             Text("Diga qual é seu objetivo e a IA vai criar um plano de treino personalizado para você.")
@@ -443,9 +468,13 @@ struct PlanView: View {
             .padding(.vertical, 8)
 
             ScrollView {
-                CalendarGridView(month: calendarMonth, workouts: planVM.allWorkouts)
-                    .padding(.horizontal, AthlyTheme.Spacing.sm)
-                    .padding(.bottom, AthlyTheme.Spacing.sm)
+                CalendarGridView(
+                    month: calendarMonth,
+                    workouts: planVM.allWorkouts,
+                    weeklyGoals: planVM.weeklyGoals
+                )
+                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                .padding(.bottom, AthlyTheme.Spacing.sm)
             }
             .scrollContentBackground(.hidden)
         }

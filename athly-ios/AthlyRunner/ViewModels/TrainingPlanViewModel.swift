@@ -38,6 +38,12 @@ final class TrainingPlanViewModel: ObservableObject {
         currentWeekWorkouts.first { $0.status == .scheduled }
     }
 
+    /// WeeklyGoal da semana atualmente selecionada (usada para exibir cards de AI insight).
+    var currentWeekGoal: WeeklyGoalResponse? {
+        guard selectedWeekIndex < weeks.count else { return nil }
+        return weeks[selectedWeekIndex].weeklyGoal
+    }
+
     /// Próximos 5 treinos (a partir de hoje), ordenados por data; usado na tela Plano.
     var nextFiveWorkouts: [WorkoutModel] {
         let startOfToday = Calendar.current.startOfDay(for: Date())
@@ -135,6 +141,33 @@ final class TrainingPlanViewModel: ObservableObject {
 
     func completeWorkout(_ workout: WorkoutModel) async {
         do {
+            let updated = try await APIClient.shared.completeWorkout(workoutId: workout.id)
+            replaceWorkout(updated)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Conclui um treino prescrito vinculando dados reais de uma corrida do HealthKit.
+    func completeWorkoutWithHealthData(_ workout: WorkoutModel, healthRun: HealthKitRunItem) async {
+        do {
+            // 1. Salvar a corrida real no backend
+            let iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let saveRequest = SaveRunRequest(
+                sportType: "running",
+                dateScheduled: iso.string(from: healthRun.startDate),
+                duration: healthRun.durationSeconds,
+                distance: healthRun.distanceMeters,
+                elevationGain: healthRun.elevationGainMeters ?? 0,
+                calories: healthRun.activeEnergyBurned,
+                averagePace: healthRun.averagePaceSecondsPerKm,
+                routePoints: [],
+                splits: []
+            )
+            _ = try await APIClient.shared.saveRun(saveRequest)
+
+            // 2. Marcar treino prescrito como concluído
             let updated = try await APIClient.shared.completeWorkout(workoutId: workout.id)
             replaceWorkout(updated)
         } catch {

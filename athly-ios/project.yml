@@ -5,7 +5,7 @@ name: AthlyRunner
 options:
   bundleIdPrefix: com.athly
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "16.1"
   xcodeVersion: "16.4"
   generateEmptyDirectories: true
 
@@ -23,11 +23,13 @@ targets:
   AthlyRunner:
     type: application
     platform: iOS
-    deploymentTarget: "16.0"
+    deploymentTarget: "16.1"
     sources:
       - path: AthlyRunner
         excludes:
           - "Info.plist"
+      # Shared model — included in both app and extension
+      - path: AthlyRunnerLiveActivity/AthlyRunnerAttributes.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(ATHLY_BUNDLE_ID)
@@ -59,5 +61,27 @@ targets:
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: false
     entitlements:
       path: AthlyRunner/AthlyRunner.entitlements
+    dependencies:
+      - target: AthlyRunnerLiveActivity
+        embed: true
+
+  AthlyRunnerLiveActivity:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.1"
+    sources:
+      - path: AthlyRunnerLiveActivity
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(ATHLY_BUNDLE_ID).liveactivity
+        SWIFT_STRICT_CONCURRENCY: complete
+        SKIP_INSTALL: YES
+    info:
+      path: AthlyRunnerLiveActivity/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

@@ -48,7 +48,7 @@ struct CreatePlanView: View {
                 // Header
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Qual é o seu objetivo?")
-                        .font(AthlyTheme.Typography.bold(22))
+                        .font(AthlyTheme.Typography.heading(22))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
                     Text("Descreva em suas palavras o que você quer conquistar correndo.")
                         .font(AthlyTheme.Typography.body(15))
@@ -158,7 +158,7 @@ struct CreatePlanView: View {
                     .foregroundStyle(AthlyTheme.Color.success)
 
                 Text("Objetivo entendido!")
-                    .font(AthlyTheme.Typography.bold(22))
+                    .font(AthlyTheme.Typography.heading(22))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
 
                 Text(goal.summary)

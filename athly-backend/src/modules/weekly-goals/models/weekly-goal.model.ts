@@ -20,6 +20,9 @@ export class WeeklyGoalModel {
   @ApiPropertyOptional()
   metrics?: Record<string, unknown>;
 
+  @ApiPropertyOptional()
+  previousWeekAnalysis?: Record<string, unknown>;
+
   @ApiProperty()
   createdAt: Date;
 

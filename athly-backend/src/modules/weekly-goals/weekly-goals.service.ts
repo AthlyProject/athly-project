@@ -58,6 +58,7 @@ export class WeeklyGoalsService {
       this.mapWeeklyGoal({
         ...wg,
         status: WeeklyGoalStatus.GENERATED,
+        previousWeekAnalysis: wg.previousWeekAnalysis ?? undefined,
       }),
     );
   }
@@ -149,6 +150,7 @@ export class WeeklyGoalsService {
     weekEndDate: Date;
     status: WeeklyGoalModel['status'];
     metrics: unknown;
+    previousWeekAnalysis?: unknown;
     createdAt: Date;
     updatedAt: Date;
   }): WeeklyGoalModel {
@@ -159,6 +161,7 @@ export class WeeklyGoalsService {
       weekEndDate: weeklyGoal.weekEndDate,
       status: weeklyGoal.status,
       metrics: (weeklyGoal.metrics as Record<string, unknown> | undefined) ?? undefined,
+      previousWeekAnalysis: (weeklyGoal.previousWeekAnalysis as Record<string, unknown> | undefined) ?? undefined,
       createdAt: weeklyGoal.createdAt,
       updatedAt: weeklyGoal.updatedAt,
     };

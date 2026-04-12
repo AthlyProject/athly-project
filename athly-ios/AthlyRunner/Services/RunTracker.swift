@@ -40,6 +40,9 @@ final class RunTracker: ObservableObject {
         self.locationManager = locationManager
     }
 
+    /// Título do treino vinculado (para o Live Activity widget)
+    var workoutTitle: String = ""
+
     // MARK: - Controls
 
     func start() {
@@ -57,6 +60,7 @@ final class RunTracker: ObservableObject {
         locationManager.startTracking()
         startTimer()
         observeLocation()
+        LiveActivityManager.shared.startActivity(workoutTitle: workoutTitle)
     }
 
     func pause() {
@@ -104,6 +108,7 @@ final class RunTracker: ObservableObject {
             splits: buildSplits()
         )
 
+        LiveActivityManager.shared.endActivity()
         reset()
         return result
     }
@@ -113,6 +118,7 @@ final class RunTracker: ObservableObject {
         timer = nil
         locationManager.stopTracking()
         locationCancellable?.cancel()
+        LiveActivityManager.shared.endActivity()
         reset()
     }
 
@@ -149,6 +155,12 @@ final class RunTracker: ObservableObject {
         guard let startTime, state == .running else { return }
         elapsedTime = Date().timeIntervalSince(startTime) - pausedDuration
         updateCalories()
+        // Update Live Activity every second
+        LiveActivityManager.shared.updateActivity(
+            elapsedSeconds: Int(elapsedTime),
+            distanceMeters: distanceMeters,
+            paceSecondsPerKm: currentPaceSecondsPerKm
+        )
     }
 
     private func observeLocation() {

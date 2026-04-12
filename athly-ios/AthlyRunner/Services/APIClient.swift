@@ -59,6 +59,10 @@ actor APIClient {
         try await get("/users/me")
     }
 
+    func updateProfile(_ request: UpdateProfileRequest) async throws -> UserProfile {
+        try await put("/users/profile", body: request)
+    }
+
     // MARK: - Training Plan Endpoints
 
     /// Backend retorna 200 com body `null` quando o usuário não tem plano; por isso retornamos opcional.
@@ -146,6 +150,13 @@ actor APIClient {
 
     private func post<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true) async throws -> T {
         var request = try buildRequest(path: path, method: "POST", authenticated: authenticated)
+        request.httpBody = try JSONEncoder().encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await execute(request)
+    }
+
+    private func put<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true) async throws -> T {
+        var request = try buildRequest(path: path, method: "PUT", authenticated: authenticated)
         request.httpBody = try JSONEncoder().encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return try await execute(request)

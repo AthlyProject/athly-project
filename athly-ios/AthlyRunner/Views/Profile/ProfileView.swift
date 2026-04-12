@@ -4,7 +4,23 @@ struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var runStore: RunStore
 
+    @State private var userProfile: UserProfile?
+    @State private var selectedDays: Set<String> = []
+    @State private var isSavingDays = false
+    @State private var saveError: String?
+    @State private var showSaveConfirmation = false
+
     private var allRuns: [RunSession] { runStore.sortedSessions }
+
+    private let weekdays: [(key: String, label: String)] = [
+        ("sunday",    "Dom"),
+        ("monday",    "Seg"),
+        ("tuesday",   "Ter"),
+        ("wednesday", "Qua"),
+        ("thursday",  "Qui"),
+        ("friday",    "Sex"),
+        ("saturday",  "Sáb"),
+    ]
 
     var body: some View {
         NavigationStack {
@@ -20,6 +36,71 @@ struct ProfileView: View {
                         statsRow(icon: "clock", label: "Tempo total", value: formatDuration(totalTime))
                         statsRow(icon: "speedometer", label: "Pace medio", value: formatPace(averagePace))
                         statsRow(icon: "mountain.2", label: "Elevacao total", value: String(format: "%.0f m", totalElevation))
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
+                    // Training days section
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .foregroundStyle(AthlyTheme.Color.primary)
+                                Text("Dias disponíveis para treinar")
+                                    .font(AthlyTheme.Typography.body())
+                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            }
+
+                            // Day toggle buttons
+                            HStack(spacing: 8) {
+                                ForEach(weekdays, id: \.key) { day in
+                                    dayToggleButton(key: day.key, label: day.label)
+                                }
+                            }
+
+                            // Selected count + save
+                            HStack {
+                                Text("\(selectedDays.count) dia\(selectedDays.count == 1 ? "" : "s") selecionado\(selectedDays.count == 1 ? "" : "s")")
+                                    .font(AthlyTheme.Typography.body(13))
+                                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+
+                                Spacer()
+
+                                Button {
+                                    Task { await saveDays() }
+                                } label: {
+                                    if isSavingDays {
+                                        ProgressView()
+                                            .tint(AthlyTheme.Color.primary)
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Text("Salvar")
+                                            .font(AthlyTheme.Typography.semibold(14))
+                                            .foregroundStyle(AthlyTheme.Color.primary)
+                                    }
+                                }
+                                .disabled(isSavingDays)
+                            }
+
+                            if showSaveConfirmation {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(AthlyTheme.Color.success)
+                                    Text("Dias de treino salvos!")
+                                        .font(AthlyTheme.Typography.body(13))
+                                        .foregroundStyle(AthlyTheme.Color.success)
+                                }
+                                .transition(.opacity)
+                            }
+
+                            if let error = saveError {
+                                Text(error)
+                                    .font(AthlyTheme.Typography.body(13))
+                                    .foregroundStyle(AthlyTheme.Color.error)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    } header: {
+                        Text("Preferências de treino")
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
@@ -67,8 +148,49 @@ struct ProfileView: View {
                 .scrollContentBackground(.hidden)
             }
             .navigationTitle("Perfil")
+            .task { await loadProfile() }
         }
     }
+
+    // MARK: - Day Toggle Button
+
+    private func dayToggleButton(key: String, label: String) -> some View {
+        let isSelected = selectedDays.contains(key)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                if isSelected {
+                    selectedDays.remove(key)
+                } else {
+                    selectedDays.insert(key)
+                }
+            }
+            saveError = nil
+            showSaveConfirmation = false
+        } label: {
+            Text(label)
+                .font(AthlyTheme.Typography.semibold(13))
+                .foregroundStyle(isSelected ? .white : AthlyTheme.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(
+                    isSelected
+                        ? AthlyTheme.Gradient.brand
+                        : LinearGradient(colors: [AthlyTheme.Color.glassBackground], startPoint: .top, endPoint: .bottom)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(
+                            isSelected ? Color.clear : AthlyTheme.Color.glassBorder,
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: isSelected ? AthlyTheme.Color.primaryNeon.opacity(0.35) : .clear, radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Stats Row
 
     private func statsRow(icon: String, label: String, value: String) -> some View {
         HStack {
@@ -87,6 +209,47 @@ struct ProfileView: View {
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
     }
+
+    // MARK: - Actions
+
+    private func loadProfile() async {
+        do {
+            let profile = try await APIClient.shared.getUserProfile()
+            userProfile = profile
+            if let days = profile.availableDays {
+                selectedDays = Set(days)
+            }
+        } catch {
+            // Silently ignore — stats still show from RunStore
+        }
+    }
+
+    private func saveDays() async {
+        isSavingDays = true
+        saveError = nil
+        showSaveConfirmation = false
+
+        do {
+            let request = UpdateProfileRequest(name: userProfile?.name, availableDays: Array(selectedDays))
+            let updated = try await APIClient.shared.updateProfile(request)
+            userProfile = updated
+            selectedDays = Set(updated.availableDays ?? [])
+            withAnimation {
+                showSaveConfirmation = true
+            }
+            // Hide confirmation after 2s
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            withAnimation {
+                showSaveConfirmation = false
+            }
+        } catch {
+            saveError = error.localizedDescription
+        }
+
+        isSavingDays = false
+    }
+
+    // MARK: - Computed stats
 
     private var totalDistance: Double {
         allRuns.reduce(0) { $0 + $1.distanceKm }

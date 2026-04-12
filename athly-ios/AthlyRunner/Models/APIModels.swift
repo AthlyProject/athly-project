@@ -167,6 +167,29 @@ struct TrainingPlanResponse: Codable, Identifiable, Sendable {
 
 struct WeeklyGoalMetrics: Codable, Sendable {
     let title: String?
+    // RunAnalysis fields stored by AI planner
+    let trend: String?
+    let fitnessInsights: String?
+    let avgPace: String?
+    let totalDistanceKm: Double?
+    let runsAnalyzed: Int?
+    let period: String?
+    let avgDistanceKm: Double?
+    let avgHeartRate: Double?
+}
+
+// MARK: - Previous Week Analysis
+
+struct PreviousWeekAnalysis: Codable, Sendable {
+    let completedWorkouts: Int?
+    let totalWorkouts: Int?
+    let completionRate: Double?
+    let totalDistanceKm: Double?
+    let avgEffort: Double?
+    let avgFatigue: Double?
+    let skippedWorkouts: [String]?
+    let volumeChange: String?
+    let adherenceNote: String?
 }
 
 // MARK: - Weekly Goal
@@ -178,6 +201,7 @@ struct WeeklyGoalResponse: Codable, Identifiable, Sendable {
     let weekEndDate: String
     let status: WeeklyGoalStatus
     let metrics: WeeklyGoalMetrics?
+    let previousWeekAnalysis: PreviousWeekAnalysis?
 
     var parsedStartDate: Date {
         let df = DateFormatter()
@@ -275,6 +299,13 @@ struct CreateGoalResponse: Decodable, Sendable {
     let parsedGoal: ParsedGoal
     let active: Bool
     let createdAt: String
+}
+
+// MARK: - Update Profile
+
+struct UpdateProfileRequest: Encodable, Sendable {
+    let name: String?
+    let availableDays: [String]?
 }
 
 // MARK: - Week (assembled on client)
