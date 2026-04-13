@@ -14,6 +14,11 @@ final class LiveActivityManager {
     // MARK: - Start
 
     func startActivity(workoutTitle: String) {
+        #if targetEnvironment(simulator)
+        // Live Activities são suportadas apenas em dispositivos físicos.
+        // No simulador, o SpringBoard rejeita as requisições de widget.
+        return
+        #else
         guard #available(iOS 16.2, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
@@ -35,11 +40,15 @@ final class LiveActivityManager {
         } catch {
             print("[LiveActivityManager] Could not start activity: \(error.localizedDescription)")
         }
+        #endif
     }
 
     // MARK: - Update
 
     func updateActivity(elapsedSeconds: Int, distanceMeters: Double, paceSecondsPerKm: Double) {
+        #if targetEnvironment(simulator)
+        return
+        #else
         guard #available(iOS 16.2, *) else { return }
         guard let activity = activityToken as? Activity<AthlyRunnerAttributes> else { return }
 
@@ -53,11 +62,15 @@ final class LiveActivityManager {
             let content = ActivityContent(state: updatedState, staleDate: nil)
             await activity.update(content)
         }
+        #endif
     }
 
     // MARK: - End
 
     func endActivity() {
+        #if targetEnvironment(simulator)
+        return
+        #else
         guard #available(iOS 16.2, *) else { return }
         guard let activity = activityToken as? Activity<AthlyRunnerAttributes> else { return }
 
@@ -65,5 +78,6 @@ final class LiveActivityManager {
             await activity.end(nil, dismissalPolicy: .immediate)
             self.activityToken = nil
         }
+        #endif
     }
 }

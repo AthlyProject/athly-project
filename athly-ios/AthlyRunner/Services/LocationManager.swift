@@ -42,7 +42,7 @@ final class LocationManager: NSObject, ObservableObject {
     }
 }
 
-extension LocationManager: @preconcurrency CLLocationManagerDelegate {
+extension LocationManager: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
 

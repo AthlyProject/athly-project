@@ -39,6 +39,7 @@ export interface AiPlannerInput {
 }
 
 export interface RunAnalysis {
+  title: string;
   runsAnalyzed: number;
   period: string;
   avgDistanceKm: number;

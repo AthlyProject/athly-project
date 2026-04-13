@@ -4,6 +4,7 @@ struct CalendarGridView: View {
     let month: Date
     let workouts: [WorkoutModel]
     var weeklyGoals: [WeeklyGoalResponse] = []
+    @Binding var selectedDate: Date?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
     private let weekdaySymbols = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -35,11 +36,18 @@ struct CalendarGridView: View {
                     // Day cells row
                     HStack(spacing: 0) {
                         ForEach(week, id: \.offset) { item in
+                            let dayWorkouts = workoutsFor(date: item.date)
                             CalendarDayCellView(
                                 day: item.day,
                                 isToday: item.isToday,
                                 isInMonth: item.isInMonth,
-                                workouts: workoutsFor(date: item.date)
+                                workouts: dayWorkouts,
+                                isSelected: selectedDate.map { calendar.isDate($0, inSameDayAs: item.date) } ?? false,
+                                onTap: {
+                                    selectedDate = calendar.isDate(selectedDate ?? .distantPast, inSameDayAs: item.date)
+                                        ? nil
+                                        : item.date
+                                }
                             )
                         }
                     }
@@ -51,7 +59,7 @@ struct CalendarGridView: View {
     // MARK: - Week Goal Banner
 
     private func weekGoalBanner(_ goal: WeeklyGoalResponse) -> some View {
-        let insight = goal.metrics?.fitnessInsights ?? goal.metrics?.trend ?? ""
+        let insight = goal.metrics?.title ?? goal.metrics?.trend ?? "Meta da semana"
         let hasPrevious = goal.previousWeekAnalysis != nil
 
         return HStack(spacing: 6) {
@@ -151,7 +159,7 @@ struct CalendarGridView: View {
     }
 
     private func workoutsFor(date: Date) -> [WorkoutModel] {
-        workouts.filter { calendar.isDate($0.parsedDate, inSameDayAs: date) }
+        workouts.filter { calendar.isDate($0.parsedDate, inSameDayAs: date) && $0.sportType != .other }
     }
 
     private func goalForWeek(startDate: Date) -> WeeklyGoalResponse? {

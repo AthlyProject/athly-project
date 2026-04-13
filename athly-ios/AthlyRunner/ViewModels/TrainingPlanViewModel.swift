@@ -48,7 +48,7 @@ final class TrainingPlanViewModel: ObservableObject {
     var nextFiveWorkouts: [WorkoutModel] {
         let startOfToday = Calendar.current.startOfDay(for: Date())
         return allWorkouts
-            .filter { $0.parsedDate >= startOfToday }
+            .filter { $0.parsedDate >= startOfToday && $0.sportType != .other }
             .sorted { $0.parsedDate < $1.parsedDate }
             .prefix(5)
             .map { $0 }

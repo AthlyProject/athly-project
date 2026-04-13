@@ -188,8 +188,9 @@ ${REASONING_INSTRUCTION}
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 8.
 - trend deve ser "maintaining" (sem histórico para determinar).
-- Defina runsAnalyzed como 0, period como "Sem dados", avgDistanceKm como 0, avgPace como "N/A", avgHeartRate como null, totalDistanceKm como 0.
-- fitnessInsights deve explicar em português que nenhum dado foi encontrado e que essas sessões são a linha de base de avaliação.
+- Set runsAnalyzed to 0, period to "Sem dados", avgDistanceKm to 0, avgPace to "N/A", avgHeartRate to null, totalDistanceKm to 0.
+- analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Avaliação Inicial", "Semana de Base"). Displayed in the calendar UI.
+- fitnessInsights: maximum 2 short sentences in Portuguese explaining that no previous data exists and these sessions will assess current fitness. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 - blocks deve ser um array de objetos com: type ("warmup"|"main"|"cooldown"|"rest"), e quando aplicável: distanceKm, durationMinutes, targetPace, instructions.
 - OBRIGATÓRIO para blocos "warmup": durationMinutes >= 8 OU distanceKm >= 1.0.
 - OBRIGATÓRIO para blocos "main": durationMinutes >= 10 OU distanceKm >= 1.0.
@@ -203,6 +204,7 @@ ${REASONING_INSTRUCTION}
 Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
+    "title": "<short weekly goal title in Portuguese, 2-4 words, e.g. 'Avaliação Inicial'>",
     "runsAnalyzed": 0,
     "period": "Sem dados",
     "avgDistanceKm": 0,
@@ -210,7 +212,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
     "avgHeartRate": null,
     "totalDistanceKm": 0,
     "trend": "maintaining",
-    "fitnessInsights": "<explicação em português de que nenhum dado foi encontrado e que essas sessões são a linha de base de avaliação>"
+    "fitnessInsights": "<2 short sentences in Portuguese explaining no data was found and these sessions establish the fitness baseline. No coaching instructions.>"
   },
   "weekPlan": [
     {
@@ -366,12 +368,15 @@ ${REASONING_INSTRUCTION}
 - Sessões de intervalos: especifique no campo instructions o número de repetições, distância, pace alvo e tempo de descanso entre as repetições.
 - Dias de descanso devem ter blocks: [{ "type": "rest", "instructions": "Dia de descanso completo. Sem corrida." }].
 - Use as zonas de pace personalizadas acima para prescrever targetPace — NÃO invente paces arbitrários.
+- analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Semana de Base", "Progressão de Volume", "Deload"). Displayed in the calendar UI.
+- analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 </constraints>
 
 <output_schema>
 Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
+    "title": "<short weekly goal title in Portuguese, 2-4 words, e.g. 'Semana de Base', 'Progressão de Volume', 'Deload'>",
     "runsAnalyzed": <número>,
     "period": "<data da primeira corrida> — <data da última corrida>",
     "avgDistanceKm": <número>,
@@ -379,7 +384,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
     "avgHeartRate": <número | null>,
     "totalDistanceKm": <número>,
     "trend": "<improving (volume) | improving (intensity) | maintaining | declining>",
-    "fitnessInsights": "<2–3 frases em português: diagnóstico atual do condicionamento, padrão-chave identificado e uma área de foco concreta alinhada ao objetivo>"
+    "fitnessInsights": "<2-3 short sentences in Portuguese: current fitness diagnosis and weekly focus. No coaching instructions.>"
   },
   "weekPlan": [
     {

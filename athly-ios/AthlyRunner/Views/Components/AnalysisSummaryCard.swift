@@ -18,6 +18,7 @@ struct AnalysisSummaryCard: View {
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(4)
 
             HStack(spacing: 0) {
                 metricChip(label: "Período", value: analysis.period)

@@ -5,10 +5,17 @@ struct CalendarDayCellView: View {
     let isToday: Bool
     let isInMonth: Bool
     let workouts: [WorkoutModel]
+    var isSelected: Bool = false
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 3) {
             ZStack {
+                if isSelected {
+                    Circle()
+                        .fill(AthlyTheme.Color.primary.opacity(0.25))
+                        .frame(width: 30, height: 30)
+                }
                 if isToday {
                     Circle()
                         .stroke(AthlyTheme.Color.primaryNeon, lineWidth: 2)
@@ -17,9 +24,11 @@ struct CalendarDayCellView: View {
                 Text("\(day)")
                     .font(.custom("SpaceGrotesk-\(isToday ? "Bold" : "Regular")", size: 13))
                     .foregroundStyle(
-                        isToday
-                            ? AthlyTheme.Color.primaryNeon
-                            : (isInMonth ? AthlyTheme.Color.textPrimary : AthlyTheme.Color.textTertiary)
+                        isSelected
+                            ? AthlyTheme.Color.primary
+                            : (isToday
+                                ? AthlyTheme.Color.primaryNeon
+                                : (isInMonth ? AthlyTheme.Color.textPrimary : AthlyTheme.Color.textTertiary))
                     )
             }
             .frame(width: 30, height: 30)
@@ -39,6 +48,10 @@ struct CalendarDayCellView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !workouts.isEmpty { onTap?() }
+        }
     }
 
     private func dotColor(for workout: WorkoutModel) -> Color {

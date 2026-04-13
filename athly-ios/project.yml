@@ -52,6 +52,8 @@ targets:
         NSLocationWhenInUseUsageDescription: "Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real."
         NSLocationAlwaysAndWhenInUseUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada."
         NSLocationAlwaysUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         NSHealthShareUsageDescription: "O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao."
         UIUserInterfaceStyle: Dark
         UIBackgroundModes:

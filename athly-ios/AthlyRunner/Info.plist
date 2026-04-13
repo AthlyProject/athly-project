@@ -20,6 +20,12 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Permite HTTP para localhost no simulador (desenvolvimento local) -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSHealthShareUsageDescription</key>
 	<string>O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

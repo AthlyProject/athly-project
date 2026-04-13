@@ -7,6 +7,7 @@ struct PlanView: View {
     @State private var calendarMonth: Date = Date()
     @State private var showCreatePlan = false
     @State private var workoutToComplete: WorkoutModel?
+    @State private var selectedCalendarDate: Date? = nil
 
     enum ViewMode: String, CaseIterable {
         case list = "Lista"
@@ -336,7 +337,7 @@ struct PlanView: View {
     }
 
     private var workoutsList: some View {
-        let workouts = planVM.currentWeekWorkouts
+        let workouts = planVM.currentWeekWorkouts.filter { $0.sportType != .other }
         let nextId = planVM.nextWorkout?.id
 
         return VStack(spacing: 12) {
@@ -468,16 +469,67 @@ struct PlanView: View {
             .padding(.vertical, 8)
 
             ScrollView {
-                CalendarGridView(
-                    month: calendarMonth,
-                    workouts: planVM.allWorkouts,
-                    weeklyGoals: planVM.weeklyGoals
-                )
-                .padding(.horizontal, AthlyTheme.Spacing.sm)
-                .padding(.bottom, AthlyTheme.Spacing.sm)
+                VStack(spacing: 0) {
+                    CalendarGridView(
+                        month: calendarMonth,
+                        workouts: planVM.allWorkouts,
+                        weeklyGoals: planVM.weeklyGoals,
+                        selectedDate: $selectedCalendarDate
+                    )
+                    .padding(.horizontal, AthlyTheme.Spacing.sm)
+                    .padding(.bottom, AthlyTheme.Spacing.sm)
+
+                    if let date = selectedCalendarDate {
+                        selectedDayWorkouts(for: date)
+                            .padding(.horizontal, AthlyTheme.Spacing.sm)
+                            .padding(.bottom, AthlyTheme.Spacing.sm)
+                    }
+                }
             }
             .scrollContentBackground(.hidden)
         }
+    }
+
+    private func selectedDayWorkouts(for date: Date) -> some View {
+        let cal = Calendar.current
+        let dayWorkouts = planVM.allWorkouts
+            .filter { cal.isDate($0.parsedDate, inSameDayAs: date) && $0.sportType != .other }
+            .sorted { $0.parsedDate < $1.parsedDate }
+        let nextId = planVM.nextWorkout?.id
+
+        return VStack(alignment: .leading, spacing: 10) {
+            let formatter: DateFormatter = {
+                let f = DateFormatter()
+                f.dateFormat = "EEEE, d 'de' MMMM"
+                f.locale = Locale(identifier: "pt-BR")
+                return f
+            }()
+            Text(formatter.string(from: date).capitalized)
+                .font(AthlyTheme.Typography.semibold(15))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+            if dayWorkouts.isEmpty {
+                Text("Dia de descanso")
+                    .font(AthlyTheme.Typography.body(14))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(dayWorkouts) { workout in
+                    NavigationLink {
+                        WorkoutDetailView(workout: workout)
+                    } label: {
+                        WorkoutCardView(
+                            workout: workout,
+                            compact: true,
+                            isNext: workout.id == nextId
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
     }
 
     private func monthYearString(_ date: Date) -> String {
