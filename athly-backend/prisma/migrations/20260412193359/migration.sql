@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "waitlist_entries" (
+CREATE TABLE IF NOT EXISTS "waitlist_entries" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -9,4 +9,4 @@ CREATE TABLE "waitlist_entries" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "waitlist_entries_email_key" ON "waitlist_entries"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "waitlist_entries_email_key" ON "waitlist_entries"("email");

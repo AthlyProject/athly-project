@@ -606,10 +606,15 @@ export class AiPlannerService {
 
   private getNextMonday(): Date {
     const now = new Date();
-    const day = now.getDay();
-    const daysUntilMonday = day === 0 ? 1 : 8 - day;
+    const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const monday = new Date(now);
-    monday.setDate(now.getDate() + daysUntilMonday);
+    if (day === 0) {
+      // Sunday: week is over, advance to next Monday
+      monday.setDate(now.getDate() + 1);
+    } else {
+      // Mon–Sat: go back to Monday of the current week
+      monday.setDate(now.getDate() - (day - 1));
+    }
     monday.setHours(0, 0, 0, 0);
     return monday;
   }
