@@ -1,13 +1,13 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
-COPY athly-backend/package*.json ./
-COPY athly-backend/prisma ./prisma
+COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY athly-backend/ .
+COPY . .
 RUN npm run build
 
 FROM node:24-alpine
