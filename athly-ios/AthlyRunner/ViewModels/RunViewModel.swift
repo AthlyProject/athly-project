@@ -105,7 +105,7 @@ final class RunViewModel: ObservableObject {
         // Save to HealthKit (best-effort — failure does not block)
         if healthKitService.isHealthDataAvailable {
             do {
-                try await healthKitService.requestAuthorization()
+                try await healthKitService.requestWriteAuthorization()
                 try await healthKitService.saveWorkout(result: result)
             } catch {
                 // HealthKit save failed silently; local save is still valid

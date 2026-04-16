@@ -1,15 +1,23 @@
 import Foundation
 
+extension Notification.Name {
+    static let athlyTokensRefreshed = Notification.Name("athlyTokensRefreshed")
+}
+
 actor APIClient {
     static let shared = APIClient()
 
-    #if targetEnvironment(simulator)
-    private var baseURL: String = "http://localhost:4000"
-    #else
-    private var baseURL: String = "https://athly-project-production.up.railway.app"
-    #endif
+    private var baseURL: String = {
+        #if DEBUG
+        return "http://192.168.1.67:4000"
+        #else
+        return "https://athly-project-production.up.railway.app"
+        #endif
+    }()
+
     private var accessToken: String?
     private var refreshToken: String?
+    private var isRefreshing = false
 
     private init() {}
 
@@ -77,23 +85,7 @@ actor APIClient {
     /// Backend pode retornar 200 com body `null` ou corpo vazio quando não há treino hoje.
     func getTodayWorkout() async throws -> WorkoutModel? {
         let request = try buildRequest(path: "/workouts/today", method: "GET", authenticated: true)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
-        switch httpResponse.statusCode {
-        case 200...299:
-            if data.isEmpty { return nil }
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(WorkoutModel?.self, from: data)
-        case 404:
-            return nil
-        case 401:
-            throw APIError.unauthorized
-        default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.serverError(httpResponse.statusCode, message)
-        }
+        return try await executeOptional(request)
     }
 
     func getWorkoutsByTrainingPlan(trainingPlanId: String) async throws -> [WorkoutModel] {
@@ -106,6 +98,11 @@ actor APIClient {
 
     func skipWorkout(workoutId: String) async throws -> WorkoutModel {
         try await patch("/workouts/\(workoutId)/skip")
+    }
+
+    @discardableResult
+    func submitWorkoutFeedback(workoutId: String, feedback: WorkoutFeedbackRequest) async throws -> EmptyResponse {
+        try await post("/workouts/\(workoutId)/feedback", body: feedback)
     }
 
     func planNextWeek(_ request: PlanNextWeekRequest) async throws -> PlanNextWeekResponse {
@@ -124,21 +121,43 @@ actor APIClient {
 
     func getActiveGoal() async throws -> CreateGoalResponse? {
         let req = try buildRequest(path: "/goals/active", method: "GET", authenticated: true)
-        let (data, response) = try await URLSession.shared.data(for: req)
-        guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
-        switch httpResponse.statusCode {
-        case 200...299:
-            if data.isEmpty { return nil }
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            decoder.dateDecodingStrategy = .iso8601
-            return try? decoder.decode(CreateGoalResponse.self, from: data)
-        case 404: return nil
-        case 401: throw APIError.unauthorized
-        default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw APIError.serverError(httpResponse.statusCode, message)
+        return try await executeOptional(req)
+    }
+
+    // MARK: - Token Refresh
+
+    private func refreshTokens() async throws {
+        guard let currentRefresh = refreshToken else {
+            throw APIError.unauthorized
         }
+
+        let body = RefreshRequest(refreshToken: currentRefresh)
+        guard let url = URL(string: baseURL + "/auth/refresh") else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        request.timeoutInterval = 30
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.unauthorized
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let refreshResponse = try decoder.decode(RefreshResponse.self, from: data)
+
+        setTokens(access: refreshResponse.accessToken, refresh: refreshResponse.refreshToken)
+
+        let userInfo: [String: String] = [
+            "accessToken": refreshResponse.accessToken,
+            "refreshToken": refreshResponse.refreshToken
+        ]
+        NotificationCenter.default.post(name: .athlyTokensRefreshed, object: nil, userInfo: userInfo)
     }
 
     // MARK: - HTTP
@@ -217,9 +236,83 @@ actor APIClient {
                 throw error
             }
         case 401:
+            if !isRefreshing {
+                isRefreshing = true
+                defer { isRefreshing = false }
+                do {
+                    try await refreshTokens()
+                    var retryRequest = request
+                    if let token = accessToken {
+                        retryRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    }
+                    let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+                    guard let retryHttp = retryResponse as? HTTPURLResponse else {
+                        throw APIError.invalidResponse
+                    }
+                    if (200...299).contains(retryHttp.statusCode) {
+                        let decoder = JSONDecoder()
+                        decoder.keyDecodingStrategy = .convertFromSnakeCase
+                        decoder.dateDecodingStrategy = .iso8601
+                        let decodableData = retryData.isEmpty ? Data("null".utf8) : retryData
+                        return try decoder.decode(T.self, from: decodableData)
+                    }
+                } catch {
+                    throw APIError.unauthorized
+                }
+            }
             throw APIError.unauthorized
         case 404:
             throw APIError.notFound
+        default:
+            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw APIError.serverError(httpResponse.statusCode, message)
+        }
+    }
+
+    /// Versão do execute que retorna nil em vez de throw para 404 e resposta vazia.
+    private func executeOptional<T: Decodable>(_ request: URLRequest) async throws -> T? {
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            if data.isEmpty { return nil }
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            decoder.dateDecodingStrategy = .iso8601
+            return try? decoder.decode(T.self, from: data)
+        case 404:
+            return nil
+        case 401:
+            if !isRefreshing {
+                isRefreshing = true
+                defer { isRefreshing = false }
+                do {
+                    try await refreshTokens()
+                    var retryRequest = request
+                    if let token = accessToken {
+                        retryRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    }
+                    let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+                    guard let retryHttp = retryResponse as? HTTPURLResponse else {
+                        throw APIError.invalidResponse
+                    }
+                    if (200...299).contains(retryHttp.statusCode) {
+                        if retryData.isEmpty { return nil }
+                        let decoder = JSONDecoder()
+                        decoder.keyDecodingStrategy = .convertFromSnakeCase
+                        decoder.dateDecodingStrategy = .iso8601
+                        return try? decoder.decode(T.self, from: retryData)
+                    }
+                    if retryHttp.statusCode == 404 { return nil }
+                } catch {
+                    throw APIError.unauthorized
+                }
+            }
+            throw APIError.unauthorized
         default:
             let message = String(data: data, encoding: .utf8) ?? "Unknown error"
             throw APIError.serverError(httpResponse.statusCode, message)
@@ -246,6 +339,15 @@ struct RegisterRequest: Encodable {
 }
 
 struct AuthResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+}
+
+struct RefreshRequest: Encodable {
+    let refreshToken: String
+}
+
+struct RefreshResponse: Decodable {
     let accessToken: String
     let refreshToken: String
 }

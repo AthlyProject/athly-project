@@ -20,14 +20,17 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>DEV_API_URL</key>
+	<string>$(DEV_API_URL)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<!-- Permite HTTP para localhost no simulador (desenvolvimento local) -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
 	<string>O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>O Athly salva suas corridas no Apple Health para manter seu historico de atividades atualizado.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada.</string>
 	<key>NSLocationAlwaysUsageDescription</key>

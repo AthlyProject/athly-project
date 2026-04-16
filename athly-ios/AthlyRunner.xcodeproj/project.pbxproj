@@ -29,6 +29,7 @@
 		5FCA646AB66D33A5F21C96FD /* AthlyRunnerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 806849BA63078F1554667FF1 /* AthlyRunnerApp.swift */; };
 		61CDA055C19FB8975CC692B3 /* ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4E36E26B0934C42F267557 /* ButtonStyles.swift */; };
 		663989515872A928A7D1CF2E /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83E95AB1CF3059ACB41221C /* HealthKitService.swift */; };
+		6C8E2F81769853F6BD0C07E8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB42F5D6A90B8ED4DAE9C47 /* Assets.xcassets */; };
 		6F85A0918594C94CA03A7DAE /* CreatePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C280F17CE7DF2E8ED82989 /* CreatePlanView.swift */; };
 		70E445DD4DBC6A21D24396BB /* RunViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EE092CB97CBB29AF5AE98A /* RunViewModel.swift */; };
 		77436C363DE402F3721AE62D /* FloatingTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */; };
@@ -365,6 +366,7 @@
 			buildConfigurationList = 332AE557E4BBAD41AC440BC1 /* Build configuration list for PBXNativeTarget "AthlyRunnerLiveActivity" */;
 			buildPhases = (
 				9E3C8598417E405860F8DA9E /* Sources */,
+				BA464CF3256F0EF7AFAD1164 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -404,15 +406,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2630;
-				TargetAttributes = {
-					9698FFA3B8A23FDAE524080D = {
-						DevelopmentTeam = "";
-					};
-					DB2561B82C567797BDCC4C4E = {
-						DevelopmentTeam = "";
-					};
-				};
+				LastUpgradeCheck = 1640;
 			};
 			buildConfigurationList = AD8858011B5208CA18A12727 /* Build configuration list for PBXProject "AthlyRunner" */;
 			developmentRegion = en;
@@ -440,6 +434,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB3F24AF2893567AD0E78E94 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA464CF3256F0EF7AFAD1164 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6C8E2F81769853F6BD0C07E8 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -560,7 +562,6 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -574,7 +575,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
@@ -621,7 +621,6 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -642,7 +641,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
@@ -653,6 +651,7 @@
 		2451DDD3CB6DE6CECAB69CEC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunnerLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -671,6 +670,7 @@
 		8DDA8FC44A43CDB0AD32FA96 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunnerLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -688,10 +688,12 @@
 		};
 		92502B493883E3815D03BF24 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 10367608EAEC829637CA0AD2 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -707,10 +709,12 @@
 		};
 		FC634A0AF2C091DB08EA7218 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 10367608EAEC829637CA0AD2 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (

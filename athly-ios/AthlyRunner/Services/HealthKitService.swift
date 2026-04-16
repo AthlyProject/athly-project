@@ -8,7 +8,8 @@ import CoreLocation
 /// Sendable para uso seguro em ViewModel @MainActor com async/await.
 protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     var isHealthDataAvailable: Bool { get }
-    func requestAuthorization() async throws
+    func requestReadAuthorization() async throws
+    func requestWriteAuthorization() async throws
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
 }
 
@@ -18,16 +19,25 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     private let store = HKHealthStore()
 
-    private static let energyType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
-    private static let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
+    private static let energyType = HKQuantityType(.activeEnergyBurned)
+    private static let distanceType = HKQuantityType(.distanceWalkingRunning)
 
     /// Verifica se o HealthKit está disponível (não disponível no simulador em muitos casos).
     var isHealthDataAvailable: Bool {
         HKHealthStore.isHealthDataAvailable()
     }
 
-    /// Solicita autorização para leitura e escrita de workouts.
-    func requestAuthorization() async throws {
+    /// Solicita apenas permissão de leitura para listar corridas existentes.
+    func requestReadAuthorization() async throws {
+        guard isHealthDataAvailable else {
+            throw HealthKitError.notAvailable
+        }
+        let typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
+        try await store.requestAuthorization(toShare: [], read: typesToRead)
+    }
+
+    /// Solicita permissão de escrita para salvar corridas no Apple Health.
+    func requestWriteAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
@@ -36,8 +46,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             HealthKitService.energyType,
             HealthKitService.distanceType
         ]
-        let typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
-        try await store.requestAuthorization(toShare: typesToShare, read: typesToRead)
+        try await store.requestAuthorization(toShare: typesToShare, read: [])
     }
 
     /// Salva uma corrida no Apple Health.

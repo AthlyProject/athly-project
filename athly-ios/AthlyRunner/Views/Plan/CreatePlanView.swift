@@ -194,7 +194,7 @@ struct CreatePlanView: View {
             VStack(spacing: 12) {
                 Button {
                     Task {
-                        await planVM.generateNextWeek()
+                        await planVM.generateNextWeekWithHealth()
                         dismiss()
                     }
                 } label: {

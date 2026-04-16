@@ -6,7 +6,11 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
 
     var isHealthDataAvailable: Bool { true }
 
-    func requestAuthorization() async throws {
+    func requestReadAuthorization() async throws {
+        // No mock não há autorização real.
+    }
+
+    func requestWriteAuthorization() async throws {
         // No mock não há autorização real.
     }
 

@@ -176,6 +176,22 @@ struct WeeklyGoalMetrics: Codable, Sendable {
     let period: String?
     let avgDistanceKm: Double?
     let avgHeartRate: Double?
+
+    /// Converte as métricas armazenadas no WeeklyGoal para um RunAnalysis exibível.
+    var asRunAnalysis: RunAnalysis? {
+        guard let insights = fitnessInsights, !insights.isEmpty else { return nil }
+        return RunAnalysis(
+            title: title,
+            runsAnalyzed: runsAnalyzed ?? 0,
+            period: period ?? "N/A",
+            avgDistanceKm: avgDistanceKm ?? 0,
+            avgPace: avgPace ?? "N/A",
+            avgHeartRate: avgHeartRate,
+            totalDistanceKm: totalDistanceKm ?? 0,
+            trend: trend ?? "maintaining",
+            fitnessInsights: insights
+        )
+    }
 }
 
 // MARK: - Previous Week Analysis
@@ -219,6 +235,7 @@ struct WeeklyGoalResponse: Codable, Identifiable, Sendable {
 // MARK: - Run Analysis (AI summary)
 
 struct RunAnalysis: Codable, Sendable {
+    let title: String?
     let runsAnalyzed: Int
     let period: String
     let avgDistanceKm: Double
@@ -307,6 +324,16 @@ struct UpdateProfileRequest: Encodable, Sendable {
     let name: String?
     let availableDays: [String]?
 }
+
+// MARK: - Workout Feedback
+
+struct WorkoutFeedbackRequest: Encodable, Sendable {
+    let completed: Bool
+    let effort: Int
+    let fatigue: Int
+}
+
+struct EmptyResponse: Decodable, Sendable {}
 
 // MARK: - Week (assembled on client)
 

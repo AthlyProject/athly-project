@@ -87,6 +87,11 @@ final class TrainingPlanViewModel: ObservableObject {
 
             // Select current week by default
             selectedWeekIndex = currentWeekIndex()
+
+            // Populate lastAnalysis from the most recent week's metrics (if not already set by a generate call)
+            if lastAnalysis == nil {
+                lastAnalysis = weeklyGoals.last?.metrics?.asRunAnalysis
+            }
         } catch APIError.notFound {
             trainingPlanResponse = nil
             weeks = []
@@ -111,6 +116,50 @@ final class TrainingPlanViewModel: ObservableObject {
             let response = try await APIClient.shared.planNextWeek(request)
             lastAnalysis = response.analysis
             await loadData()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isGenerating = false
+    }
+
+    /// Fluxo unificado: tenta HealthKit → se tiver corridas, usa planFromHealth; senão, planNextWeek (assessment).
+    func generateNextWeekWithHealth() async {
+        isGenerating = true
+        errorMessage = nil
+
+        let service: any HealthKitRunningWorkoutsProviding = {
+            #if targetEnvironment(simulator)
+            return MockHealthKitService()
+            #else
+            return HealthKitService()
+            #endif
+        }()
+
+        var healthRuns: [HealthKitRunItem] = []
+
+        if service.isHealthDataAvailable {
+            do {
+                try await service.requestReadAuthorization()
+                healthRuns = try await service.fetchLatestRunningWorkouts(limit: 20)
+            } catch {
+                // HealthKit indisponível ou negado → continua sem runs (assessment path)
+            }
+        }
+
+        do {
+            if healthRuns.isEmpty {
+                let request = PlanNextWeekRequest(numberOfRuns: nil, weekStartDate: nil)
+                let response = try await APIClient.shared.planNextWeek(request)
+                lastAnalysis = response.analysis
+            } else {
+                let payloads = healthRuns.map { HealthRunPayload(from: $0) }
+                let request = PlanFromHealthRequest(runs: payloads, weekStartDate: nil)
+                let response = try await APIClient.shared.planFromHealth(request)
+                lastAnalysis = response.analysis
+            }
+            await loadData()
+            selectedWeekIndex = max(0, weeks.count - 1)
         } catch {
             errorMessage = error.localizedDescription
         }

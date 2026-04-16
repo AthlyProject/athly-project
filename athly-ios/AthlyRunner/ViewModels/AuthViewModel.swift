@@ -13,6 +13,20 @@ final class AuthViewModel: ObservableObject {
 
     init() {
         loadSavedTokens()
+        observeTokenRefresh()
+    }
+
+    private func observeTokenRefresh() {
+        NotificationCenter.default.addObserver(
+            forName: .athlyTokensRefreshed,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  let accessToken = notification.userInfo?["accessToken"] as? String,
+                  let refreshToken = notification.userInfo?["refreshToken"] as? String else { return }
+            self.saveTokens(access: accessToken, refresh: refreshToken)
+        }
     }
 
     func login(email: String, password: String) async {

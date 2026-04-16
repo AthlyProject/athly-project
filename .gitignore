@@ -2,3 +2,8 @@
 
 # Bundle ID local (outro dev/team)
 athly-ios/Config/User.xcconfig
+
+# Xcode local artifacts
+athly-ios/.deriveddata/
+*.xcuserstate
+**/xcuserdata/

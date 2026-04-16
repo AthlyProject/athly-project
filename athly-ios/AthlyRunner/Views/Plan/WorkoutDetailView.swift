@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WorkoutDetailView: View {
     let workout: WorkoutModel
+    var onComplete: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -14,6 +15,18 @@ struct WorkoutDetailView: View {
                     blocksSection
                 } else {
                     noBlocksCard
+                }
+                if workout.status == .scheduled, let onComplete {
+                    Button {
+                        onComplete()
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Concluir treino")
+                        }
+                    }
+                    .buttonStyle(AthlyGradientButtonStyle())
+                    .padding(.top, 8)
                 }
             }
             .padding(AthlyTheme.Spacing.sm)

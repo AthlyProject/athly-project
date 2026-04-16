@@ -14,6 +14,7 @@ final class RunTracker: ObservableObject {
     @Published var calories: Double = 0
     @Published var currentSplitKm: Int = 0
     @Published var routeCoordinates: [CLLocationCoordinate2D] = []
+    @Published var liveActivityDisabled = false
 
     private var timer: Timer?
     private var startTime: Date?
@@ -60,7 +61,12 @@ final class RunTracker: ObservableObject {
         locationManager.startTracking()
         startTimer()
         observeLocation()
-        LiveActivityManager.shared.startActivity(workoutTitle: workoutTitle)
+        Task { @MainActor in
+            let result = await LiveActivityManager.shared.startActivity(workoutTitle: workoutTitle)
+            if case .disabledBySystem = result {
+                liveActivityDisabled = true
+            }
+        }
     }
 
     func pause() {

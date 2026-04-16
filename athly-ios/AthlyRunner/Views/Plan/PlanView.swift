@@ -6,6 +6,7 @@ struct PlanView: View {
     @State private var viewMode: ViewMode = .list
     @State private var calendarMonth: Date = Date()
     @State private var showCreatePlan = false
+    @State private var showAnalysisDetails = false
     @State private var workoutToComplete: WorkoutModel?
     @State private var selectedCalendarDate: Date? = nil
 
@@ -50,6 +51,13 @@ struct PlanView: View {
                 CreatePlanView()
                     .environmentObject(planVM)
             }
+            .sheet(isPresented: $showAnalysisDetails) {
+                if let analysis = planVM.lastAnalysis {
+                    AnalysisSummarySheet(analysis: analysis)
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                }
+            }
             .sheet(item: $workoutToComplete) { workout in
                 WorkoutCompletionSheet(
                     workout: workout,
@@ -92,12 +100,17 @@ struct PlanView: View {
                     }
 
                     if let analysis = planVM.lastAnalysis {
-                        AnalysisSummaryCard(analysis: analysis)
+                        Button {
+                            showAnalysisDetails = true
+                        } label: {
+                            AnalysisSummaryCard(analysis: analysis, isInteractive: true)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, AthlyTheme.Spacing.sm)
                     }
 
-                    // Generate buttons
+                    // Generate button
                     generateButton
-                    generateFromHealthButton
 
                     // Próximos 5 treinos (inclui treinos da próxima semana)
                     nextFiveWorkoutsSection
@@ -145,7 +158,7 @@ struct PlanView: View {
 
     private var generateButton: some View {
         Button {
-            Task { await planVM.generateNextWeek() }
+            Task { await planVM.generateNextWeekWithHealth() }
         } label: {
             HStack {
                 if planVM.isGenerating {
@@ -160,53 +173,6 @@ struct PlanView: View {
         }
         .buttonStyle(AthlyGradientButtonStyle())
         .disabled(planVM.isGenerating)
-    }
-
-    private var generateFromHealthButton: some View {
-        Button {
-            Task { await fetchHealthRunsAndGenerate() }
-        } label: {
-            HStack {
-                Image(systemName: "heart.fill")
-                Text("Planejar com Apple Health")
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(AthlyTheme.Color.primary.opacity(0.15))
-            .foregroundStyle(AthlyTheme.Color.primary)
-            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                    .stroke(AthlyTheme.Color.primary.opacity(0.4), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(planVM.isGenerating)
-    }
-
-    private func fetchHealthRunsAndGenerate() async {
-        let service: any HealthKitRunningWorkoutsProviding = {
-            #if targetEnvironment(simulator)
-            return MockHealthKitService()
-            #else
-            return HealthKitService()
-            #endif
-        }()
-        guard service.isHealthDataAvailable else {
-            planVM.errorMessage = "O Apple Health não está disponível neste dispositivo."
-            return
-        }
-        do {
-            try await service.requestAuthorization()
-            let runs = try await service.fetchLatestRunningWorkouts(limit: 20)
-            guard !runs.isEmpty else {
-                planVM.errorMessage = "Nenhuma corrida encontrada no Apple Health."
-                return
-            }
-            await planVM.generateFromHealth(runs: runs)
-        } catch {
-            planVM.errorMessage = error.localizedDescription
-        }
     }
 
     private var nextFiveWorkoutsSection: some View {
@@ -235,7 +201,9 @@ struct PlanView: View {
             } else {
                 ForEach(nextFive) { workout in
                     NavigationLink {
-                        WorkoutDetailView(workout: workout)
+                        WorkoutDetailView(workout: workout, onComplete: {
+                            workoutToComplete = workout
+                        })
                     } label: {
                         WorkoutCardView(
                             workout: workout,
@@ -421,7 +389,7 @@ struct PlanView: View {
                 .font(AthlyTheme.Typography.body(13))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
 
-            generateFromHealthButton
+            generateButton
         }
         .padding(32)
         .frame(maxWidth: .infinity)
@@ -516,7 +484,9 @@ struct PlanView: View {
             } else {
                 ForEach(dayWorkouts) { workout in
                     NavigationLink {
-                        WorkoutDetailView(workout: workout)
+                        WorkoutDetailView(workout: workout, onComplete: {
+                            workoutToComplete = workout
+                        })
                     } label: {
                         WorkoutCardView(
                             workout: workout,

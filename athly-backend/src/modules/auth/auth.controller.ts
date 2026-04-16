@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthPayload } from './dto/auth-payload.dto';
 import { StravaCallbackDto } from './dto/strava-callback.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -21,6 +22,12 @@ export class AuthController {
   @ApiOkResponse({ type: AuthPayload })
   async login(@Body() input: LoginDto): Promise<AuthPayload> {
     return this.authService.login(input.email, input.password);
+  }
+
+  @Post('refresh')
+  @ApiOkResponse({ schema: { type: 'object', properties: { accessToken: { type: 'string' }, refreshToken: { type: 'string' } } } })
+  async refresh(@Body() input: RefreshTokenDto) {
+    return this.authService.refreshSession(input.refreshToken);
   }
 
   @Get('strava/url')

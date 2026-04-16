@@ -96,6 +96,32 @@ export class AuthService {
     };
   }
 
+  async refreshSession(refreshToken: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { refreshToken },
+      include: { user: true },
+    });
+
+    if (!session) {
+      throw new UnauthorizedException('Refresh token inválido');
+    }
+
+    if (session.expiresAt < new Date()) {
+      await this.prisma.session.delete({ where: { id: session.id } });
+      throw new UnauthorizedException('Refresh token expirado');
+    }
+
+    await this.prisma.session.delete({ where: { id: session.id } });
+
+    const newAccessToken = this.signAccessToken(session.user);
+    const newRefreshToken = await this.createSession(session.user);
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
   async validateUser(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

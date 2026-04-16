@@ -1,6 +1,59 @@
 import ActivityKit
+import OSLog
 import SwiftUI
+import UIKit
 import WidgetKit
+
+private let widgetLogger = Logger(subsystem: "com.athly.runner.liveactivity", category: "Widget")
+
+private enum AthlyLiveActivityStyle {
+    static let accentNeon = Color(red: 191.0 / 255.0, green: 64.0 / 255.0, blue: 1.0)
+    static let label = Color.white.opacity(0.58)
+    static let background = Color(red: 0.07, green: 0.07, blue: 0.12)
+    static let border = accentNeon.opacity(0.28)
+}
+
+private struct AthlyWidgetLogo: View {
+    let size: CGFloat
+
+    var body: some View {
+        if let uiImage = UIImage(named: "AthlyLogo") {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+        } else {
+            Image(systemName: "figure.run.circle.fill")
+                .font(.system(size: size * 0.78, weight: .semibold))
+                .foregroundStyle(AthlyLiveActivityStyle.accentNeon)
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+private struct AthlyBrandBadge: View {
+    var showsSubtitle: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            AthlyWidgetLogo(size: showsSubtitle ? 26 : 20)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Athly")
+                    .font(.system(size: showsSubtitle ? 14 : 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                if showsSubtitle {
+                    Text("acompanhando sua corrida")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(AthlyLiveActivityStyle.label)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+}
 
 // MARK: - Lock Screen / Notification View
 
@@ -8,34 +61,29 @@ struct AthlyLockScreenView: View {
     let context: ActivityViewContext<AthlyRunnerAttributes>
 
     var body: some View {
-        VStack(spacing: 10) {
-            // Header: logo + workout title
-            HStack(spacing: 8) {
-                Image("AthlyLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 26, height: 26)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-
-                Text(context.attributes.workoutTitle.isEmpty ? "Corrida em andamento" : context.attributes.workoutTitle)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
+                AthlyBrandBadge(showsSubtitle: true)
 
                 Spacer()
 
-                // Running indicator dot
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(Color(red: 0.2, green: 1.0, blue: 0.6))
+                        .fill(AthlyLiveActivityStyle.accentNeon)
                         .frame(width: 6, height: 6)
                     Text("AO VIVO")
                         .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6))
+                        .foregroundStyle(AthlyLiveActivityStyle.accentNeon)
                 }
             }
 
-            // Metrics row
+            if !context.attributes.workoutTitle.isEmpty {
+                Text(context.attributes.workoutTitle)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.84))
+                    .lineLimit(1)
+            }
+
             HStack(spacing: 0) {
                 metricCell(
                     value: context.state.formattedTime,
@@ -64,11 +112,11 @@ struct AthlyLockScreenView: View {
         .padding(.vertical, 12)
         .background(
             ZStack {
-                Color(red: 0.07, green: 0.07, blue: 0.12)
+                AthlyLiveActivityStyle.background
                 LinearGradient(
                     colors: [
-                        Color(red: 0.2, green: 1.0, blue: 0.6).opacity(0.07),
-                        Color(red: 0.4, green: 0.3, blue: 1.0).opacity(0.05)
+                        AthlyLiveActivityStyle.accentNeon.opacity(0.14),
+                        Color(red: 0.22, green: 0.20, blue: 0.48).opacity(0.08)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -78,15 +126,20 @@ struct AthlyLockScreenView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(red: 0.2, green: 1.0, blue: 0.6).opacity(0.2), lineWidth: 1)
+                .stroke(AthlyLiveActivityStyle.border, lineWidth: 1)
         )
+        .task {
+            widgetLogger.info(
+                "Lock screen render title='\(context.attributes.workoutTitle, privacy: .public)' elapsed=\(context.state.elapsedSeconds, privacy: .public) distance=\(context.state.distanceMeters, privacy: .public)"
+            )
+        }
     }
 
     private func metricCell(value: String, label: String, icon: String) -> some View {
         VStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.system(size: 11))
-                .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6).opacity(0.8))
+                .foregroundStyle(AthlyLiveActivityStyle.accentNeon.opacity(0.85))
 
             Text(value)
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
@@ -115,9 +168,7 @@ struct AthlyDynamicIslandCompact: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "figure.run")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6))
+            AthlyWidgetLogo(size: 14)
             Text(context.state.formattedTime)
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
@@ -126,6 +177,11 @@ struct AthlyDynamicIslandCompact: View {
             Text("\(context.state.formattedDistance) km")
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.8))
+        }
+        .task {
+            widgetLogger.info(
+                "Dynamic Island compact render elapsed=\(context.state.elapsedSeconds, privacy: .public) distance=\(context.state.distanceMeters, privacy: .public)"
+            )
         }
     }
 }
@@ -136,16 +192,12 @@ struct AthlyDynamicIslandExpanded: View {
     var body: some View {
         VStack(spacing: 6) {
             HStack {
-                Image("AthlyLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 22, height: 22)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
-                Text(context.attributes.workoutTitle.isEmpty ? "Corrida" : context.attributes.workoutTitle)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                AthlyBrandBadge(showsSubtitle: false)
                 Spacer()
+                Text(context.attributes.workoutTitle.isEmpty ? "Corrida" : context.attributes.workoutTitle)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(1)
             }
 
             HStack(spacing: 0) {
@@ -156,6 +208,11 @@ struct AthlyDynamicIslandExpanded: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .task {
+            widgetLogger.info(
+                "Dynamic Island expanded render title='\(context.attributes.workoutTitle, privacy: .public)' pace=\(context.state.paceSecondsPerKm, privacy: .public)"
+            )
+        }
     }
 
     private func miniMetric(value: String, label: String) -> some View {
@@ -174,6 +231,10 @@ struct AthlyDynamicIslandExpanded: View {
 // MARK: - Widget Definition
 
 struct AthlyRunnerLiveActivityWidget: Widget {
+    init() {
+        widgetLogger.info("AthlyRunnerLiveActivityWidget initialized.")
+    }
+
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AthlyRunnerAttributes.self) { context in
             AthlyLockScreenView(context: context)
@@ -181,26 +242,22 @@ struct AthlyRunnerLiveActivityWidget: Widget {
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 6) {
-                        Image("AthlyLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                        Text(context.state.formattedTime)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        AthlyWidgetLogo(size: 20)
+                        Text("Athly")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text("\(context.state.formattedDistance) km")
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6))
+                        .foregroundStyle(AthlyLiveActivityStyle.accentNeon)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
                         Image(systemName: "speedometer")
                             .font(.system(size: 11))
-                            .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6).opacity(0.7))
+                            .foregroundStyle(AthlyLiveActivityStyle.accentNeon.opacity(0.7))
                         Text("\(context.state.formattedPace)/km")
                             .font(.system(size: 13, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.white.opacity(0.8))
@@ -212,17 +269,13 @@ struct AthlyRunnerLiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: "figure.run")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6))
+                AthlyWidgetLogo(size: 16)
             } compactTrailing: {
                 Text(context.state.formattedTime)
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white)
             } minimal: {
-                Image(systemName: "figure.run")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color(red: 0.2, green: 1.0, blue: 0.6))
+                AthlyWidgetLogo(size: 13)
             }
         }
     }

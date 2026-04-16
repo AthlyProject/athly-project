@@ -5,9 +5,26 @@ struct WorkoutCompletionSheet: View {
     let onComplete: (HealthKitRunItem?) -> Void
     let onDismiss: () -> Void
 
+    // MARK: - Step machine
+
+    private enum Step {
+        case healthKit
+        case feedback
+    }
+
+    @State private var step: Step = .healthKit
+    @State private var selectedRun: HealthKitRunItem? = nil
+
+    // HealthKit loading
     @State private var todayRuns: [HealthKitRunItem] = []
     @State private var isLoading = true
     @State private var loadError: String?
+
+    // Feedback form
+    @State private var completed: Bool = true
+    @State private var effort: Int = 5
+    @State private var fatigue: Int = 5
+    @State private var isSubmitting = false
 
     private let calendar = Calendar.current
 
@@ -17,44 +34,55 @@ struct WorkoutCompletionSheet: View {
                 AthlyTheme.Color.backgroundDark
                     .ignoresSafeArea()
 
-                if isLoading {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .tint(AthlyTheme.Color.primary)
-                        Text("Buscando corridas no Apple Health…")
-                            .font(AthlyTheme.Typography.body(15))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                if step == .healthKit {
+                    if isLoading {
+                        loadingView
+                    } else {
+                        healthKitContent
                     }
                 } else {
-                    content
+                    feedbackContent
                 }
             }
-            .navigationTitle("Concluir Treino")
+            .navigationTitle(step == .healthKit ? "Concluir Treino" : "Como foi o treino?")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { onDismiss() }
-                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    if step == .feedback {
+                        Button("Voltar") { step = .healthKit }
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    } else {
+                        Button("Cancelar") { onDismiss() }
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
                 }
             }
         }
         .task { await loadTodayRuns() }
     }
 
-    // MARK: - Content
+    // MARK: - Loading
 
-    private var content: some View {
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .tint(AthlyTheme.Color.primary)
+            Text("Buscando corridas no Apple Health…")
+                .font(AthlyTheme.Typography.body(15))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
+        }
+    }
+
+    // MARK: - Step 1: HealthKit selection
+
+    private var healthKitContent: some View {
         ScrollView {
             VStack(spacing: AthlyTheme.Spacing.sm) {
-                // Workout summary header
                 workoutSummaryCard
 
                 if let error = loadError {
                     errorView(error)
-                } else if todayRuns.isEmpty {
-                    noRunsView
-                } else {
-                    // HealthKit runs list
+                } else if !todayRuns.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Image(systemName: "heart.fill")
@@ -74,15 +102,17 @@ struct WorkoutCompletionSheet: View {
                             healthRunCard(run)
                         }
                     }
+                } else {
+                    noRunsView
                 }
 
-                // Fallback: just mark as done
                 Divider()
                     .background(AthlyTheme.Color.borderDark)
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
 
                 Button {
-                    onComplete(nil)
+                    selectedRun = nil
+                    step = .feedback
                 } label: {
                     HStack {
                         Image(systemName: "checkmark.circle")
@@ -104,6 +134,207 @@ struct WorkoutCompletionSheet: View {
             .padding(.vertical, AthlyTheme.Spacing.sm)
         }
         .scrollContentBackground(.hidden)
+    }
+
+    // MARK: - Step 2: Feedback
+
+    private var feedbackContent: some View {
+        ScrollView {
+            VStack(spacing: AthlyTheme.Spacing.sm) {
+                // Header
+                VStack(spacing: 8) {
+                    Text(completed ? "🎉" : "💪")
+                        .font(.system(size: 48))
+                    Text(completed ? "Parabéns!" : "Bom trabalho!")
+                        .font(AthlyTheme.Typography.heading(22))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Text("Conta como foi o seu treino")
+                        .font(AthlyTheme.Typography.body(14))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+
+                // Status
+                completionStatusCard
+
+                // Effort
+                effortCard
+
+                // Fatigue
+                fatigueCard
+
+                // Submit
+                VStack(spacing: 12) {
+                    Button {
+                        Task { await submitFeedback() }
+                    } label: {
+                        HStack {
+                            if isSubmitting {
+                                ProgressView().tint(.white).scaleEffect(0.85)
+                            } else {
+                                Image(systemName: "chart.bar.fill")
+                            }
+                            Text(isSubmitting ? "Enviando…" : "Enviar feedback")
+                        }
+                    }
+                    .buttonStyle(AthlyGradientButtonStyle())
+                    .disabled(isSubmitting)
+
+                    Button {
+                        onComplete(selectedRun)
+                    } label: {
+                        Text("Pular por agora")
+                            .font(AthlyTheme.Typography.body(15))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                .padding(.top, 4)
+            }
+            .padding(AthlyTheme.Spacing.sm)
+        }
+        .scrollContentBackground(.hidden)
+    }
+
+    // MARK: - Completion Status Card
+
+    private var completionStatusCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Conseguiu completar?")
+                .font(AthlyTheme.Typography.semibold(15))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+            HStack(spacing: 12) {
+                completionButton(label: "Sim", emoji: "✓", selected: completed) {
+                    completed = true
+                }
+                completionButton(label: "Não", emoji: "✗", selected: !completed) {
+                    completed = false
+                }
+            }
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+        .padding(.horizontal, AthlyTheme.Spacing.sm)
+    }
+
+    private func completionButton(label: String, emoji: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Text(emoji)
+                    .font(.system(size: 28))
+                Text(label)
+                    .font(AthlyTheme.Typography.semibold(15))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                selected
+                    ? AthlyTheme.Gradient.brand
+                    : LinearGradient(colors: [AthlyTheme.Color.surfaceDark], startPoint: .leading, endPoint: .trailing)
+            )
+            .foregroundStyle(selected ? Color.white : AthlyTheme.Color.textSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                    .stroke(selected ? Color.clear : AthlyTheme.Color.borderDark, lineWidth: 1)
+            )
+            .scaleEffect(selected ? 1.03 : 1.0)
+            .animation(.spring(response: 0.3), value: selected)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Effort Card
+
+    private var effortCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Nível de Esforço")
+                .font(AthlyTheme.Typography.semibold(15))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+            VStack(spacing: 8) {
+                HStack {
+                    Text(effortEmoji)
+                        .font(.system(size: 36))
+                    Spacer()
+                    Text("\(effort)/10")
+                        .font(.custom("SpaceGrotesk-Bold", size: 28))
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                }
+
+                Slider(value: Binding(
+                    get: { Double(effort) },
+                    set: { effort = Int($0) }
+                ), in: 1...10, step: 1)
+                .tint(AthlyTheme.Color.primary)
+
+                HStack {
+                    Text("Fácil")
+                    Spacer()
+                    Text("Moderado")
+                    Spacer()
+                    Text("Intenso")
+                }
+                .font(AthlyTheme.Typography.body(11))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+        .padding(.horizontal, AthlyTheme.Spacing.sm)
+    }
+
+    // MARK: - Fatigue Card
+
+    private var fatigueCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Nível de Fadiga")
+                .font(AthlyTheme.Typography.semibold(15))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+            VStack(spacing: 8) {
+                HStack {
+                    Text(fatigueEmoji)
+                        .font(.system(size: 36))
+                    Spacer()
+                    Text("\(fatigue)/10")
+                        .font(.custom("SpaceGrotesk-Bold", size: 28))
+                        .foregroundStyle(AthlyTheme.Color.secondary)
+                }
+
+                Slider(value: Binding(
+                    get: { Double(fatigue) },
+                    set: { fatigue = Int($0) }
+                ), in: 1...10, step: 1)
+                .tint(AthlyTheme.Color.secondary)
+
+                HStack {
+                    Text("Energizado")
+                    Spacer()
+                    Text("Normal")
+                    Spacer()
+                    Text("Exausto")
+                }
+                .font(AthlyTheme.Typography.body(11))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+        .padding(.horizontal, AthlyTheme.Spacing.sm)
+    }
+
+    // MARK: - Submit
+
+    private func submitFeedback() async {
+        isSubmitting = true
+        defer { isSubmitting = false }
+        let feedback = WorkoutFeedbackRequest(completed: completed, effort: effort, fatigue: fatigue)
+        try? await APIClient.shared.submitWorkoutFeedback(workoutId: workout.id, feedback: feedback)
+        onComplete(selectedRun)
     }
 
     // MARK: - Workout Summary Card
@@ -134,11 +365,11 @@ struct WorkoutCompletionSheet: View {
 
     private func healthRunCard(_ run: HealthKitRunItem) -> some View {
         Button {
-            onComplete(run)
+            selectedRun = run
+            step = .feedback
         } label: {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    // Time icon
                     VStack(spacing: 2) {
                         Image(systemName: "figure.run")
                             .font(.system(size: 18))
@@ -149,7 +380,6 @@ struct WorkoutCompletionSheet: View {
                     }
                     .frame(width: 44)
 
-                    // Metrics
                     HStack(spacing: 0) {
                         metricCell(value: run.formattedDistance, label: "km")
                         metricDivider
@@ -243,7 +473,7 @@ struct WorkoutCompletionSheet: View {
         .padding(.horizontal, AthlyTheme.Spacing.sm)
     }
 
-    // MARK: - Load
+    // MARK: - Load HealthKit
 
     private func loadTodayRuns() async {
         isLoading = true
@@ -263,7 +493,7 @@ struct WorkoutCompletionSheet: View {
         }
 
         do {
-            try await service.requestAuthorization()
+            try await service.requestReadAuthorization()
             let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
             todayRuns = allRuns.filter { calendar.isDateInToday($0.startDate) }
         } catch {
@@ -271,7 +501,25 @@ struct WorkoutCompletionSheet: View {
         }
     }
 
-    // MARK: - Formatters
+    // MARK: - Helpers
+
+    private var effortEmoji: String {
+        switch effort {
+        case ...3: return "😌"
+        case 4...6: return "💪"
+        case 7...8: return "🔥"
+        default: return "😤"
+        }
+    }
+
+    private var fatigueEmoji: String {
+        switch fatigue {
+        case ...3: return "⚡"
+        case 4...6: return "😅"
+        case 7...8: return "😰"
+        default: return "😵"
+        }
+    }
 
     private func timeString(_ date: Date) -> String {
         let df = DateFormatter()

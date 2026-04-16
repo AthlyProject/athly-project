@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import UIKit
 
 struct RunStartView: View {
     @EnvironmentObject var locationManager: LocationManager
@@ -14,6 +15,7 @@ struct RunStartView: View {
     }
 
     @State private var isInitialized = false
+    @State private var showLiveActivityAlert = false
 
     var body: some View {
         NavigationStack {
@@ -28,6 +30,22 @@ struct RunStartView: View {
             }
             .navigationTitle(viewModel.isActive ? "" : "Correr")
             .navigationBarTitleDisplayMode(.inline)
+        }
+        .alert("Live Activities desativadas", isPresented: $showLiveActivityAlert) {
+            Button("Abrir Ajustes") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Para acompanhar sua corrida na tela de bloqueio, ative Live Activities em Ajustes > Athly Runner > Live Activities.")
+        }
+        .onChange(of: viewModel.tracker.liveActivityDisabled) { disabled in
+            if disabled {
+                showLiveActivityAlert = true
+                viewModel.tracker.liveActivityDisabled = false
+            }
         }
         .onAppear {
             if !isInitialized {

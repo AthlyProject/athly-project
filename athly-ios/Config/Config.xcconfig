@@ -1,4 +1,11 @@
 // Bundle ID padrão. Para outro dev/team, crie Config/User.xcconfig (adicione ao .gitignore) com:
 //   ATHLY_BUNDLE_ID = com.athly.runner.dev
 ATHLY_BUNDLE_ID = com.athly.runner
+
+// URL do backend em modo DEBUG (para testar no iPhone físico).
+// Para usar o backend local no device, defina em Config/User.xcconfig:
+//   DEV_API_URL = http://192.168.X.X:4000
+// Descubra seu IP local com: ifconfig en0 | grep 'inet '
+DEV_API_URL =
+
 #include? "User.xcconfig"

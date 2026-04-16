@@ -55,7 +55,7 @@ final class HealthKitRunsViewModel: ObservableObject {
         state = .loading
 
         do {
-            try await healthKitService.requestAuthorization()
+            try await healthKitService.requestReadAuthorization()
             let items = try await healthKitService.fetchLatestRunningWorkouts(limit: 20)
             state = .loaded(items)
         } catch let error as HealthKitError {
