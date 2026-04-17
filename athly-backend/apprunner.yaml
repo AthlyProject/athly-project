@@ -3,6 +3,7 @@ runtime: nodejs22
 build:
   commands:
     build:
+      - npm ci
       - npm run build
 run:
   command: node dist/src/main.js
