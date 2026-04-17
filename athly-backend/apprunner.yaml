@@ -3,11 +3,11 @@ runtime: nodejs18
 build:
   commands:
     pre-build:
-      - cd athly-backend && npm ci
+      - npm ci
     build:
-      - cd athly-backend && npm run build
+      - npm run build
 run:
-  command: node athly-backend/dist/src/main.js
+  command: node dist/src/main.js
   network:
     port: 4000
   env:
