@@ -1,0 +1,282 @@
+import Foundation
+import HealthKit
+
+/// Builds a `DetailedSessionPayload` from an `HKWorkout` by pulling per-segment/per-lap events
+/// and slicing heart-rate samples by time. When the workout has no explicit events, falls
+/// back to per-kilometer splits synthesized from the workout's total duration/distance.
+///
+/// The output is consumed by the backend's `WorkoutExecutionAnalyzerService` to evaluate
+/// interval adherence (tiros), pacing strategy, HR recovery between reps, etc.
+final class WorkoutDetailFetcher: @unchecked Sendable {
+
+    private let store: HKHealthStore
+
+    init(store: HKHealthStore = HKHealthStore()) {
+        self.store = store
+    }
+
+    /// Build the detailed payload for a single workout. Returns nil if authorization is missing
+    /// or the workout has no usable data.
+    func buildDetailedSession(
+        for workout: HKWorkout,
+        athlyWorkoutId: String?
+    ) async throws -> DetailedSessionPayload? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let totalDistanceMeters = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+        let activeDuration = (workout.metadata?["activeDurationSeconds"] as? Double) ?? workout.duration
+        let avgPace: Double? = {
+            guard totalDistanceMeters > 0 else { return nil }
+            return activeDuration / (totalDistanceMeters / 1000.0)
+        }()
+        let calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie())
+
+        let hrSamples = (try? await fetchHeartRateSamples(for: workout)) ?? []
+        let hrStats = summarizeHR(samples: hrSamples)
+
+        let rawSegments = segmentsFromEvents(workout: workout)
+            ?? syntheticKmSplits(
+                startDate: workout.startDate,
+                endDate: workout.endDate,
+                totalDistanceMeters: totalDistanceMeters,
+                totalDurationSeconds: activeDuration
+            )
+
+        let segments = rawSegments.map { seg -> SegmentPayload in
+            let hr = summarizeHR(samples: hrSamples, from: seg.start, to: seg.end)
+            let durationSeconds = seg.end.timeIntervalSince(seg.start)
+            let pace: Double? = seg.distanceMeters > 0
+                ? durationSeconds / (seg.distanceMeters / 1000.0)
+                : nil
+            return SegmentPayload(
+                label: seg.label,
+                index: seg.index,
+                distanceKm: seg.distanceMeters / 1000.0,
+                durationSeconds: durationSeconds,
+                avgPaceSecondsPerKm: pace,
+                avgHR: hr.avg,
+                peakHR: hr.peak,
+                endHR: hr.end
+            )
+        }
+
+        return DetailedSessionPayload(
+            startDate: iso.string(from: workout.startDate),
+            appleHealthWorkoutUUID: workout.uuid.uuidString,
+            athlyWorkoutId: athlyWorkoutId,
+            distanceMeters: totalDistanceMeters,
+            durationSeconds: activeDuration,
+            averagePaceSecondsPerKm: avgPace,
+            avgHR: hrStats.avg,
+            maxHR: hrStats.peak,
+            activeEnergyBurned: calories,
+            elevationGainMeters: nil,
+            segments: segments
+        )
+    }
+
+    // MARK: - Segment extraction
+
+    private struct RawSegment {
+        let label: SegmentLabel
+        let index: Int?
+        let start: Date
+        let end: Date
+        let distanceMeters: Double
+    }
+
+    /// Try to build segments from `HKWorkoutEvent`s of type `.segment` or `.lap`.
+    /// Auto-classifies rep vs rec based on relative duration (reps are typically shorter & faster,
+    /// rec are the alternating slower gaps). A simple heuristic — good enough to let the AI
+    /// reason about interval structure; backend analyzer validates the adherence numerically.
+    private func segmentsFromEvents(workout: HKWorkout) -> [RawSegment]? {
+        let events = (workout.workoutEvents ?? []).filter {
+            $0.type == .segment || $0.type == .lap
+        }
+        guard events.count >= 2 else { return nil }
+
+        let boundaries = events
+            .map { $0.dateInterval.start }
+            .sorted()
+
+        var ranges: [(Date, Date)] = []
+        if let first = boundaries.first, first > workout.startDate {
+            ranges.append((workout.startDate, first))
+        }
+        for i in 0..<boundaries.count {
+            let start = boundaries[i]
+            let end = i + 1 < boundaries.count ? boundaries[i + 1] : workout.endDate
+            if end > start { ranges.append((start, end)) }
+        }
+
+        let totalDuration = workout.endDate.timeIntervalSince(workout.startDate)
+        let totalDistance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+        guard totalDuration > 0 else { return nil }
+
+        // Proportional distance per range (HealthKit doesn't attach distance to events).
+        let rangedDistances = ranges.map { range -> Double in
+            let d = range.1.timeIntervalSince(range.0)
+            return totalDistance * (d / totalDuration)
+        }
+
+        // Classify: alternate rep/rec after warmup, then cooldown at the end.
+        // Heuristic: first range = warmup if longer than 4 min, last range = cooldown if longer than 3 min.
+        var classified: [RawSegment] = []
+        var repCounter = 0
+        var recCounter = 0
+        let warmupIdx = ranges.first.map { $0.1.timeIntervalSince($0.0) >= 240 ? 0 : -1 } ?? -1
+        let cooldownIdx: Int = {
+            guard let last = ranges.last else { return -1 }
+            return last.1.timeIntervalSince(last.0) >= 180 ? ranges.count - 1 : -1
+        }()
+
+        for (i, range) in ranges.enumerated() {
+            let duration = range.1.timeIntervalSince(range.0)
+            let label: SegmentLabel
+            var idx: Int? = nil
+            if i == warmupIdx {
+                label = .warmup
+            } else if i == cooldownIdx {
+                label = .cooldown
+            } else {
+                // Within the middle, alternate rep/rec based on average pace.
+                // Shorter segments → rep; longer → rec. Approximation when distance is proportional.
+                let pace = rangedDistances[i] > 0 ? duration / (rangedDistances[i] / 1000.0) : Double.infinity
+                let isRep = pace < 360 || duration < 180 // pace < 6:00/km or under 3 min
+                if isRep {
+                    repCounter += 1
+                    label = .rep
+                    idx = repCounter
+                } else {
+                    recCounter += 1
+                    label = .rec
+                    idx = recCounter
+                }
+            }
+            classified.append(RawSegment(
+                label: label,
+                index: idx,
+                start: range.0,
+                end: range.1,
+                distanceMeters: rangedDistances[i]
+            ))
+        }
+        return classified
+    }
+
+    /// Fallback when there are no workout events: one segment per kilometer.
+    /// Labelled `.easy` by default so the AI treats it as a steady run — backend analyzer
+    /// will still compute variance/pacing trend on the synthetic splits.
+    private func syntheticKmSplits(
+        startDate: Date,
+        endDate: Date,
+        totalDistanceMeters: Double,
+        totalDurationSeconds: Double
+    ) -> [RawSegment] {
+        guard totalDistanceMeters >= 1000, totalDurationSeconds > 0 else {
+            return [RawSegment(
+                label: .easy,
+                index: nil,
+                start: startDate,
+                end: endDate,
+                distanceMeters: totalDistanceMeters
+            )]
+        }
+
+        let avgPace = totalDurationSeconds / (totalDistanceMeters / 1000.0)
+        let fullKms = Int(totalDistanceMeters / 1000.0)
+        var segments: [RawSegment] = []
+        var cursor = startDate
+
+        for _ in 0..<fullKms {
+            let segEnd = cursor.addingTimeInterval(avgPace)
+            segments.append(RawSegment(
+                label: .easy,
+                index: nil,
+                start: cursor,
+                end: segEnd,
+                distanceMeters: 1000
+            ))
+            cursor = segEnd
+        }
+
+        // Trailing fractional km
+        if cursor < endDate {
+            let leftoverDistance = totalDistanceMeters - Double(fullKms) * 1000
+            if leftoverDistance > 50 {
+                segments.append(RawSegment(
+                    label: .easy,
+                    index: nil,
+                    start: cursor,
+                    end: endDate,
+                    distanceMeters: leftoverDistance
+                ))
+            }
+        }
+
+        return segments
+    }
+
+    // MARK: - Heart rate
+
+    private struct HRStats {
+        let avg: Double?
+        let peak: Double?
+        let end: Double?
+    }
+
+    private func summarizeHR(samples: [HKQuantitySample]) -> HRStats {
+        summarizeHR(samples: samples, from: nil, to: nil)
+    }
+
+    private func summarizeHR(
+        samples: [HKQuantitySample],
+        from start: Date?,
+        to end: Date?
+    ) -> HRStats {
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        let filtered: [HKQuantitySample] = {
+            guard let start, let end else { return samples }
+            return samples.filter { $0.startDate >= start && $0.endDate <= end }
+        }()
+        guard !filtered.isEmpty else { return HRStats(avg: nil, peak: nil, end: nil) }
+
+        var sum: Double = 0
+        var peak: Double = 0
+        for sample in filtered {
+            let v = sample.quantity.doubleValue(for: unit)
+            sum += v
+            if v > peak { peak = v }
+        }
+        let avg = sum / Double(filtered.count)
+        let last = filtered.max(by: { $0.endDate < $1.endDate })?.quantity.doubleValue(for: unit)
+        return HRStats(avg: avg, peak: peak, end: last)
+    }
+
+    private func fetchHeartRateSamples(for workout: HKWorkout) async throws -> [HKQuantitySample] {
+        guard let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+            return []
+        }
+        let predicate = HKQuery.predicateForSamples(
+            withStart: workout.startDate,
+            end: workout.endDate,
+            options: .strictStartDate
+        )
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: hrType,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
+            }
+            self.store.execute(query)
+        }
+    }
+}

@@ -3,8 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AiPlannerInput, PlannerResults, PreviousWeekAnalysis } from './types/planner.types';
 import type { FormattedZones } from '../effort-zones/types/effort-zone.types';
-import { buildPlannerPrompt, buildAssessmentPrompt, type UserProfileContext } from './prompts/planner-prompt';
+import {
+  buildPlannerPrompt,
+  buildAssessmentPrompt,
+  type UserProfileContext,
+  type LongitudinalWeek,
+} from './prompts/planner-prompt';
 import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
+import type { AnalyzedSession } from './workout-execution-analyzer.service';
 
 @Injectable()
 export class GeminiService {
@@ -31,9 +37,19 @@ export class GeminiService {
     previousWeekAnalysis?: PreviousWeekAnalysis | null,
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
+    analyzedSessions?: AnalyzedSession[],
+    longitudinalWeeks?: LongitudinalWeek[],
   ): Promise<PlannerResults> {
     const model = this.getModel();
-    const prompt = buildPlannerPrompt(input, effortZones, previousWeekAnalysis, goal, userProfile);
+    const prompt = buildPlannerPrompt(
+      input,
+      effortZones,
+      previousWeekAnalysis,
+      goal,
+      userProfile,
+      analyzedSessions,
+      longitudinalWeeks,
+    );
 
     let responseText: string;
     try {
@@ -55,9 +71,18 @@ export class GeminiService {
     effortZones: FormattedZones,
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
+    analyzedSessions?: AnalyzedSession[],
   ): Promise<PlannerResults> {
     const model = this.getModel();
-    const prompt = buildAssessmentPrompt(weekDates, trainingDays, availableDays, effortZones, goal, userProfile);
+    const prompt = buildAssessmentPrompt(
+      weekDates,
+      trainingDays,
+      availableDays,
+      effortZones,
+      goal,
+      userProfile,
+      analyzedSessions,
+    );
 
     let responseText: string;
     try {

@@ -7,6 +7,7 @@ final class AuthViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var userName: String = ""
+    @Published private(set) var hasFinishedInitialSessionRestore = false
 
     private let tokenKey = "athly_access_token"
     private let refreshKey = "athly_refresh_token"
@@ -77,11 +78,13 @@ final class AuthViewModel: ObservableObject {
     private func loadSavedTokens() {
         guard let access = UserDefaults.standard.string(forKey: tokenKey),
               let refresh = UserDefaults.standard.string(forKey: refreshKey) else {
+            hasFinishedInitialSessionRestore = true
             return
         }
         Task {
             await APIClient.shared.setTokens(access: access, refresh: refresh)
             isAuthenticated = true
+            hasFinishedInitialSessionRestore = true
         }
     }
 }

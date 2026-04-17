@@ -6,12 +6,12 @@ struct RunStartView: View {
     @EnvironmentObject var locationManager: LocationManager
     @StateObject private var viewModel: RunViewModel
     @Binding var isRunInProgress: Bool
-    @Binding var pendingWorkoutId: String?
+    @Binding var pendingWorkout: WorkoutModel?
 
-    init(isRunInProgress: Binding<Bool> = .constant(false), pendingWorkoutId: Binding<String?> = .constant(nil)) {
+    init(isRunInProgress: Binding<Bool> = .constant(false), pendingWorkout: Binding<WorkoutModel?> = .constant(nil)) {
         _viewModel = StateObject(wrappedValue: RunViewModel(locationManager: LocationManager()))
         _isRunInProgress = isRunInProgress
-        _pendingWorkoutId = pendingWorkoutId
+        _pendingWorkout = pendingWorkout
     }
 
     @State private var isInitialized = false
@@ -53,9 +53,9 @@ struct RunStartView: View {
                 isInitialized = true
             }
             // Sync pending workout context from dashboard
-            if let workoutId = pendingWorkoutId {
-                viewModel.pendingWorkoutId = workoutId
-                pendingWorkoutId = nil
+            if let workout = pendingWorkout {
+                viewModel.pendingWorkout = workout
+                pendingWorkout = nil
             }
         }
         .onChange(of: viewModel.isActive) { active in

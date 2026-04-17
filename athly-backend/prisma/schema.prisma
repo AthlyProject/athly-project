@@ -111,10 +111,11 @@ model Workout {
   title          String
   description    String?
   blocks         Json
-  status           WorkoutStatus
-  intensity        Int?
-  stravaActivityId String?       @unique @map("strava_activity_id")
-  createdAt        DateTime      @default(now()) @map("created_at")
+  status                 WorkoutStatus
+  intensity              Int?
+  stravaActivityId       String?       @unique @map("strava_activity_id")
+  appleHealthWorkoutUUID String?       @unique @map("apple_health_workout_uuid")
+  createdAt              DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -92,8 +92,14 @@ actor APIClient {
         try await get("/workouts/training-plan/\(trainingPlanId)")
     }
 
-    func completeWorkout(workoutId: String) async throws -> WorkoutModel {
-        try await patch("/workouts/\(workoutId)/complete")
+    func completeWorkout(workoutId: String, appleHealthWorkoutUUID: String? = nil) async throws -> WorkoutModel {
+        if let uuid = appleHealthWorkoutUUID {
+            return try await patchWithBody(
+                "/workouts/\(workoutId)/complete",
+                body: CompleteWorkoutRequest(appleHealthWorkoutUUID: uuid)
+            )
+        }
+        return try await patch("/workouts/\(workoutId)/complete")
     }
 
     func skipWorkout(workoutId: String) async throws -> WorkoutModel {
@@ -106,11 +112,11 @@ actor APIClient {
     }
 
     func planNextWeek(_ request: PlanNextWeekRequest) async throws -> PlanNextWeekResponse {
-        try await post("/ai-planner/plan-next-week", body: request)
+        try await post("/ai-planner/plan-next-week", body: request, timeout: 120)
     }
 
     func planFromHealth(_ request: PlanFromHealthRequest) async throws -> AiPlannerResponse {
-        try await post("/ai-planner/plan-from-health", body: request)
+        try await post("/ai-planner/plan-from-health", body: request, timeout: 120)
     }
 
     // MARK: - Goals Endpoints
@@ -167,8 +173,8 @@ actor APIClient {
         return try await execute(request)
     }
 
-    private func post<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true) async throws -> T {
-        var request = try buildRequest(path: path, method: "POST", authenticated: authenticated)
+    private func post<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true, timeout: TimeInterval = 30) async throws -> T {
+        var request = try buildRequest(path: path, method: "POST", authenticated: authenticated, timeout: timeout)
         request.httpBody = try JSONEncoder().encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return try await execute(request)
@@ -187,13 +193,20 @@ actor APIClient {
         return try await execute(request)
     }
 
-    private func buildRequest(path: String, method: String, authenticated: Bool) throws -> URLRequest {
+    private func patchWithBody<B: Encodable, T: Decodable>(_ path: String, body: B, authenticated: Bool = true) async throws -> T {
+        var request = try buildRequest(path: path, method: "PATCH", authenticated: authenticated)
+        request.httpBody = try JSONEncoder().encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await execute(request)
+    }
+
+    private func buildRequest(path: String, method: String, authenticated: Bool, timeout: TimeInterval = 30) throws -> URLRequest {
         guard let url = URL(string: baseURL + path) else {
             throw APIError.invalidURL
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.timeoutInterval = 30
+        request.timeoutInterval = timeout
 
         if authenticated {
             guard let token = accessToken else {
@@ -372,6 +385,14 @@ struct SplitRequest: Encodable {
 
 struct SaveRunResponse: Decodable {
     let id: String
+}
+
+struct CompleteWorkoutRequest: Encodable {
+    let appleHealthWorkoutUUID: String
+
+    enum CodingKeys: String, CodingKey {
+        case appleHealthWorkoutUUID = "appleHealthWorkoutUUID"
+    }
 }
 
 struct WorkoutResponse: Decodable {

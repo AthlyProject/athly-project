@@ -91,6 +91,30 @@ struct RunSummaryView: View {
         .task {
             await viewModel.saveRun(runStore: runStore)
         }
+        .sheet(isPresented: $viewModel.showWorkoutFeedback) {
+            if let workout = viewModel.pendingWorkout {
+                WorkoutCompletionSheet(
+                    workout: workout,
+                    initialStep: .feedback,
+                    onComplete: { _ in
+                        let workoutId = workout.id
+                        let healthKitUUID = viewModel.lastSavedHealthKitUUID
+                        Task {
+                            _ = try? await APIClient.shared.completeWorkout(
+                                workoutId: workoutId,
+                                appleHealthWorkoutUUID: healthKitUUID
+                            )
+                        }
+                        viewModel.pendingWorkout = nil
+                        viewModel.showWorkoutFeedback = false
+                    },
+                    onDismiss: {
+                        viewModel.pendingWorkout = nil
+                        viewModel.showWorkoutFeedback = false
+                    }
+                )
+            }
+        }
     }
 
     private func summaryMap(locations: [CLLocation]) -> some View {

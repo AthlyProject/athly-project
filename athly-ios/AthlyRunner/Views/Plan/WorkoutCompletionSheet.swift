@@ -2,18 +2,27 @@ import SwiftUI
 
 struct WorkoutCompletionSheet: View {
     let workout: WorkoutModel
+    var initialStep: Step = .healthKit
     let onComplete: (HealthKitRunItem?) -> Void
     let onDismiss: () -> Void
 
     // MARK: - Step machine
 
-    private enum Step {
+    enum Step {
         case healthKit
         case feedback
     }
 
-    @State private var step: Step = .healthKit
+    @State private var step: Step
     @State private var selectedRun: HealthKitRunItem? = nil
+
+    init(workout: WorkoutModel, initialStep: Step = .healthKit, onComplete: @escaping (HealthKitRunItem?) -> Void, onDismiss: @escaping () -> Void) {
+        self.workout = workout
+        self.initialStep = initialStep
+        self.onComplete = onComplete
+        self.onDismiss = onDismiss
+        _step = State(initialValue: initialStep)
+    }
 
     // HealthKit loading
     @State private var todayRuns: [HealthKitRunItem] = []

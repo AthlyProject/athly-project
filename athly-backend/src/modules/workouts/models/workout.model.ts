@@ -51,6 +51,9 @@ export class WorkoutModel {
 
   @ApiPropertyOptional({ nullable: true })
   stravaActivityId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  appleHealthWorkoutUUID?: string | null;
 }
 
 export class WeekModel {

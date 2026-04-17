@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards } from '@nest
 import { ApiTags, ApiOkResponse, ApiCreatedResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkoutsService } from './workouts.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
+import { CompleteWorkoutDto } from './dto/complete-workout.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
@@ -67,8 +68,9 @@ export class WorkoutsController {
   completeWorkout(
     @CurrentUser() user: UserModel,
     @Param('workoutId') workoutId: string,
+    @Body() input?: CompleteWorkoutDto,
   ): Promise<WorkoutModel> {
-    return this.workoutsService.completeWorkout(user.id, workoutId);
+    return this.workoutsService.completeWorkout(user.id, workoutId, input);
   }
 
   @Patch(':workoutId/skip')

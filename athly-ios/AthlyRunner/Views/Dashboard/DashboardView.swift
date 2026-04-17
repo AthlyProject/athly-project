@@ -5,7 +5,7 @@ struct DashboardView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var runStore: RunStore
     @Binding var selectedTab: AppTab
-    @Binding var pendingWorkoutId: String?
+    @Binding var pendingWorkout: WorkoutModel?
 
     private var recentRuns: [RunSession] { runStore.sortedSessions }
 
@@ -129,7 +129,7 @@ struct DashboardView: View {
 
                 if workout.status == .scheduled {
                     Button("Iniciar treino agora") {
-                        pendingWorkoutId = workout.id
+                        pendingWorkout = workout
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedTab = .run
                         }

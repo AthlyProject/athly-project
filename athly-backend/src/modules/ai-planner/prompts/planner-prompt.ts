@@ -1,8 +1,17 @@
 import type { AiPlannerInput, PreviousWeekAnalysis } from '../types/planner.types';
 import type { FormattedZones } from '../../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './goal-parser-prompt';
+import type { AnalyzedSession } from '../workout-execution-analyzer.service';
 
 export type { AiPlannerInput };
+
+export interface LongitudinalWeek {
+  weekLabel: string;
+  totalKm: number;
+  avgPace: string;
+  completionRate: number;
+  avgEffort: number | null;
+}
 
 export interface UserProfileContext {
   sleepQuality?: number;
@@ -51,6 +60,78 @@ Considere estes dados ao planejar a próxima semana:
 - Se todos os treinos foram completados com esforço baixo (< 5/10), considere progredir intensidade ou volume.
 - Se o atleta pulou treinos intensos, considere se a carga está adequada.
 </previous_week_review>`;
+}
+
+function secondsToPace(secondsPerKm?: number): string {
+  if (!secondsPerKm || secondsPerKm <= 0) return 'N/A';
+  const m = Math.floor(secondsPerKm / 60);
+  const s = Math.round(secondsPerKm % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function buildRecentSessionsDetailSection(analyzedSessions: AnalyzedSession[]): string {
+  if (analyzedSessions.length === 0) return '';
+
+  const payload = analyzedSessions.map((a) => {
+    const session = a.session;
+    return {
+      date: session.startDate.split('T')[0],
+      totals: {
+        distanceKm: Number((session.distanceMeters / 1000).toFixed(2)),
+        durationMin: Math.round(session.durationSeconds / 60),
+        avgPace: secondsToPace(session.averagePaceSecondsPerKm),
+        avgHR: session.avgHR ?? null,
+      },
+      prescribed: a.prescribed
+        ? {
+            title: a.prescribed.title,
+            date: a.prescribed.dateScheduled,
+            main: a.prescribed.mainBlockDescription,
+            expectedRepCount: a.prescribed.expectedRepCount ?? null,
+            expectedRepDistanceKm: a.prescribed.expectedRepDistanceKm ?? null,
+            targetPaceRange: a.prescribed.targetPaceRange
+              ? `${secondsToPace(a.prescribed.targetPaceRange.minSecPerKm)}–${secondsToPace(
+                  a.prescribed.targetPaceRange.maxSecPerKm,
+                )}/km`
+              : null,
+          }
+        : null,
+      segments: session.segments.map((s) => ({
+        label: s.label,
+        index: s.index ?? null,
+        distKm: Number(s.distanceKm.toFixed(2)),
+        durationSec: Math.round(s.durationSeconds),
+        pace: secondsToPace(s.avgPaceSecondsPerKm),
+        avgHR: s.avgHR ?? null,
+        peakHR: s.peakHR ?? null,
+        endHR: s.endHR ?? null,
+      })),
+      executionAnalysis: a.executionAnalysis,
+      feedback: a.feedback ?? null,
+    };
+  });
+
+  return `
+<recentSessionsDetail>
+Sessões recentes com análise mastigada (use como leitura direta, não recalcule estatísticas):
+${JSON.stringify(payload, null, 2)}
+
+Leia o campo "executionAnalysis" de cada sessão como veredito pronto. Use "observations" para citar padrões concretos no "reasoning" dos próximos treinos (ex: se "fade", reduza intensidade OU reforce pacing; se "undershot", suba o estímulo; se recuperação cardíaca baixa, dê mais recovery entre reps).
+</recentSessionsDetail>`;
+}
+
+function buildLongitudinalTrendSection(weeks: LongitudinalWeek[]): string {
+  if (weeks.length === 0) return '';
+  return `
+<longitudinalTrend>
+Tendência das últimas ${weeks.length} semanas (agregado já calculado no backend):
+${JSON.stringify(weeks, null, 2)}
+
+Use esse bloco para detectar stagnation, overreaching e progressão sustentável. Regras:
+- Volume subiu > 10% por 3 semanas seguidas com pace estagnado → sinal de overreach, considere deload.
+- Volume caiu > 15% e aderência > 80% → atleta pode absorver progressão na próxima semana.
+- Pace melhorou > 5s/km sobre 4 semanas → progressão natural, mantenha estímulo.
+</longitudinalTrend>`;
 }
 
 function buildGoalSection(goal: ParsedGoal): string {
@@ -127,6 +208,7 @@ export function buildAssessmentPrompt(
   effortZones: FormattedZones,
   goal?: ParsedGoal | null,
   userProfile?: UserProfileContext | null,
+  analyzedSessions?: AnalyzedSession[],
 ): string {
   const restDays = 7 - trainingDays;
   const daysList = formatAvailableDays(availableDays);
@@ -134,6 +216,9 @@ export function buildAssessmentPrompt(
 
   const goalSection = goal ? buildGoalSection(goal) : '';
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
+  const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
+    ? buildRecentSessionsDetailSection(analyzedSessions)
+    : '';
 
   const goalSummary = goal?.summary ?? 'começar a correr';
 
@@ -167,6 +252,8 @@ Dias de treino do atleta: ${daysList}
 </context>
 
 ${effortZones.formatted}
+
+${detailedSessionsSection}
 
 <assessment_workouts>
 Estes são os treinos de avaliação que você deve distribuir nos ${trainingDays} dias de treino:
@@ -284,6 +371,8 @@ export function buildPlannerPrompt(
   previousWeekAnalysis?: PreviousWeekAnalysis | null,
   goal?: ParsedGoal | null,
   userProfile?: UserProfileContext | null,
+  analyzedSessions?: AnalyzedSession[],
+  longitudinalWeeks?: LongitudinalWeek[],
 ): string {
   const {
     runSummaries,
@@ -306,6 +395,12 @@ export function buildPlannerPrompt(
 
   const goalSection = goal ? buildGoalSection(goal) : '';
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
+  const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
+    ? buildRecentSessionsDetailSection(analyzedSessions)
+    : '';
+  const longitudinalSection = longitudinalWeeks && longitudinalWeeks.length > 0
+    ? buildLongitudinalTrendSection(longitudinalWeeks)
+    : '';
 
   const goalSummary = goal?.summary ?? 'evoluir como corredor';
 
@@ -347,6 +442,10 @@ Estatísticas resumidas:
 </task>
 
 ${effortZones.formatted}
+
+${detailedSessionsSection}
+
+${longitudinalSection}
 
 ${previousWeekSection}
 

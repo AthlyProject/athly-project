@@ -39,6 +39,9 @@
 		872EE89FE37E79C3D1D455AF /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E55A3660DBE7A9713E988F8 /* APIModels.swift */; };
 		89541A62B716A2302CADF335 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43825FAB86DD6123B208E2F0 /* ProfileView.swift */; };
 		8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4F37700F3E2C1413DE8816 /* RunSession.swift */; };
+		AAA1B2C3D4E5F60718293A4B /* RunWorkoutLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB1A2C3D4E5F60718293A4B /* RunWorkoutLink.swift */; };
+		AAA2B2C3D4E5F60718293A4B /* RunWorkoutLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB2A2C3D4E5F60718293A4B /* RunWorkoutLinkStore.swift */; };
+		AAA3B2C3D4E5F60718293A4B /* WorkoutDetailFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB3A2C3D4E5F60718293A4B /* WorkoutDetailFetcher.swift */; };
 		90A87901FE81F1FE5D992E66 /* HealthKitRunItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */; };
 		94056B892C9012DA74021779 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */; };
 		97DA447E4B2C777C7B5FC162 /* RunTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */; };
@@ -106,6 +109,9 @@
 		66361EBC40114CD841921015 /* Split.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Split.swift; sourceTree = "<group>"; };
 		69A54761B0A247CE0E595ACE /* TrainingPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanViewModel.swift; sourceTree = "<group>"; };
 		6A4F37700F3E2C1413DE8816 /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
+		BBB1A2C3D4E5F60718293A4B /* RunWorkoutLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWorkoutLink.swift; sourceTree = "<group>"; };
+		BBB2A2C3D4E5F60718293A4B /* RunWorkoutLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWorkoutLinkStore.swift; sourceTree = "<group>"; };
+		BBB3A2C3D4E5F60718293A4B /* WorkoutDetailFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetailFetcher.swift; sourceTree = "<group>"; };
 		6B40DFFE15481C9F5A6BB1CC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		6E55A3660DBE7A9713E988F8 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		6FDDFE35FC18F83F6B46C710 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -270,6 +276,8 @@
 				AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */,
 				1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */,
 				7983CD8541D4919DA78D7FA0 /* RunTracker.swift */,
+				BBB2A2C3D4E5F60718293A4B /* RunWorkoutLinkStore.swift */,
+				BBB3A2C3D4E5F60718293A4B /* WorkoutDetailFetcher.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -290,6 +298,7 @@
 				73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */,
 				A1FD217AB0DE86A175983B8C /* RoutePoint.swift */,
 				6A4F37700F3E2C1413DE8816 /* RunSession.swift */,
+				BBB1A2C3D4E5F60718293A4B /* RunWorkoutLink.swift */,
 				66361EBC40114CD841921015 /* Split.swift */,
 			);
 			path = Models;
@@ -481,6 +490,9 @@
 				25BA612E21D10FA02AE20D6B /* RoutePoint.swift in Sources */,
 				CECFC240FDA8E8ABFED896FF /* RunMapView.swift in Sources */,
 				8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */,
+				AAA1B2C3D4E5F60718293A4B /* RunWorkoutLink.swift in Sources */,
+				AAA2B2C3D4E5F60718293A4B /* RunWorkoutLinkStore.swift in Sources */,
+				AAA3B2C3D4E5F60718293A4B /* WorkoutDetailFetcher.swift in Sources */,
 				5DC2A9781E43A4598A9DE537 /* RunSessionDetailView.swift in Sources */,
 				FD1AA740098898F1F9380EB7 /* RunStartView.swift in Sources */,
 				94056B892C9012DA74021779 /* RunStore.swift in Sources */,

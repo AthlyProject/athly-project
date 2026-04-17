@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+#if !targetEnvironment(simulator)
+import HealthKit
+#endif
 
 @MainActor
 final class TrainingPlanViewModel: ObservableObject {
@@ -98,6 +101,10 @@ final class TrainingPlanViewModel: ObservableObject {
             allWorkouts = []
             weeklyGoals = []
             todayWorkout = nil
+        } catch is CancellationError {
+            // task lifecycle cancellation — not a real error
+        } catch let error as URLError where error.code == .cancelled {
+            // URLSession cancellation — not a real error
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -111,11 +118,20 @@ final class TrainingPlanViewModel: ObservableObject {
         isGenerating = true
         errorMessage = nil
 
+        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
+
         do {
             let request = PlanNextWeekRequest(numberOfRuns: nil, weekStartDate: nil)
             let response = try await APIClient.shared.planNextWeek(request)
             lastAnalysis = response.analysis
             await loadData()
+            selectedWeekIndex = max(0, weeks.count - 1)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
+        } catch let error as URLError where error.code == .timedOut {
+            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -147,6 +163,8 @@ final class TrainingPlanViewModel: ObservableObject {
             }
         }
 
+        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
+
         do {
             if healthRuns.isEmpty {
                 let request = PlanNextWeekRequest(numberOfRuns: nil, weekStartDate: nil)
@@ -154,12 +172,26 @@ final class TrainingPlanViewModel: ObservableObject {
                 lastAnalysis = response.analysis
             } else {
                 let payloads = healthRuns.map { HealthRunPayload(from: $0) }
-                let request = PlanFromHealthRequest(runs: payloads, weekStartDate: nil)
+                // First generation (no plan yet) → 5 detailed sessions; mid-plan → 7.
+                let detailedLimit = trainingPlanResponse == nil ? 5 : 7
+                let detailedSessions = await buildDetailedSessions(limit: detailedLimit)
+                let request = PlanFromHealthRequest(
+                    runs: payloads,
+                    detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
+                    weekStartDate: nil
+                )
                 let response = try await APIClient.shared.planFromHealth(request)
                 lastAnalysis = response.analysis
             }
             await loadData()
             selectedWeekIndex = max(0, weeks.count - 1)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
+        } catch let error as URLError where error.code == .timedOut {
+            // Backend ainda está gerando — iniciar polling silencioso
+            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -172,18 +204,65 @@ final class TrainingPlanViewModel: ObservableObject {
         isGenerating = true
         errorMessage = nil
 
+        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
+
         do {
             let payloads = runs.map { HealthRunPayload(from: $0) }
-            let request = PlanFromHealthRequest(runs: payloads, weekStartDate: nil)
+            let detailedLimit = trainingPlanResponse == nil ? 5 : 7
+            let detailedSessions = await buildDetailedSessions(limit: detailedLimit)
+            let request = PlanFromHealthRequest(
+                runs: payloads,
+                detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
+                weekStartDate: nil
+            )
             let response = try await APIClient.shared.planFromHealth(request)
             lastAnalysis = response.analysis
             await loadData()
             selectedWeekIndex = max(0, weeks.count - 1)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
+        } catch let error as URLError where error.code == .timedOut {
+            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
         } catch {
             errorMessage = error.localizedDescription
         }
 
         isGenerating = false
+    }
+
+    // MARK: - Detailed session builder (for enriched planFromHealth payload)
+
+    /// Fetches the last N raw HKWorkouts, resolves the prescribed workout link via
+    /// `RunWorkoutLinkStore`, and builds per-segment payloads for the AI planner.
+    /// Skips silently on the simulator (no real HealthKit) or when authorization is missing.
+    private func buildDetailedSessions(limit: Int) async -> [DetailedSessionPayload] {
+        #if targetEnvironment(simulator)
+        return []
+        #else
+        let service = HealthKitService()
+        guard service.isHealthDataAvailable else { return [] }
+
+        do {
+            let rawWorkouts = try await service.fetchLatestRawRunningWorkouts(limit: limit)
+            let fetcher = WorkoutDetailFetcher()
+            var results: [DetailedSessionPayload] = []
+            for workout in rawWorkouts {
+                let uuid = workout.uuid.uuidString
+                let athlyWorkoutId = RunWorkoutLinkStore.shared.athlyWorkoutId(for: uuid)
+                if let payload = try? await fetcher.buildDetailedSession(
+                    for: workout,
+                    athlyWorkoutId: athlyWorkoutId
+                ) {
+                    results.append(payload)
+                }
+            }
+            return results
+        } catch {
+            return []
+        }
+        #endif
     }
 
     // MARK: - Complete / Skip
@@ -192,6 +271,10 @@ final class TrainingPlanViewModel: ObservableObject {
         do {
             let updated = try await APIClient.shared.completeWorkout(workoutId: workout.id)
             replaceWorkout(updated)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -216,9 +299,19 @@ final class TrainingPlanViewModel: ObservableObject {
             )
             _ = try await APIClient.shared.saveRun(saveRequest)
 
-            // 2. Marcar treino prescrito como concluído
-            let updated = try await APIClient.shared.completeWorkout(workoutId: workout.id)
+            // 2. Persistir link local (HKWorkout.uuid → workout prescrito) para análise detalhada na IA
+            RunWorkoutLinkStore.shared.link(healthKitUUID: healthRun.id, athlyWorkoutId: workout.id)
+
+            // 3. Marcar treino prescrito como concluído com o UUID do HKWorkout
+            let updated = try await APIClient.shared.completeWorkout(
+                workoutId: workout.id,
+                appleHealthWorkoutUUID: healthRun.id
+            )
             replaceWorkout(updated)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -228,8 +321,28 @@ final class TrainingPlanViewModel: ObservableObject {
         do {
             let updated = try await APIClient.shared.skipWorkout(workoutId: workout.id)
             replaceWorkout(updated)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Polling helper (used after a timeout during generation)
+
+    private func pollUntilNewWorkouts(workoutIdsBefore: Set<String>) async {
+        let maxAttempts = 18
+        for _ in 0..<maxAttempts {
+            try? await Task.sleep(nanoseconds: 5_000_000_000) // 5s
+            if Task.isCancelled { break }
+            await loadData()
+            let currentIds = Set(allWorkouts.map { $0.id })
+            if !currentIds.subtracting(workoutIdsBefore).isEmpty {
+                selectedWeekIndex = max(0, weeks.count - 1)
+                break
+            }
         }
     }
 

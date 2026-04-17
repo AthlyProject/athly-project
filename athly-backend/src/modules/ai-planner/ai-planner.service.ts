@@ -11,8 +11,9 @@ import { StravaService } from './strava.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { AssessmentService } from '../assessment/assessment.service';
+import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
 import { PlanNextWeekDto } from './dto/plan-next-week.dto';
-import { PlanFromHealthDto } from './dto/plan-from-health.dto';
+import { PlanFromHealthDto, DetailedSessionDto } from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
   PlannerResults,
@@ -21,10 +22,14 @@ import type {
 } from './types/planner.types';
 import type { RunDataForZones } from '../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './prompts/goal-parser-prompt';
-import type { UserProfileContext } from './prompts/planner-prompt';
+import type { UserProfileContext, LongitudinalWeek } from './prompts/planner-prompt';
 
-const PROMPT_VERSION = 'v2.0';
+const PROMPT_VERSION = 'v3.0';
 const MODEL_USED = 'gemini-2.5-flash';
+const DETAILED_FIRST_GEN = 5;
+const DETAILED_MID_PLAN = 7;
+const HISTORICAL_FIRST_GEN = 20;
+const LONGITUDINAL_WEEKS = 4;
 
 const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
 
@@ -38,6 +43,7 @@ export class AiPlannerService {
     private readonly geminiService: GeminiService,
     private readonly effortZoneService: EffortZoneService,
     private readonly assessmentService: AssessmentService,
+    private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
   ) {}
 
   async planNextWeek(userId: string, input: PlanNextWeekDto) {
@@ -229,9 +235,35 @@ export class AiPlannerService {
 
     // Build previous week analysis
     const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
+    const isFirstGeneration = previousWeekAnalysis === null;
 
-    const aiInput = this.buildAiInputFromHealthRuns(input.runs, weekDates, trainingDays, availableDays);
-    const plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis, activeGoal, userProfile);
+    // Slice historical runs per generation-context budget.
+    const historicalRuns = isFirstGeneration
+      ? input.runs.slice(0, HISTORICAL_FIRST_GEN)
+      : input.runs.slice(0, Math.min(input.runs.length, 3));
+
+    // Detailed sessions (executed intervals/tempos with segments + HR) get mastigated server-side.
+    const detailedInput = (input.detailedSessions ?? []).slice(
+      0,
+      isFirstGeneration ? DETAILED_FIRST_GEN : DETAILED_MID_PLAN,
+    );
+    const analyzedSessions = await this.executionAnalyzer.analyzeSessions(userId, detailedInput);
+
+    // Longitudinal trend only makes sense mid-plan (requires prior WeeklyGoal metrics).
+    const longitudinalWeeks = isFirstGeneration
+      ? undefined
+      : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate);
+
+    const aiInput = this.buildAiInputFromHealthRuns(historicalRuns, weekDates, trainingDays, availableDays);
+    const plannerResult = await this.geminiService.generatePlan(
+      aiInput,
+      effortZones,
+      previousWeekAnalysis,
+      activeGoal,
+      userProfile,
+      analyzedSessions,
+      longitudinalWeeks,
+    );
 
     const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
       const weeklyGoal = await tx.weeklyGoal.create({
@@ -427,6 +459,54 @@ export class AiPlannerService {
       volumeChange,
       adherenceNote,
     };
+  }
+
+  private async buildLongitudinalTrend(
+    trainingPlanId: string,
+    currentWeekStart: Date,
+  ): Promise<LongitudinalWeek[] | undefined> {
+    const recent = await this.prisma.weeklyGoal.findMany({
+      where: {
+        trainingPlanId,
+        weekEndDate: { lt: currentWeekStart },
+      },
+      orderBy: { weekStartDate: 'desc' },
+      take: LONGITUDINAL_WEEKS,
+      include: {
+        workouts: { include: { feedback: true } },
+      },
+    });
+
+    if (recent.length === 0) return undefined;
+
+    // Oldest-first so the AI reads chronological progression naturally.
+    return recent.reverse().map((goal, idx) => {
+      const workouts = goal.workouts.filter((w) => w.sportType !== 'other');
+      const completedCount = workouts.filter((w) => w.status === 'done').length;
+      const completionRate =
+        workouts.length > 0 ? parseFloat((completedCount / workouts.length).toFixed(2)) : 0;
+
+      const metrics = (goal.metrics ?? {}) as {
+        totalDistanceKm?: number;
+        avgPace?: string;
+      };
+
+      const allFeedback = workouts.flatMap((w) => w.feedback);
+      const avgEffort =
+        allFeedback.length > 0
+          ? parseFloat(
+              (allFeedback.reduce((sum, f) => sum + f.effort, 0) / allFeedback.length).toFixed(1),
+            )
+          : null;
+
+      return {
+        weekLabel: `W-${recent.length - idx}`,
+        totalKm: metrics.totalDistanceKm ?? 0,
+        avgPace: metrics.avgPace ?? 'N/A',
+        completionRate,
+        avgEffort,
+      };
+    });
   }
 
   private buildAiInputFromHealthRuns(

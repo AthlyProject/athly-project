@@ -282,8 +282,45 @@ struct HealthRunPayload: Encodable, Sendable {
     }
 }
 
+enum SegmentLabel: String, Encodable, Sendable {
+    case warmup
+    case easy
+    case tempo
+    case rep
+    case rec
+    case cooldown
+}
+
+struct SegmentPayload: Encodable, Sendable {
+    let label: SegmentLabel
+    let index: Int?
+    let distanceKm: Double
+    let durationSeconds: Double
+    let avgPaceSecondsPerKm: Double?
+    let avgHR: Double?
+    let peakHR: Double?
+    let endHR: Double?
+}
+
+/// Detailed per-segment session payload for AI execution analysis (intervals, tempos, etc.).
+/// Mirrors backend `DetailedSessionDto`. Segmentation happens on the client to keep prompt lean.
+struct DetailedSessionPayload: Encodable, Sendable {
+    let startDate: String
+    let appleHealthWorkoutUUID: String
+    let athlyWorkoutId: String?
+    let distanceMeters: Double
+    let durationSeconds: Double
+    let averagePaceSecondsPerKm: Double?
+    let avgHR: Double?
+    let maxHR: Double?
+    let activeEnergyBurned: Double?
+    let elevationGainMeters: Double?
+    let segments: [SegmentPayload]
+}
+
 struct PlanFromHealthRequest: Encodable, Sendable {
     let runs: [HealthRunPayload]
+    let detailedSessions: [DetailedSessionPayload]?
     let weekStartDate: String?
 }
 

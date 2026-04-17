@@ -10,11 +10,15 @@ final class RunViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var isSaved = false
     @Published var saveError: String?
+    @Published var showWorkoutFeedback = false
 
-    /// ID do workout agendado que originou esta corrida (definido quando o usuario
-    /// clica "Iniciar treino agora" na dashboard). Usado para marcar o workout como
-    /// concluido apos salvar a corrida.
-    var pendingWorkoutId: String?
+    /// Workout agendado que originou esta corrida (definido quando o usuario
+    /// clica "Iniciar treino agora" na dashboard). Após salvar, dispara a sheet de feedback.
+    var pendingWorkout: WorkoutModel?
+
+    /// UUID do HKWorkout gravado no Apple Health após esta corrida ser finalizada.
+    /// Usado para linkar com o treino prescrito e alimentar análise detalhada na IA.
+    private(set) var lastSavedHealthKitUUID: String?
 
     private let locationManager: LocationManager
     private let healthKitService = HealthKitService()
@@ -67,6 +71,9 @@ final class RunViewModel: ObservableObject {
         lastRunResult = nil
         isSaved = false
         saveError = nil
+        pendingWorkout = nil
+        lastSavedHealthKitUUID = nil
+        showWorkoutFeedback = false
     }
 
     func saveRun(runStore: RunStore) async {
@@ -106,7 +113,13 @@ final class RunViewModel: ObservableObject {
         if healthKitService.isHealthDataAvailable {
             do {
                 try await healthKitService.requestWriteAuthorization()
-                try await healthKitService.saveWorkout(result: result)
+                let savedWorkout = try await healthKitService.saveWorkout(result: result)
+                if let uuid = savedWorkout?.uuid.uuidString {
+                    lastSavedHealthKitUUID = uuid
+                    if let workout = pendingWorkout {
+                        RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workout.id)
+                    }
+                }
             } catch {
                 // HealthKit save failed silently; local save is still valid
             }
@@ -148,18 +161,12 @@ final class RunViewModel: ObservableObject {
             saveError = "Salvo localmente. Sincroniza quando houver conexão."
         }
 
-        // Mark the scheduled workout as done if this run was started from the dashboard
-        if let workoutId = pendingWorkoutId {
-            do {
-                _ = try await APIClient.shared.completeWorkout(workoutId: workoutId)
-            } catch {
-                // Best-effort: workout completion failure does not block the run save
-            }
-            pendingWorkoutId = nil
-        }
-
         isSaving = false
         isSaved = true
+
+        if pendingWorkout != nil {
+            showWorkoutFeedback = true
+        }
     }
 
     func dismissSummary() {

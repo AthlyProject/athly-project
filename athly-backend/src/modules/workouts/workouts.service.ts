@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
+import { CompleteWorkoutDto } from './dto/complete-workout.dto';
 import { Prisma, WorkoutStatus } from '@prisma/client';
 import { WorkoutFeedbackModel, WorkoutModel } from './models/workout.model';
 import { UpdateWorkoutDto } from './dto/workout-update.dto';
@@ -123,10 +124,14 @@ export class WorkoutsService {
     };
   }
 
-  async completeWorkout(userId: string, workoutId: string) {
+  async completeWorkout(userId: string, workoutId: string, input?: CompleteWorkoutDto) {
+    const data: Prisma.WorkoutUpdateManyMutationInput = { status: 'done' };
+    if (input?.appleHealthWorkoutUUID) {
+      data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
+    }
     const updated = await this.prisma.workout.updateMany({
       where: { id: workoutId, userId },
-      data: { status: 'done' },
+      data,
     });
     if (!updated.count) {
       throw new NotFoundException('Workout not found');
@@ -167,6 +172,7 @@ export class WorkoutsService {
     status: WorkoutModel['status'];
     intensity: number | null;
     stravaActivityId?: string | null;
+    appleHealthWorkoutUUID?: string | null;
   }): WorkoutModel {
     return {
       id: workout.id,
@@ -178,6 +184,7 @@ export class WorkoutsService {
       status: workout.status,
       intensity: workout.intensity ?? undefined,
       stravaActivityId: workout.stravaActivityId ?? null,
+      appleHealthWorkoutUUID: workout.appleHealthWorkoutUUID ?? null,
     };
   }
 

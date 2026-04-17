@@ -27,12 +27,15 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         HKHealthStore.isHealthDataAvailable()
     }
 
-    /// Solicita apenas permissão de leitura para listar corridas existentes.
+    /// Solicita apenas permissão de leitura para listar corridas existentes + HR para análise detalhada.
     func requestReadAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        let typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
+        var typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
+        if let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) {
+            typesToRead.insert(hrType)
+        }
         try await store.requestAuthorization(toShare: [], read: typesToRead)
     }
 
@@ -49,8 +52,9 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         try await store.requestAuthorization(toShare: typesToShare, read: [])
     }
 
-    /// Salva uma corrida no Apple Health.
-    func saveWorkout(result: RunResult) async throws {
+    /// Salva uma corrida no Apple Health e retorna o HKWorkout gerado (ou nil se finishWorkout falhar em produzi-lo).
+    @discardableResult
+    func saveWorkout(result: RunResult) async throws -> HKWorkout? {
         guard isHealthDataAvailable else { throw HealthKitError.notAvailable }
 
         let config = HKWorkoutConfiguration()
@@ -108,15 +112,26 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             }
         }
 
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            builder.finishWorkout { _, error in
-                if let error { cont.resume(throwing: error) } else { cont.resume() }
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<HKWorkout?, Error>) in
+            builder.finishWorkout { workout, error in
+                if let error {
+                    cont.resume(throwing: error)
+                } else {
+                    cont.resume(returning: workout)
+                }
             }
         }
     }
 
     /// Busca as últimas corridas (e opcionalmente caminhadas) do Health Store.
     func fetchLatestRunningWorkouts(limit: Int = 20) async throws -> [HealthKitRunItem] {
+        let workouts = try await fetchLatestRawRunningWorkouts(limit: limit)
+        return workouts.map { self.map($0) }
+    }
+
+    /// Busca os últimos `HKWorkout` brutos (sem mapeamento). Usado pelo `WorkoutDetailFetcher`
+    /// para extrair segmentos e HR por sessão.
+    func fetchLatestRawRunningWorkouts(limit: Int) async throws -> [HKWorkout] {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
@@ -136,9 +151,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
                     continuation.resume(throwing: error)
                     return
                 }
-                let workouts = (samples as? [HKWorkout]) ?? []
-                let items = workouts.map { self.map($0) }
-                continuation.resume(returning: items)
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
             }
             store.execute(query)
         }

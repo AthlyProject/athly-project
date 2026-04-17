@@ -30,6 +30,7 @@ struct WorkoutDetailView: View {
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
+            .padding(.bottom, 80)
         }
         .background(AthlyTheme.Color.backgroundDark)
         .navigationTitle(workout.title)
