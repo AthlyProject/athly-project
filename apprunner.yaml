@@ -1,0 +1,15 @@
+version: 1.0
+runtime: nodejs18
+build:
+  commands:
+    pre-build:
+      - cd athly-backend && npm ci
+    build:
+      - cd athly-backend && npm run build
+run:
+  command: node athly-backend/dist/src/main.js
+  network:
+    port: 4000
+  env:
+    - name: NODE_ENV
+      value: production
