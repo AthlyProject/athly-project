@@ -14,6 +14,6 @@ run:
       value: production
   secrets:
     - name: GEMINI_API_KEY
-      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY"
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"
     - name: DATABASE_URL
-      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL"
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL::"
