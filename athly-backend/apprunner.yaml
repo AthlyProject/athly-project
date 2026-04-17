@@ -12,11 +12,8 @@ run:
   env:
     - name: NODE_ENV
       value: production
-    - name: PORT
-      value: "4000"
-    # IMPORTANT: Do not commit actual secrets below. Use App Runner Console to set secure values safely.
+  secrets:
     - name: GEMINI_API_KEY
-      value: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY"
-    # Database (AWS RDS)
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY"
     - name: DATABASE_URL
-      value: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL"
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL"
