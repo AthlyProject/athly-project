@@ -4,6 +4,7 @@ build:
   commands:
     build:
       - npm ci
+      - npx prisma generate
       - npm run build
 run:
   command: npx prisma migrate deploy && node dist/src/main.js
