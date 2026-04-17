@@ -1,0 +1,19 @@
+version: 1.0
+runtime: nodejs22
+build:
+  commands:
+    build:
+      - npm ci
+      - npm run build
+run:
+  command: npx prisma migrate deploy && node dist/src/main.js
+  network:
+    port: 4000
+  env:
+    - name: NODE_ENV
+      value: production
+  secrets:
+    - name: GEMINI_API_KEY
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"
+    - name: DATABASE_URL
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL::"
