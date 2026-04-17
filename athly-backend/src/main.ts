@@ -16,7 +16,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('IAFit API')
-    .setDescription('IAFit Backend API documentation.')
+    .setDescription('IAFit Backend API documentation')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
