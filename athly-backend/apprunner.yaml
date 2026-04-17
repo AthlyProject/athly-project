@@ -6,7 +6,7 @@ build:
       - npm ci
       - npm run build
 run:
-  command: npx prisma migrate deploy && node dist/src/main.js
+  command: node dist/src/main.js
   network:
     port: 4000
   env:
