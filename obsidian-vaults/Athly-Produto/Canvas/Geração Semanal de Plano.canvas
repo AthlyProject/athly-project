@@ -1,0 +1,170 @@
+{
+  "nodes": [
+    {
+      "id": "cron_trigger",
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 200,
+      "height": 80,
+      "text": "Cron Trigger\n\nSeg 6h (0 6 * * 1)"
+    },
+    {
+      "id": "fetch_users",
+      "type": "text",
+      "x": 300,
+      "y": 0,
+      "width": 200,
+      "height": 80,
+      "text": "Fetch users com Strava\n\nSELECT * FROM User\nWHERE hasStrava=true"
+    },
+    {
+      "id": "refresh_token",
+      "type": "text",
+      "x": 600,
+      "y": 0,
+      "width": 200,
+      "height": 80,
+      "text": "Refresh token\n\nSe expira em 5min:\nPOST /oauth/token"
+    },
+    {
+      "id": "sync_activities",
+      "type": "text",
+      "x": 900,
+      "y": 0,
+      "width": 200,
+      "height": 80,
+      "text": "Sync atividades\n\nGET /athlete/activities\nafter=30days_ago"
+    },
+    {
+      "id": "upsert_workouts",
+      "type": "text",
+      "x": 1200,
+      "y": 0,
+      "width": 200,
+      "height": 80,
+      "text": "Upsert Workouts\n\nstravaActivityId UNIQUE\nsource=strava"
+    },
+    {
+      "id": "collect_prefs",
+      "type": "text",
+      "x": 600,
+      "y": 130,
+      "width": 200,
+      "height": 80,
+      "text": "Collect preferências\n\nGoals, availability,\nPAR-Q, dados físicos"
+    },
+    {
+      "id": "call_ia",
+      "type": "text",
+      "x": 900,
+      "y": 130,
+      "width": 200,
+      "height": 80,
+      "text": "Chamar IA\n\nHistórico + prefs\n→ 7 workouts JSON"
+    },
+    {
+      "id": "validate_json",
+      "type": "text",
+      "x": 1200,
+      "y": 130,
+      "width": 200,
+      "height": 80,
+      "text": "Validar JSON\n\nStructure check\nFallback se inválido"
+    },
+    {
+      "id": "create_plan",
+      "type": "text",
+      "x": 300,
+      "y": 260,
+      "width": 200,
+      "height": 80,
+      "text": "Create TrainingPlan\n\nSubstitui anterior\nsource=ai"
+    },
+    {
+      "id": "notify",
+      "type": "text",
+      "x": 600,
+      "y": 260,
+      "width": 200,
+      "height": 80,
+      "text": "Notificar usuário\n\nPush + Email:\n\"Novo plano!\""
+    },
+    {
+      "id": "log_success",
+      "type": "text",
+      "x": 900,
+      "y": 260,
+      "width": 200,
+      "height": 80,
+      "text": "Log sucesso\n\nUser: XXX\nplan_id: YYY"
+    },
+    {
+      "id": "error_handling",
+      "type": "text",
+      "x": 0,
+      "y": 260,
+      "width": 200,
+      "height": 80,
+      "text": "Error handling\n\nRetry 3x\nLog failures"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "cron_trigger",
+      "toNode": "fetch_users"
+    },
+    {
+      "id": "e2",
+      "fromNode": "fetch_users",
+      "toNode": "refresh_token"
+    },
+    {
+      "id": "e3",
+      "fromNode": "refresh_token",
+      "toNode": "sync_activities"
+    },
+    {
+      "id": "e4",
+      "fromNode": "sync_activities",
+      "toNode": "upsert_workouts"
+    },
+    {
+      "id": "e5",
+      "fromNode": "upsert_workouts",
+      "toNode": "collect_prefs"
+    },
+    {
+      "id": "e6",
+      "fromNode": "collect_prefs",
+      "toNode": "call_ia"
+    },
+    {
+      "id": "e7",
+      "fromNode": "call_ia",
+      "toNode": "validate_json"
+    },
+    {
+      "id": "e8",
+      "fromNode": "validate_json",
+      "toNode": "create_plan"
+    },
+    {
+      "id": "e9",
+      "fromNode": "create_plan",
+      "toNode": "notify"
+    },
+    {
+      "id": "e10",
+      "fromNode": "notify",
+      "toNode": "log_success"
+    },
+    {
+      "id": "e_error",
+      "fromNode": "fetch_users",
+      "toNode": "error_handling",
+      "label": "On error"
+    }
+  ]
+}

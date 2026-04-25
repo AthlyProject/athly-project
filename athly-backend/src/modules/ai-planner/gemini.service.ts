@@ -12,6 +12,12 @@ import {
 import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
 import type { AnalyzedSession } from './workout-execution-analyzer.service';
 
+export interface PlannerExecution {
+  prompt: string;
+  rawResponse: string;
+  parsed: PlannerResults;
+}
+
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
@@ -39,7 +45,7 @@ export class GeminiService {
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
     longitudinalWeeks?: LongitudinalWeek[],
-  ): Promise<PlannerResults> {
+  ): Promise<PlannerExecution> {
     const model = this.getModel();
     const prompt = buildPlannerPrompt(
       input,
@@ -51,17 +57,17 @@ export class GeminiService {
       longitudinalWeeks,
     );
 
-    let responseText: string;
+    let rawResponse: string;
     try {
       const result = await model.generateContent(prompt);
-      responseText = result.response.text();
+      rawResponse = result.response.text();
     } catch (err) {
       throw new BadGatewayException(
         `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
 
-    return this.parseAndValidate(responseText);
+    return { prompt, rawResponse, parsed: this.parseAndValidate(rawResponse) };
   }
 
   async generateAssessmentPlan(
@@ -72,7 +78,7 @@ export class GeminiService {
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
-  ): Promise<PlannerResults> {
+  ): Promise<PlannerExecution> {
     const model = this.getModel();
     const prompt = buildAssessmentPrompt(
       weekDates,
@@ -84,17 +90,17 @@ export class GeminiService {
       analyzedSessions,
     );
 
-    let responseText: string;
+    let rawResponse: string;
     try {
       const result = await model.generateContent(prompt);
-      responseText = result.response.text();
+      rawResponse = result.response.text();
     } catch (err) {
       throw new BadGatewayException(
         `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
 
-    return this.parseAndValidate(responseText);
+    return { prompt, rawResponse, parsed: this.parseAndValidate(rawResponse) };
   }
 
   async parseGoal(goalText: string): Promise<ParsedGoal> {

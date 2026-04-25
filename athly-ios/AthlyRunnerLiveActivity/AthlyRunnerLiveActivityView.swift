@@ -1,7 +1,6 @@
 import ActivityKit
 import OSLog
 import SwiftUI
-import UIKit
 import WidgetKit
 
 private let widgetLogger = Logger(subsystem: "com.athly.runner.liveactivity", category: "Widget")
@@ -17,18 +16,11 @@ private struct AthlyWidgetLogo: View {
     let size: CGFloat
 
     var body: some View {
-        if let uiImage = UIImage(named: "AthlyLogo") {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFit()
-                .frame(width: size, height: size)
-                .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
-        } else {
-            Image(systemName: "figure.run.circle.fill")
-                .font(.system(size: size * 0.78, weight: .semibold))
-                .foregroundStyle(AthlyLiveActivityStyle.accentNeon)
-                .frame(width: size, height: size)
-        }
+        Image("AthlyLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
     }
 }
 

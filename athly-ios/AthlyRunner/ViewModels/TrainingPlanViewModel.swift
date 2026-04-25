@@ -60,17 +60,21 @@ final class TrainingPlanViewModel: ObservableObject {
     // MARK: - Load Data
 
     func loadData() async {
-        isLoading = true
+        let hasCached = hydrateFromCache()
+        if !hasCached {
+            isLoading = true
+        }
         errorMessage = nil
 
         do {
             guard let plan = try await APIClient.shared.getMyTrainingPlan() else {
-                // Backend retorna 200 com body null quando não há plano
-                trainingPlanResponse = nil
-                weeks = []
-                allWorkouts = []
-                weeklyGoals = []
-                todayWorkout = nil
+                if !hasCached {
+                    trainingPlanResponse = nil
+                    weeks = []
+                    allWorkouts = []
+                    weeklyGoals = []
+                    todayWorkout = nil
+                }
                 isLoading = false
                 return
             }
@@ -87,29 +91,59 @@ final class TrainingPlanViewModel: ObservableObject {
             todayWorkout = today
 
             weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
-
-            // Select current week by default
             selectedWeekIndex = currentWeekIndex()
 
-            // Populate lastAnalysis from the most recent week's metrics (if not already set by a generate call)
             if lastAnalysis == nil {
                 lastAnalysis = weeklyGoals.last?.metrics?.asRunAnalysis
             }
+
+            persistToCache()
         } catch APIError.notFound {
-            trainingPlanResponse = nil
-            weeks = []
-            allWorkouts = []
-            weeklyGoals = []
-            todayWorkout = nil
+            if !hasCached {
+                trainingPlanResponse = nil
+                weeks = []
+                allWorkouts = []
+                weeklyGoals = []
+                todayWorkout = nil
+            }
         } catch is CancellationError {
             // task lifecycle cancellation — not a real error
         } catch let error as URLError where error.code == .cancelled {
             // URLSession cancellation — not a real error
         } catch {
-            errorMessage = error.localizedDescription
+            if !hasCached {
+                errorMessage = error.localizedDescription
+            }
         }
 
         isLoading = false
+    }
+
+    @discardableResult
+    private func hydrateFromCache() -> Bool {
+        guard let snapshot = TrainingPlanCache.shared.load() else { return false }
+        trainingPlanResponse = snapshot.trainingPlan
+        weeklyGoals = snapshot.weeklyGoals
+        allWorkouts = snapshot.allWorkouts
+        todayWorkout = snapshot.todayWorkout
+        if lastAnalysis == nil {
+            lastAnalysis = snapshot.lastAnalysis
+        }
+        weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
+        selectedWeekIndex = currentWeekIndex()
+        return true
+    }
+
+    private func persistToCache() {
+        let snapshot = TrainingPlanCacheSnapshot(
+            trainingPlan: trainingPlanResponse,
+            weeklyGoals: weeklyGoals,
+            allWorkouts: allWorkouts,
+            todayWorkout: todayWorkout,
+            lastAnalysis: lastAnalysis,
+            updatedAt: Date()
+        )
+        TrainingPlanCache.shared.save(snapshot)
     }
 
     // MARK: - Generate Next Week
@@ -283,26 +317,8 @@ final class TrainingPlanViewModel: ObservableObject {
     /// Conclui um treino prescrito vinculando dados reais de uma corrida do HealthKit.
     func completeWorkoutWithHealthData(_ workout: WorkoutModel, healthRun: HealthKitRunItem) async {
         do {
-            // 1. Salvar a corrida real no backend
-            let iso = ISO8601DateFormatter()
-            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            let saveRequest = SaveRunRequest(
-                sportType: "running",
-                dateScheduled: iso.string(from: healthRun.startDate),
-                duration: healthRun.durationSeconds,
-                distance: healthRun.distanceMeters,
-                elevationGain: healthRun.elevationGainMeters ?? 0,
-                calories: healthRun.activeEnergyBurned,
-                averagePace: healthRun.averagePaceSecondsPerKm,
-                routePoints: [],
-                splits: []
-            )
-            _ = try await APIClient.shared.saveRun(saveRequest)
-
-            // 2. Persistir link local (HKWorkout.uuid → workout prescrito) para análise detalhada na IA
             RunWorkoutLinkStore.shared.link(healthKitUUID: healthRun.id, athlyWorkoutId: workout.id)
 
-            // 3. Marcar treino prescrito como concluído com o UUID do HKWorkout
             let updated = try await APIClient.shared.completeWorkout(
                 workoutId: workout.id,
                 appleHealthWorkoutUUID: healthRun.id
@@ -375,5 +391,6 @@ final class TrainingPlanViewModel: ObservableObject {
             todayWorkout = updated
         }
         weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
+        persistToCache()
     }
 }

@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "id": "frontend",
+      "type": "text",
+      "x": 0,
+      "y": 100,
+      "width": 200,
+      "height": 150,
+      "text": "# Frontend\nReact 19\nVite\nZustand\nTailwindCSS\n14 telas"
+    },
+    {
+      "id": "backend",
+      "type": "text",
+      "x": 300,
+      "y": 100,
+      "width": 200,
+      "height": 150,
+      "text": "# Backend\nNestJS 11\nPrisma 7\nPostgreSQL 14\nGemini AI\n40 endpoints"
+    },
+    {
+      "id": "ios",
+      "type": "text",
+      "x": 600,
+      "y": 100,
+      "width": 200,
+      "height": 150,
+      "text": "# iOS\nSwiftUI\nCombine\nHealthKit\nActivityKit\nZero deps"
+    },
+    {
+      "id": "auth",
+      "type": "text",
+      "x": 300,
+      "y": 300,
+      "width": 180,
+      "height": 80,
+      "text": "Auth: JWT\nAccess (1h)\nRefresh (DB)"
+    },
+    {
+      "id": "strava",
+      "type": "text",
+      "x": 0,
+      "y": 350,
+      "width": 150,
+      "height": 80,
+      "text": "Strava OAuth\n24 tools\nSync runs"
+    },
+    {
+      "id": "ai",
+      "type": "text",
+      "x": 600,
+      "y": 350,
+      "width": 150,
+      "height": 80,
+      "text": "IA Planner\nGemini\n7 workouts"
+    },
+    {
+      "id": "db",
+      "type": "text",
+      "x": 300,
+      "y": 500,
+      "width": 150,
+      "height": 80,
+      "text": "14 models\nAudit logs\nJSON fields"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "frontend",
+      "toNode": "backend",
+      "label": "REST API + JWT"
+    },
+    {
+      "id": "e2",
+      "fromNode": "ios",
+      "toNode": "backend",
+      "label": "REST API + JWT"
+    },
+    {
+      "id": "e3",
+      "fromNode": "frontend",
+      "toNode": "strava",
+      "label": "OAuth redirect"
+    },
+    {
+      "id": "e4",
+      "fromNode": "backend",
+      "toNode": "strava",
+      "label": "24 tools"
+    },
+    {
+      "id": "e5",
+      "fromNode": "backend",
+      "toNode": "ai",
+      "label": "Gemini 2.5-flash"
+    },
+    {
+      "id": "e6",
+      "fromNode": "backend",
+      "toNode": "db",
+      "label": "Prisma ORM"
+    }
+  ]
+}

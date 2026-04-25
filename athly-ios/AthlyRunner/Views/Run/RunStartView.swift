@@ -117,6 +117,10 @@ struct RunStartView: View {
         }
     }
 
+    private var locationIsDenied: Bool {
+        locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted
+    }
+
     private var permissionView: some View {
         VStack(spacing: 20) {
             Image(systemName: "location.slash.circle.fill")
@@ -128,17 +132,29 @@ struct RunStartView: View {
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                 .multilineTextAlignment(.center)
 
-            Text("Para rastrear sua corrida, precisamos acessar sua localizacao.")
+            Text(locationIsDenied
+                ? "Acesso a localizacao foi negado. Habilite em Ajustes > Privacidade > Localizacao > Athly."
+                : "Para rastrear sua corrida, precisamos acessar sua localizacao.")
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Button("Permitir localizacao") {
-                locationManager.requestAlwaysPermission()
+            if locationIsDenied {
+                Button("Abrir Ajustes") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .buttonStyle(AthlyPrimaryButtonStyle())
+                .padding(.horizontal, 40)
+            } else {
+                Button("Permitir localizacao") {
+                    locationManager.requestAlwaysPermission()
+                }
+                .buttonStyle(AthlyPrimaryButtonStyle())
+                .padding(.horizontal, 40)
             }
-            .buttonStyle(AthlyPrimaryButtonStyle())
-            .padding(.horizontal, 40)
         }
     }
 

@@ -22,10 +22,13 @@ final class LocationManager: NSObject, ObservableObject {
     }
 
     func requestPermission() {
+        guard manager.authorizationStatus == .notDetermined else { return }
         manager.requestWhenInUseAuthorization()
     }
 
     func requestAlwaysPermission() {
+        let status = manager.authorizationStatus
+        guard status == .notDetermined || status == .authorizedWhenInUse else { return }
         manager.requestAlwaysAuthorization()
     }
 

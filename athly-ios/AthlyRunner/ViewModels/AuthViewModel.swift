@@ -64,6 +64,7 @@ final class AuthViewModel: ObservableObject {
     func logout() {
         UserDefaults.standard.removeObject(forKey: tokenKey)
         UserDefaults.standard.removeObject(forKey: refreshKey)
+        TrainingPlanCache.shared.clear()
         Task {
             await APIClient.shared.clearTokens()
         }

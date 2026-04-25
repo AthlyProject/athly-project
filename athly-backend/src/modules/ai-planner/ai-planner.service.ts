@@ -8,7 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { StravaService } from './strava.service';
-import { GeminiService } from './gemini.service';
+import { GeminiService, type PlannerExecution } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { AssessmentService } from '../assessment/assessment.service';
 import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
@@ -16,7 +16,6 @@ import { PlanNextWeekDto } from './dto/plan-next-week.dto';
 import { PlanFromHealthDto, DetailedSessionDto } from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
-  PlannerResults,
   PreviousWeekAnalysis,
   RunSummary,
 } from './types/planner.types';
@@ -95,7 +94,7 @@ export class AiPlannerService {
     const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
 
     // 8. Build AI input or use assessment path
-    let plannerResult: PlannerResults;
+    let plannerResult: PlannerExecution;
     let isAssessment = false;
 
     if (runs.length === 0) {
@@ -106,7 +105,7 @@ export class AiPlannerService {
       plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis, activeGoal, userProfile);
     }
 
-    // 8. Persist: WeeklyGoal → Workouts → AiReasoning (in transaction)
+    // 8. Persist: WeeklyGoal → Workouts → AiReasoning → AiPlannerPromptLog (in transaction)
     const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
       const weeklyGoal = await tx.weeklyGoal.create({
         data: {
@@ -114,7 +113,7 @@ export class AiPlannerService {
           weekStartDate,
           weekEndDate,
           status: WeeklyGoalStatus.GENERATED,
-          metrics: plannerResult.analysis as unknown as Prisma.InputJsonValue,
+          metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
           previousWeekAnalysis: previousWeekAnalysis
             ? (previousWeekAnalysis as unknown as Prisma.InputJsonValue)
             : undefined,
@@ -122,7 +121,7 @@ export class AiPlannerService {
       });
 
       const workouts = await Promise.all(
-        plannerResult.weekPlan.map((day) =>
+        plannerResult.parsed.weekPlan.map((day) =>
           tx.workout.create({
             data: {
               trainingPlanId: trainingPlan.id,
@@ -142,7 +141,7 @@ export class AiPlannerService {
 
       // Persist AI reasoning for training days
       await Promise.all(
-        plannerResult.weekPlan.map(async (day, idx) => {
+        plannerResult.parsed.weekPlan.map(async (day, idx) => {
           if (day.reasoning && day.sportType !== 'other') {
             await tx.aiReasoning.create({
               data: {
@@ -150,11 +149,11 @@ export class AiPlannerService {
                 weeklyGoalId: weeklyGoal.id,
                 justification: day.reasoning,
                 dataPointsUsed: {
-                  avgPace: plannerResult.analysis.avgPace,
-                  avgHeartRate: plannerResult.analysis.avgHeartRate,
-                  totalDistanceKm: plannerResult.analysis.totalDistanceKm,
+                  avgPace: plannerResult.parsed.analysis.avgPace,
+                  avgHeartRate: plannerResult.parsed.analysis.avgHeartRate,
+                  totalDistanceKm: plannerResult.parsed.analysis.totalDistanceKm,
                   vdotScore: effortZones.vdotScore,
-                  trend: plannerResult.analysis.trend,
+                  trend: plannerResult.parsed.analysis.trend,
                 } as unknown as Prisma.InputJsonValue,
                 promptVersion: PROMPT_VERSION,
                 modelUsed: MODEL_USED,
@@ -165,6 +164,18 @@ export class AiPlannerService {
           }
         }),
       );
+
+      await tx.aiPlannerPromptLog.create({
+        data: {
+          weeklyGoalId: weeklyGoal.id,
+          generationType: isAssessment ? 'assessment' : 'planner',
+          promptVersion: PROMPT_VERSION,
+          modelUsed: MODEL_USED,
+          promptText: plannerResult.prompt,
+          rawResponse: plannerResult.rawResponse,
+          parsedResponse: plannerResult.parsed as unknown as Prisma.InputJsonValue,
+        },
+      });
 
       return { weeklyGoal, workouts };
     });
@@ -193,7 +204,7 @@ export class AiPlannerService {
         intensity: w.intensity ?? undefined,
         stravaActivityId: w.stravaActivityId ?? null,
       })),
-      analysis: plannerResult.analysis,
+      analysis: plannerResult.parsed.analysis,
       isAssessment,
     };
   }
@@ -272,7 +283,7 @@ export class AiPlannerService {
           weekStartDate,
           weekEndDate,
           status: WeeklyGoalStatus.GENERATED,
-          metrics: plannerResult.analysis as unknown as Prisma.InputJsonValue,
+          metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
           previousWeekAnalysis: previousWeekAnalysis
             ? (previousWeekAnalysis as unknown as Prisma.InputJsonValue)
             : undefined,
@@ -280,7 +291,7 @@ export class AiPlannerService {
       });
 
       const workouts = await Promise.all(
-        plannerResult.weekPlan.map((day) =>
+        plannerResult.parsed.weekPlan.map((day) =>
           tx.workout.create({
             data: {
               trainingPlanId: trainingPlan.id,
@@ -300,7 +311,7 @@ export class AiPlannerService {
 
       // Persist AI reasoning
       await Promise.all(
-        plannerResult.weekPlan.map(async (day, idx) => {
+        plannerResult.parsed.weekPlan.map(async (day, idx) => {
           if (day.reasoning && day.sportType !== 'other') {
             await tx.aiReasoning.create({
               data: {
@@ -308,10 +319,10 @@ export class AiPlannerService {
                 weeklyGoalId: weeklyGoal.id,
                 justification: day.reasoning,
                 dataPointsUsed: {
-                  avgPace: plannerResult.analysis.avgPace,
-                  totalDistanceKm: plannerResult.analysis.totalDistanceKm,
+                  avgPace: plannerResult.parsed.analysis.avgPace,
+                  totalDistanceKm: plannerResult.parsed.analysis.totalDistanceKm,
                   vdotScore: effortZones.vdotScore,
-                  trend: plannerResult.analysis.trend,
+                  trend: plannerResult.parsed.analysis.trend,
                 } as unknown as Prisma.InputJsonValue,
                 promptVersion: PROMPT_VERSION,
                 modelUsed: MODEL_USED,
@@ -322,6 +333,18 @@ export class AiPlannerService {
           }
         }),
       );
+
+      await tx.aiPlannerPromptLog.create({
+        data: {
+          weeklyGoalId: weeklyGoal.id,
+          generationType: 'planner',
+          promptVersion: PROMPT_VERSION,
+          modelUsed: MODEL_USED,
+          promptText: plannerResult.prompt,
+          rawResponse: plannerResult.rawResponse,
+          parsedResponse: plannerResult.parsed as unknown as Prisma.InputJsonValue,
+        },
+      });
 
       return { weeklyGoal, workouts };
     });
@@ -350,7 +373,7 @@ export class AiPlannerService {
         intensity: w.intensity ?? undefined,
         stravaActivityId: w.stravaActivityId ?? null,
       })),
-      analysis: plannerResult.analysis,
+      analysis: plannerResult.parsed.analysis,
       isAssessment: false,
     };
   }

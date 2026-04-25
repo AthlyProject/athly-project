@@ -1,0 +1,22 @@
+{
+  "nodes": [
+    {"id": "web", "type": "text", "x": 0, "y": 0, "width": 150, "height": 60, "text": "Frontend\nLogin form"},
+    {"id": "ios", "type": "text", "x": 200, "y": 0, "width": 150, "height": 60, "text": "iOS\nLogin screen"},
+    {"id": "api", "type": "text", "x": 100, "y": 100, "width": 150, "height": 80, "text": "POST /auth/login\nBackend\nverify + JWT"},
+    {"id": "response", "type": "text", "x": 100, "y": 220, "width": 150, "height": 100, "text": "Response\naccess_token (1h)\nrefresh_token\nuser object"},
+    {"id": "store_web", "type": "text", "x": 0, "y": 370, "width": 150, "height": 60, "text": "Frontend\nlocalStorage\n'iafit-auth'"},
+    {"id": "store_ios", "type": "text", "x": 200, "y": 370, "width": 150, "height": 60, "text": "iOS\nKeychain\nsecure"},
+    {"id": "request", "type": "text", "x": 100, "y": 480, "width": 150, "height": 60, "text": "Subsequent\nBearer token\nin header"},
+    {"id": "refresh", "type": "text", "x": 100, "y": 600, "width": 150, "height": 80, "text": "401? Refresh\nPOST /auth/refresh\nget new access"}
+  ],
+  "edges": [
+    {"id": "e1", "fromNode": "web", "toNode": "api", "label": "login"},
+    {"id": "e2", "fromNode": "ios", "toNode": "api", "label": "login"},
+    {"id": "e3", "fromNode": "api", "toNode": "response", "label": "emit tokens"},
+    {"id": "e4", "fromNode": "response", "toNode": "store_web", "label": "store"},
+    {"id": "e5", "fromNode": "response", "toNode": "store_ios", "label": "store"},
+    {"id": "e6", "fromNode": "store_web", "toNode": "request", "label": "use"},
+    {"id": "e7", "fromNode": "store_ios", "toNode": "request", "label": "use"},
+    {"id": "e8", "fromNode": "request", "toNode": "refresh", "label": "expired?"}
+  ]
+}

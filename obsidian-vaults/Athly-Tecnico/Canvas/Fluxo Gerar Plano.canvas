@@ -1,0 +1,19 @@
+{
+  "nodes": [
+    {"id": "trigger", "type": "text", "x": 0, "y": 100, "width": 140, "height": 60, "text": "User trigger\nGenerate plan"},
+    {"id": "fetch", "type": "text", "x": 200, "y": 100, "width": 140, "height": 80, "text": "Fetch inputs\nUserGoal\nAssessment\nStrava\nZones"},
+    {"id": "prompt", "type": "text", "x": 400, "y": 100, "width": 140, "height": 60, "text": "Mount\nPlanner v3.0\nprompt"},
+    {"id": "gemini", "type": "text", "x": 600, "y": 100, "width": 140, "height": 60, "text": "Gemini\n2.5-flash\nAPI call"},
+    {"id": "parse", "type": "text", "x": 800, "y": 100, "width": 140, "height": 60, "text": "Parse JSON\n7 Workouts\nvalidate"},
+    {"id": "persist", "type": "text", "x": 1000, "y": 100, "width": 140, "height": 80, "text": "Persist\nWeeklyGoal\nWorkouts\nAiReasoning\nPromptLog"},
+    {"id": "response", "type": "text", "x": 1200, "y": 100, "width": 140, "height": 60, "text": "Return\nWeeklyGoal\n+ 7 workouts"}
+  ],
+  "edges": [
+    {"id": "e1", "fromNode": "trigger", "toNode": "fetch", "label": "POST /ai-planner"},
+    {"id": "e2", "fromNode": "fetch", "toNode": "prompt", "label": "assemble"},
+    {"id": "e3", "fromNode": "prompt", "toNode": "gemini", "label": "send prompt"},
+    {"id": "e4", "fromNode": "gemini", "toNode": "parse", "label": "response JSON"},
+    {"id": "e5", "fromNode": "parse", "toNode": "persist", "label": "validated"},
+    {"id": "e6", "fromNode": "persist", "toNode": "response", "label": "saved to DB"}
+  ]
+}

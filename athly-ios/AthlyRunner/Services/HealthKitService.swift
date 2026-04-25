@@ -28,28 +28,34 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     /// Solicita apenas permissão de leitura para listar corridas existentes + HR para análise detalhada.
+    /// No-op após a primeira solicitação por instalação (guard via PermissionGate).
     func requestReadAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
+        guard PermissionGate.shouldRequestHealthKitRead else { return }
         var typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
         if let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) {
             typesToRead.insert(hrType)
         }
         try await store.requestAuthorization(toShare: [], read: typesToRead)
+        PermissionGate.markHealthKitReadRequested()
     }
 
     /// Solicita permissão de escrita para salvar corridas no Apple Health.
+    /// No-op após a primeira solicitação por instalação (guard via PermissionGate).
     func requestWriteAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
+        guard PermissionGate.shouldRequestHealthKitWrite else { return }
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HealthKitService.energyType,
             HealthKitService.distanceType
         ]
         try await store.requestAuthorization(toShare: typesToShare, read: [])
+        PermissionGate.markHealthKitWriteRequested()
     }
 
     /// Salva uma corrida no Apple Health e retorna o HKWorkout gerado (ou nil se finishWorkout falhar em produzi-lo).

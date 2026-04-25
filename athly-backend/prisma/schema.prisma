@@ -217,9 +217,10 @@ model WeeklyGoal {
   updatedAt            DateTime         @updatedAt @map("updated_at")
   createdAt            DateTime         @default(now()) @map("created_at")
 
-  trainingPlan TrainingPlan  @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  trainingPlan TrainingPlan       @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
   workouts     Workout[]
   aiReasonings AiReasoning[]
+  promptLog    AiPlannerPromptLog?
 
   @@map("weekly_goals")
 }
@@ -293,6 +294,22 @@ model AiReasoning {
   weeklyGoal WeeklyGoal @relation(fields: [weeklyGoalId], references: [id], onDelete: Cascade)
 
   @@map("ai_reasonings")
+}
+
+model AiPlannerPromptLog {
+  id             String   @id @default(uuid())
+  weeklyGoalId   String   @unique @map("weekly_goal_id")
+  generationType String   @map("generation_type")
+  promptVersion  String   @map("prompt_version")
+  modelUsed      String   @map("model_used")
+  promptText     String   @map("prompt_text") @db.Text
+  rawResponse    String   @map("raw_response") @db.Text
+  parsedResponse Json?    @map("parsed_response")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  weeklyGoal WeeklyGoal @relation(fields: [weeklyGoalId], references: [id], onDelete: Cascade)
+
+  @@map("ai_planner_prompt_logs")
 }
 
 model WaitlistEntry {

@@ -1,0 +1,25 @@
+{
+  "collapse-filter": false,
+  "collapse-explainer": false,
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [],
+  "collapse-display": false,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "forces": {
+    "repel": -12.480000000000004,
+    "center": -1.5625,
+    "link": 1
+  },
+  "autoCentre": true,
+  "physics": true,
+  "showLegend": false,
+  "devicePixelRatio": 2
+}

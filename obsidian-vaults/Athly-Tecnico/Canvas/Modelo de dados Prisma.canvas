@@ -1,0 +1,29 @@
+{
+  "nodes": [
+    {"id": "user", "type": "text", "x": 100, "y": 0, "width": 120, "height": 60, "text": "User\nprofile\nrole"},
+    {"id": "session", "type": "text", "x": 300, "y": 0, "width": 120, "height": 60, "text": "Session\nrefresh tokens"},
+    {"id": "plan", "type": "text", "x": 0, "y": 120, "width": 120, "height": 60, "text": "TrainingPlan\nperiod\nstatus"},
+    {"id": "week", "type": "text", "x": 150, "y": 120, "width": 120, "height": 60, "text": "WeeklyGoal\n7 workouts\nmetrics"},
+    {"id": "workout", "type": "text", "x": 300, "y": 120, "width": 120, "height": 60, "text": "Workout\nblocks JSON\nstatus"},
+    {"id": "feedback", "type": "text", "x": 450, "y": 120, "width": 120, "height": 60, "text": "WorkoutFeedback\nrating\nnotes"},
+    {"id": "assess", "type": "text", "x": 0, "y": 250, "width": 120, "height": 60, "text": "Assessment\n5 sessions\nanswers"},
+    {"id": "zone", "type": "text", "x": 150, "y": 250, "width": 120, "height": 60, "text": "UserEffortZone\nHR/pace ranges"},
+    {"id": "goal", "type": "text", "x": 300, "y": 250, "width": 120, "height": 60, "text": "UserGoal\ntarget distance\nevent"},
+    {"id": "integr", "type": "text", "x": 450, "y": 250, "width": 120, "height": 60, "text": "Integration\nStrava OAuth\ntokens"},
+    {"id": "reason", "type": "text", "x": 100, "y": 380, "width": 120, "height": 60, "text": "AiReasoning\nIA logic\naudit"},
+    {"id": "log", "type": "text", "x": 250, "y": 380, "width": 120, "height": 60, "text": "AiPlannerPromptLog\nprompt+response\ntokens"}
+  ],
+  "edges": [
+    {"id": "e1", "fromNode": "user", "toNode": "session", "label": "1:N"},
+    {"id": "e2", "fromNode": "user", "toNode": "plan", "label": "1:N"},
+    {"id": "e3", "fromNode": "plan", "toNode": "week", "label": "1:N"},
+    {"id": "e4", "fromNode": "week", "toNode": "workout", "label": "1:N"},
+    {"id": "e5", "fromNode": "workout", "toNode": "feedback", "label": "1:N"},
+    {"id": "e6", "fromNode": "user", "toNode": "assess", "label": "1:1"},
+    {"id": "e7", "fromNode": "user", "toNode": "zone", "label": "1:N"},
+    {"id": "e8", "fromNode": "user", "toNode": "goal", "label": "1:N"},
+    {"id": "e9", "fromNode": "user", "toNode": "integr", "label": "1:N"},
+    {"id": "e10", "fromNode": "user", "toNode": "reason", "label": "1:N"},
+    {"id": "e11", "fromNode": "user", "toNode": "log", "label": "1:N"}
+  ]
+}

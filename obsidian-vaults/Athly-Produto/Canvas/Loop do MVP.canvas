@@ -1,0 +1,126 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "text",
+      "x": 0,
+      "y": -100,
+      "width": 250,
+      "height": 100,
+      "text": "# 1️⃣ Conectar\n\nUsuário clica \"Conectar Strava\"\nOAuth 2.0 per-user\nTokens salvos em BD"
+    },
+    {
+      "id": "n2",
+      "type": "text",
+      "x": 300,
+      "y": -100,
+      "width": 250,
+      "height": 100,
+      "text": "# 2️⃣ Sincronizar\n\nFetch últimos 30 dias\nStrava API → BD\nMapeamento modalidades"
+    },
+    {
+      "id": "n3",
+      "type": "text",
+      "x": 600,
+      "y": -100,
+      "width": 250,
+      "height": 100,
+      "text": "# 3️⃣ Gerar\n\nIA com contexto Strava\n+ Preferências usuário\nRetorna plano JSON"
+    },
+    {
+      "id": "n4",
+      "type": "text",
+      "x": 900,
+      "y": -100,
+      "width": 250,
+      "height": 100,
+      "text": "# 4️⃣ Exibir\n\nDashboard com badges\n🟦 Strava 🤖 IA ✏️ Manual\nEdição manual allowed"
+    },
+    {
+      "id": "n5",
+      "type": "text",
+      "x": 1200,
+      "y": -100,
+      "width": 250,
+      "height": 100,
+      "text": "# 5️⃣ Repetir\n\nCron toda seg 6h\nResync automático\nNotificação ao usuário"
+    },
+    {
+      "id": "decision",
+      "type": "text",
+      "x": 450,
+      "y": 150,
+      "width": 200,
+      "height": 80,
+      "text": "Strava conectado?\n\n✅ SIM: continua\n❌ NÃO: Assessment Plan"
+    },
+    {
+      "id": "fallback",
+      "type": "text",
+      "x": 300,
+      "y": 300,
+      "width": 200,
+      "height": 80,
+      "text": "Assessment Plan\n\n5 treinos genéricos\nColeta preferências\nIA sem Strava"
+    },
+    {
+      "id": "loop",
+      "type": "text",
+      "x": 600,
+      "y": 300,
+      "width": 200,
+      "height": 80,
+      "text": "Loop Contínuo\n\nSeg 6h repete\nPlano sempre fresco\nSem intervenção"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "n1",
+      "toNode": "n2"
+    },
+    {
+      "id": "e2",
+      "fromNode": "n2",
+      "toNode": "decision"
+    },
+    {
+      "id": "e3",
+      "fromNode": "decision",
+      "toNode": "n3",
+      "label": "SIM"
+    },
+    {
+      "id": "e4",
+      "fromNode": "decision",
+      "toNode": "fallback",
+      "label": "NÃO"
+    },
+    {
+      "id": "e5",
+      "fromNode": "n3",
+      "toNode": "n4"
+    },
+    {
+      "id": "e6",
+      "fromNode": "fallback",
+      "toNode": "n4"
+    },
+    {
+      "id": "e7",
+      "fromNode": "n4",
+      "toNode": "n5"
+    },
+    {
+      "id": "e8",
+      "fromNode": "n5",
+      "toNode": "loop"
+    },
+    {
+      "id": "e9",
+      "fromNode": "loop",
+      "toNode": "n2",
+      "label": "Loop back"
+    }
+  ]
+}

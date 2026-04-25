@@ -96,7 +96,7 @@ struct WorkoutCompletionSheet: View {
                         HStack {
                             Image(systemName: "heart.fill")
                                 .foregroundStyle(AthlyTheme.Color.primary)
-                            Text("Corridas de hoje no Apple Health")
+                            Text("Corridas de \(formattedWorkoutDate) no Apple Health")
                                 .font(AthlyTheme.Typography.semibold(15))
                                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                         }
@@ -449,7 +449,7 @@ struct WorkoutCompletionSheet: View {
             Image(systemName: "heart.slash")
                 .font(.system(size: 40))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
-            Text("Nenhuma corrida encontrada hoje")
+            Text("Nenhuma corrida encontrada em \(formattedWorkoutDate)")
                 .font(AthlyTheme.Typography.semibold(16))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
             Text("Se você correu, verifique se o Apple Health está ativado nas configurações do app.")
@@ -504,13 +504,21 @@ struct WorkoutCompletionSheet: View {
         do {
             try await service.requestReadAuthorization()
             let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
-            todayRuns = allRuns.filter { calendar.isDateInToday($0.startDate) }
+            todayRuns = allRuns.filter { calendar.isDate($0.startDate, inSameDayAs: workout.parsedDate) }
         } catch {
             loadError = error.localizedDescription
         }
     }
 
     // MARK: - Helpers
+
+    private var formattedWorkoutDate: String {
+        let df = DateFormatter()
+        df.dateStyle = .short
+        df.timeStyle = .none
+        df.locale = Locale(identifier: "pt_BR")
+        return df.string(from: workout.parsedDate)
+    }
 
     private var effortEmoji: String {
         switch effort {

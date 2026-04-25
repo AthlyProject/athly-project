@@ -9,9 +9,9 @@ actor APIClient {
 
     private var baseURL: String = {
         #if DEBUG
-        return "http://192.168.1.67:4000"
+        return "https://api.athlyproject.app"
         #else
-        return "https://athly-project-production.up.railway.app"
+        return "https://api.athlyproject.app"
         #endif
     }()
 
