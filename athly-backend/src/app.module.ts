@@ -16,11 +16,13 @@ import { AssessmentModule } from './modules/assessment/assessment.module';
 import { EffortZoneModule } from './modules/effort-zones/effort-zone.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     WorkoutsModule,
