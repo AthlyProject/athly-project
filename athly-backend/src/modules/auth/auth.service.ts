@@ -15,6 +15,7 @@ import { User } from '@prisma/client';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { StravaService } from '../strava/strava.service';
 import { IntegrationsService } from '../integrations/integrations.service';
+import { EmailService } from '../email/email.service';
 
 interface StravaTokenResponse {
   access_token: string;
@@ -32,6 +33,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly stravaService: StravaService,
     private readonly integrationsService: IntegrationsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(input: RegisterUserDto) {
@@ -64,6 +66,16 @@ export class AuthService {
         height: input.height,
       },
     });
+
+    // Fire-and-forget welcome email
+    this.emailService
+      .sendWelcomeEmail(user.email, user.name)
+      .catch((err: Error) =>
+        console.error(
+          `[Auth] Failed to send welcome email to ${user.email}:`,
+          err.message,
+        ),
+      );
 
     const accessToken = this.signAccessToken(user);
     const refreshToken = await this.createSession(user);
