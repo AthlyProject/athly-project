@@ -34,7 +34,10 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             throw HealthKitError.notAvailable
         }
         guard PermissionGate.shouldRequestHealthKitRead else { return }
-        var typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
+        var typesToRead: Set<HKObjectType> = [
+            HKObjectType.workoutType(),
+            HKSeriesType.workoutRoute(),
+        ]
         if let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) {
             typesToRead.insert(hrType)
         }

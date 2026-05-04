@@ -134,6 +134,7 @@ export class AiPlannerService {
               blocks: day.blocks as unknown as Prisma.InputJsonValue,
               status: WorkoutStatus.scheduled,
               intensity: day.intensity,
+              isGoalAttempt: day.isGoalAttempt ?? false,
             },
           }),
         ),
@@ -304,6 +305,7 @@ export class AiPlannerService {
               blocks: day.blocks as unknown as Prisma.InputJsonValue,
               status: WorkoutStatus.scheduled,
               intensity: day.intensity,
+              isGoalAttempt: day.isGoalAttempt ?? false,
             },
           }),
         ),
@@ -446,9 +448,13 @@ export class AiPlannerService {
       ? parseFloat((allFeedback.reduce((sum, f) => sum + f.fatigue, 0) / allFeedback.length).toFixed(1))
       : null;
 
-    // Estimate total distance from workout blocks
+    // Soma distância: prefere actualDistanceMeters (HK linkado) e cai pra blocks como fallback.
     let totalDistanceKm = 0;
     for (const w of trainingWorkouts.filter((w) => w.status === 'done')) {
+      if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
+        totalDistanceKm += w.actualDistanceMeters / 1000;
+        continue;
+      }
       const blocks = w.blocks as any[];
       if (Array.isArray(blocks)) {
         for (const block of blocks) {
@@ -505,14 +511,30 @@ export class AiPlannerService {
     // Oldest-first so the AI reads chronological progression naturally.
     return recent.reverse().map((goal, idx) => {
       const workouts = goal.workouts.filter((w) => w.sportType !== 'other');
-      const completedCount = workouts.filter((w) => w.status === 'done').length;
+      const doneWorkouts = workouts.filter((w) => w.status === 'done');
       const completionRate =
-        workouts.length > 0 ? parseFloat((completedCount / workouts.length).toFixed(2)) : 0;
+        workouts.length > 0 ? parseFloat((doneWorkouts.length / workouts.length).toFixed(2)) : 0;
 
-      const metrics = (goal.metrics ?? {}) as {
-        totalDistanceKm?: number;
-        avgPace?: string;
-      };
+      // Soma totalKm a partir dos actuals (HK linkado) — fallback para blocks, depois para metrics histórico.
+      let totalKm = 0;
+      for (const w of doneWorkouts) {
+        if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
+          totalKm += w.actualDistanceMeters / 1000;
+          continue;
+        }
+        const blocks = (w.blocks as any[]) ?? [];
+        if (Array.isArray(blocks)) {
+          for (const block of blocks) {
+            if (block?.distanceKm) totalKm += block.distanceKm;
+          }
+        }
+      }
+      if (totalKm === 0) {
+        const metrics = (goal.metrics ?? {}) as { totalDistanceKm?: number };
+        totalKm = metrics.totalDistanceKm ?? 0;
+      }
+
+      const metrics = (goal.metrics ?? {}) as { avgPace?: string };
 
       const allFeedback = workouts.flatMap((w) => w.feedback);
       const avgEffort =
@@ -524,7 +546,7 @@ export class AiPlannerService {
 
       return {
         weekLabel: `W-${recent.length - idx}`,
-        totalKm: metrics.totalDistanceKm ?? 0,
+        totalKm: parseFloat(totalKm.toFixed(2)),
         avgPace: metrics.avgPace ?? 'N/A',
         completionRate,
         avgEffort,
@@ -538,12 +560,16 @@ export class AiPlannerService {
     trainingDays: number,
     availableDays: string[],
   ): AiPlannerInput {
-    const totalDistM = runs.reduce((sum, r) => sum + r.distanceMeters, 0);
-    const totalDistKm = totalDistM / 1000;
-    const avgDistKm = totalDistKm / runs.length;
-    const maxDistKm = Math.max(...runs.map((r) => r.distanceMeters / 1000));
+    // Descarta outliers (<0.5km OU <3min) das stats agregadas — fallback para runs original se zerar.
+    const validRunsRaw = runs.filter((r) => r.distanceMeters >= 500 && r.durationSeconds >= 180);
+    const validRuns = validRunsRaw.length > 0 ? validRunsRaw : runs;
 
-    const runSummaries: RunSummary[] = runs.map((r, i) => {
+    const totalDistM = validRuns.reduce((sum, r) => sum + r.distanceMeters, 0);
+    const totalDistKm = totalDistM / 1000;
+    const avgDistKm = validRuns.length > 0 ? totalDistKm / validRuns.length : 0;
+    const maxDistKm = validRuns.length > 0 ? Math.max(...validRuns.map((r) => r.distanceMeters / 1000)) : 0;
+
+    const runSummaries: RunSummary[] = validRuns.map((r, i) => {
       const distanceKm = parseFloat((r.distanceMeters / 1000).toFixed(2));
       const durationMin = Math.round(r.durationSeconds / 60);
       const paceStr =
@@ -562,7 +588,7 @@ export class AiPlannerService {
       };
     });
 
-    const paceSum = runs.filter(
+    const paceSum = validRuns.filter(
       (r) => r.averagePaceSecondsPerKm != null && r.averagePaceSecondsPerKm > 0,
     );
     const avgPaceSecondsPerKm =
@@ -662,20 +688,29 @@ export class AiPlannerService {
     trainingDays: number,
     availableDays: string[],
   ): AiPlannerInput {
-    const totalDist = runs.reduce((sum, r) => sum + (r.distance ?? 0), 0);
-    const avgDistKm = totalDist / runs.length / 1000;
-    const avgSpeed = runs.reduce((sum, r) => sum + (r.average_speed ?? 0), 0) / runs.length;
+    // Descarta outliers (<0.5km OU <3min) das stats agregadas — fallback para runs original se zerar.
+    const validRunsRaw = runs.filter(
+      (r) => (r.distance ?? 0) >= 500 && (r.moving_time ?? 0) >= 180,
+    );
+    const validRuns = validRunsRaw.length > 0 ? validRunsRaw : runs;
 
-    const hrRuns = runs.filter((r) => r.average_heartrate);
+    const totalDist = validRuns.reduce((sum, r) => sum + (r.distance ?? 0), 0);
+    const avgDistKm = validRuns.length > 0 ? totalDist / validRuns.length / 1000 : 0;
+    const avgSpeed =
+      validRuns.length > 0
+        ? validRuns.reduce((sum, r) => sum + (r.average_speed ?? 0), 0) / validRuns.length
+        : 0;
+
+    const hrRuns = validRuns.filter((r) => r.average_heartrate);
     const avgHR =
       hrRuns.length > 0
         ? Math.round(hrRuns.reduce((sum, r) => sum + r.average_heartrate!, 0) / hrRuns.length)
         : null;
 
-    const maxDistKm = Math.max(...runs.map((r) => r.distance ?? 0)) / 1000;
+    const maxDistKm = validRuns.length > 0 ? Math.max(...validRuns.map((r) => r.distance ?? 0)) / 1000 : 0;
     const totalDistKm = totalDist / 1000;
 
-    const runSummaries: RunSummary[] = runs.map((r, i) => ({
+    const runSummaries: RunSummary[] = validRuns.map((r, i) => ({
       index: i + 1,
       name: r.name,
       date: new Date(r.start_date).toLocaleDateString(),

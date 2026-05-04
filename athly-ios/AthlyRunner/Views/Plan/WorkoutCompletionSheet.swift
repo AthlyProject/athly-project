@@ -67,7 +67,7 @@ struct WorkoutCompletionSheet: View {
                 }
             }
         }
-        .task { await loadTodayRuns() }
+        .task { await loadCandidateRuns() }
     }
 
     // MARK: - Loading
@@ -96,13 +96,13 @@ struct WorkoutCompletionSheet: View {
                         HStack {
                             Image(systemName: "heart.fill")
                                 .foregroundStyle(AthlyTheme.Color.primary)
-                            Text("Corridas de \(formattedWorkoutDate) no Apple Health")
+                            Text("Corridas próximas a \(formattedWorkoutDate)")
                                 .font(AthlyTheme.Typography.semibold(15))
                                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                         }
                         .padding(.horizontal, AthlyTheme.Spacing.sm)
 
-                        Text("Selecione qual corrida corresponde ao treino prescrito:")
+                        Text("Selecione a corrida que corresponde a este treino (até 2 dias após o planejado):")
                             .font(AthlyTheme.Typography.body(13))
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                             .padding(.horizontal, AthlyTheme.Spacing.sm)
@@ -386,8 +386,13 @@ struct WorkoutCompletionSheet: View {
                         Text(timeString(run.startDate))
                             .font(AthlyTheme.Typography.body(11))
                             .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        if let label = relativeDayLabel(for: run.startDate) {
+                            Text(label)
+                                .font(AthlyTheme.Typography.body(10))
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                        }
                     }
-                    .frame(width: 44)
+                    .frame(width: 52)
 
                     HStack(spacing: 0) {
                         metricCell(value: run.formattedDistance, label: "km")
@@ -449,7 +454,7 @@ struct WorkoutCompletionSheet: View {
             Image(systemName: "heart.slash")
                 .font(.system(size: 40))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
-            Text("Nenhuma corrida encontrada em \(formattedWorkoutDate)")
+            Text("Nenhuma corrida encontrada entre \(formattedWorkoutDate) e os 2 dias seguintes")
                 .font(AthlyTheme.Typography.semibold(16))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
             Text("Se você correu, verifique se o Apple Health está ativado nas configurações do app.")
@@ -484,7 +489,8 @@ struct WorkoutCompletionSheet: View {
 
     // MARK: - Load HealthKit
 
-    private func loadTodayRuns() async {
+    /// Janela: dia do treino + 2 dias depois (D, D+1, D+2). Esconde corridas já linkadas a outros treinos.
+    private func loadCandidateRuns() async {
         isLoading = true
         defer { isLoading = false }
 
@@ -504,7 +510,18 @@ struct WorkoutCompletionSheet: View {
         do {
             try await service.requestReadAuthorization()
             let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
-            todayRuns = allRuns.filter { calendar.isDate($0.startDate, inSameDayAs: workout.parsedDate) }
+
+            let windowStart = calendar.startOfDay(for: workout.parsedDate)
+            guard let windowEnd = calendar.date(byAdding: .day, value: 3, to: windowStart) else {
+                todayRuns = []
+                return
+            }
+
+            let inWindow = allRuns.filter { $0.startDate >= windowStart && $0.startDate < windowEnd }
+            let orphanIds = Set(RunWorkoutLinkStore.shared.allOrphanCandidates(healthKitUUIDs: inWindow.map { $0.id }))
+            todayRuns = inWindow
+                .filter { orphanIds.contains($0.id) }
+                .sorted { $0.startDate < $1.startDate }
         } catch {
             loadError = error.localizedDescription
         }
@@ -542,5 +559,18 @@ struct WorkoutCompletionSheet: View {
         let df = DateFormatter()
         df.dateFormat = "HH:mm"
         return df.string(from: date)
+    }
+
+    /// Mostra "+1 dia" / "+2 dias" quando a corrida não é do mesmo dia do treino prescrito.
+    /// Retorna nil quando é o próprio dia (caso comum, evita poluir o card).
+    private func relativeDayLabel(for runStart: Date) -> String? {
+        let workoutDay = calendar.startOfDay(for: workout.parsedDate)
+        let runDay = calendar.startOfDay(for: runStart)
+        let days = calendar.dateComponents([.day], from: workoutDay, to: runDay).day ?? 0
+        switch days {
+        case 1: return "+1 dia"
+        case 2: return "+2 dias"
+        default: return nil
+        }
     }
 }

@@ -39,6 +39,20 @@ struct WorkoutDetailView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if workout.isGoalAttempt == true {
+                HStack(spacing: 6) {
+                    Text("🎯")
+                    Text("Treino-alvo")
+                        .font(AthlyTheme.Typography.label())
+                        .textCase(.uppercase)
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(AthlyTheme.Color.primary.opacity(0.18))
+                .overlay(Capsule().stroke(AthlyTheme.Color.primary, lineWidth: 1))
+                .clipShape(Capsule())
+            }
             HStack {
                 SportBadgeView(sport: workout.sportType)
                 Spacer()

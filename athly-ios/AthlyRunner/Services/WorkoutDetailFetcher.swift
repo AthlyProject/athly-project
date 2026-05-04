@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import CoreLocation
 
 /// Builds a `DetailedSessionPayload` from an `HKWorkout` by pulling per-segment/per-lap events
 /// and slicing heart-rate samples by time. When the workout has no explicit events, falls
@@ -35,15 +36,26 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         let hrSamples = (try? await fetchHeartRateSamples(for: workout)) ?? []
         let hrStats = summarizeHR(samples: hrSamples)
 
-        let rawSegments = segmentsFromEvents(workout: workout)
-            ?? syntheticKmSplits(
-                startDate: workout.startDate,
-                endDate: workout.endDate,
-                totalDistanceMeters: totalDistanceMeters,
-                totalDurationSeconds: activeDuration
-            )
+        // Cadeia de fallback: lap markers > GPS real > splits sintéticos.
+        var splitsSource: SplitsSource = .events
+        var rawSegments = segmentsFromEvents(workout: workout)
+        if rawSegments == nil {
+            if let real = try? await realKmSplitsFromRoute(workout: workout) {
+                rawSegments = real
+                splitsSource = .route
+            } else {
+                rawSegments = syntheticKmSplits(
+                    startDate: workout.startDate,
+                    endDate: workout.endDate,
+                    totalDistanceMeters: totalDistanceMeters,
+                    totalDurationSeconds: activeDuration
+                )
+                splitsSource = .synthetic
+            }
+        }
+        let segmentsRaw = rawSegments ?? []
 
-        let segments = rawSegments.map { seg -> SegmentPayload in
+        let segments = segmentsRaw.map { seg -> SegmentPayload in
             let hr = summarizeHR(samples: hrSamples, from: seg.start, to: seg.end)
             let durationSeconds = seg.end.timeIntervalSince(seg.start)
             let pace: Double? = seg.distanceMeters > 0
@@ -72,8 +84,15 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             maxHR: hrStats.peak,
             activeEnergyBurned: calories,
             elevationGainMeters: nil,
-            segments: segments
+            segments: segments,
+            splitsSource: splitsSource.rawValue
         )
+    }
+
+    enum SplitsSource: String {
+        case events
+        case route
+        case synthetic
     }
 
     // MARK: - Segment extraction
@@ -163,6 +182,110 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             ))
         }
         return classified
+    }
+
+    // MARK: - GPS-based real splits
+
+    /// Lê o `HKWorkoutRoute` do treino e quebra os locations em segmentos reais de 1km.
+    /// Retorna nil se não houver rota (ex.: esteira, treino sem GPS) — caller cai no synthetic.
+    private func realKmSplitsFromRoute(workout: HKWorkout) async throws -> [RawSegment]? {
+        let routes = try await fetchRoutes(for: workout)
+        guard !routes.isEmpty else { return nil }
+
+        var locations: [CLLocation] = []
+        for route in routes {
+            let routeLocs = try await fetchLocations(for: route)
+            locations.append(contentsOf: routeLocs)
+        }
+        locations.sort { $0.timestamp < $1.timestamp }
+        guard locations.count >= 2 else { return nil }
+
+        var segments: [RawSegment] = []
+        var segmentStart: CLLocation = locations[0]
+        var segmentDistance: Double = 0
+        var lastLocation: CLLocation = locations[0]
+
+        for i in 1..<locations.count {
+            let loc = locations[i]
+            let delta = loc.distance(from: lastLocation)
+            // Mesmo filtro de RunTracker: descarta saltos de GPS > 50m.
+            if delta < 50 {
+                segmentDistance += delta
+            }
+            lastLocation = loc
+
+            if segmentDistance >= 1000 {
+                segments.append(RawSegment(
+                    label: .easy,
+                    index: nil,
+                    start: segmentStart.timestamp,
+                    end: loc.timestamp,
+                    distanceMeters: segmentDistance
+                ))
+                segmentStart = loc
+                segmentDistance = 0
+            }
+        }
+
+        // Trailing fractional km
+        if segmentDistance >= 50 {
+            segments.append(RawSegment(
+                label: .easy,
+                index: nil,
+                start: segmentStart.timestamp,
+                end: lastLocation.timestamp,
+                distanceMeters: segmentDistance
+            ))
+        }
+
+        return segments.isEmpty ? nil : segments
+    }
+
+    private func fetchRoutes(for workout: HKWorkout) async throws -> [HKWorkoutRoute] {
+        let predicate = HKQuery.predicateForObjects(from: workout)
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Error>) in
+            let query = HKAnchoredObjectQuery(
+                type: HKSeriesType.workoutRoute(),
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit
+            ) { _, samples, _, _, error in
+                if let error {
+                    cont.resume(throwing: error)
+                    return
+                }
+                cont.resume(returning: (samples as? [HKWorkoutRoute]) ?? [])
+            }
+            self.store.execute(query)
+        }
+    }
+
+    private func fetchLocations(for route: HKWorkoutRoute) async throws -> [CLLocation] {
+        let buffer = LocationsBuffer()
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[CLLocation], Error>) in
+            let query = HKWorkoutRouteQuery(route: route) { _, locations, done, error in
+                if let error {
+                    cont.resume(throwing: error)
+                    return
+                }
+                if let locations { buffer.append(locations) }
+                if done { cont.resume(returning: buffer.snapshot()) }
+            }
+            self.store.execute(query)
+        }
+    }
+
+    private final class LocationsBuffer: @unchecked Sendable {
+        private var items: [CLLocation] = []
+        private let lock = NSLock()
+        func append(_ new: [CLLocation]) {
+            lock.lock(); defer { lock.unlock() }
+            items.append(contentsOf: new)
+        }
+        func snapshot() -> [CLLocation] {
+            lock.lock(); defer { lock.unlock() }
+            return items
+        }
     }
 
     /// Fallback when there are no workout events: one segment per kilometer.

@@ -148,7 +148,45 @@ function buildGoalSection(goal: ParsedGoal): string {
     };
     lines.push(`- Nível inferido: ${levelMap[goal.experienceLevel] ?? goal.experienceLevel}`);
   }
+  if (!goal.eventDate && goal.targetDistance && goal.targetTime) {
+    lines.push(`- Sem data programada: avalie se o atleta tem condicionamento para tentar nesta semana (ver <goal_attempt_logic>).`);
+  }
   return `<user_goal>\n${lines.join('\n')}\n</user_goal>`;
+}
+
+/**
+ * Active only when the goal has distance + time but no programmed eventDate.
+ * The AI evaluates feasibility from the data already in the prompt and may
+ * mark exactly one day as the goal-attempt session.
+ */
+function buildGoalAttemptLogicSection(goal: ParsedGoal | null | undefined): string {
+  if (!goal || goal.eventDate || !goal.targetDistance || !goal.targetTime) return '';
+  return `
+<goal_attempt_logic>
+O objetivo do atleta NÃO tem data programada. Avalie se ele tem condicionamento para tentar bater o objetivo NESTA semana usando:
+- Pace recente vs. pace alvo do objetivo (do summary/targetTime)
+- Tendência das últimas 4 semanas (longitudinalTrend)
+- Aderência da semana anterior
+- Zonas de esforço (VDOT)
+
+REGRA DE FEASIBILITY: marque feasibility=true APENAS se TODAS as condições forem verdadeiras:
+1. Pace recente do atleta em distâncias similares está dentro de ~3% do pace alvo.
+2. Aderência recente >= 70%.
+3. Sem sinais de overreach (fadiga média > 7/10 ou volume subindo > 10% por 3 semanas seguidas com pace estagnado).
+
+SE feasibility=true: escolha UM dia da semana para ser o "treino-alvo" (a tentativa do objetivo). Esse dia deve:
+1. Ter "isGoalAttempt": true no JSON.
+2. Ter o título no formato "Tentativa: <objetivo>" (ex: "Tentativa: 5km < 25min").
+3. Ter blocos de aquecimento (10–15 min), main = a tentativa em si com targetPace = pace alvo, e cooldown (5–10 min).
+4. Vir após 1 dia de descanso OU treino muito leve (RPE <= 4).
+5. NÃO ter sessão intensa (RPE >= 7) no dia anterior.
+6. O dia seguinte deve ser descanso ou recuperação leve.
+7. O reasoning deve explicitar por que esta semana é viável (citar números: pace recente, pace alvo, aderência).
+
+SE feasibility=false: NÃO marque isGoalAttempt em nenhum dia. Continue periodizando normalmente, evoluindo o atleta em direção ao objetivo. O reasoning do dia mais "duro" da semana deve mencionar brevemente por que ainda não é o momento da tentativa (ex: "pace recente 5:30/km ainda longe do alvo 5:00/km — semana focada em volume").
+
+NUNCA marque mais de UM dia com isGoalAttempt=true por semana.
+</goal_attempt_logic>`;
 }
 
 function buildUserProfileSection(profile: UserProfileContext): string {
@@ -394,6 +432,7 @@ export function buildPlannerPrompt(
     : '';
 
   const goalSection = goal ? buildGoalSection(goal) : '';
+  const goalAttemptSection = buildGoalAttemptLogicSection(goal);
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
   const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
     ? buildRecentSessionsDetailSection(analyzedSessions)
@@ -417,13 +456,12 @@ Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, tren
 
 ${goalSection}
 
+${goalAttemptSection}
+
 ${profileSection}
 
 <athlete_data>
-Corridas recentes analisadas (últimas ${runSummaries.length} corridas):
-${JSON.stringify(runSummaries, null, 2)}
-
-Estatísticas resumidas:
+Estatísticas resumidas (calculadas a partir de ${runSummaries.length} corridas recentes; sessões individuais detalhadas em <recentSessionsDetail>):
 - Distância média: ${avgDistKm.toFixed(2)} km
 - Pace médio: ${avgPace}
 - Frequência cardíaca média: ${hrCtx}
@@ -469,6 +507,7 @@ ${REASONING_INSTRUCTION}
 - Use as zonas de pace personalizadas acima para prescrever targetPace — NÃO invente paces arbitrários.
 - analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Semana de Base", "Progressão de Volume", "Deload"). Displayed in the calendar UI.
 - analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
+- isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando feasibility for verdadeira segundo <goal_attempt_logic>. Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
 </constraints>
 
 <output_schema>
@@ -494,6 +533,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
       "sportType": "<running|walking|other>",
       "intensity": <número 1-10>,
       "reasoning": "<justificativa técnica em português — obrigatório para dias de treino, omitir para descanso>",
+      "isGoalAttempt": <boolean — opcional, true APENAS no dia da tentativa de objetivo (ver <goal_attempt_logic>)>,
       "blocks": [
         {
           "type": "<warmup|main|cooldown|rest>",

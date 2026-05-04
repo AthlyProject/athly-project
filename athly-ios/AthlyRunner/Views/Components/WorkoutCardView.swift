@@ -7,6 +7,10 @@ struct WorkoutCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 8 : 12) {
+            if workout.isGoalAttempt == true {
+                goalAttemptBadge
+            }
+
             // Header row
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -67,6 +71,23 @@ struct WorkoutCardView: View {
         }
         .padding(compact ? 12 : 16)
         .athlyCard(glow: isNext)
+    }
+
+    private var goalAttemptBadge: some View {
+        HStack(spacing: 6) {
+            Text("🎯")
+            Text("Treino-alvo")
+                .font(AthlyTheme.Typography.label())
+                .textCase(.uppercase)
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(AthlyTheme.Color.primary.opacity(0.18))
+        .overlay(
+            Capsule().stroke(AthlyTheme.Color.primary, lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 
     private func intensityColor(_ value: Double) -> Color {

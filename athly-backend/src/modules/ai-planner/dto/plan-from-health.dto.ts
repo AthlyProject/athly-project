@@ -134,6 +134,14 @@ export class DetailedSessionDto {
   @ValidateNested({ each: true })
   @Type(() => SegmentDto)
   segments: SegmentDto[];
+
+  @ApiPropertyOptional({
+    description: 'Origin of the segments: events (laps), route (real GPS), or synthetic (avg-pace fallback).',
+    enum: ['events', 'route', 'synthetic'],
+  })
+  @IsOptional()
+  @IsString()
+  splitsSource?: string;
 }
 
 export class HealthRunItemDto {

@@ -54,6 +54,9 @@ export class WorkoutModel {
 
   @ApiPropertyOptional({ nullable: true })
   appleHealthWorkoutUUID?: string | null;
+
+  @ApiPropertyOptional()
+  isGoalAttempt?: boolean;
 }
 
 export class WeekModel {

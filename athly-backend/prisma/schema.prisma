@@ -113,6 +113,9 @@ model Workout {
   blocks         Json
   status                 WorkoutStatus
   intensity              Int?
+  isGoalAttempt          Boolean       @default(false) @map("is_goal_attempt")
+  actualDistanceMeters   Float?        @map("actual_distance_meters")
+  actualDurationSeconds  Float?        @map("actual_duration_seconds")
   stravaActivityId       String?       @unique @map("strava_activity_id")
   appleHealthWorkoutUUID String?       @unique @map("apple_health_workout_uuid")
   createdAt              DateTime      @default(now()) @map("created_at")

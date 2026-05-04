@@ -321,7 +321,9 @@ final class TrainingPlanViewModel: ObservableObject {
 
             let updated = try await APIClient.shared.completeWorkout(
                 workoutId: workout.id,
-                appleHealthWorkoutUUID: healthRun.id
+                appleHealthWorkoutUUID: healthRun.id,
+                actualDistanceMeters: healthRun.distanceMeters,
+                actualDurationSeconds: healthRun.durationSeconds
             )
             replaceWorkout(updated)
         } catch is CancellationError {

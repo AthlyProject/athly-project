@@ -135,6 +135,7 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let weeklyGoalId: String?
     /// Backend envia número (pode ser decimal); aceitamos Double para evitar falha de decode.
     let intensity: Double?
+    let isGoalAttempt: Bool?
     let stravaActivityId: String?
 
     var parsedDate: Date {
@@ -316,6 +317,8 @@ struct DetailedSessionPayload: Encodable, Sendable {
     let activeEnergyBurned: Double?
     let elevationGainMeters: Double?
     let segments: [SegmentPayload]
+    /// "events" | "route" | "synthetic" — sinaliza ao backend a fonte dos splits para análise de confiança.
+    let splitsSource: String?
 }
 
 struct PlanFromHealthRequest: Encodable, Sendable {

@@ -65,6 +65,7 @@ export interface WorkoutDay {
   intensity: number; // 1–10 → intensity
   blocks: WorkoutBlock[]; // → blocks (Json)
   reasoning?: string;
+  isGoalAttempt?: boolean;
 }
 
 export interface WorkoutBlock {

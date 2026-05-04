@@ -92,11 +92,20 @@ actor APIClient {
         try await get("/workouts/training-plan/\(trainingPlanId)")
     }
 
-    func completeWorkout(workoutId: String, appleHealthWorkoutUUID: String? = nil) async throws -> WorkoutModel {
+    func completeWorkout(
+        workoutId: String,
+        appleHealthWorkoutUUID: String? = nil,
+        actualDistanceMeters: Double? = nil,
+        actualDurationSeconds: Double? = nil
+    ) async throws -> WorkoutModel {
         if let uuid = appleHealthWorkoutUUID {
             return try await patchWithBody(
                 "/workouts/\(workoutId)/complete",
-                body: CompleteWorkoutRequest(appleHealthWorkoutUUID: uuid)
+                body: CompleteWorkoutRequest(
+                    appleHealthWorkoutUUID: uuid,
+                    actualDistanceMeters: actualDistanceMeters,
+                    actualDurationSeconds: actualDurationSeconds
+                )
             )
         }
         return try await patch("/workouts/\(workoutId)/complete")
@@ -389,9 +398,13 @@ struct SaveRunResponse: Decodable {
 
 struct CompleteWorkoutRequest: Encodable {
     let appleHealthWorkoutUUID: String
+    let actualDistanceMeters: Double?
+    let actualDurationSeconds: Double?
 
     enum CodingKeys: String, CodingKey {
         case appleHealthWorkoutUUID = "appleHealthWorkoutUUID"
+        case actualDistanceMeters
+        case actualDurationSeconds
     }
 }
 

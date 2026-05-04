@@ -129,6 +129,12 @@ export class WorkoutsService {
     if (input?.appleHealthWorkoutUUID) {
       data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
     }
+    if (typeof input?.actualDistanceMeters === 'number' && input.actualDistanceMeters > 0) {
+      data.actualDistanceMeters = input.actualDistanceMeters;
+    }
+    if (typeof input?.actualDurationSeconds === 'number' && input.actualDurationSeconds > 0) {
+      data.actualDurationSeconds = input.actualDurationSeconds;
+    }
     const updated = await this.prisma.workout.updateMany({
       where: { id: workoutId, userId },
       data,
@@ -171,6 +177,7 @@ export class WorkoutsService {
     blocks: Prisma.JsonValue;
     status: WorkoutModel['status'];
     intensity: number | null;
+    isGoalAttempt?: boolean;
     stravaActivityId?: string | null;
     appleHealthWorkoutUUID?: string | null;
   }): WorkoutModel {
@@ -183,6 +190,7 @@ export class WorkoutsService {
       blocks: (workout.blocks as unknown as WorkoutModel['blocks']) ?? [],
       status: workout.status,
       intensity: workout.intensity ?? undefined,
+      isGoalAttempt: workout.isGoalAttempt ?? false,
       stravaActivityId: workout.stravaActivityId ?? null,
       appleHealthWorkoutUUID: workout.appleHealthWorkoutUUID ?? null,
     };

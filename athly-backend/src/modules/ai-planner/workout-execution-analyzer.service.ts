@@ -12,6 +12,7 @@ export interface PrescribedWorkoutSummary {
   targetPaceRange?: { minSecPerKm: number; maxSecPerKm: number };
   expectedRepCount?: number;
   expectedRepDistanceKm?: number;
+  expectedMainDurationMin?: number;
   totalDistanceKm?: number;
 }
 
@@ -101,20 +102,16 @@ export class WorkoutExecutionAnalyzerService {
     return sessions.map((session) => {
       const workout = this.resolveWorkout(session, linkedByWorkoutId, linkedByUuid, byDay);
       const prescribed = workout ? this.summarizePrescribed(workout) : null;
-      const executionAnalysis = this.analyzeExecution(session, prescribed);
       const lastFeedback = workout?.feedback?.[0];
-      return {
-        session,
-        prescribed,
-        executionAnalysis,
-        feedback: lastFeedback
-          ? {
-              effort: lastFeedback.effort,
-              fatigue: lastFeedback.fatigue,
-              completed: lastFeedback.completed,
-            }
-          : undefined,
-      };
+      const feedback = lastFeedback
+        ? {
+            effort: lastFeedback.effort,
+            fatigue: lastFeedback.fatigue,
+            completed: lastFeedback.completed,
+          }
+        : undefined;
+      const executionAnalysis = this.analyzeExecution(session, prescribed, feedback);
+      return { session, prescribed, executionAnalysis, feedback };
     });
   }
 
@@ -151,6 +148,10 @@ export class WorkoutExecutionAnalyzerService {
     );
     const targetPaceRange = this.parsePaceRange(mainBlock?.targetPace);
     const { expectedRepCount, expectedRepDistanceKm } = this.parseRepStructure(mainDescription);
+    const expectedMainDurationMin =
+      typeof mainBlock?.durationMinutes === 'number' && mainBlock.durationMinutes > 0
+        ? mainBlock.durationMinutes
+        : this.parseDurationPrescription(mainDescription);
 
     return {
       id: workout.id,
@@ -161,6 +162,7 @@ export class WorkoutExecutionAnalyzerService {
       targetPaceRange,
       expectedRepCount,
       expectedRepDistanceKm,
+      expectedMainDurationMin,
       totalDistanceKm: totalDistanceKm > 0 ? Number(totalDistanceKm.toFixed(2)) : undefined,
     };
   }
@@ -168,6 +170,7 @@ export class WorkoutExecutionAnalyzerService {
   private analyzeExecution(
     session: DetailedSessionDto,
     prescribed: PrescribedWorkoutSummary | null,
+    feedback?: { effort: number; fatigue: number; completed: boolean },
   ): ExecutionAnalysis {
     const observations: string[] = [];
     const reps = session.segments.filter((s) => s.label === SegmentLabel.rep);
@@ -179,9 +182,70 @@ export class WorkoutExecutionAnalyzerService {
           `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed.expectedRepCount} repetições.`,
         );
       }
+
+      let targetAdherence: ExecutionAnalysis['targetAdherence'] = 'unknown';
+      let deviationFromTargetSecPerKm: number | undefined;
+      const sessionPaceSec = session.averagePaceSecondsPerKm;
+      if (
+        prescribed?.targetPaceRange &&
+        typeof sessionPaceSec === 'number' &&
+        sessionPaceSec > 0
+      ) {
+        const { minSecPerKm, maxSecPerKm } = prescribed.targetPaceRange;
+        if (sessionPaceSec >= minSecPerKm && sessionPaceSec <= maxSecPerKm) {
+          targetAdherence = 'within';
+          deviationFromTargetSecPerKm = 0;
+        } else if (sessionPaceSec < minSecPerKm) {
+          targetAdherence = 'overshot';
+          deviationFromTargetSecPerKm = Math.round(sessionPaceSec - minSecPerKm);
+          observations.push(
+            `Treino executado ${Math.abs(deviationFromTargetSecPerKm)}s/km mais rápido que o prescrito (overshot).`,
+          );
+        } else {
+          targetAdherence = 'undershot';
+          deviationFromTargetSecPerKm = Math.round(sessionPaceSec - maxSecPerKm);
+          observations.push(
+            `Treino executado ${deviationFromTargetSecPerKm}s/km mais lento que o prescrito (undershot).`,
+          );
+        }
+      }
+
+      // Variance/strategy a partir de splits "easy" reais (Phase A do iOS entrega isso).
+      const easyPaces = session.segments
+        .filter((s) => s.label === SegmentLabel.easy)
+        .map((s) => s.avgPaceSecondsPerKm)
+        .filter((p): p is number => typeof p === 'number' && p > 0);
+      let pacingStrategy: ExecutionAnalysis['pacingStrategy'] = 'n/a';
+      let paceVarianceSeconds: number | undefined;
+      if (easyPaces.length >= 4) {
+        const fastest = Math.min(...easyPaces);
+        const slowest = Math.max(...easyPaces);
+        paceVarianceSeconds = Math.round(slowest - fastest);
+        const firstHalf = avg(easyPaces.slice(0, Math.floor(easyPaces.length / 2)));
+        const secondHalf = avg(easyPaces.slice(Math.ceil(easyPaces.length / 2)));
+        const delta = secondHalf - firstHalf;
+        if (paceVarianceSeconds > 25) {
+          pacingStrategy = 'erratic';
+          observations.push(
+            `Variação grande entre splits (~${paceVarianceSeconds}s/km entre o mais rápido e o mais lento).`,
+          );
+        } else if (delta > 5) {
+          pacingStrategy = 'fade';
+          observations.push('Pacing degradou na segunda metade do treino (+5s/km ou mais).');
+        } else if (delta < -5) {
+          pacingStrategy = 'negative';
+        } else {
+          pacingStrategy = 'even';
+        }
+      }
+
+      this.addContextualObservations(observations, prescribed, feedback, session, targetAdherence);
+
       return {
-        pacingStrategy: 'n/a',
-        targetAdherence: prescribed ? 'unknown' : 'unknown',
+        pacingStrategy,
+        targetAdherence,
+        deviationFromTargetSecPerKm,
+        paceVarianceSeconds,
         observations,
       };
     }
@@ -269,6 +333,8 @@ export class WorkoutExecutionAnalyzerService {
       );
     }
 
+    this.addContextualObservations(observations, prescribed, feedback, session, targetAdherence);
+
     return {
       meanRepPace: meanPaceSec > 0 ? formatPace(meanPaceSec) : undefined,
       fastestRep:
@@ -284,6 +350,64 @@ export class WorkoutExecutionAnalyzerService {
       avgHrRecoveryBpm,
       observations,
     };
+  }
+
+  /**
+   * Cruza adherence × effort/fatigue × intensidade prescrita × duração executada
+   * para emitir observações de overreach, easy-rápido-demais, qualidade-falha, sessão encurtada.
+   */
+  private addContextualObservations(
+    observations: string[],
+    prescribed: PrescribedWorkoutSummary | null,
+    feedback: { effort: number; fatigue: number; completed: boolean } | undefined,
+    session: DetailedSessionDto,
+    targetAdherence: ExecutionAnalysis['targetAdherence'],
+  ): void {
+    const intensity = prescribed?.intensity ?? null;
+
+    if (feedback) {
+      const { effort, fatigue, completed } = feedback;
+
+      if (effort >= 8 && targetAdherence === 'within' && intensity !== null && intensity <= 4) {
+        observations.push(
+          `Esforço alto (${effort}/10) em treino fácil dentro da faixa — sinal de fadiga ou overreach.`,
+        );
+      }
+      if (targetAdherence === 'overshot' && intensity !== null && intensity <= 4) {
+        observations.push(
+          'Easy/recuperação executado em ritmo de tempo — risco de overreach na próxima semana.',
+        );
+      }
+      if (
+        targetAdherence === 'undershot' &&
+        intensity !== null &&
+        intensity >= 7 &&
+        completed === false
+      ) {
+        observations.push(
+          'Atleta não absorveu o estímulo da sessão de qualidade — considere reduzir volume ou pace alvo.',
+        );
+      }
+      if (effort === 10 && fatigue === 10 && completed === false) {
+        observations.push(
+          'Atleta estourou (effort/fatigue 10/10, não completou) — a próxima semana deve ter deload.',
+        );
+      }
+    }
+
+    // Sessão encurtada vs duração prescrita do bloco principal
+    if (
+      prescribed?.expectedMainDurationMin &&
+      prescribed.expectedMainDurationMin > 0 &&
+      session.durationSeconds > 0
+    ) {
+      const actualMin = session.durationSeconds / 60;
+      if (actualMin < prescribed.expectedMainDurationMin * 0.8) {
+        observations.push(
+          `Sessão encurtada: atleta correu ${Math.round(actualMin)}min vs ${prescribed.expectedMainDurationMin}min prescritos no bloco principal.`,
+        );
+      }
+    }
   }
 
   private parsePaceRange(
@@ -313,6 +437,24 @@ export class WorkoutExecutionAnalyzerService {
     const unit = match[3].toLowerCase();
     const distanceKm = unit === 'km' ? distNum : distNum / 1000;
     return { expectedRepCount: count, expectedRepDistanceKm: distanceKm };
+  }
+
+  /** Detecta "Corra por 20 minutos em ritmo de Limiar" → 20. */
+  private parseDurationPrescription(description: string): number | undefined {
+    if (!description) return undefined;
+    const patterns = [
+      /(\d+)\s*min(?:utos?)?\s+em\s+ritmo/i,
+      /por\s+(\d+)\s*min(?:utos?)?/i,
+      /durante\s+(\d+)\s*min(?:utos?)?/i,
+    ];
+    for (const re of patterns) {
+      const m = description.match(re);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (!Number.isNaN(n) && n > 0 && n < 240) return n;
+      }
+    }
+    return undefined;
   }
 }
 
