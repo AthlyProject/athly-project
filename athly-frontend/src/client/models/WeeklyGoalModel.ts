@@ -57,6 +57,12 @@ export interface WeeklyGoalModel {
     metrics?: object;
     /**
      * 
+     * @type {object}
+     * @memberof WeeklyGoalModel
+     */
+    previousWeekAnalysis?: object;
+    /**
+     * 
      * @type {Date}
      * @memberof WeeklyGoalModel
      */
@@ -112,6 +118,7 @@ export function WeeklyGoalModelFromJSONTyped(json: any, ignoreDiscriminator: boo
         'weekEndDate': (new Date(json['weekEndDate'])),
         'status': json['status'],
         'metrics': json['metrics'] == null ? undefined : json['metrics'],
+        'previousWeekAnalysis': json['previousWeekAnalysis'] == null ? undefined : json['previousWeekAnalysis'],
         'createdAt': (new Date(json['createdAt'])),
         'updatedAt': (new Date(json['updatedAt'])),
     };
@@ -134,6 +141,7 @@ export function WeeklyGoalModelToJSONTyped(value?: WeeklyGoalModel | null, ignor
         'weekEndDate': value['weekEndDate'].toISOString(),
         'status': value['status'],
         'metrics': value['metrics'],
+        'previousWeekAnalysis': value['previousWeekAnalysis'],
         'createdAt': value['createdAt'].toISOString(),
         'updatedAt': value['updatedAt'].toISOString(),
     };

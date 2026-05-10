@@ -93,6 +93,12 @@ export interface WorkoutModel {
      * @memberof WorkoutModel
      */
     stravaActivityId?: object | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof WorkoutModel
+     */
+    appleHealthWorkoutUUID?: object | null;
 }
 
 
@@ -159,6 +165,7 @@ export function WorkoutModelFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'weeklyGoalId': json['weeklyGoalId'] == null ? undefined : json['weeklyGoalId'],
         'intensity': json['intensity'] == null ? undefined : json['intensity'],
         'stravaActivityId': json['stravaActivityId'] == null ? undefined : json['stravaActivityId'],
+        'appleHealthWorkoutUUID': json['appleHealthWorkoutUUID'] == null ? undefined : json['appleHealthWorkoutUUID'],
     };
 }
 
@@ -184,6 +191,7 @@ export function WorkoutModelToJSONTyped(value?: WorkoutModel | null, ignoreDiscr
         'weeklyGoalId': value['weeklyGoalId'],
         'intensity': value['intensity'],
         'stravaActivityId': value['stravaActivityId'],
+        'appleHealthWorkoutUUID': value['appleHealthWorkoutUUID'],
     };
 }
 

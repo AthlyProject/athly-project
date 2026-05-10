@@ -74,6 +74,8 @@ model User {
   availableDays        String[]  @default([]) @map("available_days")
   imc                  Float?
   assessmentCompleted  Boolean   @default(false) @map("assessment_completed")
+  isEmailVerified      Boolean   @default(false) @map("is_email_verified")
+  otpCode              String?   @map("otp_code")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

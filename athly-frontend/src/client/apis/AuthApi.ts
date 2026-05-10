@@ -16,26 +16,42 @@
 import * as runtime from '../runtime';
 import type {
   AuthControllerGetStravaAuthUrl200Response,
+  AuthControllerRefresh200Response,
+  AuthControllerVerifyEmail200Response,
   AuthPayload,
   LoginDto,
+  RefreshTokenDto,
   RegisterUserDto,
   StravaCallbackDto,
+  VerifyEmailDto,
 } from '../models/index';
 import {
     AuthControllerGetStravaAuthUrl200ResponseFromJSON,
     AuthControllerGetStravaAuthUrl200ResponseToJSON,
+    AuthControllerRefresh200ResponseFromJSON,
+    AuthControllerRefresh200ResponseToJSON,
+    AuthControllerVerifyEmail200ResponseFromJSON,
+    AuthControllerVerifyEmail200ResponseToJSON,
     AuthPayloadFromJSON,
     AuthPayloadToJSON,
     LoginDtoFromJSON,
     LoginDtoToJSON,
+    RefreshTokenDtoFromJSON,
+    RefreshTokenDtoToJSON,
     RegisterUserDtoFromJSON,
     RegisterUserDtoToJSON,
     StravaCallbackDtoFromJSON,
     StravaCallbackDtoToJSON,
+    VerifyEmailDtoFromJSON,
+    VerifyEmailDtoToJSON,
 } from '../models/index';
 
 export interface AuthControllerLoginRequest {
     loginDto: LoginDto;
+}
+
+export interface AuthControllerRefreshRequest {
+    refreshTokenDto: RefreshTokenDto;
 }
 
 export interface AuthControllerRegisterRequest {
@@ -44,6 +60,10 @@ export interface AuthControllerRegisterRequest {
 
 export interface AuthControllerStravaCallbackRequest {
     stravaCallbackDto: StravaCallbackDto;
+}
+
+export interface AuthControllerVerifyEmailRequest {
+    verifyEmailDto: VerifyEmailDto;
 }
 
 /**
@@ -129,6 +149,58 @@ export class AuthApi extends runtime.BaseAPI {
     async authControllerLogin(requestParameters: AuthControllerLoginRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthPayload> {
         const response = await this.authControllerLoginRaw(requestParameters, initOverrides);
         return await response.value();
+    }
+
+    /**
+     * Creates request options for authControllerRefresh without sending the request
+     */
+    async authControllerRefreshRequestOpts(requestParameters: AuthControllerRefreshRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['refreshTokenDto'] == null) {
+            throw new runtime.RequiredError(
+                'refreshTokenDto',
+                'Required parameter "refreshTokenDto" was null or undefined when calling authControllerRefresh().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/auth/refresh`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: RefreshTokenDtoToJSON(requestParameters['refreshTokenDto']),
+        };
+    }
+
+    /**
+     */
+    async authControllerRefreshRaw(requestParameters: AuthControllerRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthControllerRefresh200Response>> {
+        const requestOptions = await this.authControllerRefreshRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AuthControllerRefresh200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async authControllerRefresh(requestParameters: AuthControllerRefreshRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthControllerRefresh200Response | null | undefined > {
+        const response = await this.authControllerRefreshRaw(requestParameters, initOverrides);
+        switch (response.raw.status) {
+            case 200:
+                return await response.value();
+            case 201:
+                return null;
+            default:
+                return await response.value();
+        }
     }
 
     /**
@@ -219,6 +291,58 @@ export class AuthApi extends runtime.BaseAPI {
     async authControllerStravaCallback(requestParameters: AuthControllerStravaCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthPayload> {
         const response = await this.authControllerStravaCallbackRaw(requestParameters, initOverrides);
         return await response.value();
+    }
+
+    /**
+     * Creates request options for authControllerVerifyEmail without sending the request
+     */
+    async authControllerVerifyEmailRequestOpts(requestParameters: AuthControllerVerifyEmailRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['verifyEmailDto'] == null) {
+            throw new runtime.RequiredError(
+                'verifyEmailDto',
+                'Required parameter "verifyEmailDto" was null or undefined when calling authControllerVerifyEmail().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/auth/verify-email`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: VerifyEmailDtoToJSON(requestParameters['verifyEmailDto']),
+        };
+    }
+
+    /**
+     */
+    async authControllerVerifyEmailRaw(requestParameters: AuthControllerVerifyEmailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuthControllerVerifyEmail200Response>> {
+        const requestOptions = await this.authControllerVerifyEmailRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AuthControllerVerifyEmail200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async authControllerVerifyEmail(requestParameters: AuthControllerVerifyEmailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuthControllerVerifyEmail200Response | null | undefined > {
+        const response = await this.authControllerVerifyEmailRaw(requestParameters, initOverrides);
+        switch (response.raw.status) {
+            case 200:
+                return await response.value();
+            case 201:
+                return null;
+            default:
+                return await response.value();
+        }
     }
 
 }

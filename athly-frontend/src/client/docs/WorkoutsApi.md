@@ -18,7 +18,7 @@ All URIs are relative to *http://localhost*
 
 ## workoutsControllerCompleteWorkout
 
-> WorkoutModel workoutsControllerCompleteWorkout(workoutId)
+> WorkoutModel workoutsControllerCompleteWorkout(workoutId, completeWorkoutDto)
 
 
 
@@ -42,6 +42,8 @@ async function example() {
   const body = {
     // string
     workoutId: workoutId_example,
+    // CompleteWorkoutDto
+    completeWorkoutDto: ...,
   } satisfies WorkoutsControllerCompleteWorkoutRequest;
 
   try {
@@ -62,6 +64,7 @@ example().catch(console.error);
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **workoutId** | `string` |  | [Defaults to `undefined`] |
+| **completeWorkoutDto** | [CompleteWorkoutDto](CompleteWorkoutDto.md) |  | |
 
 ### Return type
 
@@ -73,7 +76,7 @@ example().catch(console.error);
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
+- **Content-Type**: `application/json`
 - **Accept**: `application/json`
 
 

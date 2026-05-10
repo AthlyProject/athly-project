@@ -1,26 +1,24 @@
 
-# PlanFromHealthDto
+# VerifyEmailDto
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`runs` | [Array&lt;HealthRunItemDto&gt;](HealthRunItemDto.md)
-`detailedSessions` | [Array&lt;DetailedSessionDto&gt;](DetailedSessionDto.md)
-`weekStartDate` | string
+`email` | string
+`otp` | string
 
 ## Example
 
 ```typescript
-import type { PlanFromHealthDto } from ''
+import type { VerifyEmailDto } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "runs": null,
-  "detailedSessions": null,
-  "weekStartDate": null,
-} satisfies PlanFromHealthDto
+  "email": user@example.com,
+  "otp": 123456,
+} satisfies VerifyEmailDto
 
 console.log(example)
 
@@ -29,7 +27,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as PlanFromHealthDto
+const exampleParsed = JSON.parse(exampleJSON) as VerifyEmailDto
 console.log(exampleParsed)
 ```
 

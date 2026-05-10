@@ -31,4 +31,7 @@ export class UserModel {
 
   @ApiProperty()
   assessmentCompleted: boolean;
+
+  @ApiProperty()
+  isEmailVerified: boolean;
 }

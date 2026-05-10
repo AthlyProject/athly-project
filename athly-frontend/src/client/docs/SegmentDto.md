@@ -1,26 +1,36 @@
 
-# PlanFromHealthDto
+# SegmentDto
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`runs` | [Array&lt;HealthRunItemDto&gt;](HealthRunItemDto.md)
-`detailedSessions` | [Array&lt;DetailedSessionDto&gt;](DetailedSessionDto.md)
-`weekStartDate` | string
+`label` | string
+`index` | number
+`distanceKm` | number
+`durationSeconds` | number
+`avgPaceSecondsPerKm` | number
+`avgHR` | number
+`peakHR` | number
+`endHR` | number
 
 ## Example
 
 ```typescript
-import type { PlanFromHealthDto } from ''
+import type { SegmentDto } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "runs": null,
-  "detailedSessions": null,
-  "weekStartDate": null,
-} satisfies PlanFromHealthDto
+  "label": null,
+  "index": null,
+  "distanceKm": null,
+  "durationSeconds": null,
+  "avgPaceSecondsPerKm": null,
+  "avgHR": null,
+  "peakHR": null,
+  "endHR": null,
+} satisfies SegmentDto
 
 console.log(example)
 
@@ -29,7 +39,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as PlanFromHealthDto
+const exampleParsed = JSON.parse(exampleJSON) as SegmentDto
 console.log(exampleParsed)
 ```
 

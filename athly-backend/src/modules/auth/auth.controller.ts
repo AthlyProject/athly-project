@@ -6,6 +6,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthPayload } from './dto/auth-payload.dto';
 import { StravaCallbackDto } from './dto/strava-callback.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -22,6 +23,12 @@ export class AuthController {
   @ApiOkResponse({ type: AuthPayload })
   async login(@Body() input: LoginDto): Promise<AuthPayload> {
     return this.authService.login(input.email, input.password);
+  }
+
+  @Post('verify-email')
+  @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+  async verifyEmail(@Body() input: VerifyEmailDto) {
+    return this.authService.verifyEmail(input.email, input.otp);
   }
 
   @Post('refresh')

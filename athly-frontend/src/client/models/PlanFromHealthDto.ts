@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { DetailedSessionDto } from './DetailedSessionDto';
+import {
+    DetailedSessionDtoFromJSON,
+    DetailedSessionDtoFromJSONTyped,
+    DetailedSessionDtoToJSON,
+    DetailedSessionDtoToJSONTyped,
+} from './DetailedSessionDto';
 import type { HealthRunItemDto } from './HealthRunItemDto';
 import {
     HealthRunItemDtoFromJSON,
@@ -28,11 +35,17 @@ import {
  */
 export interface PlanFromHealthDto {
     /**
-     * 
+     * Lightweight aggregated runs for historical context (up to 20 on first generation, 0 mid-plan).
      * @type {Array<HealthRunItemDto>}
      * @memberof PlanFromHealthDto
      */
     runs: Array<HealthRunItemDto>;
+    /**
+     * Rich per-segment sessions for execution analysis (5 on first generation, 7 mid-plan). Optional for backward compatibility.
+     * @type {Array<DetailedSessionDto>}
+     * @memberof PlanFromHealthDto
+     */
+    detailedSessions?: Array<DetailedSessionDto>;
     /**
      * Week start date (YYYY-MM-DD), defaults to next Monday
      * @type {string}
@@ -60,6 +73,7 @@ export function PlanFromHealthDtoFromJSONTyped(json: any, ignoreDiscriminator: b
     return {
         
         'runs': ((json['runs'] as Array<any>).map(HealthRunItemDtoFromJSON)),
+        'detailedSessions': json['detailedSessions'] == null ? undefined : ((json['detailedSessions'] as Array<any>).map(DetailedSessionDtoFromJSON)),
         'weekStartDate': json['weekStartDate'] == null ? undefined : json['weekStartDate'],
     };
 }
@@ -76,6 +90,7 @@ export function PlanFromHealthDtoToJSONTyped(value?: PlanFromHealthDto | null, i
     return {
         
         'runs': ((value['runs'] as Array<any>).map(HealthRunItemDtoToJSON)),
+        'detailedSessions': value['detailedSessions'] == null ? undefined : ((value['detailedSessions'] as Array<any>).map(DetailedSessionDtoToJSON)),
         'weekStartDate': value['weekStartDate'],
     };
 }

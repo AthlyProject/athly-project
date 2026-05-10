@@ -93,7 +93,10 @@ export async function submitWorkoutFeedback(
 }
 
 export async function completeWorkout(workoutId: string): Promise<Workout> {
-  return api.workouts.workoutsControllerCompleteWorkout({ workoutId })
+  return api.workouts.workoutsControllerCompleteWorkout({ 
+    workoutId,
+    completeWorkoutDto: {}
+  })
 }
 
 export async function skipWorkout(workoutId: string): Promise<Workout> {

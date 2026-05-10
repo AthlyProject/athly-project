@@ -18,10 +18,10 @@ export class EmailService {
     );
   }
 
-  async sendWelcomeEmail(to: string, userName: string): Promise<void> {
-    const subject = 'Bem-vindo ao Athly! 🏃‍♂️';
-    const htmlBody = this.buildWelcomeHtml(userName);
-    const textBody = this.buildWelcomeText(userName);
+  async sendOtpEmail(to: string, userName: string, otpCode: string): Promise<void> {
+    const subject = 'Confirme seu e-mail no Athly! 🏃‍♂️';
+    const htmlBody = this.buildOtpHtml(userName, otpCode);
+    const textBody = this.buildOtpText(userName, otpCode);
 
     try {
       const command = new SendEmailCommand({
@@ -39,23 +39,23 @@ export class EmailService {
       });
 
       await this.ses.send(command);
-      this.logger.log(`Welcome email sent to ${to}`);
+      this.logger.log(`OTP confirmation email sent to ${to}`);
     } catch (error) {
       this.logger.error(
-        `Failed to send welcome email to ${to}: ${(error as Error).message}`,
+        `Failed to send OTP email to ${to}: ${(error as Error).message}`,
       );
       // Don't throw — email failure should not block registration
     }
   }
 
-  private buildWelcomeHtml(userName: string): string {
+  private buildOtpHtml(userName: string, otpCode: string): string {
     return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bem-vindo ao Athly</title>
+  <title>Confirme seu e-mail no Athly</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5; padding: 40px 0;">
@@ -80,20 +80,12 @@ export class EmailService {
                 Olá, ${userName}! 👋
               </h2>
               <p style="margin: 0 0 20px; color: #3f3f46; font-size: 16px; line-height: 1.6;">
-                Sua conta no <strong>Athly</strong> foi criada com sucesso! Estamos muito felizes em ter você conosco.
+                Falta pouco para você aproveitar tudo do <strong>Athly</strong>! Use o código abaixo para confirmar seu e-mail.
               </p>
-              <p style="margin: 0 0 20px; color: #3f3f46; font-size: 16px; line-height: 1.6;">
-                Agora você pode começar a usar a plataforma para planejar seus treinos, acompanhar seu progresso e alcançar seus objetivos.
-              </p>
-              <div style="background-color: #f0f0ff; border-left: 4px solid #6366f1; border-radius: 8px; padding: 20px; margin: 24px 0;">
-                <p style="margin: 0 0 12px; color: #18181b; font-size: 15px; font-weight: 600;">
-                  🚀 Próximos passos:
+              <div style="background-color: #f0f0ff; border: 2px dashed #6366f1; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
+                <p style="margin: 0; color: #18181b; font-size: 32px; font-weight: 700; letter-spacing: 4px;">
+                  ${otpCode}
                 </p>
-                <ul style="margin: 0; padding-left: 20px; color: #3f3f46; font-size: 14px; line-height: 1.8;">
-                  <li>Complete seu questionário de avaliação</li>
-                  <li>Conecte suas contas (Strava, Garmin, etc.)</li>
-                  <li>Receba seu plano de treino personalizado com IA</li>
-                </ul>
               </div>
               <p style="margin: 24px 0 0; color: #71717a; font-size: 14px; line-height: 1.6;">
                 Se você não criou esta conta, por favor ignore este e-mail.
@@ -119,18 +111,13 @@ export class EmailService {
 </html>`.trim();
   }
 
-  private buildWelcomeText(userName: string): string {
+  private buildOtpText(userName: string, otpCode: string): string {
     return [
       `Olá, ${userName}!`,
       '',
-      'Bem-vindo ao Athly! Sua conta foi criada com sucesso.',
+      'Falta pouco para você aproveitar tudo do Athly! Use o código abaixo para confirmar seu e-mail:',
       '',
-      'Agora você pode começar a usar a plataforma para planejar seus treinos, acompanhar seu progresso e alcançar seus objetivos.',
-      '',
-      'Próximos passos:',
-      '- Complete seu questionário de avaliação',
-      '- Conecte suas contas (Strava, Garmin, etc.)',
-      '- Receba seu plano de treino personalizado com IA',
+      `Código de Confirmação: ${otpCode}`,
       '',
       'Se você não criou esta conta, por favor ignore este e-mail.',
       '',

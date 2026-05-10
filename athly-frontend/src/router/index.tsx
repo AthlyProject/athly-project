@@ -20,6 +20,7 @@ import { TrainingPlanCalendarPage } from "@/pages/TrainingPlanCalendarPage";
 import { DesignSystemPage } from "@/pages/DesignSystemPage";
 import { OAuthCallbackPage } from "@/pages/OAuthCallbackPage";
 import { AssessmentPage } from "@/pages/AssessmentPage";
+import { VerifyEmailPage } from "@/pages/VerifyEmailPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
       { path: "history", element: <HistoryPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "verify-email", element: <VerifyEmailPage /> },
     ],
   },
   { path: "/oauth/strava/callback", element: <OAuthCallbackPage /> },

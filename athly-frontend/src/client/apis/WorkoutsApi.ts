@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CompleteWorkoutDto,
   CreateWorkoutDto,
   SubmitWorkoutFeedbackDto,
   UpdateWorkoutDto,
@@ -22,6 +23,8 @@ import type {
   WorkoutModel,
 } from '../models/index';
 import {
+    CompleteWorkoutDtoFromJSON,
+    CompleteWorkoutDtoToJSON,
     CreateWorkoutDtoFromJSON,
     CreateWorkoutDtoToJSON,
     SubmitWorkoutFeedbackDtoFromJSON,
@@ -36,6 +39,7 @@ import {
 
 export interface WorkoutsControllerCompleteWorkoutRequest {
     workoutId: string;
+    completeWorkoutDto: CompleteWorkoutDto;
 }
 
 export interface WorkoutsControllerCreateWorkoutRequest {
@@ -80,9 +84,18 @@ export class WorkoutsApi extends runtime.BaseAPI {
             );
         }
 
+        if (requestParameters['completeWorkoutDto'] == null) {
+            throw new runtime.RequiredError(
+                'completeWorkoutDto',
+                'Required parameter "completeWorkoutDto" was null or undefined when calling workoutsControllerCompleteWorkout().'
+            );
+        }
+
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -101,6 +114,7 @@ export class WorkoutsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
+            body: CompleteWorkoutDtoToJSON(requestParameters['completeWorkoutDto']),
         };
     }
 

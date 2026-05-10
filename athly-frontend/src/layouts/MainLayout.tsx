@@ -1,11 +1,18 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
 import { BottomNav } from '@/components/BottomNav'
 import { Toaster } from 'react-hot-toast'
+import { useAuthStore } from '@/store/authStore'
+import { AlertCircle } from 'lucide-react'
 
 export function MainLayout() {
+  const user = useAuthStore((s) => s.user)
+  const location = useLocation()
+  
+  const showVerificationBanner = user && !user.isEmailVerified && location.pathname !== '/app/verify-email'
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       {/* Fixed ambient gradient — glass cards across all pages blur this */}
       <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden" style={{ background: 'var(--color-background-dark)' }}>
         <div
@@ -22,8 +29,26 @@ export function MainLayout() {
         />
       </div>
       <Sidebar />
-      <main className="pb-20 md:pb-0 md:pl-64">
-        <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
+      <main className="flex-1 pb-20 md:pb-0 md:pl-64 flex flex-col">
+        {showVerificationBanner && (
+          <div className="bg-purple-900/40 border-b border-purple-500/30 px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-center justify-between mx-auto max-w-4xl gap-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-purple-400" />
+                <p className="text-sm text-purple-100">
+                  Por favor, confirme seu e-mail para ter acesso a todas as funcionalidades.
+                </p>
+              </div>
+              <Link 
+                to="/app/verify-email" 
+                className="flex-none rounded-lg bg-purple-500/20 px-3.5 py-1.5 text-sm font-semibold text-purple-200 shadow-sm hover:bg-purple-500/30 ring-1 ring-inset ring-purple-500/50 transition-colors"
+              >
+                Verificar agora
+              </Link>
+            </div>
+          </div>
+        )}
+        <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-6 md:py-8 flex-1">
           <Outlet />
         </div>
       </main>

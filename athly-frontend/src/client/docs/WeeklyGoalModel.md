@@ -12,6 +12,7 @@ Name | Type
 `weekEndDate` | Date
 `status` | string
 `metrics` | object
+`previousWeekAnalysis` | object
 `createdAt` | Date
 `updatedAt` | Date
 
@@ -28,6 +29,7 @@ const example = {
   "weekEndDate": null,
   "status": null,
   "metrics": null,
+  "previousWeekAnalysis": null,
   "createdAt": null,
   "updatedAt": null,
 } satisfies WeeklyGoalModel

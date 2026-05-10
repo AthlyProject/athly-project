@@ -16,6 +16,7 @@ Name | Type
 `goals` | Array&lt;string&gt;
 `availableDays` | Array&lt;string&gt;
 `assessmentCompleted` | boolean
+`isEmailVerified` | boolean
 
 ## Example
 
@@ -34,6 +35,7 @@ const example = {
   "goals": null,
   "availableDays": null,
   "assessmentCompleted": null,
+  "isEmailVerified": null,
 } satisfies UserModel
 
 console.log(example)

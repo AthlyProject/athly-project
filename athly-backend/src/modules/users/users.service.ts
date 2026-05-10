@@ -86,6 +86,7 @@ export class UsersService {
       goals: user.goals ?? [],
       availableDays: user.availableDays ?? [],
       assessmentCompleted: user.assessmentCompleted,
+      isEmailVerified: user.isEmailVerified,
     };
   }
 }

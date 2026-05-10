@@ -54,6 +54,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(input.password, 10);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const user = await this.prisma.user.create({
       data: {
@@ -64,15 +65,16 @@ export class AuthService {
         dateOfBirth: new Date(input.dateOfBirth),
         weight: input.weight,
         height: input.height,
+        otpCode,
       },
     });
 
-    // Fire-and-forget welcome email
+    // Fire-and-forget otp email
     this.emailService
-      .sendWelcomeEmail(user.email, user.name)
+      .sendOtpEmail(user.email, user.name, otpCode)
       .catch((err: Error) =>
         console.error(
-          `[Auth] Failed to send welcome email to ${user.email}:`,
+          `[Auth] Failed to send OTP email to ${user.email}:`,
           err.message,
         ),
       );
@@ -142,6 +144,29 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     return this.usersService.toUserModel(user);
+  }
+
+  async verifyEmail(email: string, otp: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado');
+    }
+    if (user.isEmailVerified) {
+      throw new BadRequestException('E-mail já verificado');
+    }
+    if (user.otpCode !== otp) {
+      throw new BadRequestException('Código OTP inválido');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        otpCode: null,
+      },
+    });
+
+    return { message: 'E-mail verificado com sucesso' };
   }
 
   // ─── Strava Auth ────────────────────────────────────────────────────────────

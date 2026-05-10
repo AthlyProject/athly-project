@@ -17,6 +17,7 @@ Name | Type
 `weeklyGoalId` | string
 `intensity` | number
 `stravaActivityId` | object
+`appleHealthWorkoutUUID` | object
 
 ## Example
 
@@ -36,6 +37,7 @@ const example = {
   "weeklyGoalId": null,
   "intensity": null,
   "stravaActivityId": null,
+  "appleHealthWorkoutUUID": null,
 } satisfies WorkoutModel
 
 console.log(example)
