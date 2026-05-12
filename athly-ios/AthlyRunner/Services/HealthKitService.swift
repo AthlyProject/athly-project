@@ -1,6 +1,7 @@
 import Foundation
 import HealthKit
 import CoreLocation
+import os
 
 // MARK: - Protocol (permite trocar por mock no simulador)
 
@@ -11,6 +12,7 @@ protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     func requestReadAuthorization() async throws
     func requestWriteAuthorization() async throws
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
+    func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async
 }
 
 /// Serviço para leitura e escrita de corridas no Health Store.
@@ -21,6 +23,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     private static let energyType = HKQuantityType(.activeEnergyBurned)
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
+    private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
 
     /// Verifica se o HealthKit está disponível (não disponível no simulador em muitos casos).
     var isHealthDataAvailable: Bool {
@@ -163,6 +166,61 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
                 continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
             }
             store.execute(query)
+        }
+    }
+
+    /// Diagnóstico: executa query estrita (somente .running) e query ampla (todos os workout types)
+    /// na janela fornecida, logando resultado detalhado para identificar por que um workout do Nike
+    /// Run Club (ou de outro app) pode estar ausente da listagem normal.
+    func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async {
+        guard isHealthDataAvailable else {
+            Self.diagLogger.debug("[\(contextLabel)] HealthKit não disponível — diagnóstico ignorado.")
+            return
+        }
+
+        let authStatus = store.authorizationStatus(for: HKObjectType.workoutType())
+        Self.diagLogger.debug("[\(contextLabel)] authorizationStatus(workoutType) = \(authStatus.rawValue) (0=notDetermined 1=sharingDenied 2=sharingAuthorized)")
+
+        let df = ISO8601DateFormatter()
+        Self.diagLogger.debug("[\(contextLabel)] janela: \(df.string(from: windowStart)) → \(df.string(from: windowEnd))")
+
+        let workoutType = HKObjectType.workoutType()
+        let datePredicate = HKQuery.predicateForSamples(withStart: windowStart, end: windowEnd, options: .strictStartDate)
+        let runningPredicate = HKQuery.predicateForWorkouts(with: .running)
+        let strictPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [runningPredicate, datePredicate])
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+        // Query estrita (espelha o comportamento atual do app)
+        let strictWorkouts: [HKWorkout] = await withCheckedContinuation { continuation in
+            let q = HKSampleQuery(sampleType: workoutType, predicate: strictPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+            }
+            store.execute(q)
+        }
+        Self.diagLogger.debug("[\(contextLabel)] QUERY ESTRITA (.running na janela): \(strictWorkouts.count) resultado(s)")
+        for w in strictWorkouts {
+            let distM = w.totalDistance?.doubleValue(for: .meter()) ?? 0
+            let bundle = w.sourceRevision.source.bundleIdentifier
+            let appName = w.sourceRevision.source.name
+            let brand = w.metadata?["HKWorkoutBrandName"] as? String ?? "-"
+            Self.diagLogger.debug("  [estrita] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
+        }
+
+        // Query ampla (todos os workout types na janela — captura workouts com tipo diferente de .running)
+        let broadWorkouts: [HKWorkout] = await withCheckedContinuation { continuation in
+            let q = HKSampleQuery(sampleType: workoutType, predicate: datePredicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, _ in
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+            }
+            store.execute(q)
+        }
+        Self.diagLogger.debug("[\(contextLabel)] QUERY AMPLA (todos os tipos na janela): \(broadWorkouts.count) resultado(s)")
+        for w in broadWorkouts {
+            let distM = w.totalDistance?.doubleValue(for: .meter()) ?? 0
+            let bundle = w.sourceRevision.source.bundleIdentifier
+            let appName = w.sourceRevision.source.name
+            let brand = w.metadata?["HKWorkoutBrandName"] as? String ?? "-"
+            let inStrict = strictWorkouts.contains(where: { $0.uuid == w.uuid })
+            Self.diagLogger.debug("  [ampla\(inStrict ? "" : " ⚠️AUSENTE_DA_ESTRITA")] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
         }
     }
 

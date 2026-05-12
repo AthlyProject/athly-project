@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 struct WorkoutCompletionSheet: View {
     let workout: WorkoutModel
@@ -36,6 +37,7 @@ struct WorkoutCompletionSheet: View {
     @State private var isSubmitting = false
 
     private let calendar = Calendar.current
+    private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
 
     var body: some View {
         NavigationStack {
@@ -509,7 +511,6 @@ struct WorkoutCompletionSheet: View {
 
         do {
             try await service.requestReadAuthorization()
-            let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
 
             let windowStart = calendar.startOfDay(for: workout.parsedDate)
             guard let windowEnd = calendar.date(byAdding: .day, value: 3, to: windowStart) else {
@@ -517,13 +518,39 @@ struct WorkoutCompletionSheet: View {
                 return
             }
 
+            let df = ISO8601DateFormatter()
+            Self.diagLogger.debug("[ConcluirTreino] workoutId=\(workout.id) title=\(workout.title) parsedDate=\(df.string(from: workout.parsedDate)) windowStart=\(df.string(from: windowStart)) windowEnd=\(df.string(from: windowEnd))")
+
+            let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
+            Self.diagLogger.debug("[ConcluirTreino] fetchLatestRunningWorkouts(limit:30) retornou \(allRuns.count) corrida(s)")
+            for r in allRuns {
+                Self.diagLogger.debug("  [fetch] id=\(r.id) start=\(df.string(from: r.startDate)) distM=\(String(format: "%.0f", r.distanceMeters))")
+            }
+
             let inWindow = allRuns.filter { $0.startDate >= windowStart && $0.startDate < windowEnd }
+            Self.diagLogger.debug("[ConcluirTreino] após filtro de janela: \(inWindow.count) corrida(s)")
+            for r in inWindow {
+                Self.diagLogger.debug("  [inWindow] id=\(r.id) start=\(df.string(from: r.startDate))")
+            }
+
             let orphanIds = Set(RunWorkoutLinkStore.shared.allOrphanCandidates(healthKitUUIDs: inWindow.map { $0.id }))
+            let linkedOut = inWindow.filter { !orphanIds.contains($0.id) }
+            if !linkedOut.isEmpty {
+                for r in linkedOut {
+                    let linkedTo = RunWorkoutLinkStore.shared.athlyWorkoutId(for: r.id) ?? "?"
+                    Self.diagLogger.debug("  [filtrado-por-link] id=\(r.id) já linkada ao athlyWorkoutId=\(linkedTo)")
+                }
+            }
+
             todayRuns = inWindow
                 .filter { orphanIds.contains($0.id) }
                 .sorted { $0.startDate < $1.startDate }
+            Self.diagLogger.debug("[ConcluirTreino] todayRuns final: \(todayRuns.count) corrida(s)")
+
+            await service.diagnose(windowStart: windowStart, windowEnd: windowEnd, contextLabel: "ConcluirTreino:\(workout.id)")
         } catch {
             loadError = error.localizedDescription
+            Self.diagLogger.debug("[ConcluirTreino] ERRO: \(error.localizedDescription)")
         }
     }
 

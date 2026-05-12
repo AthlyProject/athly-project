@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import os
 
 @MainActor
 final class HealthKitRunsViewModel: ObservableObject {
@@ -15,6 +16,7 @@ final class HealthKitRunsViewModel: ObservableObject {
     @Published private(set) var state: State = .idle
 
     private let healthKitService: any HealthKitRunningWorkoutsProviding
+    private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
 
     init(healthKitService: any HealthKitRunningWorkoutsProviding = HealthKitService()) {
         self.healthKitService = healthKitService
@@ -57,6 +59,17 @@ final class HealthKitRunsViewModel: ObservableObject {
         do {
             try await healthKitService.requestReadAuthorization()
             let items = try await healthKitService.fetchLatestRunningWorkouts(limit: 20)
+
+            let df = ISO8601DateFormatter()
+            Self.diagLogger.debug("[HealthKitRunsView] fetchLatestRunningWorkouts(limit:20) retornou \(items.count) corrida(s)")
+            for item in items {
+                Self.diagLogger.debug("  [item] id=\(item.id) start=\(df.string(from: item.startDate)) distM=\(String(format: "%.0f", item.distanceMeters))")
+            }
+
+            let windowEnd = Date()
+            let windowStart = windowEnd.addingTimeInterval(-14 * 24 * 3600)
+            await healthKitService.diagnose(windowStart: windowStart, windowEnd: windowEnd, contextLabel: "HealthKitRunsView")
+
             state = .loaded(items)
         } catch let error as HealthKitError {
             switch error {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -9,6 +9,8 @@ import { CreateWorkoutDto } from './dto/create-workout.dto';
 
 @Injectable()
 export class WorkoutsService {
+  private readonly logger = new Logger(WorkoutsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getTodayWorkout(userId: string) {
@@ -99,56 +101,69 @@ export class WorkoutsService {
     workoutId: string,
     input: SubmitWorkoutFeedbackDto,
   ): Promise<WorkoutFeedbackModel> {
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
-    });
-    if (!workout) {
-      throw new NotFoundException('Workout not found');
+    try {
+      const workout = await this.prisma.workout.findFirst({
+        where: { id: workoutId, userId },
+      });
+      if (!workout) {
+        throw new NotFoundException('Workout not found');
+      }
+
+      const feedback = await this.prisma.workoutFeedback.create({
+        data: {
+          workoutId,
+          userId,
+          completed: input.completed,
+          effort: input.effort,
+          fatigue: input.fatigue,
+        },
+      });
+
+      return {
+        workoutId: feedback.workoutId,
+        completed: feedback.completed,
+        effort: feedback.effort,
+        fatigue: feedback.fatigue,
+      };
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      this.logger.error(`submitWorkoutFeedback failed — workoutId=${workoutId} userId=${userId}`, err instanceof Error ? err.stack : String(err));
+      throw new InternalServerErrorException(`Falha ao salvar feedback: ${err instanceof Error ? err.message : String(err)}`);
     }
-
-    const feedback = await this.prisma.workoutFeedback.create({
-      data: {
-        workoutId,
-        userId,
-        completed: input.completed,
-        effort: input.effort,
-        fatigue: input.fatigue,
-      },
-    });
-
-    return {
-      workoutId: feedback.workoutId,
-      completed: feedback.completed,
-      effort: feedback.effort,
-      fatigue: feedback.fatigue,
-    };
   }
 
   async completeWorkout(userId: string, workoutId: string, input?: CompleteWorkoutDto) {
-    const data: Prisma.WorkoutUpdateManyMutationInput = { status: 'done' };
-    if (input?.appleHealthWorkoutUUID) {
-      data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
+    try {
+      const data: Prisma.WorkoutUpdateManyMutationInput = { status: 'done' };
+      if (input?.appleHealthWorkoutUUID) {
+        data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
+      }
+      if (typeof input?.actualDistanceMeters === 'number' && input.actualDistanceMeters > 0) {
+        data.actualDistanceMeters = input.actualDistanceMeters;
+      }
+      if (typeof input?.actualDurationSeconds === 'number' && input.actualDurationSeconds > 0) {
+        data.actualDurationSeconds = input.actualDurationSeconds;
+      }
+      this.logger.log(`completeWorkout — workoutId=${workoutId} userId=${userId} input=${JSON.stringify(input ?? null)}`);
+      const updated = await this.prisma.workout.updateMany({
+        where: { id: workoutId, userId },
+        data,
+      });
+      if (!updated.count) {
+        throw new NotFoundException('Workout not found');
+      }
+      const workout = await this.prisma.workout.findFirst({
+        where: { id: workoutId, userId },
+      });
+      if (!workout) {
+        throw new NotFoundException('Workout not found');
+      }
+      return this.mapWorkout(workout);
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      this.logger.error(`completeWorkout failed — workoutId=${workoutId} userId=${userId}`, err instanceof Error ? err.stack : String(err));
+      throw new InternalServerErrorException(`Falha ao completar treino: ${err instanceof Error ? err.message : String(err)}`);
     }
-    if (typeof input?.actualDistanceMeters === 'number' && input.actualDistanceMeters > 0) {
-      data.actualDistanceMeters = input.actualDistanceMeters;
-    }
-    if (typeof input?.actualDurationSeconds === 'number' && input.actualDurationSeconds > 0) {
-      data.actualDurationSeconds = input.actualDurationSeconds;
-    }
-    const updated = await this.prisma.workout.updateMany({
-      where: { id: workoutId, userId },
-      data,
-    });
-    if (!updated.count) {
-      throw new NotFoundException('Workout not found');
-    }
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
-    });
-    if (!workout) {
-      throw new NotFoundException('Workout not found');
-    }
-    return this.mapWorkout(workout);
   }
 
   async skipWorkout(userId: string, workoutId: string) {
