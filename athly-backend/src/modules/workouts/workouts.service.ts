@@ -7,6 +7,18 @@ import { WorkoutFeedbackModel, WorkoutModel } from './models/workout.model';
 import { UpdateWorkoutDto } from './dto/workout-update.dto';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 
+const workoutCompletionSelect = {
+  id: true,
+  dateScheduled: true,
+  sportType: true,
+  title: true,
+  description: true,
+  blocks: true,
+  status: true,
+  intensity: true,
+  stravaActivityId: true,
+} satisfies Prisma.WorkoutSelect;
+
 @Injectable()
 export class WorkoutsService {
   private readonly logger = new Logger(WorkoutsService.name);
@@ -154,6 +166,7 @@ export class WorkoutsService {
       }
       const workout = await this.prisma.workout.findFirst({
         where: { id: workoutId, userId },
+        select: workoutCompletionSelect,
       });
       if (!workout) {
         throw new NotFoundException('Workout not found');
@@ -162,7 +175,7 @@ export class WorkoutsService {
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
       this.logger.error(`completeWorkout failed — workoutId=${workoutId} userId=${userId}`, err instanceof Error ? err.stack : String(err));
-      throw new InternalServerErrorException(`Falha ao completar treino: ${err instanceof Error ? err.message : String(err)}`);
+      throw new InternalServerErrorException('Falha ao completar treino. Tente novamente mais tarde.');
     }
   }
 
