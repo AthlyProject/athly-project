@@ -12,6 +12,7 @@ import {
   IsNumber,
 } from 'class-validator';
 import { SportType, WorkoutStatus } from '@prisma/client';
+import { WorkoutSegmentsDto } from './segment.dto';
 
 export class UpdateWorkoutDto {
   @ApiPropertyOptional()
@@ -25,10 +26,17 @@ export class UpdateWorkoutDto {
   description?: string;
 
   @ApiPropertyOptional({ type: () => [WorkoutBlockDto] })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WorkoutBlockDto)
   blocks?: WorkoutBlockDto[];
+
+  @ApiPropertyOptional({ type: () => WorkoutSegmentsDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => WorkoutSegmentsDto)
+  segments?: WorkoutSegmentsDto;
 
   @ApiPropertyOptional()
   @IsOptional()

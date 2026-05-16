@@ -111,6 +111,7 @@ model Workout {
   title          String
   description    String?
   blocks         Json
+  segments       Json?
   status                 WorkoutStatus
   intensity              Int?
   isGoalAttempt          Boolean       @default(false) @map("is_goal_attempt")
