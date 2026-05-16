@@ -22,6 +22,8 @@ import type {
 import type { RunDataForZones } from '../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './prompts/goal-parser-prompt';
 import type { UserProfileContext, LongitudinalWeek } from './prompts/planner-prompt';
+import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
+import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
 
 const PROMPT_VERSION = 'v3.0';
 const MODEL_USED = 'gemini-2.5-flash';
@@ -131,7 +133,12 @@ export class AiPlannerService {
               sportType: day.sportType,
               title: day.title,
               description: day.description,
-              blocks: day.blocks as unknown as Prisma.InputJsonValue,
+              blocks: flattenToLegacyBlocks(day.segments ?? []) as unknown as Prisma.InputJsonValue,
+              segments: {
+                schemaVersion: SEGMENT_SCHEMA_VERSION,
+                sport: day.sportType,
+                segments: day.segments ?? [],
+              } as unknown as Prisma.InputJsonValue,
               status: WorkoutStatus.scheduled,
               intensity: day.intensity,
               isGoalAttempt: day.isGoalAttempt ?? false,
@@ -302,7 +309,12 @@ export class AiPlannerService {
               sportType: day.sportType,
               title: day.title,
               description: day.description,
-              blocks: day.blocks as unknown as Prisma.InputJsonValue,
+              blocks: flattenToLegacyBlocks(day.segments ?? []) as unknown as Prisma.InputJsonValue,
+              segments: {
+                schemaVersion: SEGMENT_SCHEMA_VERSION,
+                sport: day.sportType,
+                segments: day.segments ?? [],
+              } as unknown as Prisma.InputJsonValue,
               status: WorkoutStatus.scheduled,
               intensity: day.intensity,
               isGoalAttempt: day.isGoalAttempt ?? false,

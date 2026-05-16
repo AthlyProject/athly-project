@@ -1,4 +1,5 @@
 import { SportType } from '@prisma/client';
+import type { Segment } from '../../workouts/types/segment.types';
 
 export type { SportType };
 
@@ -54,16 +55,17 @@ export interface RunAnalysis {
  * Maps directly to the Prisma Workout model fields.
  * sportType must match Prisma SportType enum values.
  * intensity is 1–10 (rest days = 1, easy = 3, moderate = 6, high = 9).
- * blocks contains structured workout details as JSON.
+ * segments contains the structured, sport-agnostic workout tree (warmup/work/recovery/cooldown/rest/set).
+ * The legacy `blocks` field is derived server-side via flattenToLegacyBlocks for backward compatibility.
  */
 export interface WorkoutDay {
   date: string; // YYYY-MM-DD → dateScheduled
   dayOfWeek: string;
   title: string;
   description: string;
-  sportType: SportType; // running | walking | other | etc. → sportType
-  intensity: number; // 1–10 → intensity
-  blocks: WorkoutBlock[]; // → blocks (Json)
+  sportType: SportType;
+  intensity: number;
+  segments: Segment[]; // → workout.segments (Json), source of truth
   reasoning?: string;
   isGoalAttempt?: boolean;
 }

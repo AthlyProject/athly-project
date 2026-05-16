@@ -235,6 +235,116 @@ O reasoning deve ser técnico e específico, não genérico. Mínimo 2 frases.
 Dias de descanso NÃO precisam de reasoning.
 </reasoning_requirement>`;
 
+const SEGMENT_SCHEMA_DOCS = `
+<segment_schema>
+Cada treino é uma árvore de "segments" — formato estruturado e legível por máquina que o app usa para anunciar transições em tempo real (vibração, bipe e voz). Esqueça texto livre descrevendo séries e tiros; a estrutura abaixo é a fonte da verdade.
+
+Cada nó da árvore segue este shape:
+{
+  "id": "<slug único curto, ex: 'wu', 'work-1', 'rec-1'>",
+  "kind": "<warmup | work | recovery | cooldown | rest | set>",
+  "label": "<texto curto em pt-BR exibido no app, ex: '400m forte'>",
+  "end": { "by": "<distanceM | durationSec | reps>", "value": <número> },
+  "target": { ... },         // opcional, ver targets por esporte
+  "repetitions": <int >= 1>, // obrigatório APENAS quando kind = "set"
+  "children": [<segment>, ...] // obrigatório APENAS quando kind = "set"
+}
+
+Regras absolutas:
+- kind = "set" deve ter "repetitions" >= 1 e "children" >= 1; NÃO inclui "end".
+- kind != "set" DEVE ter "end" e NÃO pode ter "children".
+- Profundidade máxima da árvore = 2 (sem set dentro de set).
+- "rest" é usado para dias inteiros de descanso (treino com um único segmento rest grande), enquanto "recovery" é a pausa entre repetições dentro do treino.
+
+Targets por esporte (campo "target" do segmento) — preencha apenas o que fizer sentido:
+- running: { "paceSecPerKmMin": <int>, "paceSecPerKmMax": <int>, "hrZone": 1..5, "rpe": 1..10 }
+- cycling: { "powerWattsMin": <int>, "powerWattsMax": <int>, "cadenceRpm": <int>, "hrZone": 1..5 }
+- swimming: { "strokeType": "freestyle|backstroke|breaststroke|butterfly|medley|kick|drill", "poolLengthM": 25|50, "targetSecPer100m": <int> }
+- strength: { "exercise": "<nome em pt-BR>", "reps": <int>, "loadKg": <number>, "loadPctOf1RM": <0-150>, "tempoSec": "<3-1-1-0>", "restAfterSec": <int> }
+
+Estrutura mínima esperada em um treino de corrida: um warmup + um ou mais work (eventualmente envolvidos em set) + um cooldown. Dias de descanso têm UM ÚNICO segmento { "kind": "rest", "end": {...} }.
+</segment_schema>`;
+
+const SEGMENT_RECIPES = `
+<segment_recipes>
+Receitas canônicas — adapte distâncias, paces e durações aos dados do atleta. Estas são templates de SHAPE, não valores fixos.
+
+(1) Intervalado clássico 6×400m com 90s de recuperação:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "set-main", "kind": "set", "label": "6×400m", "repetitions": 6, "children": [
+    { "id": "work", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280, "paceSecPerKmMax": 295 } },
+    { "id": "rec", "kind": "recovery", "label": "Recuperação", "end": { "by": "durationSec", "value": 90 }, "target": { "rpe": 3 } }
+  ] },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+
+(2) Tempo run 20min em limiar:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "tempo", "kind": "work", "label": "Tempo run", "end": { "by": "durationSec", "value": 1200 }, "target": { "paceSecPerKmMin": 330, "paceSecPerKmMax": 345, "rpe": 7 } },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+
+(3) Longão fácil 12 km:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Início suave", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } },
+  { "id": "main", "kind": "work", "label": "Corrida fácil", "end": { "by": "distanceM", "value": 12000 }, "target": { "paceSecPerKmMin": 390, "paceSecPerKmMax": 420, "rpe": 4 } },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 2 } }
+]
+
+(4) Pirâmide 400-800-1200-800-400 (filhos heterogêneos — NÃO use "set"):
+"segments": [
+  { "id": "wu", "kind": "warmup", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "w-400-1", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
+  { "id": "r-1", "kind": "recovery", "end": { "by": "durationSec", "value": 120 }, "target": { "rpe": 3 } },
+  { "id": "w-800-1", "kind": "work", "label": "800m forte", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
+  { "id": "r-2", "kind": "recovery", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 3 } },
+  { "id": "w-1200", "kind": "work", "label": "1200m forte", "end": { "by": "distanceM", "value": 1200 }, "target": { "paceSecPerKmMin": 310 } },
+  { "id": "r-3", "kind": "recovery", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 3 } },
+  { "id": "w-800-2", "kind": "work", "label": "800m forte", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
+  { "id": "r-4", "kind": "recovery", "end": { "by": "durationSec", "value": 120 }, "target": { "rpe": 3 } },
+  { "id": "w-400-2", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
+  { "id": "cd", "kind": "cooldown", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+
+(5) Dia de descanso:
+"segments": [
+  { "id": "rest", "kind": "rest", "label": "Descanso completo", "end": { "by": "durationSec", "value": 0 } }
+]
+</segment_recipes>`;
+
+const SEGMENT_CONSTRAINTS_PLANNER = `
+- segments é OBRIGATÓRIO em todo treino — é a fonte da verdade que o tracker do app lê para tocar bipes/vibração/voz nas transições.
+- Toda sessão de corrida deve começar com 1 segmento "warmup" e terminar com 1 segmento "cooldown". O meio pode ser "work", "set" (com filhos work+recovery) ou misto.
+- OBRIGATÓRIO para warmup: end.value >= 480 (8 min) quando by=durationSec OU >= 1000 (1 km) quando by=distanceM.
+- OBRIGATÓRIO para cooldown: end.value >= 300 (5 min) OU >= 500 (500 m).
+- Bloco principal (work ou set) na corrida deve ter pelo menos 20 min OU 2 km no acumulado.
+- Em sessões de intervalo: ENVOLVA as repetições em um nó "set" com repetitions correto e children = [work, recovery]. NÃO descreva o intervalo em texto.
+- Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".
+- Use as zonas de pace personalizadas para preencher target.paceSecPerKmMin/Max (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). NÃO invente paces.`;
+
+const SEGMENT_CONSTRAINTS_ASSESSMENT = `
+- segments é OBRIGATÓRIO em todo treino — é a fonte da verdade que o tracker do app lê para tocar bipes/vibração/voz nas transições.
+- Toda sessão de corrida deve começar com 1 segmento "warmup" e terminar com 1 segmento "cooldown".
+- OBRIGATÓRIO para warmup: end.value >= 480 (8 min) ou >= 1000 (1 km).
+- OBRIGATÓRIO para cooldown: end.value >= 300 (5 min) ou >= 500 (500 m).
+- Como NÃO há histórico, NÃO preencha target.paceSecPerKmMin/Max. Use apenas target.rpe (1–10) e mencione referência de pace em "label" ou no description do dia.
+- Em sessões de intervalo: ENVOLVA as repetições em um nó "set". NÃO descreva o intervalo em texto.
+- Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".`;
+
+const SEGMENT_OUTPUT_FIELD = `      "segments": [
+        {
+          "id": "<slug>",
+          "kind": "<warmup|work|recovery|cooldown|rest|set>",
+          "label": "<texto curto em pt-BR>",
+          "end": { "by": "<distanceM|durationSec|reps>", "value": <número> },
+          "target": { /* campos opcionais por esporte; ver <segment_schema> */ },
+          "repetitions": <int — apenas quando kind=set>,
+          "children": [ /* segments — apenas quando kind=set */ ]
+        }
+      ]`;
+
 /**
  * Prompt for athletes with no running history.
  * Generates assessment workouts on the specified available days.
@@ -305,6 +415,10 @@ Distribua os treinos de forma inteligente ao longo da semana:
 
 ${REASONING_INSTRUCTION}
 
+${SEGMENT_SCHEMA_DOCS}
+
+${SEGMENT_RECIPES}
+
 <constraints>
 - Gere EXATAMENTE 7 entradas no total: ${trainingDays} dias de treino e ${restDays} dias de descanso.
 - Treinos SOMENTE nos dias: ${daysList}. Todos os outros dias = descanso.
@@ -316,13 +430,7 @@ ${REASONING_INSTRUCTION}
 - Set runsAnalyzed to 0, period to "Sem dados", avgDistanceKm to 0, avgPace to "N/A", avgHeartRate to null, totalDistanceKm to 0.
 - analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Avaliação Inicial", "Semana de Base"). Displayed in the calendar UI.
 - fitnessInsights: maximum 2 short sentences in Portuguese explaining that no previous data exists and these sessions will assess current fitness. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
-- blocks deve ser um array de objetos com: type ("warmup"|"main"|"cooldown"|"rest"), e quando aplicável: distanceKm, durationMinutes, targetPace, instructions.
-- OBRIGATÓRIO para blocos "warmup": durationMinutes >= 8 OU distanceKm >= 1.0.
-- OBRIGATÓRIO para blocos "main": durationMinutes >= 10 OU distanceKm >= 1.0.
-- OBRIGATÓRIO para blocos "cooldown": durationMinutes >= 5 OU distanceKm >= 0.5.
-- Para blocos "main" de intervalos: especifique no campo instructions o número de repetições, distância por repetição, RPE alvo e tempo de recuperação entre as repetições.
-- Dias de descanso devem ter blocks: [{ "type": "rest", "instructions": "Dia de descanso completo. Sem corrida." }].
-- Como não há dados históricos, NÃO prescreva paces específicos no campo targetPace. Use RPE e descrições de esforço nas instructions. Você PODE incluir faixas de pace estimadas como referência (ex: "algo em torno de 6:30-7:00/km se parecer RPE 4-5"), mas deixe claro que o atleta deve priorizar o esforço percebido.
+${SEGMENT_CONSTRAINTS_ASSESSMENT}
 </constraints>
 
 <output_schema>
@@ -348,15 +456,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
       "sportType": "<running|walking|other>",
       "intensity": <número 1-10>,
       "reasoning": "<justificativa técnica em português — obrigatório para dias de treino, omitir para descanso>",
-      "blocks": [
-        {
-          "type": "<warmup|main|cooldown|rest>",
-          "distanceKm": <número — opcional>,
-          "durationMinutes": <número — opcional>,
-          "targetPace": "<M:SS /km — opcional>",
-          "instructions": "<instrução de treino em português>"
-        }
-      ]
+${SEGMENT_OUTPUT_FIELD}
     }
   ]
 }
@@ -489,25 +589,25 @@ ${previousWeekSection}
 
 ${REASONING_INSTRUCTION}
 
+${SEGMENT_SCHEMA_DOCS}
+
+${SEGMENT_RECIPES}
+
 <constraints>
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Todos os outros dias = descanso obrigatório.
 - Nunca aumente o volume semanal em mais de 10% acima da média recente do atleta.
-- Sessões de intervalos devem incluir aquecimento de 10 min e volta à calma de 5 min (refletido nos blocks).
-- Se dados de FC não estiverem disponíveis, prescreva o esforço por RPE no campo instructions.
+- Sessões de intervalos devem incluir warmup de pelo menos 10 min e cooldown de pelo menos 5 min.
+- Se dados de FC não estiverem disponíveis, use target.rpe (1–10) em vez de target.hrZone.
 - weekPlan deve conter EXATAMENTE 7 entradas, uma por dia de ${weekDates[0]} a ${weekDates[6]}.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 9.
 - trend deve ser exatamente um de: "improving (volume)" | "improving (intensity)" | "maintaining" | "declining".
-- blocks deve ser um array de objetos com: type ("warmup"|"main"|"cooldown"|"rest"), e quando aplicável: distanceKm, durationMinutes, targetPace, instructions.
-- OBRIGATÓRIO para blocos "main": durationMinutes >= 20 OU distanceKm >= 2.0. Nunca deixe blocos "main" vazios.
-- Corridas longas: mínimo de 30 minutos no bloco "main".
-- Corridas de recuperação/fácil: mínimo de 20 minutos no bloco "main".
-- Sessões de intervalos: especifique no campo instructions o número de repetições, distância, pace alvo e tempo de descanso entre as repetições.
-- Dias de descanso devem ter blocks: [{ "type": "rest", "instructions": "Dia de descanso completo. Sem corrida." }].
-- Use as zonas de pace personalizadas acima para prescrever targetPace — NÃO invente paces arbitrários.
 - analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Semana de Base", "Progressão de Volume", "Deload"). Displayed in the calendar UI.
 - analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 - isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando feasibility for verdadeira segundo <goal_attempt_logic>. Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
+- Corridas longas: nó "work" principal com end.by="distanceM" e value de pelo menos a distância prescrita; OU end.by="durationSec" com pelo menos 1800 (30 min).
+- Corridas de recuperação/fácil: nó "work" principal com pelo menos 1200s (20 min) ou >= 4000m.
+${SEGMENT_CONSTRAINTS_PLANNER}
 </constraints>
 
 <output_schema>
@@ -534,15 +634,7 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
       "intensity": <número 1-10>,
       "reasoning": "<justificativa técnica em português — obrigatório para dias de treino, omitir para descanso>",
       "isGoalAttempt": <boolean — opcional, true APENAS no dia da tentativa de objetivo (ver <goal_attempt_logic>)>,
-      "blocks": [
-        {
-          "type": "<warmup|main|cooldown|rest>",
-          "distanceKm": <número — opcional>,
-          "durationMinutes": <número — opcional>,
-          "targetPace": "<M:SS /km — opcional>",
-          "instructions": "<instrução específica de treino em português>"
-        }
-      ]
+${SEGMENT_OUTPUT_FIELD}
     }
   ]
 }
