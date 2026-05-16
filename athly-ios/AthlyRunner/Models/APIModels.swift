@@ -121,6 +121,78 @@ struct WorkoutBlock: Codable, Sendable {
     }
 }
 
+// MARK: - Workout Segments (structured tree — fonte da verdade para o tracker)
+
+enum SegmentKind: String, Codable, Sendable {
+    case warmup
+    case work
+    case recovery
+    case cooldown
+    case rest
+    case set
+    /// Fallback decodável para qualquer kind desconhecido enviado pelo backend.
+    case unknown
+
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = SegmentKind(rawValue: raw) ?? .unknown
+    }
+}
+
+enum SegmentEndBy: String, Codable, Sendable {
+    case distanceM
+    case durationSec
+    case reps
+}
+
+struct SegmentEndCondition: Codable, Sendable {
+    let by: SegmentEndBy
+    let value: Double
+}
+
+/// Estrutura "fat" com todos os campos opcionais por esporte. iOS só consome — não gera targets.
+struct SegmentTarget: Codable, Sendable {
+    // running
+    let paceSecPerKmMin: Int?
+    let paceSecPerKmMax: Int?
+    let hrZone: Int?
+    let rpe: Int?
+    // cycling
+    let powerWattsMin: Int?
+    let powerWattsMax: Int?
+    let cadenceRpm: Int?
+    // swimming
+    let strokeType: String?
+    let poolLengthM: Int?
+    let targetSecPer100m: Int?
+    // strength
+    let exercise: String?
+    let reps: Int?
+    let loadKg: Double?
+    let loadPctOf1RM: Double?
+    let tempoSec: String?
+    let restAfterSec: Int?
+}
+
+/// Nó da árvore de segmentos. Recursivo via `children: [Segment]?`.
+struct Segment: Codable, Sendable, Identifiable {
+    let id: String
+    let kind: SegmentKind
+    let label: String?
+    let cue: String?
+    let end: SegmentEndCondition?
+    let repetitions: Int?
+    let target: SegmentTarget?
+    let children: [Segment]?
+    let notes: String?
+}
+
+struct WorkoutSegments: Codable, Sendable {
+    let schemaVersion: Int
+    let sport: SportType
+    let segments: [Segment]
+}
+
 // MARK: - Workout Model
 
 struct WorkoutModel: Codable, Identifiable, Sendable {
@@ -130,6 +202,10 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let title: String
     let description: String?
     let blocks: [WorkoutBlock]
+    /// Árvore estruturada. Quando presente, vira a fonte da verdade do tracker
+    /// (cues de transição, contagem regressiva, voz). Quando nil, o app cai
+    /// no renderer/tracker legado baseado em `blocks`.
+    let segments: WorkoutSegments?
     let status: WorkoutStatus
     let trainingPlanId: String?
     let weeklyGoalId: String?
@@ -382,4 +458,35 @@ struct Week: Identifiable, Sendable {
     let number: Int
     let weeklyGoal: WeeklyGoalResponse?
     let workouts: [WorkoutModel]
+}
+
+// MARK: - Admin Weekly Report
+
+struct AdminPromptLog: Codable, Sendable {
+    let promptText: String
+    let rawResponse: String
+    let modelUsed: String
+    let promptVersion: String
+    let generationType: String
+    let createdAt: String
+}
+
+struct AdminWorkoutSummary: Codable, Identifiable, Sendable {
+    let id: String
+    let dateScheduled: String
+    let title: String
+    let description: String?
+    let status: String
+    let actualDistanceMeters: Double?
+    let actualDurationSeconds: Double?
+}
+
+struct AdminWeeklyReportResponse: Codable, Sendable {
+    let id: String
+    let weekStartDate: String
+    let weekEndDate: String
+    let metrics: WeeklyGoalMetrics?
+    let previousWeekAnalysis: PreviousWeekAnalysis?
+    let promptLog: AdminPromptLog?
+    let workouts: [AdminWorkoutSummary]
 }
