@@ -11,6 +11,7 @@ import {
 } from './prompts/planner-prompt';
 import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
 import type { AnalyzedSession } from './workout-execution-analyzer.service';
+import { validateSegmentTree } from '../workouts/utils/validate-segments';
 
 export interface PlannerExecution {
   prompt: string;
@@ -151,10 +152,20 @@ export class GeminiService {
       );
     }
 
-    // Warn if training days are missing reasoning
+    // Warn if training days are missing reasoning, and validate the segment tree
+    // for each day. Invalid trees get zeroed so the iOS falls back to the
+    // legacy `blocks` renderer for that single day instead of dropping the whole week.
     for (const day of parsed.weekPlan) {
       if (day.sportType !== 'other' && !day.reasoning) {
         this.logger.warn(`Workout "${day.title}" on ${day.date} is missing reasoning field`);
+      }
+
+      const result = validateSegmentTree(day.segments);
+      if (!result.ok) {
+        this.logger.warn(
+          `Workout "${day.title}" on ${day.date} returned an invalid segments tree (${result.reason}); falling back to legacy blocks for this day.`,
+        );
+        day.segments = [];
       }
     }
 

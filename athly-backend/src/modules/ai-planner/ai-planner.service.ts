@@ -133,7 +133,7 @@ export class AiPlannerService {
               sportType: day.sportType,
               title: day.title,
               description: day.description,
-              blocks: flattenToLegacyBlocks(day.segments ?? []) as unknown as Prisma.InputJsonValue,
+              blocks: this.deriveBlocksForPersistence(day) as unknown as Prisma.InputJsonValue,
               segments: {
                 schemaVersion: SEGMENT_SCHEMA_VERSION,
                 sport: day.sportType,
@@ -309,7 +309,7 @@ export class AiPlannerService {
               sportType: day.sportType,
               title: day.title,
               description: day.description,
-              blocks: flattenToLegacyBlocks(day.segments ?? []) as unknown as Prisma.InputJsonValue,
+              blocks: this.deriveBlocksForPersistence(day) as unknown as Prisma.InputJsonValue,
               segments: {
                 schemaVersion: SEGMENT_SCHEMA_VERSION,
                 sport: day.sportType,
@@ -775,5 +775,32 @@ export class AiPlannerService {
       d.setDate(monday.getDate() + i);
       return d.toISOString().split('T')[0];
     });
+  }
+
+  /**
+   * Derives the legacy `blocks` array. When the segments tree is empty
+   * (validation wiped it, or the AI omitted it entirely) we synthesize a
+   * placeholder so the workout is still visible on legacy iOS clients and
+   * the user can see something instead of an empty card.
+   */
+  private deriveBlocksForPersistence(day: {
+    segments?: unknown;
+    description?: string;
+    sportType: SportType;
+  }) {
+    const segments = (day.segments ?? []) as Parameters<typeof flattenToLegacyBlocks>[0];
+    const derived = flattenToLegacyBlocks(segments);
+    if (derived.length > 0) return derived;
+
+    if (day.sportType === SportType.other) {
+      return [{ type: 'rest', instructions: 'Dia de descanso completo.' }];
+    }
+    return [
+      {
+        type: 'main',
+        instructions:
+          day.description ?? 'Treino com formato inválido. Por favor, regenere a semana.',
+      },
+    ];
   }
 }
