@@ -4,9 +4,11 @@ import { WeeklyGoalsService } from './weekly-goals.service';
 import { CreateWeeklyGoalDto } from './dto/create-weekly-goal.dto';
 import { UpdateWeeklyGoalDto } from './dto/update-weekly-goal.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminEmailGuard } from '../auth/guards/admin-email.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
 import { WeeklyGoalModel } from './models/weekly-goal.model';
+import { AdminWeeklyReportModel } from './models/admin-weekly-report.model';
 
 @ApiTags('weekly-goals')
 @ApiBearerAuth()
@@ -31,6 +33,16 @@ export class WeeklyGoalsController {
     @Param('uuid') uuid: string,
   ): Promise<WeeklyGoalModel | null> {
     return this.weeklyGoalsService.getWeeklyGoalById(user.id, uuid);
+  }
+
+  @Get(':uuid/admin-report')
+  @UseGuards(AdminEmailGuard)
+  @ApiOkResponse({ type: AdminWeeklyReportModel })
+  getAdminReport(
+    @CurrentUser() user: UserModel,
+    @Param('uuid') uuid: string,
+  ): Promise<AdminWeeklyReportModel> {
+    return this.weeklyGoalsService.getAdminReport(user.id, uuid);
   }
 
   @Post()

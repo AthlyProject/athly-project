@@ -93,8 +93,8 @@ final class TrainingPlanViewModel: ObservableObject {
             weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
             selectedWeekIndex = currentWeekIndex()
 
-            if lastAnalysis == nil {
-                lastAnalysis = weeklyGoals.last?.metrics?.asRunAnalysis
+            if let freshAnalysis = weeklyGoals.last?.metrics?.asRunAnalysis {
+                lastAnalysis = freshAnalysis
             }
 
             persistToCache()

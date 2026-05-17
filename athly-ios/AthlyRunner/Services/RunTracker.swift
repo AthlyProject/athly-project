@@ -15,6 +15,12 @@ final class RunTracker: ObservableObject {
     @Published var currentSplitKm: Int = 0
     @Published var routeCoordinates: [CLLocationCoordinate2D] = []
     @Published var liveActivityDisabled = false
+    @Published var activeSegmentIndex: Int = 0
+
+    private(set) var playlist: [ActiveSegment] = []
+    private var segmentStartDistance: Double = 0
+    private var segmentStartElapsed: TimeInterval = 0
+    private var countdownFired: Bool = false
 
     private var timer: Timer?
     private var startTime: Date?
@@ -44,6 +50,41 @@ final class RunTracker: ObservableObject {
     /// Título do treino vinculado (para o Live Activity widget)
     var workoutTitle: String = ""
 
+    // MARK: - Segment API
+
+    var currentSegment: ActiveSegment? {
+        guard activeSegmentIndex < playlist.count else { return nil }
+        return playlist[activeSegmentIndex]
+    }
+
+    var nextSegment: ActiveSegment? {
+        let next = activeSegmentIndex + 1
+        guard next < playlist.count else { return nil }
+        return playlist[next]
+    }
+
+    var segmentProgress: Double {
+        guard let seg = currentSegment else { return 0 }
+        switch seg.end.by {
+        case .distanceM:
+            return min(1.0, (distanceMeters - segmentStartDistance) / max(1, seg.end.value))
+        case .durationSec:
+            return min(1.0, (elapsedTime - segmentStartElapsed) / max(1, seg.end.value))
+        case .reps:
+            return 0
+        }
+    }
+
+    func loadPlaylist(_ workoutSegments: WorkoutSegments?) {
+        playlist = workoutSegments?.flatten() ?? []
+        activeSegmentIndex = 0
+    }
+
+    func skipSegment() {
+        guard activeSegmentIndex < playlist.count else { return }
+        advanceSegment(skipped: true)
+    }
+
     // MARK: - Controls
 
     func start() {
@@ -57,10 +98,19 @@ final class RunTracker: ObservableObject {
         locations = []
         routeCoordinates = []
         paceWindow = []
+        activeSegmentIndex = 0
+        segmentStartDistance = 0
+        segmentStartElapsed = 0
+        countdownFired = false
 
         locationManager.startTracking()
         startTimer()
         observeLocation()
+
+        if let first = playlist.first {
+            CueOrchestrator.shared.fire(.boundary(to: first))
+        }
+
         Task { @MainActor in
             let result = await LiveActivityManager.shared.startActivity(workoutTitle: workoutTitle)
             if case .disabledBySystem = result {
@@ -147,6 +197,10 @@ final class RunTracker: ObservableObject {
         lastAltitude = nil
         locations = []
         paceWindow = []
+        activeSegmentIndex = 0
+        segmentStartDistance = 0
+        segmentStartElapsed = 0
+        countdownFired = false
     }
 
     private func startTimer() {
@@ -161,7 +215,7 @@ final class RunTracker: ObservableObject {
         guard let startTime, state == .running else { return }
         elapsedTime = Date().timeIntervalSince(startTime) - pausedDuration
         updateCalories()
-        // Update Live Activity every second
+        checkSegmentBoundary()
         LiveActivityManager.shared.updateActivity(
             elapsedSeconds: Int(elapsedTime),
             distanceMeters: distanceMeters,
@@ -225,6 +279,8 @@ final class RunTracker: ObservableObject {
                 averagePaceSecondsPerKm = elapsedTime / (distanceMeters / 1000.0)
             }
 
+            checkSegmentBoundary()
+
             // Split detection
             let currentKm = Int(distanceMeters / 1000.0)
             if currentKm > currentSplitKm {
@@ -236,6 +292,66 @@ final class RunTracker: ObservableObject {
 
         lastLocation = location
         lastAltitude = location.altitude
+    }
+
+    private func checkSegmentBoundary() {
+        guard !playlist.isEmpty, activeSegmentIndex < playlist.count else { return }
+        let seg = playlist[activeSegmentIndex]
+
+        switch seg.end.by {
+        case .distanceM:
+            let done = distanceMeters - segmentStartDistance
+            let remaining = seg.end.value - done
+            if !countdownFired && currentPaceSecondsPerKm > 0 && remaining > 0 {
+                let etaSec = remaining * currentPaceSecondsPerKm / 1000.0
+                if etaSec <= 3.5 {
+                    countdownFired = true
+                    CueOrchestrator.shared.fire(.countdown3)
+                }
+            }
+            if done >= seg.end.value { advanceSegment(skipped: false) }
+
+        case .durationSec:
+            let done = elapsedTime - segmentStartElapsed
+            let remaining = seg.end.value - done
+            if !countdownFired && remaining > 0 && remaining <= 3.0 {
+                countdownFired = true
+                CueOrchestrator.shared.fire(.countdown3)
+            }
+            if done >= seg.end.value { advanceSegment(skipped: false) }
+
+        case .reps:
+            break // manual skip only
+        }
+    }
+
+    private func advanceSegment(skipped: Bool) {
+        let completed = playlist[activeSegmentIndex]
+        activeSegmentIndex += 1
+        countdownFired = false
+        segmentStartDistance = distanceMeters
+        segmentStartElapsed = elapsedTime
+
+        let isSetDone = !skipped
+            && completed.setIndex != nil
+            && completed.setIndex == completed.setTotal
+
+        guard activeSegmentIndex < playlist.count else { return }
+        let next = playlist[activeSegmentIndex]
+
+        if isSetDone {
+            CueOrchestrator.shared.fire(.setComplete(
+                setLabel: completed.label,
+                setsTotal: completed.setTotal ?? 0
+            ))
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 1_400_000_000)
+                guard let self, self.activeSegmentIndex < self.playlist.count else { return }
+                CueOrchestrator.shared.fire(.boundary(to: self.playlist[self.activeSegmentIndex]))
+            }
+        } else {
+            CueOrchestrator.shared.fire(.boundary(to: next))
+        }
     }
 
     private func updateCalories() {

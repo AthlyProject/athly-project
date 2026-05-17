@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateWeeklyGoalDto } from './dto/create-weekly-goal.dto';
 import { UpdateWeeklyGoalDto } from './dto/update-weekly-goal.dto';
 import { WeeklyGoalModel } from './models/weekly-goal.model';
+import { AdminWeeklyReportModel } from './models/admin-weekly-report.model';
 
 @Injectable()
 export class WeeklyGoalsService {
@@ -127,6 +128,54 @@ export class WeeklyGoalsService {
       createdAt: weeklyGoal.createdAt,
       updatedAt: weeklyGoal.updatedAt,
     });
+  }
+
+  async getAdminReport(userId: string, id: string): Promise<AdminWeeklyReportModel> {
+    const weeklyGoal = await this.prisma.weeklyGoal.findUnique({
+      where: { id },
+      include: {
+        trainingPlan: true,
+        promptLog: true,
+        workouts: {
+          where: { status: { in: ['done', 'partial'] } },
+          orderBy: { dateScheduled: 'asc' },
+        },
+      },
+    });
+
+    if (!weeklyGoal || weeklyGoal.trainingPlan.userId !== userId) {
+      throw new NotFoundException('Weekly goal not found');
+    }
+
+    return {
+      id: weeklyGoal.id,
+      weekStartDate: weeklyGoal.weekStartDate,
+      weekEndDate: weeklyGoal.weekEndDate,
+      metrics: (weeklyGoal.metrics as Record<string, unknown> | undefined) ?? undefined,
+      previousWeekAnalysis:
+        (weeklyGoal.previousWeekAnalysis as Record<string, unknown> | undefined) ?? undefined,
+      promptLog: weeklyGoal.promptLog
+        ? {
+            promptText: weeklyGoal.promptLog.promptText,
+            rawResponse: weeklyGoal.promptLog.rawResponse,
+            parsedResponse:
+              (weeklyGoal.promptLog.parsedResponse as Record<string, unknown> | null) ?? null,
+            modelUsed: weeklyGoal.promptLog.modelUsed,
+            promptVersion: weeklyGoal.promptLog.promptVersion,
+            generationType: weeklyGoal.promptLog.generationType,
+            createdAt: weeklyGoal.promptLog.createdAt,
+          }
+        : null,
+      workouts: weeklyGoal.workouts.map((w) => ({
+        id: w.id,
+        dateScheduled: w.dateScheduled,
+        title: w.title,
+        description: w.description ?? null,
+        status: w.status,
+        actualDistanceMeters: w.actualDistanceMeters ?? null,
+        actualDurationSeconds: w.actualDurationSeconds ?? null,
+      })),
+    };
   }
 
   async deleteWeeklyGoal(userId: string, id: string): Promise<void> {

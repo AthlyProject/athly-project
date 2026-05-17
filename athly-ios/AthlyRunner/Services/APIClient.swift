@@ -128,6 +128,12 @@ actor APIClient {
         try await post("/ai-planner/plan-from-health", body: request, timeout: 120)
     }
 
+    // MARK: - Admin Endpoints
+
+    func getAdminWeeklyReport(weeklyGoalId: String) async throws -> AdminWeeklyReportResponse {
+        try await get("/weekly-goals/\(weeklyGoalId)/admin-report")
+    }
+
     // MARK: - Goals Endpoints
 
     func createGoal(_ request: CreateGoalRequest) async throws -> CreateGoalResponse {

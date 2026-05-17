@@ -14,7 +14,9 @@ final class RunViewModel: ObservableObject {
 
     /// Workout agendado que originou esta corrida (definido quando o usuario
     /// clica "Iniciar treino agora" na dashboard). Após salvar, dispara a sheet de feedback.
-    var pendingWorkout: WorkoutModel?
+    var pendingWorkout: WorkoutModel? {
+        didSet { tracker.loadPlaylist(pendingWorkout?.segments) }
+    }
 
     /// UUID do HKWorkout gravado no Apple Health após esta corrida ser finalizada.
     /// Usado para linkar com o treino prescrito e alimentar análise detalhada na IA.

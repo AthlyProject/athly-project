@@ -12,6 +12,15 @@ struct ProfileView: View {
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
+    private static let adminEmails: Set<String> = [
+        "alexandrefonseca998@gmail.com",
+    ]
+
+    private var isAdminUser: Bool {
+        guard let email = userProfile?.email else { return false }
+        return Self.adminEmails.contains(email.lowercased())
+    }
+
     private let weekdays: [(key: String, label: String)] = [
         ("sunday",    "Dom"),
         ("monday",    "Seg"),
@@ -128,6 +137,25 @@ struct ProfileView: View {
                             }
                         }
                         .listRowBackground(AthlyTheme.Color.surfaceDark)
+                    }
+
+                    // Admin (whitelist por email)
+                    if isAdminUser {
+                        Section("Admin") {
+                            NavigationLink {
+                                AdminView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "wrench.and.screwdriver.fill")
+                                        .foregroundStyle(AthlyTheme.Color.primary)
+                                        .frame(width: 28)
+                                    Text("Relatório de dados/IA")
+                                        .font(AthlyTheme.Typography.body())
+                                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                }
+                            }
+                            .listRowBackground(AthlyTheme.Color.surfaceDark)
+                        }
                     }
 
                     // App info
