@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SportType, WorkoutStatus } from '@prisma/client';
+import { WorkoutSegmentsDto } from '../dto/segment.dto';
 
 export class WorkoutBlock {
   @ApiProperty()
@@ -36,6 +37,14 @@ export class WorkoutModel {
 
   @ApiProperty({ type: [WorkoutBlock] })
   blocks: WorkoutBlock[];
+
+  /**
+   * Árvore estruturada de segmentos. Quando presente, é a fonte da verdade do
+   * tracker no app (cues de transição, contagem regressiva, voz). Quando null,
+   * o app cai no renderer/tracker legado baseado em `blocks`.
+   */
+  @ApiPropertyOptional({ type: () => WorkoutSegmentsDto, nullable: true })
+  segments?: WorkoutSegmentsDto | null;
 
   @ApiProperty({ enum: WorkoutStatus })
   status: WorkoutStatus;

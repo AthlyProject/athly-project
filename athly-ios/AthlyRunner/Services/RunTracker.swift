@@ -38,6 +38,11 @@ final class RunTracker: ObservableObject {
     // Sliding window for real-time pace (GPS timestamp-based)
     private var paceWindow: [CLLocation] = []
     private let paceWindowSeconds: Double = 20
+    /// Gap (em s) entre fixes que indica entrega de GPS interrompida (ex.: tela bloqueada).
+    /// Acima disso a janela de pace é zerada para não cruzar o buraco e mostrar pace lento.
+    private let paceGapResetSeconds: Double = 6
+    /// Velocidade máxima plausível em corrida (m/s ≈ 2:23/km). Acima disso é salto de GPS.
+    private let maxPlausibleSpeed: Double = 7.0
 
     enum RunState {
         case idle, running, paused, finished
@@ -224,8 +229,9 @@ final class RunTracker: ObservableObject {
     }
 
     private func observeLocation() {
-        locationCancellable = locationManager.$currentLocation
-            .compactMap { $0 }
+        // Assina o fluxo ordenado de todos os pontos (não `$currentLocation`, que coalesce
+        // e perde pontos do lote entregue ao desbloquear a tela).
+        locationCancellable = locationManager.locationUpdates
             .sink { [weak self] location in
                 Task { @MainActor in
                     self?.processNewLocation(location)
@@ -243,9 +249,15 @@ final class RunTracker: ObservableObject {
         // Calculate distance
         if let last = lastLocation {
             let delta = location.distance(from: last)
+            let dt = location.timestamp.timeIntervalSince(last.timestamp)
 
-            // Filter out GPS jumps (> 50m between updates at walking/running speed)
-            guard delta < 50 else { return }
+            // Filtro de salto de GPS por plausibilidade de velocidade (em vez de um limite
+            // fixo de 50m). Um gap legítimo com a tela bloqueada gera um delta grande, mas
+            // com dt grande → velocidade plausível → contamos a distância (sem subcontar).
+            // Já um teleporte de GPS tem dt pequeno → velocidade absurda → ignoramos (sem
+            // atualizar lastLocation, para medir o próximo ponto a partir do último bom).
+            let impliedSpeed = dt > 0 ? delta / dt : .infinity
+            guard impliedSpeed <= maxPlausibleSpeed else { return }
 
             distanceMeters += delta
 
@@ -257,7 +269,13 @@ final class RunTracker: ObservableObject {
                 }
             }
 
-            // Current pace — sliding time-window from GPS coordinates (same method as splits)
+            // Current pace — sliding time-window from GPS coordinates (same method as splits).
+            // Se houve um buraco na entrega de GPS (tela bloqueada), zera a janela para ela
+            // reconstruir a partir de fixes novos em vez de cruzar o gap e mostrar pace lento.
+            if let lastInWindow = paceWindow.last,
+               location.timestamp.timeIntervalSince(lastInWindow.timestamp) > paceGapResetSeconds {
+                paceWindow.removeAll()
+            }
             paceWindow.append(location)
             while let first = paceWindow.first,
                   location.timestamp.timeIntervalSince(first.timestamp) > paceWindowSeconds {

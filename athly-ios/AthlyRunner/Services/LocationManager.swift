@@ -10,6 +10,11 @@ final class LocationManager: NSObject, ObservableObject {
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var locationError: String?
 
+    /// Fluxo ordenado de TODOS os pontos aceitos (não coalesce como `$currentLocation`).
+    /// O tracker assina isto para não perder os pontos que o iOS entrega em lote ao
+    /// desbloquear a tela. `currentLocation` continua sendo o último ponto (mapa pré-corrida).
+    let locationUpdates = PassthroughSubject<CLLocation, Never>()
+
     override init() {
         super.init()
         manager.delegate = self
@@ -47,13 +52,19 @@ final class LocationManager: NSObject, ObservableObject {
 
 extension LocationManager: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-
-        // Filter out inaccurate readings
-        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy < 30 else { return }
+        // O iOS pode entregar vários pontos de uma vez (ex.: lote acumulado enquanto a
+        // tela ficou bloqueada). Processamos TODOS em ordem cronológica, mantendo só os
+        // de boa precisão — em vez de descartar os intermediários pegando só `.last`.
+        let valid = locations
+            .filter { $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy < 30 }
+            .sorted { $0.timestamp < $1.timestamp }
+        guard !valid.isEmpty else { return }
 
         Task { @MainActor in
-            self.currentLocation = location
+            for location in valid {
+                self.currentLocation = location
+                self.locationUpdates.send(location)
+            }
         }
     }
 
