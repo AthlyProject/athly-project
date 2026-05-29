@@ -75,6 +75,8 @@ targets:
         NSSupportsLiveActivitiesFrequentUpdates: false
     entitlements:
       path: AthlyRunner/AthlyRunner.entitlements
+      properties:
+        com.apple.developer.healthkit: true
     dependencies:
       - target: AthlyRunnerLiveActivity
         embed: true
