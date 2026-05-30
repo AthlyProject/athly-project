@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -33,5 +33,15 @@ export class UsersController {
     }
 
     return this.usersService.updateProfile(user.id, data, password);
+  }
+
+  @Delete('me')
+  @ApiOkResponse({
+    schema: { type: 'object', properties: { deleted: { type: 'boolean' } } },
+    description: 'Exclui a conta do usuário e todos os dados relacionados (cascade).',
+  })
+  async deleteAccount(@CurrentUser() user: UserModel): Promise<{ deleted: boolean }> {
+    await this.usersService.deleteUser(user.id);
+    return { deleted: true };
   }
 }

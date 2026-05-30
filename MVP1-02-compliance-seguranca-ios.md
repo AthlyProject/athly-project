@@ -27,13 +27,17 @@ Manifest e links de privacidade/termos.
   `schema.prisma` ou deletar em transação.
 
 ## Checklist
-- [ ] `KeychainHelper` criado e `AuthViewModel` migrado de UserDefaults → Keychain
-- [ ] Migração suave: na 1ª execução pós-update, ler token antigo do UserDefaults (se houver),
-      gravar no Keychain e limpar o UserDefaults
-- [ ] Endpoint `DELETE /users/me` com cascade completo (transação ou FKs cascade)
-- [ ] UI "Excluir conta" no `ProfileView` com confirmação + logout pós-sucesso
-- [ ] `PrivacyInfo.xcprivacy` adicionado ao target e ao `project.yml`
-- [ ] Links de Privacidade e Termos no `ProfileView` (URLs da landing)
+- [x] `KeychainHelper` criado e `AuthViewModel` migrado de UserDefaults → Keychain
+- [x] Migração suave: na 1ª execução pós-update, lê o token antigo do UserDefaults (se houver),
+      grava no Keychain e limpa o UserDefaults (`migrateTokensFromUserDefaultsIfNeeded`)
+- [x] Endpoint `DELETE /users/me` (reusa `usersService.deleteUser` → `prisma.user.delete`; todas as
+      FKs do `User` são `onDelete: Cascade`, inclusive `RunSession`)
+- [x] UI "Excluir conta" no `ProfileView` com confirmação + logout pós-sucesso (`deleteAccount`)
+- [x] `PrivacyInfo.xcprivacy` no target (auto-incluído pelo glob do `project.yml`; presente no pbxproj)
+- [x] Links de Privacidade e Termos no `ProfileView` (apontam para athlyproject.app — **ver nota**)
+
+> Nota: os links usam `https://athlyproject.app/privacy` e `/terms`. **As páginas precisam existir
+> na landing antes da submissão** (link quebrado é motivo de rejeição na App Store).
 
 ## Critérios de aceite / verificação
 - [ ] Tokens não aparecem mais em `UserDefaults` (verificar em runtime); sessão persiste via Keychain

@@ -9,6 +9,9 @@ struct ProfileView: View {
     @State private var isSavingDays = false
     @State private var saveError: String?
     @State private var showSaveConfirmation = false
+    @State private var showDeleteConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var deleteError: String?
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -119,6 +122,28 @@ struct ProfileView: View {
                             authViewModel.logout()
                         }
                         .foregroundStyle(AthlyTheme.Color.error)
+
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                Text("Excluir conta")
+                                if isDeletingAccount {
+                                    Spacer()
+                                    ProgressView()
+                                        .tint(AthlyTheme.Color.error)
+                                        .scaleEffect(0.8)
+                                }
+                            }
+                        }
+                        .foregroundStyle(AthlyTheme.Color.error)
+                        .disabled(isDeletingAccount)
+
+                        if let deleteError {
+                            Text(deleteError)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.error)
+                        }
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
@@ -169,6 +194,18 @@ struct ProfileView: View {
                                 .font(AthlyTheme.Typography.medium(16))
                                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                         }
+
+                        Link(destination: URL(string: "https://athlyproject.app/privacy")!) {
+                            Text("Política de Privacidade")
+                                .font(AthlyTheme.Typography.body())
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        }
+
+                        Link(destination: URL(string: "https://athlyproject.app/terms")!) {
+                            Text("Termos de Uso")
+                                .font(AthlyTheme.Typography.body())
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        }
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
                 }
@@ -177,6 +214,14 @@ struct ProfileView: View {
             }
             .navigationTitle("Perfil")
             .task { await loadProfile() }
+            .alert("Excluir conta", isPresented: $showDeleteConfirmation) {
+                Button("Cancelar", role: .cancel) {}
+                Button("Excluir", role: .destructive) {
+                    Task { await deleteAccount() }
+                }
+            } message: {
+                Text("Isso apaga permanentemente sua conta e todos os seus dados (plano, treinos e histórico). Esta ação não pode ser desfeita.")
+            }
         }
     }
 
@@ -275,6 +320,17 @@ struct ProfileView: View {
         }
 
         isSavingDays = false
+    }
+
+    private func deleteAccount() async {
+        isDeletingAccount = true
+        deleteError = nil
+        let ok = await authViewModel.deleteAccount()
+        isDeletingAccount = false
+        if !ok {
+            deleteError = authViewModel.errorMessage ?? "Não foi possível excluir a conta. Tente novamente."
+        }
+        // Em caso de sucesso, authViewModel.isAuthenticated vira false e a RootView volta ao login.
     }
 
     // MARK: - Computed stats

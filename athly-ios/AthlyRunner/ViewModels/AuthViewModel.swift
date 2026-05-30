@@ -13,6 +13,7 @@ final class AuthViewModel: ObservableObject {
     private let refreshKey = "athly_refresh_token"
 
     init() {
+        migrateTokensFromUserDefaultsIfNeeded()
         loadSavedTokens()
         observeTokenRefresh()
     }
@@ -62,8 +63,24 @@ final class AuthViewModel: ObservableObject {
     }
 
     func logout() {
-        UserDefaults.standard.removeObject(forKey: tokenKey)
-        UserDefaults.standard.removeObject(forKey: refreshKey)
+        clearLocalSession()
+    }
+
+    /// Exclui a conta no servidor (cascade de todos os dados) e limpa a sessão local.
+    func deleteAccount() async -> Bool {
+        do {
+            try await APIClient.shared.deleteAccount()
+            clearLocalSession()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    private func clearLocalSession() {
+        KeychainHelper.delete(tokenKey)
+        KeychainHelper.delete(refreshKey)
         TrainingPlanCache.shared.clear()
         Task {
             await APIClient.shared.clearTokens()
@@ -72,13 +89,13 @@ final class AuthViewModel: ObservableObject {
     }
 
     private func saveTokens(access: String, refresh: String) {
-        UserDefaults.standard.set(access, forKey: tokenKey)
-        UserDefaults.standard.set(refresh, forKey: refreshKey)
+        KeychainHelper.save(access, for: tokenKey)
+        KeychainHelper.save(refresh, for: refreshKey)
     }
 
     private func loadSavedTokens() {
-        guard let access = UserDefaults.standard.string(forKey: tokenKey),
-              let refresh = UserDefaults.standard.string(forKey: refreshKey) else {
+        guard let access = KeychainHelper.read(tokenKey),
+              let refresh = KeychainHelper.read(refreshKey) else {
             hasFinishedInitialSessionRestore = true
             return
         }
@@ -87,5 +104,18 @@ final class AuthViewModel: ObservableObject {
             isAuthenticated = true
             hasFinishedInitialSessionRestore = true
         }
+    }
+
+    /// Migração única: tokens legados em UserDefaults → Keychain (e limpa o UserDefaults).
+    private func migrateTokensFromUserDefaultsIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard let access = defaults.string(forKey: tokenKey),
+              let refresh = defaults.string(forKey: refreshKey) else {
+            return
+        }
+        KeychainHelper.save(access, for: tokenKey)
+        KeychainHelper.save(refresh, for: refreshKey)
+        defaults.removeObject(forKey: tokenKey)
+        defaults.removeObject(forKey: refreshKey)
     }
 }

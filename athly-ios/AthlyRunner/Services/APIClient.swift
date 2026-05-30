@@ -71,6 +71,11 @@ actor APIClient {
         try await put("/users/profile", body: request)
     }
 
+    /// Exclui a conta do usuário e todos os dados relacionados no servidor.
+    func deleteAccount() async throws {
+        let _: EmptyResponse = try await delete("/users/me")
+    }
+
     // MARK: - Training Plan Endpoints
 
     /// Backend retorna 200 com body `null` quando o usuário não tem plano; por isso retornamos opcional.
@@ -208,6 +213,11 @@ actor APIClient {
         var request = try buildRequest(path: path, method: "PATCH", authenticated: authenticated)
         request.httpBody = try JSONEncoder().encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await execute(request)
+    }
+
+    private func delete<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {
+        let request = try buildRequest(path: path, method: "DELETE", authenticated: authenticated)
         return try await execute(request)
     }
 
