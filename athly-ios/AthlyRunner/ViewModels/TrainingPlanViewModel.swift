@@ -148,32 +148,8 @@ final class TrainingPlanViewModel: ObservableObject {
 
     // MARK: - Generate Next Week
 
-    func generateNextWeek() async {
-        isGenerating = true
-        errorMessage = nil
-
-        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
-
-        do {
-            let request = PlanNextWeekRequest(numberOfRuns: nil, weekStartDate: nil)
-            let response = try await APIClient.shared.planNextWeek(request)
-            lastAnalysis = response.analysis
-            await loadData()
-            selectedWeekIndex = max(0, weeks.count - 1)
-        } catch is CancellationError {
-            // ignored
-        } catch let error as URLError where error.code == .cancelled {
-            // ignored
-        } catch let error as URLError where error.code == .timedOut {
-            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        isGenerating = false
-    }
-
-    /// Fluxo unificado: tenta HealthKit → se tiver corridas, usa planFromHealth; senão, planNextWeek (assessment).
+    /// Fluxo unificado via Apple Health: gera o plano com `planFromHealth`. Sem corridas no
+    /// HealthKit, envia runs vazias e o backend gera um plano de avaliação (cold start).
     func generateNextWeekWithHealth() async {
         isGenerating = true
         errorMessage = nil
@@ -200,23 +176,19 @@ final class TrainingPlanViewModel: ObservableObject {
         let workoutIdsBefore = Set(allWorkouts.map { $0.id })
 
         do {
-            if healthRuns.isEmpty {
-                let request = PlanNextWeekRequest(numberOfRuns: nil, weekStartDate: nil)
-                let response = try await APIClient.shared.planNextWeek(request)
-                lastAnalysis = response.analysis
-            } else {
-                let payloads = healthRuns.map { HealthRunPayload(from: $0) }
-                // First generation (no plan yet) → 5 detailed sessions; mid-plan → 7.
-                let detailedLimit = trainingPlanResponse == nil ? 5 : 7
-                let detailedSessions = await buildDetailedSessions(limit: detailedLimit)
-                let request = PlanFromHealthRequest(
-                    runs: payloads,
-                    detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
-                    weekStartDate: nil
-                )
-                let response = try await APIClient.shared.planFromHealth(request)
-                lastAnalysis = response.analysis
-            }
+            let payloads = healthRuns.map { HealthRunPayload(from: $0) }
+            // Com corridas → sessões detalhadas (5 na 1ª geração, 7 depois). Sem corridas →
+            // runs vazias e o backend cai no plano de avaliação (cold start).
+            let detailedSessions = healthRuns.isEmpty
+                ? []
+                : await buildDetailedSessions(limit: trainingPlanResponse == nil ? 5 : 7)
+            let request = PlanFromHealthRequest(
+                runs: payloads,
+                detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
+                weekStartDate: nil
+            )
+            let response = try await APIClient.shared.planFromHealth(request)
+            lastAnalysis = response.analysis
             await loadData()
             selectedWeekIndex = max(0, weeks.count - 1)
         } catch is CancellationError {

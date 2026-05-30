@@ -56,11 +56,11 @@ actor APIClient {
     // MARK: - Run Endpoints
 
     func saveRun(_ run: SaveRunRequest) async throws -> SaveRunResponse {
-        try await post("/workouts", body: run)
+        try await post("/runs", body: run)
     }
 
     func getRunHistory() async throws -> [WorkoutResponse] {
-        try await get("/workouts/history")
+        try await get("/runs/history")
     }
 
     func getUserProfile() async throws -> UserProfile {
@@ -118,10 +118,6 @@ actor APIClient {
     @discardableResult
     func submitWorkoutFeedback(workoutId: String, feedback: WorkoutFeedbackRequest) async throws -> EmptyResponse {
         try await post("/workouts/\(workoutId)/feedback", body: feedback)
-    }
-
-    func planNextWeek(_ request: PlanNextWeekRequest) async throws -> PlanNextWeekResponse {
-        try await post("/ai-planner/plan-next-week", body: request, timeout: 120)
     }
 
     func planFromHealth(_ request: PlanFromHealthRequest) async throws -> AiPlannerResponse {

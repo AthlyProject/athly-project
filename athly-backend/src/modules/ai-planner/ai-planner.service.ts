@@ -100,16 +100,29 @@ export class AiPlannerService {
       ? undefined
       : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate);
 
+    // Cold start: sem corridas no Apple Health → plano de avaliação (mesmo prompt do
+    // antigo fluxo sem histórico, agora sob o único endpoint plan-from-health).
+    const isAssessment = input.runs.length === 0;
     const aiInput = this.buildAiInputFromHealthRuns(historicalRuns, weekDates, trainingDays, availableDays);
-    const plannerResult = await this.geminiService.generatePlan(
-      aiInput,
-      effortZones,
-      previousWeekAnalysis,
-      activeGoal,
-      userProfile,
-      analyzedSessions,
-      longitudinalWeeks,
-    );
+    const plannerResult = isAssessment
+      ? await this.geminiService.generateAssessmentPlan(
+          weekDates,
+          trainingDays,
+          availableDays,
+          effortZones,
+          activeGoal,
+          userProfile,
+          analyzedSessions,
+        )
+      : await this.geminiService.generatePlan(
+          aiInput,
+          effortZones,
+          previousWeekAnalysis,
+          activeGoal,
+          userProfile,
+          analyzedSessions,
+          longitudinalWeeks,
+        );
 
     const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
       const weeklyGoal = await tx.weeklyGoal.create({
@@ -178,7 +191,7 @@ export class AiPlannerService {
       await tx.aiPlannerPromptLog.create({
         data: {
           weeklyGoalId: weeklyGoal.id,
-          generationType: 'planner',
+          generationType: isAssessment ? 'assessment' : 'planner',
           promptVersion: PROMPT_VERSION,
           modelUsed: MODEL_USED,
           promptText: plannerResult.prompt,
@@ -215,7 +228,7 @@ export class AiPlannerService {
         stravaActivityId: w.stravaActivityId ?? null,
       })),
       analysis: plannerResult.parsed.analysis,
-      isAssessment: false,
+      isAssessment,
     };
   }
 

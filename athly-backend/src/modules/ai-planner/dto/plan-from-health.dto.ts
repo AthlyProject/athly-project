@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
-  ArrayMinSize,
   IsDateString,
   IsEnum,
   IsInt,
@@ -181,12 +180,10 @@ export class HealthRunItemDto {
 export class PlanFromHealthDto {
   @ApiProperty({
     type: [HealthRunItemDto],
-    minItems: 1,
     description:
-      'Lightweight aggregated runs for historical context (up to 20 on first generation, 0 mid-plan).',
+      'Lightweight aggregated runs for historical context (up to 20 on first generation). May be empty for a cold start with no run history → assessment plan.',
   })
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => HealthRunItemDto)
   runs: HealthRunItemDto[];

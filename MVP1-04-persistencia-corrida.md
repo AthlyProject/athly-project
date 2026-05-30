@@ -29,12 +29,12 @@ a reinstalação, e apontar o iOS para os novos endpoints.
   servidor seja a fonte durável.
 
 ## Checklist
-- [ ] Modelo `RunSession` + migração Prisma
-- [ ] `POST /runs` (cria) e `GET /runs/history` (lista) implementados e autenticados
-- [ ] `CreateRunDto`/response alinhados ao `SaveRunRequest` do iOS
-- [ ] iOS `saveRun`/`getRunHistory` apontando para os novos endpoints
-- [ ] Fallback offline preservado (salva local, sincroniza depois, seta `synced`)
-- [ ] `RunSession` incluído no cascade de exclusão de conta (WS2)
+- [x] Modelo `RunSession` + migração Prisma (`20260530120000_add_run_session`)
+- [x] `POST /runs` (cria) e `GET /runs/history` (lista) implementados e autenticados
+- [x] `CreateRunDto`/response alinhados ao `SaveRunRequest` do iOS
+- [x] iOS `saveRun`/`getRunHistory` apontando para os novos endpoints
+- [x] Fallback offline preservado (`RunViewModel.saveRun` inalterado: salva local + seta `synced`/`saveError`)
+- [x] `RunSession` incluído no cascade de exclusão de conta (FK `onDelete: Cascade` — endpoint de exclusão fica no WS2)
 
 ## Critérios de aceite / verificação
 - [ ] Finalizar uma corrida → registro aparece no DB com métricas + rota + splits
