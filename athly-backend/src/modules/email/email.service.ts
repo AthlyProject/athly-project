@@ -91,7 +91,7 @@ export class EmailService {
                 </p>
                 <ul style="margin: 0; padding-left: 20px; color: #3f3f46; font-size: 14px; line-height: 1.8;">
                   <li>Complete seu questionário de avaliação</li>
-                  <li>Conecte suas contas (Strava, Garmin, etc.)</li>
+                  <li>Conecte o Apple Health para análise dos seus treinos</li>
                   <li>Receba seu plano de treino personalizado com IA</li>
                 </ul>
               </div>
@@ -129,7 +129,7 @@ export class EmailService {
       '',
       'Próximos passos:',
       '- Complete seu questionário de avaliação',
-      '- Conecte suas contas (Strava, Garmin, etc.)',
+      '- Conecte o Apple Health para análise dos seus treinos',
       '- Receba seu plano de treino personalizado com IA',
       '',
       'Se você não criou esta conta, por favor ignore este e-mail.',

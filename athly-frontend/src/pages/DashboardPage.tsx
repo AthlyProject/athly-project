@@ -6,30 +6,24 @@ import { Button } from '@/components/ui/Button'
 import { WorkoutCard } from '@/components/WorkoutCard'
 import { SkeletonWorkout } from '@/components/ui/Skeleton'
 import { Section } from '@/components/layout'
-import { StravaAuthModal } from '@/components/StravaAuthModal'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkoutStore } from '@/store/workoutStore'
 import { getTodayWorkout, getCurrentTrainingPlan } from '@/services/workoutService'
-import { getIntegrations, isStravaConnected } from '@/services/integrationService'
 import type { Workout } from '@/types'
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const { todayWorkout, currentPlan, setTodayWorkout, setCurrentPlan, setLoading, isLoading } = useWorkoutStore()
   const [nextWorkout, setNextWorkout] = useState<Workout | null>(null)
-  const [showStravaModal, setShowStravaModal] = useState(false)
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([getTodayWorkout(), getCurrentTrainingPlan(), getIntegrations()])
-      .then(([today, plan, integrations]) => {
+    Promise.all([getTodayWorkout(), getCurrentTrainingPlan()])
+      .then(([today, plan]) => {
         setTodayWorkout(today)
         setCurrentPlan(plan)
         if (plan?.weeks[0]?.workouts?.[1]) {
           setNextWorkout(plan.weeks[0].workouts[1])
-        }
-        if (!isStravaConnected(integrations)) {
-          setShowStravaModal(true)
         }
       })
       .finally(() => setLoading(false))
@@ -43,12 +37,6 @@ export function DashboardPage() {
 
   return (
     <>
-      {showStravaModal && (
-        <StravaAuthModal
-          onContinueWithoutStrava={() => setShowStravaModal(false)}
-          onClose={() => setShowStravaModal(false)}
-        />
-      )}
     <div className="space-y-8">
       {/* Header */}
       <Section spacing="md">

@@ -4,7 +4,7 @@ import { Mail, Lock, Rocket, Sparkles, Dumbbell, BarChart3, Target } from "lucid
 import { Button, Card, GradientText, Badge, Divider } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/authStore";
-import { login, getStravaAuthUrl } from "@/services/authService";
+import { login } from "@/services/authService";
 import { REGISTRATION_ENABLED } from "@/config/features";
 import toast from "react-hot-toast";
 
@@ -96,28 +96,6 @@ export function LoginPage() {
                 glow
               >
                 <Rocket className="h-5 w-5 inline mr-2" />Entrar
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                fullWidth
-                size="lg"
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const { url } = await getStravaAuthUrl();
-                    window.location.href = url;
-                  } catch {
-                    setLoading(false);
-                    toast.error("Erro ao redirecionar para o Strava.");
-                  }
-                }}
-                disabled={loading}
-                className="mt-4 border-[#fc4c02] text-[#fc4c02] hover:bg-[#fc4c02]/10"
-              >
-                <span className="mr-2 text-xl font-bold">strava</span>
-                Continuar com Strava
               </Button>
             </form>
 

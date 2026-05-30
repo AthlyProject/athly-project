@@ -3,19 +3,6 @@ import type { Segment } from '../../workouts/types/segment.types';
 
 export type { SportType };
 
-export interface StravaActivity {
-  id?: number;
-  name: string;
-  distance: number;
-  start_date: string;
-  type?: string;
-  sport_type?: string;
-  moving_time?: number;
-  total_elevation_gain?: number;
-  average_speed?: number;
-  average_heartrate?: number;
-}
-
 export interface RunSummary {
   index: number;
   name: string;

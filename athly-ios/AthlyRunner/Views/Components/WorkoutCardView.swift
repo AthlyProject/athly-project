@@ -58,11 +58,7 @@ struct WorkoutCardView: View {
                 Spacer()
 
                 // Origin badge
-                if workout.stravaActivityId != nil {
-                    Text("Strava")
-                        .font(AthlyTheme.Typography.label())
-                        .foregroundStyle(Color(hex: "#FC4C02"))
-                } else if workout.trainingPlanId != nil {
+                if workout.trainingPlanId != nil {
                     Label("IA", systemImage: "sparkles")
                         .font(AthlyTheme.Typography.label())
                         .foregroundStyle(AthlyTheme.Color.secondary)

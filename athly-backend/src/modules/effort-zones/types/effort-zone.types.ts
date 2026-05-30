@@ -2,7 +2,7 @@ export interface EffortZoneData {
   vdotScore: number | null;
   maxHeartRate: number | null;
   restHeartRate: number | null;
-  dataSource: 'strava' | 'apple_health' | 'assessment';
+  dataSource: 'apple_health' | 'assessment';
   easyPaceMin: number;      // seconds per km
   easyPaceMax: number;
   marathonPaceMin: number;
