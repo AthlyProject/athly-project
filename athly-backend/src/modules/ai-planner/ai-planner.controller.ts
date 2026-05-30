@@ -6,11 +6,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
 import { AiPlannerResultModel } from './models/ai-planner-result.model';
+import { SubscriptionGuard } from '../billing/subscription.guard';
 
 @ApiTags('ai-planner')
 @ApiBearerAuth()
 @Controller('ai-planner')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class AiPlannerController {
   constructor(private readonly aiPlannerService: AiPlannerService) {}
 

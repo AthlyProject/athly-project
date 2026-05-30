@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
+    @EnvironmentObject var entitlementManager: EntitlementManager
 
     @State private var viewMode: ViewMode = .list
     @State private var calendarMonth: Date = Date()
@@ -9,6 +10,7 @@ struct PlanView: View {
     @State private var showAnalysisDetails = false
     @State private var workoutToComplete: WorkoutModel?
     @State private var selectedCalendarDate: Date? = nil
+    @State private var showPaywall = false
 
     enum ViewMode: String, CaseIterable {
         case list = "Lista"
@@ -158,7 +160,11 @@ struct PlanView: View {
 
     private var generateButton: some View {
         Button {
-            Task { await planVM.generateNextWeekWithHealth() }
+            if entitlementManager.canUsePremium {
+                Task { await planVM.generateNextWeekWithHealth() }
+            } else {
+                showPaywall = true
+            }
         } label: {
             HStack {
                 if planVM.isGenerating {
@@ -173,6 +179,9 @@ struct PlanView: View {
         }
         .buttonStyle(AthlyGradientButtonStyle())
         .disabled(planVM.isGenerating)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
 
     private var nextFiveWorkoutsSection: some View {

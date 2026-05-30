@@ -30,14 +30,24 @@ backend, reaproveitando o `RoleEnum` existente.
   atualiza o status de assinatura do usuário (renovação, cancelamento, expiração, billing issue).
 - **Guard de assinatura** (`SubscriptionGuard`) nos endpoints premium (ex.: `/ai-planner/*`).
 
+## Decisão de gating
+**Trial de 7 dias, depois tudo pago.** Backend: entitlement = `paywall OFF` OU dentro de
+`createdAt + 7d` OU assinatura ativa não expirada. **Abordagem: scaffold com `PAYWALL_ENABLED=false`
+(fail-open)** — toda a infra está pronta e dormente; ligar quando o RevenueCat/ASC estiverem prontos.
+
 ## Checklist
-- [ ] Produtos + trial criados no App Store Connect
-- [ ] App configurado no RevenueCat (entitlement "premium", offerings)
-- [ ] iOS: SDK integrado + `PurchaseManager` (compra/restauração/estado `isPremium`)
-- [ ] iOS: tela de paywall + gatilho na fronteira de gating
-- [ ] Backend: webhook RevenueCat atualiza status de assinatura no usuário
-- [ ] Backend: `SubscriptionGuard` protegendo endpoints premium
-- [ ] Fronteira de gating **decidida** (ver observações) e implementada
+- [ ] Produtos + trial criados no App Store Connect *(externo — você)*
+- [ ] App configurado no RevenueCat (entitlement "premium", offerings, API keys) *(externo — você)*
+- [~] iOS: `PurchaseManager` (protocolo + `StubPurchaseManager`) — **SDK real do RevenueCat plugado depois**
+- [x] iOS: `PaywallView` + `EntitlementManager` + gate em `PlanView` (atrás de `FeatureFlags.paywallEnabled`, hoje false)
+- [x] Backend: webhook `POST /billing/revenuecat/webhook` atualiza assinatura do usuário
+- [x] Backend: `SubscriptionGuard` em `/ai-planner/*` (fail-open via `PAYWALL_ENABLED`)
+- [x] Fronteira de gating decidida (trial 7d → pago) e implementada no backend
+
+> **Para ativar (depois):** criar produtos no ASC + projeto RevenueCat → setar `REVENUECAT_WEBHOOK_AUTH`
+> e `PAYWALL_ENABLED=true` no backend → adicionar o SDK do RevenueCat (SPM) no iOS implementando
+> `PurchaseManager`, chamar `Purchases.logIn(userId)` (app_user_id = id do usuário Athly) e
+> `FeatureFlags.paywallEnabled = true`.
 
 ## Critérios de aceite / verificação
 - [ ] Compra em **sandbox StoreKit** libera o recurso pago no app

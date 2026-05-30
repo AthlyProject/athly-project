@@ -74,6 +74,11 @@ model User {
   availableDays        String[]  @default([]) @map("available_days")
   imc                  Float?
   assessmentCompleted  Boolean   @default(false) @map("assessment_completed")
+  // Assinatura (RevenueCat). Atualizado via webhook; entitlement = trial (createdAt+7d) OU assinatura ativa.
+  subscriptionStatus    String?   @map("subscription_status")        // active | expired | trial | cancelled | null
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at")
+  subscriptionProductId String?   @map("subscription_product_id")
+  revenueCatUserId      String?   @map("revenue_cat_user_id")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
 import { RunsModule } from './modules/runs/runs.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { EquipmentsModule } from './modules/equipments/equipments.module';
 import { WeeklyGoalsModule } from './modules/weekly-goals/weekly-goals.module';
 import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
@@ -26,6 +27,7 @@ import { EmailModule } from './modules/email/email.module';
     UsersModule,
     WorkoutsModule,
     RunsModule,
+    BillingModule,
     EquipmentsModule,
     WeeklyGoalsModule,
     TrainingPlansModule,
