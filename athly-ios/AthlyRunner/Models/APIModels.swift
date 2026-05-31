@@ -425,6 +425,7 @@ struct CreateGoalResponse: Decodable, Sendable {
 
 struct UpdateProfileRequest: Encodable, Sendable {
     let name: String?
+    let weight: Double?
     let availableDays: [String]?
 }
 

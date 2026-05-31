@@ -39,6 +39,7 @@
 		77436C363DE402F3721AE62D /* FloatingTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */; };
 		7D7F6E472C1957BDB6430CC0 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21885B168F66B38BD6D0490A /* RegisterView.swift */; };
 		7DDF780541F6F9791EE17382 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FDDFE35FC18F83F6B46C710 /* LoginView.swift */; };
+		80CC250B6D5583D7BC5B7EBB /* UserMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E870BF13FE10A3DE61957E /* UserMetrics.swift */; };
 		8563D9904DA5E813F86AF29D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEC4388E2A9A0B3925B6714 /* RootView.swift */; };
 		8653B9FE04FF4BC8FBC2AFF1 /* RunWorkoutLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */; };
 		872EE89FE37E79C3D1D455AF /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E55A3660DBE7A9713E988F8 /* APIModels.swift */; };
@@ -158,6 +159,7 @@
 		951FFE16A18A06CFA9C0F3B9 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
 		95B0FA61ED4D12139AEDC976 /* AdminView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminView.swift; sourceTree = "<group>"; };
 		96D960C1566BCBFDE2F14E41 /* cue_countdown.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_countdown.wav; sourceTree = "<group>"; };
+		97E870BF13FE10A3DE61957E /* UserMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMetrics.swift; sourceTree = "<group>"; };
 		9CDA0DF1AE05993FC853D7DB /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		9D3D908C678C0EEA90262783 /* RunSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryView.swift; sourceTree = "<group>"; };
 		9EE756B791DF8440151159C7 /* AudioCueService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCueService.swift; sourceTree = "<group>"; };
@@ -335,6 +337,7 @@
 				13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */,
 				69C55B1B92D18FE291EFFC3C /* SpeechService.swift */,
 				37BB25707C443BA2B43E1C96 /* TrainingPlanCache.swift */,
+				97E870BF13FE10A3DE61957E /* UserMetrics.swift */,
 				62A4721EEB697D78DC60C897 /* WorkoutDetailFetcher.swift */,
 			);
 			path = Services;
@@ -594,6 +597,7 @@
 				2B10C2AB31963A90746F1D2A /* Theme.swift in Sources */,
 				9FAEEF1D1C5D91A447F65204 /* TrainingPlanCache.swift in Sources */,
 				44D4C6DC63D15FECA7227252 /* TrainingPlanViewModel.swift in Sources */,
+				80CC250B6D5583D7BC5B7EBB /* UserMetrics.swift in Sources */,
 				DFE03DB9797D5AF4FD9060C8 /* WeeklyGoalInsightCard.swift in Sources */,
 				541BF2BAE008F64DBCC1885E /* WorkoutCardView.swift in Sources */,
 				5D854B38E76241F9109E93DB /* WorkoutCompletionSheet.swift in Sources */,

@@ -30,12 +30,13 @@ credenciais de debug, melhorar UX de permissão e dar feedback visível no envio
   (toast/estado) com opção de retry.
 
 ## Checklist
-- [ ] Peso real do usuário usado no cálculo de calorias (sem 70kg fixo)
-- [ ] Peso editável no perfil
-- [ ] `console.log` de debug removidos do `workouts.service.ts`
-- [ ] Credenciais demo removidas do `LoginPage.tsx`
-- [ ] UX de permissão de localização negada implementada
-- [ ] Feedback de treino mostra sucesso/erro (sem swallow silencioso)
+- [x] Peso real do usuário no cálculo de calorias (`RunTracker.userWeightKg`, cacheado em `UserMetrics`,
+      populado no cadastro + load/edição de perfil; injetado em `RunViewModel.startRun`)
+- [x] Peso editável no perfil (seção "Perfil" no `ProfileView` + `weight` no `UpdateProfileRequest`)
+- [x] `console.log` de debug removidos do `workouts.service.ts`
+- [x] Credenciais demo removidas do `LoginPage.tsx`
+- [x] UX de permissão de localização negada — **já existia** no `RunStartView.permissionView` (estado negado + "Abrir Ajustes")
+- [x] Feedback de treino mostra erro/retry (substituído o `try?` silencioso no `WorkoutCompletionSheet`)
 
 ## Critérios de aceite / verificação
 - [ ] Calorias variam conforme o peso do usuário (testar com pesos diferentes)

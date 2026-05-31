@@ -19,10 +19,7 @@ export function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = await login(
-        email || "alexandre@email.com",
-        password || "1234",
-      );
+      const payload = await login(email, password);
       setSession({
         user: payload.user,
         accessToken: payload.accessToken,

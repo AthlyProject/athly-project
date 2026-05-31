@@ -50,6 +50,7 @@ final class RunViewModel: ObservableObject {
             locationManager.requestAlwaysPermission()
             return
         }
+        tracker.userWeightKg = UserMetrics.weightKg ?? 70
         tracker.start()
     }
 

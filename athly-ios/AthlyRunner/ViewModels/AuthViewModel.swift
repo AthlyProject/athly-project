@@ -53,6 +53,7 @@ final class AuthViewModel: ObservableObject {
         do {
             let response = try await APIClient.shared.register(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
+            UserMetrics.weightKg = weight
             self.userName = name
             isAuthenticated = true
         } catch {

@@ -12,6 +12,9 @@ struct ProfileView: View {
     @State private var showDeleteConfirmation = false
     @State private var isDeletingAccount = false
     @State private var deleteError: String?
+    @State private var weightText: String = ""
+    @State private var isSavingWeight = false
+    @State private var weightError: String?
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -113,6 +116,44 @@ struct ProfileView: View {
                         .padding(.vertical, 4)
                     } header: {
                         Text("Preferências de treino")
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
+                    // Perfil (peso → estimativa de calorias)
+                    Section("Perfil") {
+                        HStack {
+                            Image(systemName: "scalemass")
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                                .frame(width: 28)
+                            Text("Peso (kg)")
+                                .font(AthlyTheme.Typography.body())
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            Spacer()
+                            TextField("70", text: $weightText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 70)
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            Button {
+                                Task { await saveWeight() }
+                            } label: {
+                                if isSavingWeight {
+                                    ProgressView()
+                                        .tint(AthlyTheme.Color.primary)
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Text("Salvar")
+                                        .font(AthlyTheme.Typography.semibold(14))
+                                        .foregroundStyle(AthlyTheme.Color.primary)
+                                }
+                            }
+                            .disabled(isSavingWeight)
+                        }
+                        if let weightError {
+                            Text(weightError)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.error)
+                        }
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
@@ -292,6 +333,10 @@ struct ProfileView: View {
             if let days = profile.availableDays {
                 selectedDays = Set(days)
             }
+            if let w = profile.weight {
+                UserMetrics.weightKg = w
+                weightText = String(format: "%.0f", w)
+            }
         } catch {
             // Silently ignore — stats still show from RunStore
         }
@@ -303,7 +348,7 @@ struct ProfileView: View {
         showSaveConfirmation = false
 
         do {
-            let request = UpdateProfileRequest(name: userProfile?.name, availableDays: Array(selectedDays))
+            let request = UpdateProfileRequest(name: userProfile?.name, weight: nil, availableDays: Array(selectedDays))
             let updated = try await APIClient.shared.updateProfile(request)
             userProfile = updated
             selectedDays = Set(updated.availableDays ?? [])
@@ -320,6 +365,27 @@ struct ProfileView: View {
         }
 
         isSavingDays = false
+    }
+
+    private func saveWeight() async {
+        let normalized = weightText.replacingOccurrences(of: ",", with: ".")
+        guard let kg = Double(normalized), kg > 0, kg < 400 else {
+            weightError = "Informe um peso válido em kg."
+            return
+        }
+        isSavingWeight = true
+        weightError = nil
+        do {
+            let request = UpdateProfileRequest(name: userProfile?.name, weight: kg, availableDays: nil)
+            let updated = try await APIClient.shared.updateProfile(request)
+            userProfile = updated
+            let saved = updated.weight ?? kg
+            UserMetrics.weightKg = saved
+            weightText = String(format: "%.0f", saved)
+        } catch {
+            weightError = error.localizedDescription
+        }
+        isSavingWeight = false
     }
 
     private func deleteAccount() async {
