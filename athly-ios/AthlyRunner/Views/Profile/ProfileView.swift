@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var runStore: RunStore
+    @EnvironmentObject var planVM: TrainingPlanViewModel
 
     @State private var userProfile: UserProfile?
     @State private var selectedDays: Set<String> = []
@@ -15,6 +16,7 @@ struct ProfileView: View {
     @State private var weightText: String = ""
     @State private var isSavingWeight = false
     @State private var weightError: String?
+    @State private var remindersEnabled = true
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -116,6 +118,25 @@ struct ProfileView: View {
                         .padding(.vertical, 4)
                     } header: {
                         Text("Preferências de treino")
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
+                    // Lembretes (notificações locais)
+                    Section("Lembretes") {
+                        Toggle(isOn: $remindersEnabled) {
+                            HStack {
+                                Image(systemName: "bell.badge")
+                                    .foregroundStyle(AthlyTheme.Color.primary)
+                                    .frame(width: 28)
+                                Text("Lembretes de treino")
+                                    .font(AthlyTheme.Typography.body())
+                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            }
+                        }
+                        .tint(AthlyTheme.Color.primary)
+                        .onChange(of: remindersEnabled) { newValue in
+                            Task { await NotificationService.shared.setEnabled(newValue, workouts: planVM.allWorkouts) }
+                        }
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
@@ -327,6 +348,7 @@ struct ProfileView: View {
     // MARK: - Actions
 
     private func loadProfile() async {
+        remindersEnabled = NotificationService.shared.isEnabled
         do {
             let profile = try await APIClient.shared.getUserProfile()
             userProfile = profile

@@ -98,6 +98,7 @@ final class TrainingPlanViewModel: ObservableObject {
             }
 
             persistToCache()
+            await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch APIError.notFound {
             if !hasCached {
                 trainingPlanResponse = nil
@@ -191,6 +192,9 @@ final class TrainingPlanViewModel: ObservableObject {
             lastAnalysis = response.analysis
             await loadData()
             selectedWeekIndex = max(0, weeks.count - 1)
+            // Onboarding: após gerar o plano, oferece os lembretes e (re)agenda.
+            await NotificationService.shared.requestAuthorizationIfNeeded()
+            await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -225,6 +229,9 @@ final class TrainingPlanViewModel: ObservableObject {
             lastAnalysis = response.analysis
             await loadData()
             selectedWeekIndex = max(0, weeks.count - 1)
+            // Onboarding: após gerar o plano, oferece os lembretes e (re)agenda.
+            await NotificationService.shared.requestAuthorizationIfNeeded()
+            await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {

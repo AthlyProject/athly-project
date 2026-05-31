@@ -20,11 +20,11 @@ plano e dos dias de treino, sem dependência de backend.
 - Deep-link opcional: tocar na notificação abre o treino/dashboard.
 
 ## Checklist
-- [ ] `NotificationService` com request de permissão + agendamento/cancelamento
-- [ ] Agendamento a partir dos workouts `scheduled` + dias de treino
-- [ ] Reagendamento ao gerar nova semana e ao concluir/pular treino
-- [ ] Toggle de lembretes no perfil/Settings (persistido)
-- [ ] (Opcional) deep-link da notificação para o treino do dia
+- [x] `NotificationService` com request de permissão + agendamento/cancelamento
+- [x] Agendamento a partir dos workouts `scheduled` futuros (lembrete às 7h do dia do treino, exclui `other`)
+- [x] Reagendamento ao gerar nova semana e ao concluir/pular treino (via `loadData` + pós-geração)
+- [x] Toggle de lembretes no perfil (persistido em `UserMetrics`/UserDefaults; pede permissão ao ligar)
+- [ ] (Opcional) deep-link da notificação para o treino do dia — *não feito (opcional)*
 
 ## Critérios de aceite / verificação
 - [ ] Com permissão concedida e dias definidos, o lembrete **dispara** no horário esperado

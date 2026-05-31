@@ -76,6 +76,7 @@
 		E909971739C601F4FAC31721 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */; };
 		EA395A46AFD344EAF1DA0F64 /* AthlyRunnerLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		ED4482753DC50D2EE3836C51 /* RunSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D3D908C678C0EEA90262783 /* RunSummaryView.swift */; };
+		F2451100708D957614D9CC5B /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8AEB46FFCBC7E3BE0D21D4 /* NotificationService.swift */; };
 		F2E0F9D61677CA3CA95C7EC1 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA0DF1AE05993FC853D7DB /* APIClient.swift */; };
 		F4A33774BACF9C3F459DC6B0 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FA6D5E5D1644287572683C0 /* LiveActivityManager.swift */; };
 		F5F8E317E92A69E275CF5FB2 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8B5BB692820A64AB70C5FC /* FeatureFlags.swift */; };
@@ -184,6 +185,7 @@
 		EADAC1DCE93B0F4B2817195D /* WeeklyGoalInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyGoalInsightCard.swift; sourceTree = "<group>"; };
 		EC3677CA68796450A51D4672 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		ECBE3A9D2964D2510C343AF4 /* TextFieldStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldStyles.swift; sourceTree = "<group>"; };
+		EE8AEB46FFCBC7E3BE0D21D4 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingTabBar.swift; sourceTree = "<group>"; };
 		FF76DC48C2167A1C7A70D82A /* AthlyRunnerLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerLiveActivityBundle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -330,6 +332,7 @@
 				1FA6D5E5D1644287572683C0 /* LiveActivityManager.swift */,
 				D92E1532A4AC761644476855 /* LocationManager.swift */,
 				AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */,
+				EE8AEB46FFCBC7E3BE0D21D4 /* NotificationService.swift */,
 				A30CE8F013C38A2757E76DC5 /* PermissionGate.swift */,
 				951FFE16A18A06CFA9C0F3B9 /* PurchaseManager.swift */,
 				1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */,
@@ -569,6 +572,7 @@
 				7DDF780541F6F9791EE17382 /* LoginView.swift in Sources */,
 				53A17950A26E4479593ACBAE /* MainTabView.swift in Sources */,
 				0FF1F3FF02B3171C4D7A7F99 /* MockHealthKitService.swift in Sources */,
+				F2451100708D957614D9CC5B /* NotificationService.swift in Sources */,
 				878C4E7D4CD218D1C4434288 /* PaywallView.swift in Sources */,
 				002740618CA2C429DC730F34 /* PermissionGate.swift in Sources */,
 				17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */,
