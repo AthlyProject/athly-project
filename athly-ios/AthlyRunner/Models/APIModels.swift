@@ -324,19 +324,6 @@ struct RunAnalysis: Codable, Sendable {
     let fitnessInsights: String
 }
 
-// MARK: - Plan Next Week
-
-struct PlanNextWeekRequest: Encodable, Sendable {
-    let numberOfRuns: Int?
-    let weekStartDate: String?
-}
-
-struct PlanNextWeekResponse: Decodable, Sendable {
-    let weeklyGoal: WeeklyGoalResponse
-    let workouts: [WorkoutModel]
-    let analysis: RunAnalysis?
-}
-
 // MARK: - Plan From Health
 
 struct HealthRunPayload: Encodable, Sendable {
@@ -438,6 +425,7 @@ struct CreateGoalResponse: Decodable, Sendable {
 
 struct UpdateProfileRequest: Encodable, Sendable {
     let name: String?
+    let weight: Double?
     let availableDays: [String]?
 }
 

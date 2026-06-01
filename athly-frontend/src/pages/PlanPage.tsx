@@ -5,39 +5,25 @@ import { Button } from "@/components/ui/Button";
 import { WorkoutCard } from "@/components/WorkoutCard";
 import { SkeletonWorkout } from "@/components/ui/Skeleton";
 import { Section } from "@/components/layout";
-import { StravaAuthModal } from "@/components/StravaAuthModal";
 import { useWorkoutStore } from "@/store/workoutStore";
 import { getCurrentTrainingPlan, planNextWeek } from "@/services/workoutService";
-import { getIntegrations, isStravaConnected } from "@/services/integrationService";
-import type { Integration } from "@/types";
 import toast from "react-hot-toast";
 
 export function PlanPage() {
   const { currentPlan, setCurrentPlan, isLoading, setLoading } = useWorkoutStore();
   const [selectedWeek, setSelectedWeek] = useState(0);
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [showStravaModal, setShowStravaModal] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getCurrentTrainingPlan(), getIntegrations()])
-      .then(([plan, intgs]) => {
+    getCurrentTrainingPlan()
+      .then((plan) => {
         setCurrentPlan(plan);
-        setIntegrations(intgs);
       })
       .finally(() => setLoading(false));
   }, [setCurrentPlan, setLoading]);
 
   async function handleGeneratePlan() {
-    if (!isStravaConnected(integrations)) {
-      setShowStravaModal(true);
-      return;
-    }
-    await generatePlan();
-  }
-
-  async function generatePlan() {
     try {
       setGenerating(true);
       await planNextWeek();
@@ -49,11 +35,6 @@ export function PlanPage() {
     } finally {
       setGenerating(false);
     }
-  }
-
-  function handleContinueWithoutStrava() {
-    setShowStravaModal(false);
-    generatePlan();
   }
 
   if (isLoading) {
@@ -71,13 +52,6 @@ export function PlanPage() {
 
   return (
     <>
-      {showStravaModal && (
-        <StravaAuthModal
-          onContinueWithoutStrava={handleContinueWithoutStrava}
-          onClose={() => setShowStravaModal(false)}
-        />
-      )}
-
       <div className="space-y-8">
         {/* Header */}
         <Section spacing="md">

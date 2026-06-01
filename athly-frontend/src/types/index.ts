@@ -6,7 +6,6 @@ import type {
   TrainingPlanModel as GeneratedTrainingPlanModel,
   WeeklyGoalModel as GeneratedWeeklyGoalModel,
   WorkoutFeedbackModel,
-  IntegrationModel,
   UpdateProfileDto as GeneratedUpdateProfileDto,
   WorkoutModelSportTypeEnum,
   WorkoutModelStatusEnum,
@@ -24,7 +23,6 @@ export type Workout = WorkoutModel
 export type WorkoutBlock = GeneratedWorkoutBlock
 export type WeeklyGoal = GeneratedWeeklyGoalModel
 export type WorkoutFeedback = WorkoutFeedbackModel
-export type Integration = IntegrationModel
 export type UpdateProfileInput = GeneratedUpdateProfileDto
 export type UpdateWorkoutInput = GeneratedUpdateWorkoutDto
 export type WorkoutBlockInput = GeneratedWorkoutBlockDto

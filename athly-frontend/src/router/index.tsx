@@ -18,7 +18,6 @@ import { ProfilePage } from "@/pages/ProfilePage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { TrainingPlanCalendarPage } from "@/pages/TrainingPlanCalendarPage";
 import { DesignSystemPage } from "@/pages/DesignSystemPage";
-import { OAuthCallbackPage } from "@/pages/OAuthCallbackPage";
 import { AssessmentPage } from "@/pages/AssessmentPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -91,7 +90,6 @@ export const router = createBrowserRouter([
       { path: "settings", element: <SettingsPage /> },
     ],
   },
-  { path: "/oauth/strava/callback", element: <OAuthCallbackPage /> },
   { path: "design-system", element: <DesignSystemPage /> },
   { path: "*", element: <Navigate to="/" replace /> },
 ]);

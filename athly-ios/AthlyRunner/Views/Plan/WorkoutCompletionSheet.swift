@@ -35,6 +35,7 @@ struct WorkoutCompletionSheet: View {
     @State private var effort: Int = 5
     @State private var fatigue: Int = 5
     @State private var isSubmitting = false
+    @State private var submitError: String?
 
     private let calendar = Calendar.current
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
@@ -192,6 +193,13 @@ struct WorkoutCompletionSheet: View {
                     .buttonStyle(AthlyGradientButtonStyle())
                     .disabled(isSubmitting)
 
+                    if let submitError {
+                        Text(submitError)
+                            .font(AthlyTheme.Typography.body(13))
+                            .foregroundStyle(AthlyTheme.Color.error)
+                            .multilineTextAlignment(.center)
+                    }
+
                     Button {
                         onComplete(selectedRun)
                     } label: {
@@ -342,10 +350,16 @@ struct WorkoutCompletionSheet: View {
 
     private func submitFeedback() async {
         isSubmitting = true
-        defer { isSubmitting = false }
+        submitError = nil
         let feedback = WorkoutFeedbackRequest(completed: completed, effort: effort, fatigue: fatigue)
-        try? await APIClient.shared.submitWorkoutFeedback(workoutId: workout.id, feedback: feedback)
-        onComplete(selectedRun)
+        do {
+            try await APIClient.shared.submitWorkoutFeedback(workoutId: workout.id, feedback: feedback)
+            isSubmitting = false
+            onComplete(selectedRun)
+        } catch {
+            isSubmitting = false
+            submitError = "Não foi possível enviar o feedback. Tente novamente ou use \"Pular por agora\"."
+        }
     }
 
     // MARK: - Workout Summary Card

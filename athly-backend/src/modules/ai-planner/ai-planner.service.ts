@@ -7,12 +7,10 @@ import {
   WorkoutStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { StravaService } from './strava.service';
 import { GeminiService, type PlannerExecution } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { AssessmentService } from '../assessment/assessment.service';
 import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
-import { PlanNextWeekDto } from './dto/plan-next-week.dto';
 import { PlanFromHealthDto, DetailedSessionDto } from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
@@ -40,182 +38,11 @@ export class AiPlannerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly stravaService: StravaService,
     private readonly geminiService: GeminiService,
     private readonly effortZoneService: EffortZoneService,
     private readonly assessmentService: AssessmentService,
     private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
   ) {}
-
-  async planNextWeek(userId: string, input: PlanNextWeekDto) {
-    const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
-    const weekDates = this.getWeekDates(startMonday);
-    const weekStartDate = new Date(weekDates[0]);
-    const weekEndDate = new Date(weekDates[6]);
-
-    // 1. Fetch active goal and assessment for context (before creating training plan)
-    const [activeGoalRecord, assessmentRecord, user] = await Promise.all([
-      this.prisma.userGoal.findFirst({ where: { userId, active: true }, orderBy: { createdAt: 'desc' } }),
-      this.assessmentService.findByUser(userId),
-      this.prisma.user.findUnique({ where: { id: userId }, select: { availableDays: true, dateOfBirth: true } }),
-    ]);
-    const activeGoal = activeGoalRecord ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal) : null;
-    const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
-
-    // 2. Find or create TrainingPlan (using goal for objective)
-    const trainingPlan = await this.resolveTrainingPlan(
-      userId,
-      weekDates[0],
-      activeGoalRecord?.id,
-      activeGoal?.summary,
-    );
-
-    // 3. Check for existing WeeklyGoal overlap for this week
-    await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
-
-    // 4. Fetch user available days from DB
-    const availableDays = user?.availableDays?.length ? user.availableDays : DEFAULT_AVAILABLE_DAYS;
-    const trainingDays = availableDays.length;
-
-    // 5. Fetch recent Strava activities
-    const activities = await this.stravaService.getRecentActivities(userId, 30);
-    const runs = activities
-      .filter((a) => a.type === 'Run' || a.sport_type === 'Run' || a.sport_type === 'TrailRun')
-      .slice(0, trainingDays);
-
-    // 6. Calculate effort zones
-    const runsForZones: RunDataForZones[] = runs.map((r) => ({
-      distanceMeters: r.distance ?? 0,
-      durationSeconds: r.moving_time ?? 0,
-      averageHeartRate: r.average_heartrate ?? null,
-      maxHeartRate: null,
-    }));
-    const effortZones = await this.effortZoneService.getOrCalculateForUser(userId, runsForZones, 'strava');
-
-    // 7. Build previous week analysis
-    const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
-
-    // 8. Build AI input or use assessment path
-    let plannerResult: PlannerExecution;
-    let isAssessment = false;
-
-    if (runs.length === 0) {
-      isAssessment = true;
-      plannerResult = await this.geminiService.generateAssessmentPlan(weekDates, trainingDays, availableDays, effortZones, activeGoal, userProfile);
-    } else {
-      const aiInput = this.buildAiInput(runs, weekDates, trainingDays, availableDays);
-      plannerResult = await this.geminiService.generatePlan(aiInput, effortZones, previousWeekAnalysis, activeGoal, userProfile);
-    }
-
-    // 8. Persist: WeeklyGoal → Workouts → AiReasoning → AiPlannerPromptLog (in transaction)
-    const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
-      const weeklyGoal = await tx.weeklyGoal.create({
-        data: {
-          trainingPlanId: trainingPlan.id,
-          weekStartDate,
-          weekEndDate,
-          status: WeeklyGoalStatus.GENERATED,
-          metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
-          previousWeekAnalysis: previousWeekAnalysis
-            ? (previousWeekAnalysis as unknown as Prisma.InputJsonValue)
-            : undefined,
-        },
-      });
-
-      const workouts = await Promise.all(
-        plannerResult.parsed.weekPlan.map((day) =>
-          tx.workout.create({
-            data: {
-              trainingPlanId: trainingPlan.id,
-              weeklyGoalId: weeklyGoal.id,
-              userId,
-              dateScheduled: new Date(day.date),
-              sportType: day.sportType,
-              title: day.title,
-              description: day.description,
-              blocks: this.deriveBlocksForPersistence(day) as unknown as Prisma.InputJsonValue,
-              segments: {
-                schemaVersion: SEGMENT_SCHEMA_VERSION,
-                sport: day.sportType,
-                segments: day.segments ?? [],
-              } as unknown as Prisma.InputJsonValue,
-              status: WorkoutStatus.scheduled,
-              intensity: day.intensity,
-              isGoalAttempt: day.isGoalAttempt ?? false,
-            },
-          }),
-        ),
-      );
-
-      // Persist AI reasoning for training days
-      await Promise.all(
-        plannerResult.parsed.weekPlan.map(async (day, idx) => {
-          if (day.reasoning && day.sportType !== 'other') {
-            await tx.aiReasoning.create({
-              data: {
-                workoutId: workouts[idx].id,
-                weeklyGoalId: weeklyGoal.id,
-                justification: day.reasoning,
-                dataPointsUsed: {
-                  avgPace: plannerResult.parsed.analysis.avgPace,
-                  avgHeartRate: plannerResult.parsed.analysis.avgHeartRate,
-                  totalDistanceKm: plannerResult.parsed.analysis.totalDistanceKm,
-                  vdotScore: effortZones.vdotScore,
-                  trend: plannerResult.parsed.analysis.trend,
-                } as unknown as Prisma.InputJsonValue,
-                promptVersion: PROMPT_VERSION,
-                modelUsed: MODEL_USED,
-              },
-            });
-          } else if (day.sportType !== 'other' && !day.reasoning) {
-            this.logger.warn(`Workout "${day.title}" on ${day.date} missing AI reasoning`);
-          }
-        }),
-      );
-
-      await tx.aiPlannerPromptLog.create({
-        data: {
-          weeklyGoalId: weeklyGoal.id,
-          generationType: isAssessment ? 'assessment' : 'planner',
-          promptVersion: PROMPT_VERSION,
-          modelUsed: MODEL_USED,
-          promptText: plannerResult.prompt,
-          rawResponse: plannerResult.rawResponse,
-          parsedResponse: plannerResult.parsed as unknown as Prisma.InputJsonValue,
-        },
-      });
-
-      return { weeklyGoal, workouts };
-    });
-
-    return {
-      trainingPlan: { id: trainingPlan.id, status: trainingPlan.status as any },
-      weeklyGoal: {
-        id: weeklyGoal.id,
-        trainingPlanId: weeklyGoal.trainingPlanId,
-        weekStartDate: weeklyGoal.weekStartDate,
-        weekEndDate: weeklyGoal.weekEndDate,
-        status: weeklyGoal.status as any,
-        metrics: weeklyGoal.metrics as any,
-        previousWeekAnalysis: weeklyGoal.previousWeekAnalysis as any,
-        createdAt: weeklyGoal.createdAt,
-        updatedAt: weeklyGoal.updatedAt,
-      },
-      workouts: workouts.map((w) => ({
-        id: w.id,
-        date: w.dateScheduled.toISOString().split('T')[0],
-        sportType: w.sportType as any,
-        title: w.title,
-        description: w.description ?? undefined,
-        blocks: w.blocks as any,
-        status: w.status as any,
-        intensity: w.intensity ?? undefined,
-        stravaActivityId: w.stravaActivityId ?? null,
-      })),
-      analysis: plannerResult.parsed.analysis,
-      isAssessment,
-    };
-  }
 
   async planFromHealth(userId: string, input: PlanFromHealthDto) {
     const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
@@ -273,16 +100,29 @@ export class AiPlannerService {
       ? undefined
       : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate);
 
+    // Cold start: sem corridas no Apple Health → plano de avaliação (mesmo prompt do
+    // antigo fluxo sem histórico, agora sob o único endpoint plan-from-health).
+    const isAssessment = input.runs.length === 0;
     const aiInput = this.buildAiInputFromHealthRuns(historicalRuns, weekDates, trainingDays, availableDays);
-    const plannerResult = await this.geminiService.generatePlan(
-      aiInput,
-      effortZones,
-      previousWeekAnalysis,
-      activeGoal,
-      userProfile,
-      analyzedSessions,
-      longitudinalWeeks,
-    );
+    const plannerResult = isAssessment
+      ? await this.geminiService.generateAssessmentPlan(
+          weekDates,
+          trainingDays,
+          availableDays,
+          effortZones,
+          activeGoal,
+          userProfile,
+          analyzedSessions,
+        )
+      : await this.geminiService.generatePlan(
+          aiInput,
+          effortZones,
+          previousWeekAnalysis,
+          activeGoal,
+          userProfile,
+          analyzedSessions,
+          longitudinalWeeks,
+        );
 
     const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
       const weeklyGoal = await tx.weeklyGoal.create({
@@ -351,7 +191,7 @@ export class AiPlannerService {
       await tx.aiPlannerPromptLog.create({
         data: {
           weeklyGoalId: weeklyGoal.id,
-          generationType: 'planner',
+          generationType: isAssessment ? 'assessment' : 'planner',
           promptVersion: PROMPT_VERSION,
           modelUsed: MODEL_USED,
           promptText: plannerResult.prompt,
@@ -388,7 +228,7 @@ export class AiPlannerService {
         stravaActivityId: w.stravaActivityId ?? null,
       })),
       analysis: plannerResult.parsed.analysis,
-      isAssessment: false,
+      isAssessment,
     };
   }
 
@@ -692,66 +532,6 @@ export class AiPlannerService {
     // PLANNED status → delete and overwrite
     await this.prisma.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
     await this.prisma.weeklyGoal.delete({ where: { id: existing.id } });
-  }
-
-  private buildAiInput(
-    runs: Awaited<ReturnType<InstanceType<typeof StravaService>['getRecentActivities']>>,
-    weekDates: string[],
-    trainingDays: number,
-    availableDays: string[],
-  ): AiPlannerInput {
-    // Descarta outliers (<0.5km OU <3min) das stats agregadas — fallback para runs original se zerar.
-    const validRunsRaw = runs.filter(
-      (r) => (r.distance ?? 0) >= 500 && (r.moving_time ?? 0) >= 180,
-    );
-    const validRuns = validRunsRaw.length > 0 ? validRunsRaw : runs;
-
-    const totalDist = validRuns.reduce((sum, r) => sum + (r.distance ?? 0), 0);
-    const avgDistKm = validRuns.length > 0 ? totalDist / validRuns.length / 1000 : 0;
-    const avgSpeed =
-      validRuns.length > 0
-        ? validRuns.reduce((sum, r) => sum + (r.average_speed ?? 0), 0) / validRuns.length
-        : 0;
-
-    const hrRuns = validRuns.filter((r) => r.average_heartrate);
-    const avgHR =
-      hrRuns.length > 0
-        ? Math.round(hrRuns.reduce((sum, r) => sum + r.average_heartrate!, 0) / hrRuns.length)
-        : null;
-
-    const maxDistKm = validRuns.length > 0 ? Math.max(...validRuns.map((r) => r.distance ?? 0)) / 1000 : 0;
-    const totalDistKm = totalDist / 1000;
-
-    const runSummaries: RunSummary[] = validRuns.map((r, i) => ({
-      index: i + 1,
-      name: r.name,
-      date: new Date(r.start_date).toLocaleDateString(),
-      distanceKm: parseFloat(((r.distance ?? 0) / 1000).toFixed(2)),
-      durationMin: r.moving_time ? Math.round(r.moving_time / 60) : null,
-      avgPace: this.formatPace(r.average_speed ?? 0),
-      avgHR: r.average_heartrate ? Math.round(r.average_heartrate) : null,
-      elevationGain: r.total_elevation_gain ?? null,
-    }));
-
-    return {
-      runSummaries,
-      avgDistKm,
-      avgPace: this.formatPace(avgSpeed),
-      avgHR,
-      maxDistKm,
-      totalDistKm,
-      weekDates,
-      trainingDays,
-      availableDays,
-    };
-  }
-
-  private formatPace(speedMs: number): string {
-    if (!speedMs || speedMs <= 0) return 'N/A';
-    const paceSecondsPerKm = 1000 / speedMs;
-    const minutes = Math.floor(paceSecondsPerKm / 60);
-    const seconds = Math.round(paceSecondsPerKm % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   private getNextMonday(): Date {

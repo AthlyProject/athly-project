@@ -55,6 +55,9 @@ final class RunTracker: ObservableObject {
     /// Título do treino vinculado (para o Live Activity widget)
     var workoutTitle: String = ""
 
+    /// Peso do usuário (kg) usado na estimativa de calorias. Definido em `RunViewModel.startRun`.
+    var userWeightKg: Double = 70
+
     // MARK: - Segment API
 
     var currentSegment: ActiveSegment? {
@@ -373,10 +376,8 @@ final class RunTracker: ObservableObject {
     }
 
     private func updateCalories() {
-        // Rough estimate: ~1 kcal per kg per km for running
-        // Using 70kg as default (will be replaced with user weight)
-        let weightKg = 70.0
-        calories = (distanceMeters / 1000.0) * weightKg * 1.036
+        // Estimativa: ~1 kcal por kg por km de corrida. Usa o peso real do usuário quando conhecido.
+        calories = (distanceMeters / 1000.0) * userWeightKg * 1.036
     }
 
     private func buildSplits() -> [SplitData] {

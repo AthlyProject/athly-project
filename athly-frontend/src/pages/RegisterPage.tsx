@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import { Button, Card, GradientText, Badge, Divider } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/store/authStore";
-import { register, getStravaAuthUrl } from "@/services/authService";
+import { register } from "@/services/authService";
 import toast from "react-hot-toast";
 
 interface RegisterForm {
@@ -227,28 +227,6 @@ export function RegisterPage() {
                     onClick={handleNext}
                   >
                     Continuar
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    size="lg"
-                    onClick={async () => {
-                      setLoading(true);
-                      try {
-                        const { url } = await getStravaAuthUrl();
-                        window.location.href = url;
-                      } catch {
-                        setLoading(false);
-                        toast.error("Erro ao redirecionar para o Strava.");
-                      }
-                    }}
-                    disabled={loading}
-                    className="mt-4 border-[#fc4c02] text-[#fc4c02] hover:bg-[#fc4c02]/10"
-                  >
-                    <span className="mr-2 text-xl font-bold">strava</span>
-                    Continuar com Strava
                   </Button>
                 </div>
               )}

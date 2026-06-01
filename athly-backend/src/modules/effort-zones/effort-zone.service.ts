@@ -15,7 +15,7 @@ import type { EffortZoneData, RunDataForZones, FormattedZones } from './types/ef
 export class EffortZoneService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOrCalculateForUser(userId: string, runs?: RunDataForZones[], dataSource?: 'strava' | 'apple_health'): Promise<FormattedZones> {
+  async getOrCalculateForUser(userId: string, runs?: RunDataForZones[], dataSource?: 'apple_health'): Promise<FormattedZones> {
     // Check for valid existing zones (not expired)
     const existing = await this.prisma.userEffortZone.findFirst({
       where: {
@@ -30,7 +30,7 @@ export class EffortZoneService {
     }
 
     // Calculate new zones
-    const zoneData = this.calculateFromRuns(runs ?? [], dataSource ?? 'strava');
+    const zoneData = this.calculateFromRuns(runs ?? [], dataSource ?? 'apple_health');
 
     // Persist
     const validUntil = new Date();
@@ -49,7 +49,7 @@ export class EffortZoneService {
     return this.formatForPrompt(saved);
   }
 
-  calculateFromRuns(runs: RunDataForZones[], dataSource: 'strava' | 'apple_health' | 'assessment'): EffortZoneData {
+  calculateFromRuns(runs: RunDataForZones[], dataSource: 'apple_health' | 'assessment'): EffortZoneData {
     const bestEffort = findBestEffort(runs);
 
     let vdot: number;

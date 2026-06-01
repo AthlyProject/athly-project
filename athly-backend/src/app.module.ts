@@ -6,12 +6,12 @@ import { PrismaModule } from './database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
-import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { RunsModule } from './modules/runs/runs.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { EquipmentsModule } from './modules/equipments/equipments.module';
 import { WeeklyGoalsModule } from './modules/weekly-goals/weekly-goals.module';
 import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
 import { AiPlannerModule } from './modules/ai-planner/ai-planner.module';
-import { StravaModule } from './modules/strava/strava.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
 import { EffortZoneModule } from './modules/effort-zones/effort-zone.module';
 import { GoalsModule } from './modules/goals/goals.module';
@@ -26,12 +26,12 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     UsersModule,
     WorkoutsModule,
-    IntegrationsModule,
+    RunsModule,
+    BillingModule,
     EquipmentsModule,
     WeeklyGoalsModule,
     TrainingPlansModule,
     AiPlannerModule,
-    StravaModule,
     AssessmentModule,
     EffortZoneModule,
     GoalsModule,

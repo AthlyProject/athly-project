@@ -56,11 +56,11 @@ actor APIClient {
     // MARK: - Run Endpoints
 
     func saveRun(_ run: SaveRunRequest) async throws -> SaveRunResponse {
-        try await post("/workouts", body: run)
+        try await post("/runs", body: run)
     }
 
     func getRunHistory() async throws -> [WorkoutResponse] {
-        try await get("/workouts/history")
+        try await get("/runs/history")
     }
 
     func getUserProfile() async throws -> UserProfile {
@@ -69,6 +69,11 @@ actor APIClient {
 
     func updateProfile(_ request: UpdateProfileRequest) async throws -> UserProfile {
         try await put("/users/profile", body: request)
+    }
+
+    /// Exclui a conta do usuário e todos os dados relacionados no servidor.
+    func deleteAccount() async throws {
+        let _: EmptyResponse = try await delete("/users/me")
     }
 
     // MARK: - Training Plan Endpoints
@@ -118,10 +123,6 @@ actor APIClient {
     @discardableResult
     func submitWorkoutFeedback(workoutId: String, feedback: WorkoutFeedbackRequest) async throws -> EmptyResponse {
         try await post("/workouts/\(workoutId)/feedback", body: feedback)
-    }
-
-    func planNextWeek(_ request: PlanNextWeekRequest) async throws -> PlanNextWeekResponse {
-        try await post("/ai-planner/plan-next-week", body: request, timeout: 120)
     }
 
     func planFromHealth(_ request: PlanFromHealthRequest) async throws -> AiPlannerResponse {
@@ -212,6 +213,11 @@ actor APIClient {
         var request = try buildRequest(path: path, method: "PATCH", authenticated: authenticated)
         request.httpBody = try JSONEncoder().encode(body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await execute(request)
+    }
+
+    private func delete<T: Decodable>(_ path: String, authenticated: Bool = true) async throws -> T {
+        let request = try buildRequest(path: path, method: "DELETE", authenticated: authenticated)
         return try await execute(request)
     }
 

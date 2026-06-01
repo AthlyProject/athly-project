@@ -6,6 +6,7 @@ struct AthlyRunnerApp: App {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var planViewModel = TrainingPlanViewModel()
     @StateObject private var runStore = RunStore()
+    @StateObject private var entitlementManager = EntitlementManager()
 
     init() {
         configureUIKitAppearance()
@@ -18,6 +19,7 @@ struct AthlyRunnerApp: App {
                 .environmentObject(locationManager)
                 .environmentObject(planViewModel)
                 .environmentObject(runStore)
+                .environmentObject(entitlementManager)
                 .preferredColorScheme(.dark)
         }
     }

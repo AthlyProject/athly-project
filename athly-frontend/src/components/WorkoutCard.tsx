@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CalendarDays, Zap, Target, Activity, Sparkles, Check } from 'lucide-react'
+import { CalendarDays, Zap, Target, Sparkles, Check } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { SportBadge } from '@/components/SportBadge'
 import { Badge } from '@/components/ui/Badge'
@@ -33,16 +33,6 @@ export function WorkoutCard({ workout, compact }: WorkoutCardProps) {
   }
 
   const getOriginBadge = () => {
-    if (workout.stravaActivityId) {
-      return (
-        <span
-          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
-          style={{ backgroundColor: '#FC4C02', color: '#fff' }}
-        >
-          <Activity className="h-3 w-3" /> Strava
-        </span>
-      )
-    }
     if (workout.status === 'scheduled' || workout.weeklyGoalId) {
       return (
         <Badge variant="primary" size="sm">

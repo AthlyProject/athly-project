@@ -17,19 +17,6 @@ export async function register(data: RegisterUserDto): Promise<AuthPayload> {
   return result
 }
 
-export async function stravaLogin(code: string): Promise<AuthPayload> {
-  const result = await api.auth.authControllerStravaCallback({
-    stravaCallbackDto: { code }
-  })
-  api.setToken(result.accessToken)
-  return result
-}
-
-export async function getStravaAuthUrl(): Promise<{ url: string }> {
-  const result = await api.auth.authControllerGetStravaAuthUrl()
-  return result as { url: string }
-}
-
 export async function getMe(): Promise<UserModel | null> {
   try {
     const user = await api.users.usersControllerMe()

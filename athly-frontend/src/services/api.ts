@@ -5,7 +5,6 @@ import {
   WorkoutsApi,
   TrainingPlansApi,
   WeeklyGoalsApi,
-  IntegrationsApi,
   AiPlannerApi,
   EquipmentsApi,
   AssessmentApi,
@@ -51,7 +50,6 @@ class ApiManager {
   public workouts = new WorkoutsApi(this.createConfig())
   public trainingPlans = new TrainingPlansApi(this.createConfig())
   public weeklyGoals = new WeeklyGoalsApi(this.createConfig())
-  public integrations = new IntegrationsApi(this.createConfig())
   public aiPlanner = new AiPlannerApi(this.createConfig())
   public equipments = new EquipmentsApi(this.createConfig())
   public assessment = new AssessmentApi(this.createConfig())
@@ -63,7 +61,6 @@ class ApiManager {
     this.workouts = new WorkoutsApi(newConfig)
     this.trainingPlans = new TrainingPlansApi(newConfig)
     this.weeklyGoals = new WeeklyGoalsApi(newConfig)
-    this.integrations = new IntegrationsApi(newConfig)
     this.aiPlanner = new AiPlannerApi(newConfig)
     this.equipments = new EquipmentsApi(newConfig)
     this.assessment = new AssessmentApi(newConfig)
