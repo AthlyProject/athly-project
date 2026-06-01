@@ -14,6 +14,7 @@ const workoutCompletionSelect = {
   title: true,
   description: true,
   blocks: true,
+  segments: true,
   status: true,
   intensity: true,
   stravaActivityId: true,
@@ -203,6 +204,7 @@ export class WorkoutsService {
     title: string;
     description: string | null;
     blocks: Prisma.JsonValue;
+    segments?: Prisma.JsonValue;
     status: WorkoutModel['status'];
     intensity: number | null;
     isGoalAttempt?: boolean;
@@ -216,6 +218,7 @@ export class WorkoutsService {
       title: workout.title,
       description: workout.description ?? undefined,
       blocks: (workout.blocks as unknown as WorkoutModel['blocks']) ?? [],
+      segments: (workout.segments as unknown as WorkoutModel['segments']) ?? null,
       status: workout.status,
       intensity: workout.intensity ?? undefined,
       isGoalAttempt: workout.isGoalAttempt ?? false,
@@ -249,6 +252,10 @@ export class WorkoutsService {
         targetPace: block.targetPace ?? undefined,
         instructions: block.instructions ?? undefined,
       })) as unknown as Prisma.InputJsonValue;
+    }
+
+    if (input.segments !== undefined) {
+      updateData.segments = input.segments as unknown as Prisma.InputJsonValue;
     }
 
     const updated = await this.prisma.workout.update({
