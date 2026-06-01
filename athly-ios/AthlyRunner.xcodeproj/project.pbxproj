@@ -52,7 +52,6 @@
 		97DA447E4B2C777C7B5FC162 /* RunTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */; };
 		9D3C4E928BF25D42658AD6ED /* ActiveSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5391592348FF767D8574DE08 /* ActiveSegment.swift */; };
 		9FAEEF1D1C5D91A447F65204 /* TrainingPlanCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BB25707C443BA2B43E1C96 /* TrainingPlanCache.swift */; };
-		A1A2A3A4A5A6A7B8B9B0BA01 /* ActiveSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A2A3A4A5A6A7B8B9B0BA00 /* ActiveSegment.swift */; };
 		A271E861EBADC0AA295CB857 /* SportBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76040706569D260F613A6C4A /* SportBadgeView.swift */; };
 		A439736DB08A1F67171BC6A8 /* HealthKitRunsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */; };
 		AB73FD4F580E9C95D585A7C1 /* cue_countdown.wav in Resources */ = {isa = PBXBuildFile; fileRef = 96D960C1566BCBFDE2F14E41 /* cue_countdown.wav */; };
@@ -68,22 +67,17 @@
 		CECFC240FDA8E8ABFED896FF /* RunMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD2A9A1C57FD36685544968 /* RunMapView.swift */; };
 		CF0A75EC9DFE71921931EADE /* TextFieldStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECBE3A9D2964D2510C343AF4 /* TextFieldStyles.swift */; };
 		D06AA707FFF4A387FED05AFC /* WorkoutDetailFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A4721EEB697D78DC60C897 /* WorkoutDetailFetcher.swift */; };
-		D1D2D3D4D5D6D7E8E9E0EB01 /* HapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D2D3D4D5D6D7E8E9E0EB00 /* HapticService.swift */; };
 		D28D261CEC4D158217B3B4C5 /* AthlyRunnerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31AC3D9BB758915547F4FF81 /* AthlyRunnerAttributes.swift */; };
 		D9C336A5480626D122DAF5FF /* HealthKitRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 182ACC312B7C55B46D3231F6 /* HealthKitRunsView.swift */; };
 		DC45ECC56B566A845034D08B /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857478532FADD1CC52B19758 /* WorkoutDetailView.swift */; };
 		DFE03DB9797D5AF4FD9060C8 /* WeeklyGoalInsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADAC1DCE93B0F4B2817195D /* WeeklyGoalInsightCard.swift */; };
-		E1E2E3E4E5E6E7F8F9F0FB01 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E2E3E4E5E6E7F8F9F0FB00 /* SpeechService.swift */; };
 		E1B5DE25BC7FA15A4AD0D950 /* cue_set_complete.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2E004D596074B2667BB02EB4 /* cue_set_complete.wav */; };
 		E41779D400C5E24ECA4A374E /* AnalysisSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAAA9A2AF9EC88986BC2748 /* AnalysisSummaryCard.swift */; };
 		E909971739C601F4FAC31721 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */; };
 		EA395A46AFD344EAF1DA0F64 /* AthlyRunnerLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		ED4482753DC50D2EE3836C51 /* RunSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D3D908C678C0EEA90262783 /* RunSummaryView.swift */; };
-		F0F1F2F3F4F5F6F7F8F9FA01 /* cue_boundary.wav in Resources */ = {isa = PBXBuildFile; fileRef = F0F1F2F3F4F5F6F7F8F9FA00 /* cue_boundary.wav */; };
-		F1F2F3F4F5F6F7F8F9FAFB01 /* cue_countdown.wav in Resources */ = {isa = PBXBuildFile; fileRef = F1F2F3F4F5F6F7F8F9FAFB00 /* cue_countdown.wav */; };
 		F2451100708D957614D9CC5B /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8AEB46FFCBC7E3BE0D21D4 /* NotificationService.swift */; };
 		F2E0F9D61677CA3CA95C7EC1 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA0DF1AE05993FC853D7DB /* APIClient.swift */; };
-		F2F3F4F5F6F7F8F9FAFBFC01 /* cue_set_complete.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2F3F4F5F6F7F8F9FAFBFC00 /* cue_set_complete.wav */; };
 		F4A33774BACF9C3F459DC6B0 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FA6D5E5D1644287572683C0 /* LiveActivityManager.swift */; };
 		F5F8E317E92A69E275CF5FB2 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8B5BB692820A64AB70C5FC /* FeatureFlags.swift */; };
 		FB3F24AF2893567AD0E78E94 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB42F5D6A90B8ED4DAE9C47 /* Assets.xcassets */; };
@@ -171,33 +165,26 @@
 		9D3D908C678C0EEA90262783 /* RunSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSummaryView.swift; sourceTree = "<group>"; };
 		9EE756B791DF8440151159C7 /* AudioCueService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCueService.swift; sourceTree = "<group>"; };
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
-		A1A2A3A4A5A6A7B8B9B0BA00 /* ActiveSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSegment.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
 		A30CE8F013C38A2757E76DC5 /* PermissionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGate.swift; sourceTree = "<group>"; };
-		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A75164A623027A41C4C25C85 /* AthlyRunnerLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerLiveActivityView.swift; sourceTree = "<group>"; };
 		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
 		AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryMapView.swift; sourceTree = "<group>"; };
-		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		B1B2B3B4B5B6B7C8C9C0CB00 /* AudioCueService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCueService.swift; sourceTree = "<group>"; };
+		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B92F9D576847F505274A2EE1 /* RunStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStartView.swift; sourceTree = "<group>"; };
 		BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsViewModel.swift; sourceTree = "<group>"; };
 		BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		C1C2C3C4C5C6C7D8D9D0DB00 /* CueOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueOrchestrator.swift; sourceTree = "<group>"; };
 		CBAAA9A2AF9EC88986BC2748 /* AnalysisSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisSummaryCard.swift; sourceTree = "<group>"; };
 		CCC11FC7C664AF6DBDB67914 /* CalendarDayCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDayCellView.swift; sourceTree = "<group>"; };
 		CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunTrackingView.swift; sourceTree = "<group>"; };
-		D1D2D3D4D5D6D7E8E9E0EB00 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
+		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D83E95AB1CF3059ACB41221C /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		D92E1532A4AC761644476855 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
-		E1E2E3E4E5E6E7F8F9F0FB00 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
-		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		EAAA0291E0D684D4E4C7E204 /* cue_boundary.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_boundary.wav; sourceTree = "<group>"; };
 		EADAC1DCE93B0F4B2817195D /* WeeklyGoalInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyGoalInsightCard.swift; sourceTree = "<group>"; };
 		EC3677CA68796450A51D4672 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		ECBE3A9D2964D2510C343AF4 /* TextFieldStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldStyles.swift; sourceTree = "<group>"; };
-		F0F1F2F3F4F5F6F7F8F9FA00 /* cue_boundary.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_boundary.wav; sourceTree = "<group>"; };
-		F1F2F3F4F5F6F7F8F9FAFB00 /* cue_countdown.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_countdown.wav; sourceTree = "<group>"; };
-		F2F3F4F5F6F7F8F9FAFBFC00 /* cue_set_complete.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_set_complete.wav; sourceTree = "<group>"; };
 		EE8AEB46FFCBC7E3BE0D21D4 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingTabBar.swift; sourceTree = "<group>"; };
 		FF76DC48C2167A1C7A70D82A /* AthlyRunnerLiveActivityBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerLiveActivityBundle.swift; sourceTree = "<group>"; };
@@ -497,6 +484,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					9698FFA3B8A23FDAE524080D = {
+						DevelopmentTeam = "";
+					};
+					DB2561B82C567797BDCC4C4E = {
+						DevelopmentTeam = "";
+					};
+				};
 			};
 			buildConfigurationList = AD8858011B5208CA18A12727 /* Build configuration list for PBXProject "AthlyRunner" */;
 			developmentRegion = en;
@@ -764,7 +759,6 @@
 		2451DDD3CB6DE6CECAB69CEC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunnerLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -783,7 +777,6 @@
 		8DDA8FC44A43CDB0AD32FA96 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunnerLiveActivity/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -806,7 +799,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -827,7 +819,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 8C9GB8F87Q;
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
