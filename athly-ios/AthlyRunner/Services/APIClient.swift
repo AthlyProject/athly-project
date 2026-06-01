@@ -53,16 +53,6 @@ actor APIClient {
         return response
     }
 
-    // MARK: - Run Endpoints
-
-    func saveRun(_ run: SaveRunRequest) async throws -> SaveRunResponse {
-        try await post("/runs", body: run)
-    }
-
-    func getRunHistory() async throws -> [WorkoutResponse] {
-        try await get("/runs/history")
-    }
-
     func getUserProfile() async throws -> UserProfile {
         try await get("/users/me")
     }
@@ -386,28 +376,6 @@ struct RefreshResponse: Decodable {
     let refreshToken: String
 }
 
-struct SaveRunRequest: Encodable {
-    let sportType: String
-    let dateScheduled: String
-    let duration: Double
-    let distance: Double
-    let elevationGain: Double
-    let calories: Double
-    let averagePace: Double
-    let routePoints: [[String: Double]]
-    let splits: [SplitRequest]
-}
-
-struct SplitRequest: Encodable {
-    let kilometer: Int
-    let durationSeconds: Double
-    let elevationDelta: Double
-}
-
-struct SaveRunResponse: Decodable {
-    let id: String
-}
-
 struct CompleteWorkoutRequest: Encodable {
     let appleHealthWorkoutUUID: String
     let actualDistanceMeters: Double?
@@ -418,13 +386,6 @@ struct CompleteWorkoutRequest: Encodable {
         case actualDistanceMeters
         case actualDurationSeconds
     }
-}
-
-struct WorkoutResponse: Decodable {
-    let id: String
-    let sportType: String?
-    let dateScheduled: String?
-    let status: String?
 }
 
 struct UserProfile: Decodable {

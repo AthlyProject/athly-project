@@ -6,7 +6,6 @@ import { PrismaModule } from './database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
-import { RunsModule } from './modules/runs/runs.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { EquipmentsModule } from './modules/equipments/equipments.module';
 import { WeeklyGoalsModule } from './modules/weekly-goals/weekly-goals.module';
@@ -26,7 +25,6 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     UsersModule,
     WorkoutsModule,
-    RunsModule,
     BillingModule,
     EquipmentsModule,
     WeeklyGoalsModule,

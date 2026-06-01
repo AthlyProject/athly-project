@@ -1,5 +1,13 @@
 # MVP1 · 🔴 Workstream 4 — Corrigir persistência de corrida no servidor
 
+> ⚠️ **SUBSTITUÍDO (2026-06-01) — modelo HealthKit-first.** Decidimos que o HealthKit é a fonte da
+> verdade dos treinos (inclui Watch/Garmin/outros apps e sobrevive a reinstalação), então a
+> persistência própria de corrida (`RunSession` + `POST /runs` + `saveRun` no iOS) foi **removida**.
+> O histórico passa a ser lido do Apple Health (`HistoryView` → `HealthKitRunsView`), e o vínculo
+> treino-prescrito↔execução continua via `appleHealthWorkoutUUID` no `completeWorkout`. O conteúdo
+> abaixo fica como registro histórico do que foi feito e depois revertido.
+
+
 > Bug atual: o iOS faz `saveRun → POST /workouts`, mas `CreateWorkoutDto` exige
 > `trainingPlanId`/`title`/`status` e **não tem** campos de métrica (distância, duração, rota,
 > splits). A sincronização **falha sempre** e cai no "Salvo localmente". Histórico só existe no

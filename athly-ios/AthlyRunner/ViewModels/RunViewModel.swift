@@ -128,42 +128,9 @@ final class RunViewModel: ObservableObject {
             }
         }
 
-        // Sync with backend
-        do {
-            let request = SaveRunRequest(
-                sportType: "running",
-                dateScheduled: ISO8601DateFormatter().string(from: result.startDate),
-                duration: result.durationSeconds,
-                distance: result.distanceMeters,
-                elevationGain: result.elevationGainMeters,
-                calories: result.caloriesBurned,
-                averagePace: result.averagePaceSecondsPerKm,
-                routePoints: result.locations.map { loc in
-                    [
-                        "lat": loc.coordinate.latitude,
-                        "lng": loc.coordinate.longitude,
-                        "alt": loc.altitude,
-                        "ts": loc.timestamp.timeIntervalSince1970
-                    ]
-                },
-                splits: result.splits.map { s in
-                    SplitRequest(
-                        kilometer: s.kilometer,
-                        durationSeconds: s.durationSeconds,
-                        elevationDelta: s.elevationDelta
-                    )
-                }
-            )
-
-            let response = try await APIClient.shared.saveRun(request)
-            session.backendId = response.id
-            session.synced = true
-            runStore.update(session)
-        } catch {
-            // Saved locally, will sync later
-            saveError = "Salvo localmente. Sincroniza quando houver conexão."
-        }
-
+        // HealthKit-first: a corrida fica durável no Apple Health (salvo acima) e o histórico
+        // é lido de lá. O backend só guarda a camada de coaching (plano/metas/feedback) +
+        // o vínculo via appleHealthWorkoutUUID no completeWorkout — não persistimos a corrida crua.
         isSaving = false
         isSaved = true
 

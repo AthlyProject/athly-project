@@ -10,8 +10,10 @@ e que ficaram pendentes durante a implementação do MVP1. Organizados por prior
 - [ ] **Rodar as migrações no banco** (não apliquei — o `DATABASE_URL` aponta para `db:5432`, host do
       Docker Compose, inacessível do meu ambiente). No deploy roda via `prisma migrate deploy`; valide
       antes localmente com `npm run db:migrate`. Migrações novas:
-  - `20260530120000_add_run_session` (persistência de corrida — WS4)
   - `20260530140000_add_user_subscription` (campos de assinatura — WS3)
+  - `20260530120000_add_run_session` **+** `20260601120000_drop_run_session` — a persistência
+    própria de corrida foi **revertida** (modelo HealthKit-first); no deploy o `migrate deploy`
+    cria e dropa a tabela em sequência (no-op líquido). Não precisa fazer nada manual.
 - [ ] **Variáveis de ambiente em produção**: garantir `JWT_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`,
       AWS SES (`AWS_REGION`, `SES_SENDER_EMAIL`), `ADMIN_EMAILS`, `PAYWALL_ENABLED`, `REVENUECAT_WEBHOOK_AUTH`
       (ver `athly-backend/.env.example`).
@@ -53,7 +55,9 @@ e que ficaram pendentes durante a implementação do MVP1. Organizados por prior
 
 ## 🟡 Verificações manuais (precisam de device/DB real)
 
-- [ ] **Corrida persiste no servidor** (`POST /runs`) e sobrevive a reinstalar o app (`GET /runs/history`).
+- [ ] **Histórico via HealthKit** (device real): finalizar uma corrida → ela é gravada no Apple Health
+      e aparece na aba Histórico; corridas de outras fontes (Watch/Garmin/outros apps) também aparecem;
+      sobrevive a reinstalar o app. (Persistência própria de corrida foi removida — modelo HealthKit-first.)
 - [ ] **Notificações locais**: com permissão concedida, o lembrete dispara às 7h do dia do treino
       (testar com data/hora próxima); desligar o toggle cancela os pendentes.
 - [ ] **Calorias** variam conforme o peso do usuário (editar peso no perfil e comparar).

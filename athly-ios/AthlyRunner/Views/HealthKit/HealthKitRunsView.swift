@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HealthKitRunsView: View {
+    var title: String = "Corridas do Apple Health"
+
     @StateObject private var viewModel: HealthKitRunsViewModel = {
         #if targetEnvironment(simulator)
         return HealthKitRunsViewModel(healthKitService: MockHealthKitService())
@@ -54,7 +56,7 @@ struct HealthKitRunsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .navigationTitle("Corridas do Apple Health")
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.loadWorkouts() }
     }

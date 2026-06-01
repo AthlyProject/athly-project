@@ -91,7 +91,6 @@ model User {
   assessment    Assessment?
   effortZones   UserEffortZone[]
   userGoals     UserGoal[]
-  runSessions   RunSession[]
 
   @@map("users")
 }
@@ -136,30 +135,6 @@ model Workout {
   aiReasoning  AiReasoning?
 
   @@map("workouts")
-}
-
-model RunSession {
-  id                     String    @id @default(uuid())
-  sportType              SportType @default(running) @map("sport_type")
-  startDate              DateTime  @map("start_date")
-  endDate                DateTime  @map("end_date")
-  durationSeconds        Float     @map("duration_seconds")
-  distanceMeters         Float     @map("distance_meters")
-  avgPaceSecondsPerKm    Float     @map("avg_pace_seconds_per_km")
-  elevationGainMeters    Float     @default(0) @map("elevation_gain_meters")
-  calories               Float     @default(0)
-  route                  Json
-  splits                 Json
-  appleHealthWorkoutUUID String?   @map("apple_health_workout_uuid")
-  workoutId              String?   @map("workout_id")
-  createdAt              DateTime  @default(now()) @map("created_at")
-  updatedAt              DateTime  @updatedAt @map("updated_at")
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @map("user_id")
-
-  @@index([userId])
-  @@map("run_sessions")
 }
 
 model TrainingPlan {
