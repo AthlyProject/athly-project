@@ -12,7 +12,7 @@ AI-generated workout planning application. Mocked front-end, ready for integrati
 - **Apollo Client** + **GraphQL** - Set up for requests (mocks active)
 - **React Hot Toast** - Notifications
 
-## Structure
+## Structure 
 
 ```
 src/
