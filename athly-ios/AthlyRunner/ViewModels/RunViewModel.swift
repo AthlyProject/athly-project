@@ -105,6 +105,7 @@ final class RunViewModel: ObservableObject {
             let split = Split(
                 kilometer: splitData.kilometer,
                 durationSeconds: splitData.durationSeconds,
+                distanceMeters: splitData.distanceMeters,
                 elevationDelta: splitData.elevationDelta
             )
             session.splits.append(split)

@@ -57,6 +57,15 @@ final class TrainingPlanViewModel: ObservableObject {
             .map { $0 }
     }
 
+    /// Sequência (ofensiva): treinos prescritos consecutivos concluídos, de hoje pra trás.
+    /// Regra em `StreakCalculator` (pulado/passado-não-marcado quebra; treino de hoje pendente é neutro).
+    var currentStreak: Int {
+        let entries = allWorkouts
+            .filter { $0.sportType != .other }
+            .map { (date: $0.parsedDate, status: $0.status) }
+        return StreakCalculator.currentStreak(entries: entries)
+    }
+
     // MARK: - Load Data
 
     func loadData() async {

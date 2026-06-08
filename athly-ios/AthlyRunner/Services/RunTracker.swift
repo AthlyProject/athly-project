@@ -381,42 +381,16 @@ final class RunTracker: ObservableObject {
     }
 
     private func buildSplits() -> [SplitData] {
-        // Build splits from location data
-        var splits: [SplitData] = []
-        var splitLocations: [[CLLocation]] = []
-        var currentSplitLocs: [CLLocation] = []
-        var accumulatedDistance: Double = 0
-        var previousLocation: CLLocation?
-
-        for location in locations {
-            currentSplitLocs.append(location)
-            if let prev = previousLocation {
-                accumulatedDistance += location.distance(from: prev)
-            }
-            previousLocation = location
-
-            if accumulatedDistance >= 1000 {
-                splitLocations.append(currentSplitLocs)
-                currentSplitLocs = [location]
-                accumulatedDistance = accumulatedDistance.truncatingRemainder(dividingBy: 1000)
-            }
+        // Mesma base de cálculo do pace ao vivo (filtro de salto, exclusão de pausa/buraco,
+        // primeiro movimento, fronteiras exatas) via algoritmo compartilhado — ver SplitCalculator.
+        SplitCalculator.kmSplits(from: locations).map {
+            SplitData(
+                kilometer: $0.kilometer,
+                distanceMeters: $0.distanceMeters,
+                durationSeconds: $0.durationSeconds,
+                elevationDelta: $0.elevationDelta
+            )
         }
-        if !currentSplitLocs.isEmpty {
-            splitLocations.append(currentSplitLocs)
-        }
-
-        for (index, locs) in splitLocations.enumerated() {
-            guard let first = locs.first, let last = locs.last else { continue }
-            let duration = last.timestamp.timeIntervalSince(first.timestamp)
-            let elevDelta = last.altitude - first.altitude
-            splits.append(SplitData(
-                kilometer: index + 1,
-                durationSeconds: duration,
-                elevationDelta: elevDelta
-            ))
-        }
-
-        return splits
     }
 }
 
@@ -434,14 +408,19 @@ struct RunResult {
 
 struct SplitData {
     let kilometer: Int
+    let distanceMeters: Double
     let durationSeconds: Double
     let elevationDelta: Double
 
-    var paceSecondsPerKm: Double { durationSeconds }
+    var paceSecondsPerKm: Double {
+        distanceMeters > 0 ? durationSeconds / (distanceMeters / 1000.0) : 0
+    }
 
     var formattedPace: String {
-        let minutes = Int(paceSecondsPerKm) / 60
-        let seconds = Int(paceSecondsPerKm) % 60
+        let pace = paceSecondsPerKm
+        guard pace > 0, pace.isFinite else { return "--:--" }
+        let minutes = Int(pace) / 60
+        let seconds = Int(pace) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
 }

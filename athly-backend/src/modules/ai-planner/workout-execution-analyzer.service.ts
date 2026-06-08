@@ -173,13 +173,19 @@ export class WorkoutExecutionAnalyzerService {
     feedback?: { effort: number; fatigue: number; completed: boolean },
   ): ExecutionAnalysis {
     const observations: string[] = [];
+    // Quando a origem dos splits é sintética (ex.: Garmin/Nike lidos via Apple Health, que só carrega
+    // totais), os "segments" são um preenchimento de pace uniforme — não dá para tirar veredito de
+    // tiros/variação deles. Evita afirmar "pacing even" ou "sem tiros" como se fosse real.
+    const isLowGranularity = session.splitsSource === 'synthetic';
     const reps = session.segments.filter((s) => s.label === SegmentLabel.rep);
     const recoveries = session.segments.filter((s) => s.label === SegmentLabel.rec);
 
     if (reps.length === 0) {
       if (prescribed?.expectedRepCount && prescribed.expectedRepCount > 0) {
         observations.push(
-          `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed.expectedRepCount} repetições.`,
+          isLowGranularity
+            ? `O treino previa ${prescribed.expectedRepCount} tiros, mas esta corrida chegou sem splits/laps reais (origem só com totais) — não dá para verificar a execução dos tiros.`
+            : `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed.expectedRepCount} repetições.`,
         );
       }
 
@@ -210,32 +216,39 @@ export class WorkoutExecutionAnalyzerService {
         }
       }
 
-      // Variance/strategy a partir de splits "easy" reais (Phase A do iOS entrega isso).
-      const easyPaces = session.segments
-        .filter((s) => s.label === SegmentLabel.easy)
-        .map((s) => s.avgPaceSecondsPerKm)
-        .filter((p): p is number => typeof p === 'number' && p > 0);
       let pacingStrategy: ExecutionAnalysis['pacingStrategy'] = 'n/a';
       let paceVarianceSeconds: number | undefined;
-      if (easyPaces.length >= 4) {
-        const fastest = Math.min(...easyPaces);
-        const slowest = Math.max(...easyPaces);
-        paceVarianceSeconds = Math.round(slowest - fastest);
-        const firstHalf = avg(easyPaces.slice(0, Math.floor(easyPaces.length / 2)));
-        const secondHalf = avg(easyPaces.slice(Math.ceil(easyPaces.length / 2)));
-        const delta = secondHalf - firstHalf;
-        if (paceVarianceSeconds > 25) {
-          pacingStrategy = 'erratic';
-          observations.push(
-            `Variação grande entre splits (~${paceVarianceSeconds}s/km entre o mais rápido e o mais lento).`,
-          );
-        } else if (delta > 5) {
-          pacingStrategy = 'fade';
-          observations.push('Pacing degradou na segunda metade do treino (+5s/km ou mais).');
-        } else if (delta < -5) {
-          pacingStrategy = 'negative';
-        } else {
-          pacingStrategy = 'even';
+      if (isLowGranularity) {
+        // Sem splits reais: não inventa estratégia de pace. Mantém só o nível de sessão (ritmo médio).
+        observations.push(
+          'Esta corrida veio sem splits reais (origem só com totais, ex.: Garmin/Nike via Apple Health) — análise limitada ao ritmo médio; não é possível avaliar tiros nem variação de pace.',
+        );
+      } else {
+        // Variance/strategy a partir de splits "easy" reais (Phase A do iOS entrega isso).
+        const easyPaces = session.segments
+          .filter((s) => s.label === SegmentLabel.easy)
+          .map((s) => s.avgPaceSecondsPerKm)
+          .filter((p): p is number => typeof p === 'number' && p > 0);
+        if (easyPaces.length >= 4) {
+          const fastest = Math.min(...easyPaces);
+          const slowest = Math.max(...easyPaces);
+          paceVarianceSeconds = Math.round(slowest - fastest);
+          const firstHalf = avg(easyPaces.slice(0, Math.floor(easyPaces.length / 2)));
+          const secondHalf = avg(easyPaces.slice(Math.ceil(easyPaces.length / 2)));
+          const delta = secondHalf - firstHalf;
+          if (paceVarianceSeconds > 25) {
+            pacingStrategy = 'erratic';
+            observations.push(
+              `Variação grande entre splits (~${paceVarianceSeconds}s/km entre o mais rápido e o mais lento).`,
+            );
+          } else if (delta > 5) {
+            pacingStrategy = 'fade';
+            observations.push('Pacing degradou na segunda metade do treino (+5s/km ou mais).');
+          } else if (delta < -5) {
+            pacingStrategy = 'negative';
+          } else {
+            pacingStrategy = 'even';
+          }
         }
       }
 

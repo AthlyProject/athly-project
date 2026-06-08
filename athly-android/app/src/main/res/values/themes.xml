@@ -1,0 +1,8 @@
+<resources>
+    <!-- Tema base da Activity (dark forçado). A UI real é Compose (AthlyTheme). -->
+    <style name="Theme.Athly" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
+    </style>
+</resources>

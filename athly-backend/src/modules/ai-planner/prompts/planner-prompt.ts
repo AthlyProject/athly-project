@@ -76,6 +76,7 @@ function buildRecentSessionsDetailSection(analyzedSessions: AnalyzedSession[]): 
     const session = a.session;
     return {
       date: session.startDate.split('T')[0],
+      splitsSource: session.splitsSource ?? 'unknown',
       totals: {
         distanceKm: Number((session.distanceMeters / 1000).toFixed(2)),
         durationMin: Math.round(session.durationSeconds / 60),
@@ -117,6 +118,7 @@ Sessões recentes com análise mastigada (use como leitura direta, não recalcul
 ${JSON.stringify(payload, null, 2)}
 
 Leia o campo "executionAnalysis" de cada sessão como veredito pronto. Use "observations" para citar padrões concretos no "reasoning" dos próximos treinos (ex: se "fade", reduza intensidade OU reforce pacing; se "undershot", suba o estímulo; se recuperação cardíaca baixa, dê mais recovery entre reps).
+Quando "splitsSource" = "synthetic", os "segments" são um preenchimento de pace uniforme (a fonte só tinha totais, ex.: Garmin/Nike via Apple Health) — NÃO interprete esses splits como ritmo real, NÃO afirme estratégia de pace nem execução de tiros para essa sessão; baseie-se só nos totais e no que o atleta relatou (feedback).
 </recentSessionsDetail>`;
 }
 

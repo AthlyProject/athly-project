@@ -5,6 +5,9 @@ struct RunSummaryView: View {
     @ObservedObject var viewModel: RunViewModel
     @EnvironmentObject private var runStore: RunStore
 
+    /// URL do .txt gerado pelo botão "I.A Report" (relatório para auditoria de pace/splits).
+    @State private var reportURL: URL?
+
     var body: some View {
         ZStack {
             AthlyTheme.Color.backgroundDark
@@ -70,6 +73,16 @@ struct RunSummaryView: View {
                             .multilineTextAlignment(.center)
                         }
 
+                        if let reportURL {
+                            ShareLink(item: reportURL) {
+                                HStack {
+                                    Image(systemName: "doc.text.magnifyingglass")
+                                    Text("I.A Report")
+                                }
+                            }
+                            .buttonStyle(AthlySecondaryButtonStyle())
+                        }
+
                         Button {
                             viewModel.dismissSummary()
                         } label: {
@@ -90,6 +103,11 @@ struct RunSummaryView: View {
         .navigationBarBackButtonHidden(true)
         .task {
             await viewModel.saveRun(runStore: runStore)
+        }
+        .onAppear {
+            if let result = viewModel.lastRunResult {
+                reportURL = RunReportGenerator.fileURL(for: result)
+            }
         }
         .sheet(isPresented: $viewModel.showWorkoutFeedback) {
             if let workout = viewModel.pendingWorkout {

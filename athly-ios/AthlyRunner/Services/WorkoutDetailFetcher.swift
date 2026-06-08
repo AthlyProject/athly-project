@@ -57,7 +57,9 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
 
         let segments = segmentsRaw.map { seg -> SegmentPayload in
             let hr = summarizeHR(samples: hrSamples, from: seg.start, to: seg.end)
-            let durationSeconds = seg.end.timeIntervalSince(seg.start)
+            // Duração corrigida (pausa/buraco descontados) quando disponível — caso contrário,
+            // o tempo de parede entre as fronteiras do segmento.
+            let durationSeconds = seg.durationSeconds ?? seg.end.timeIntervalSince(seg.start)
             let pace: Double? = seg.distanceMeters > 0
                 ? durationSeconds / (seg.distanceMeters / 1000.0)
                 : nil
@@ -103,6 +105,8 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         let start: Date
         let end: Date
         let distanceMeters: Double
+        /// Duração já corrigida (pausa/buraco descontados). Quando nil, o caller usa `end - start`.
+        var durationSeconds: Double? = nil
     }
 
     /// Try to build segments from `HKWorkoutEvent`s of type `.segment` or `.lap`.
@@ -197,48 +201,23 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             let routeLocs = try await fetchLocations(for: route)
             locations.append(contentsOf: routeLocs)
         }
-        locations.sort { $0.timestamp < $1.timestamp }
         guard locations.count >= 2 else { return nil }
 
-        var segments: [RawSegment] = []
-        var segmentStart: CLLocation = locations[0]
-        var segmentDistance: Double = 0
-        var lastLocation: CLLocation = locations[0]
+        // Mesmo algoritmo dos splits da tela: filtro de salto por velocidade, exclusão de
+        // pausa/buraco e fronteiras exatas — para o pace do analisador bater com o do app.
+        let splits = SplitCalculator.kmSplits(from: locations)
+        guard !splits.isEmpty else { return nil }
 
-        for i in 1..<locations.count {
-            let loc = locations[i]
-            let delta = loc.distance(from: lastLocation)
-            // Mesmo filtro de RunTracker: descarta saltos de GPS > 50m.
-            if delta < 50 {
-                segmentDistance += delta
-            }
-            lastLocation = loc
-
-            if segmentDistance >= 1000 {
-                segments.append(RawSegment(
-                    label: .easy,
-                    index: nil,
-                    start: segmentStart.timestamp,
-                    end: loc.timestamp,
-                    distanceMeters: segmentDistance
-                ))
-                segmentStart = loc
-                segmentDistance = 0
-            }
-        }
-
-        // Trailing fractional km
-        if segmentDistance >= 50 {
-            segments.append(RawSegment(
+        return splits.map { split in
+            RawSegment(
                 label: .easy,
                 index: nil,
-                start: segmentStart.timestamp,
-                end: lastLocation.timestamp,
-                distanceMeters: segmentDistance
-            ))
+                start: split.startDate,
+                end: split.endDate,
+                distanceMeters: split.distanceMeters,
+                durationSeconds: split.durationSeconds
+            )
         }
-
-        return segments.isEmpty ? nil : segments
     }
 
     private func fetchRoutes(for workout: HKWorkout) async throws -> [HKWorkoutRoute] {

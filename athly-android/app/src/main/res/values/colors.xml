@@ -1,0 +1,7 @@
+<resources>
+    <!-- Espelha os tokens do iOS (AthlyTheme). Tema Compose completo no prompt 01. -->
+    <color name="background_dark">#FF0A0A10</color>
+    <color name="surface_dark">#FF0D1117</color>
+    <color name="primary">#FF06B6D4</color>
+    <color name="ic_launcher_background">#FF0A0A10</color>
+</resources>

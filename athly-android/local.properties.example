@@ -1,0 +1,12 @@
+# Copie este arquivo para `local.properties` (gitignored) e preencha.
+# O Android Studio também preenche `sdk.dir` automaticamente ao abrir o projeto.
+
+sdk.dir=/Users/SEU_USUARIO/Library/Android/sdk
+
+# Google Maps — obrigatória para o mapa renderizar (ver _planning/ENVIRONMENT.md §5).
+MAPS_API_KEY=
+
+# Backend. Vazio = produção (https://api.athlyproject.app).
+# Para backend local no device físico, use o IP da sua LAN (não localhost):
+# DEV_API_URL=http://192.168.1.67:4000
+DEV_API_URL=

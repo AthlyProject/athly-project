@@ -224,7 +224,7 @@ struct DashboardView: View {
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(width: 1, height: 40)
-                statMini(value: "-", label: "Sequência", sfSymbol: "flame")
+                statMini(value: planVM.allWorkouts.isEmpty ? "-" : "\(planVM.currentStreak)", label: "Sequência", sfSymbol: "flame")
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(width: 1, height: 40)
