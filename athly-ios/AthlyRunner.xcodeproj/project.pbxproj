@@ -43,6 +43,8 @@
 		80CC250B6D5583D7BC5B7EBB /* UserMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E870BF13FE10A3DE61957E /* UserMetrics.swift */; };
 		8563D9904DA5E813F86AF29D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEC4388E2A9A0B3925B6714 /* RootView.swift */; };
 		8653B9FE04FF4BC8FBC2AFF1 /* RunWorkoutLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */; };
+		AC41E5705703E000000A0001 /* AchievementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC41E5705703E000000A0002 /* AchievementStore.swift */; };
+		AC41E5705703E000000B0001 /* WorkoutObjectiveValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC41E5705703E000000B0002 /* WorkoutObjectiveValidator.swift */; };
 		872EE89FE37E79C3D1D455AF /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E55A3660DBE7A9713E988F8 /* APIModels.swift */; };
 		89541A62B716A2302CADF335 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43825FAB86DD6123B208E2F0 /* ProfileView.swift */; };
 		8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4F37700F3E2C1413DE8816 /* RunSession.swift */; };
@@ -118,6 +120,8 @@
 		03D63F8FA8D5D21765CDAAFA /* AthlyRunner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AthlyRunner.entitlements; sourceTree = "<group>"; };
 		10367608EAEC829637CA0AD2 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWorkoutLinkStore.swift; sourceTree = "<group>"; };
+		AC41E5705703E000000A0002 /* AchievementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementStore.swift; sourceTree = "<group>"; };
+		AC41E5705703E000000B0002 /* WorkoutObjectiveValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutObjectiveValidator.swift; sourceTree = "<group>"; };
 		15EE092CB97CBB29AF5AE98A /* RunViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunViewModel.swift; sourceTree = "<group>"; };
 		182ACC312B7C55B46D3231F6 /* HealthKitRunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsView.swift; sourceTree = "<group>"; };
 		1A62DB73F799E2EB57DCB585 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
@@ -359,6 +363,8 @@
 				1FAA3F41EC5D48AD9AB534D5 /* RunStore.swift */,
 				7983CD8541D4919DA78D7FA0 /* RunTracker.swift */,
 				13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */,
+				AC41E5705703E000000A0002 /* AchievementStore.swift */,
+				AC41E5705703E000000B0002 /* WorkoutObjectiveValidator.swift */,
 				69C55B1B92D18FE291EFFC3C /* SpeechService.swift */,
 				88126421B9CC1AEB13B54B4E /* SplitCalculator.swift */,
 				D17E5A2E54C4ED6BA4C203F9 /* StreakCalculator.swift */,
@@ -624,6 +630,8 @@
 				70E445DD4DBC6A21D24396BB /* RunViewModel.swift in Sources */,
 				C6D5D1F92C7655AFC268A5C8 /* RunWorkoutLink.swift in Sources */,
 				8653B9FE04FF4BC8FBC2AFF1 /* RunWorkoutLinkStore.swift in Sources */,
+				AC41E5705703E000000A0001 /* AchievementStore.swift in Sources */,
+				AC41E5705703E000000B0001 /* WorkoutObjectiveValidator.swift in Sources */,
 				0C604497FDDF6613D80BC180 /* SpeechService.swift in Sources */,
 				17BC451DE0C5E1DBB273517E /* Split.swift in Sources */,
 				28EE657FA3D19F32EC8644A6 /* SplitCalculator.swift in Sources */,

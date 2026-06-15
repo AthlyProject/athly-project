@@ -130,6 +130,16 @@ struct RunSummaryView: View {
                                 appleHealthWorkoutUUID: healthKitUUID
                             )
                         }
+                        // Validação sem I.A.: treino de tentativa de objetivo que bateu a meta vira conquista.
+                        if let result = viewModel.lastRunResult,
+                           WorkoutObjectiveValidator.isObjectiveAchieved(
+                               workout: workout,
+                               actualDistanceMeters: result.distanceMeters,
+                               actualDurationSeconds: result.durationSeconds,
+                               actualPaceSecPerKm: result.averagePaceSecondsPerKm
+                           ) {
+                            AchievementStore.shared.record(workoutId: workout.id)
+                        }
                         viewModel.pendingWorkout = nil
                         viewModel.showWorkoutFeedback = false
                     },

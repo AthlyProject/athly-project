@@ -173,12 +173,12 @@ struct DashboardView: View {
                         .font(AthlyTheme.Typography.label())
                         .foregroundStyle(AthlyTheme.Color.primary)
 
-                    if planVM.totalThisWeek == 0 {
+                    if planVM.thisWeekTotal == 0 {
                         Text("Nenhum treino planejado")
                             .font(AthlyTheme.Typography.heading(22))
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                     } else {
-                        Text("\(planVM.completedThisWeek) / \(planVM.totalThisWeek) treinos")
+                        Text("\(planVM.thisWeekCompleted) / \(planVM.thisWeekTotal) treinos")
                             .font(AthlyTheme.Typography.heading(22))
                             .foregroundStyle(AthlyTheme.Color.textPrimary)
                     }
@@ -195,7 +195,7 @@ struct DashboardView: View {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 10, weight: .bold))
-                        Text("\(Int(planVM.weeklyProgress * 100))%")
+                        Text("\(Int(planVM.thisWeekProgress * 100))%")
                             .font(AthlyTheme.Typography.semibold(13))
                     }
                     .foregroundStyle(AthlyTheme.Color.secondary)
@@ -212,7 +212,7 @@ struct DashboardView: View {
                         .frame(height: 8)
                     Capsule()
                         .fill(AthlyTheme.Gradient.brand)
-                        .frame(width: max(8, geo.size.width * planVM.weeklyProgress), height: 8)
+                        .frame(width: max(8, geo.size.width * planVM.thisWeekProgress), height: 8)
                         .shadow(color: AthlyTheme.Color.primary.opacity(0.5), radius: 6)
                 }
             }
@@ -220,7 +220,7 @@ struct DashboardView: View {
 
             // Stats row
             HStack(spacing: 0) {
-                statMini(value: "\(planVM.completedThisWeek)", label: "Esta Semana", sfSymbol: "figure.strengthtraining.traditional")
+                statMini(value: "\(planVM.thisWeekCompleted)", label: "Esta Semana", sfSymbol: "figure.strengthtraining.traditional")
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(width: 1, height: 40)
@@ -228,10 +228,10 @@ struct DashboardView: View {
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(width: 1, height: 40)
-                statMini(value: "\(planVM.allWorkouts.filter { $0.status == .done }.count)", label: "Total", sfSymbol: "medal")
+                statMini(value: "\(planVM.achievementCount)", label: "Conquistas", sfSymbol: "medal")
             }
 
-            if let next = planVM.nextWorkout {
+            if let next = planVM.thisWeekNext {
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(height: 1)

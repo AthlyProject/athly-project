@@ -16,6 +16,8 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var isGenerating: Bool = false
     @Published var errorMessage: String?
     @Published var lastAnalysis: RunAnalysis?
+    /// Conquistas: treinos de tentativa de objetivo em que o atleta atingiu a meta (ver `AchievementStore`).
+    @Published var achievementCount: Int = AchievementStore.shared.count
 
     // MARK: - Computed Properties
 
@@ -39,6 +41,43 @@ final class TrainingPlanViewModel: ObservableObject {
 
     var nextWorkout: WorkoutModel? {
         currentWeekWorkouts.first { $0.status == .scheduled }
+    }
+
+    // MARK: - Semana corrente (Dashboard)
+    //
+    // Derivado direto de `allWorkouts` pela semana de calendário (segunda→domingo) que contém hoje,
+    // independente de `weeklyGoals`/`selectedWeekIndex`. Evita o falso "Nenhum treino planejado"
+    // quando o plano não tem weeklyGoal ou o vínculo `weeklyGoalId` está quebrado. O `PlanView`
+    // continua usando as props acima, baseadas na semana selecionada para navegação.
+
+    private var thisWeekInterval: DateInterval? {
+        var cal = Calendar.current
+        cal.firstWeekday = 2 // segunda-feira
+        return cal.dateInterval(of: .weekOfYear, for: Date())
+    }
+
+    var thisWeekWorkouts: [WorkoutModel] {
+        guard let interval = thisWeekInterval else { return currentWeekWorkouts }
+        return allWorkouts
+            .filter { $0.sportType != .other && interval.contains($0.parsedDate) }
+            .sorted { $0.parsedDate < $1.parsedDate }
+    }
+
+    var thisWeekCompleted: Int {
+        thisWeekWorkouts.filter { $0.status == .done }.count
+    }
+
+    var thisWeekTotal: Int {
+        thisWeekWorkouts.count
+    }
+
+    var thisWeekProgress: Double {
+        guard thisWeekTotal > 0 else { return 0 }
+        return Double(thisWeekCompleted) / Double(thisWeekTotal)
+    }
+
+    var thisWeekNext: WorkoutModel? {
+        thisWeekWorkouts.first { $0.status == .scheduled }
     }
 
     /// WeeklyGoal da semana atualmente selecionada (usada para exibir cards de AI insight).
@@ -73,6 +112,7 @@ final class TrainingPlanViewModel: ObservableObject {
         if !hasCached {
             isLoading = true
         }
+        achievementCount = AchievementStore.shared.count
         errorMessage = nil
 
         do {
@@ -314,6 +354,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 actualDurationSeconds: healthRun.durationSeconds
             )
             replaceWorkout(updated)
+            recordAchievementIfEarned(workout: workout, healthRun: healthRun)
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -373,6 +414,19 @@ final class TrainingPlanViewModel: ObservableObject {
         }
         // Default to last week
         return max(0, weeks.count - 1)
+    }
+
+    /// Validação sem I.A. ao fim do treino: se for tentativa de objetivo (`isGoalAttempt`) e o
+    /// resultado real bater a meta planejada (distância + pace), conta como conquista.
+    private func recordAchievementIfEarned(workout: WorkoutModel, healthRun: HealthKitRunItem) {
+        guard WorkoutObjectiveValidator.isObjectiveAchieved(
+            workout: workout,
+            actualDistanceMeters: healthRun.distanceMeters,
+            actualDurationSeconds: healthRun.durationSeconds,
+            actualPaceSecPerKm: healthRun.averagePaceSecondsPerKm
+        ) else { return }
+        AchievementStore.shared.record(workoutId: workout.id)
+        achievementCount = AchievementStore.shared.count
     }
 
     private func replaceWorkout(_ updated: WorkoutModel) {

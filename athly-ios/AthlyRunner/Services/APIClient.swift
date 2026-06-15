@@ -433,6 +433,7 @@ struct EntitlementResponse: Decodable, Sendable {
 struct UserProfile: Decodable {
     let id: String
     let name: String?
+    let username: String?
     let email: String
     let weight: Double?
     let height: Double?

@@ -9,6 +9,9 @@ export class UserModel {
   name: string;
 
   @ApiProperty()
+  username: string;
+
+  @ApiProperty()
   email: string;
 
   @ApiProperty({ enum: RoleEnum })

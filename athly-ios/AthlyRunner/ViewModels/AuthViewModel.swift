@@ -56,6 +56,7 @@ final class AuthViewModel: ObservableObject {
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             isAuthenticated = true
             postAuthChanged(true)
+            await refreshUserName()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -71,7 +72,7 @@ final class AuthViewModel: ObservableObject {
             let response = try await APIClient.shared.register(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             UserMetrics.weightKg = weight
-            self.userName = name
+            self.userName = userName
             isAuthenticated = true
             postAuthChanged(true)
         } catch {
@@ -83,6 +84,14 @@ final class AuthViewModel: ObservableObject {
 
     func logout() {
         clearLocalSession()
+    }
+
+    /// Carrega o username de registro do perfil (`GET /users/me`) para a saudação do Dashboard.
+    /// Usa `name` como fallback caso o backend não devolva `username`. Falha silenciosa: a
+    /// saudação cai em "Atleta" quando vazio.
+    func refreshUserName() async {
+        guard let profile = try? await APIClient.shared.getUserProfile() else { return }
+        self.userName = profile.username ?? profile.name ?? ""
     }
 
     /// Exclui a conta no servidor (cascade de todos os dados) e limpa a sessão local.
@@ -101,6 +110,7 @@ final class AuthViewModel: ObservableObject {
         KeychainHelper.delete(tokenKey)
         KeychainHelper.delete(refreshKey)
         TrainingPlanCache.shared.clear()
+        AchievementStore.shared.clear()
         Task {
             await APIClient.shared.clearTokens()
         }
@@ -124,6 +134,8 @@ final class AuthViewModel: ObservableObject {
             isAuthenticated = true
             postAuthChanged(true)
             hasFinishedInitialSessionRestore = true
+            // Não bloqueia o gate de restauração de sessão; a saudação atualiza reativamente.
+            await refreshUserName()
         }
     }
 
