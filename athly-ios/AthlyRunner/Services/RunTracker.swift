@@ -20,6 +20,10 @@ final class RunTracker: ObservableObject {
     private(set) var playlist: [ActiveSegment] = []
     private var segmentStartDistance: Double = 0
     private var segmentStartElapsed: TimeInterval = 0
+    private var segmentStartDate: Date?
+    /// Fronteiras reais dos segmentos executados — vão para o HealthKit como
+    /// HKWorkoutEvents para a análise da IA reconstruir a estrutura do treino.
+    private var segmentRecords: [SegmentRecord] = []
     private var countdownFired: Bool = false
 
     private var timer: Timer?
@@ -43,6 +47,18 @@ final class RunTracker: ObservableObject {
     private let paceGapResetSeconds: Double = 6
     /// Velocidade máxima plausível em corrida (m/s ≈ 2:23/km). Acima disso é salto de GPS.
     private let maxPlausibleSpeed: Double = 7.0
+    /// Sem fix aceito há mais que isto → o pace exibido é invalidado ("--:--").
+    /// Congelar o último valor bom mostrava 5'10 na tela enquanto o GPS estava cego.
+    private let paceStaleSeconds: Double = 8
+    /// Gap máximo que ainda recebe crédito de distância pela velocidade pré-gap.
+    private let maxBridgeGapSeconds: Double = 90
+    /// Velocidade recente (m/s, EMA) — preferindo o Doppler do GPS, muito mais estável
+    /// que deltas de posição. Base do pace exibido e do crédito de distância em gaps.
+    private var recentSpeedMps: Double = 0
+    /// Momento do último resume — um gap que contém uma pausa não recebe crédito de distância.
+    private var lastResumeDate: Date?
+    /// Throttle dos updates da Live Activity (o relógio do widget anda sozinho via timerInterval).
+    private var lastLiveActivityPush: Date = .distantPast
 
     enum RunState {
         case idle, running, paused, finished
@@ -109,6 +125,8 @@ final class RunTracker: ObservableObject {
         activeSegmentIndex = 0
         segmentStartDistance = 0
         segmentStartElapsed = 0
+        segmentStartDate = Date()
+        segmentRecords = []
         countdownFired = false
 
         locationManager.startTracking()
@@ -133,6 +151,8 @@ final class RunTracker: ObservableObject {
         pauseStart = Date()
         timer?.invalidate()
         timer = nil
+        // Congela o relógio do widget imediatamente (isPaused → tempo estático).
+        pushLiveActivityIfDue(force: true)
     }
 
     func resume() {
@@ -142,7 +162,9 @@ final class RunTracker: ObservableObject {
             pausedDuration += Date().timeIntervalSince(pauseStart)
         }
         pauseStart = nil
+        lastResumeDate = Date()
         startTimer()
+        pushLiveActivityIfDue(force: true)
     }
 
     func stop() -> RunResult {
@@ -160,6 +182,16 @@ final class RunTracker: ObservableObject {
         let finalDuration = stopTime.timeIntervalSince(startTime ?? stopTime) - pausedDuration
         let finalPace = distanceMeters > 0 ? finalDuration / (distanceMeters / 1000.0) : 0
 
+        // Fecha o segmento em andamento (parcial) para a estrutura executada ficar completa.
+        if activeSegmentIndex < playlist.count {
+            let inFlight = playlist[activeSegmentIndex]
+            let dist = max(0, distanceMeters - segmentStartDistance)
+            let dur = max(0, elapsedTime - segmentStartElapsed)
+            if dist > 10 || dur > 5 {
+                recordCompletedSegment(inFlight, endDate: stopTime, skipped: false)
+            }
+        }
+
         let result = RunResult(
             startDate: startTime ?? stopTime,
             endDate: stopTime,
@@ -169,7 +201,8 @@ final class RunTracker: ObservableObject {
             elevationGainMeters: elevationGain,
             caloriesBurned: calories,
             locations: locations,
-            splits: buildSplits()
+            splits: buildSplits(),
+            segmentRecords: segmentRecords
         )
 
         LiveActivityManager.shared.endActivity()
@@ -208,7 +241,28 @@ final class RunTracker: ObservableObject {
         activeSegmentIndex = 0
         segmentStartDistance = 0
         segmentStartElapsed = 0
+        segmentStartDate = nil
+        segmentRecords = []
         countdownFired = false
+        recentSpeedMps = 0
+        lastResumeDate = nil
+        lastLiveActivityPush = .distantPast
+    }
+
+    private func recordCompletedSegment(_ segment: ActiveSegment, endDate: Date, skipped: Bool) {
+        let start = segmentStartDate ?? startTime ?? endDate
+        guard endDate > start else { return }
+        segmentRecords.append(SegmentRecord(
+            kind: segment.kind,
+            setIndex: segment.setIndex,
+            setTotal: segment.setTotal,
+            label: segment.label,
+            startDate: start,
+            endDate: endDate,
+            distanceMeters: max(0, distanceMeters - segmentStartDistance),
+            durationSeconds: max(0, elapsedTime - segmentStartElapsed),
+            skipped: skipped
+        ))
     }
 
     private func startTimer() {
@@ -224,10 +278,30 @@ final class RunTracker: ObservableObject {
         elapsedTime = Date().timeIntervalSince(startTime) - pausedDuration
         updateCalories()
         checkSegmentBoundary()
+
+        // Em buraco de GPS prolongado (8s+ sem fix novo), invalida o pace exibido em vez de
+        // congelar o último valor — evita mostrar um ritmo defasado quando o sinal cai.
+        if let lastFix = lastLocation?.timestamp,
+           Date().timeIntervalSince(lastFix) > paceStaleSeconds {
+            currentPaceSecondsPerKm = 0
+        }
+
+        pushLiveActivityIfDue()
+    }
+
+    /// Empurra estado para a Live Activity no máximo a cada 3s — o relógio do widget
+    /// anda sozinho (Text(timerInterval:)), então updates por segundo só gastavam
+    /// bateria e arriscavam throttling do ActivityKit (tela de bloqueio defasada).
+    private func pushLiveActivityIfDue(force: Bool = false) {
+        let now = Date()
+        guard force || now.timeIntervalSince(lastLiveActivityPush) >= 3 else { return }
+        lastLiveActivityPush = now
         LiveActivityManager.shared.updateActivity(
             elapsedSeconds: Int(elapsedTime),
             distanceMeters: distanceMeters,
-            paceSecondsPerKm: currentPaceSecondsPerKm
+            paceSecondsPerKm: currentPaceSecondsPerKm,
+            startedAt: now.addingTimeInterval(-elapsedTime),
+            isPaused: state == .paused
         )
     }
 
@@ -262,7 +336,20 @@ final class RunTracker: ObservableObject {
             let impliedSpeed = dt > 0 ? delta / dt : .infinity
             guard impliedSpeed <= maxPlausibleSpeed else { return }
 
-            distanceMeters += delta
+            // Gap de entrega com movimento (GPS degradado/cego): a corda entre o último
+            // ponto bom e este perde as curvas do trajeto — credita a distância estimada
+            // pela velocidade recente. Não se aplica se uma pausa caiu dentro do gap
+            // (os pontos da pausa são descartados e o crédito seria falso).
+            var distStep = delta
+            if dt > paceGapResetSeconds,
+               dt <= maxBridgeGapSeconds,
+               impliedSpeed >= 0.5,
+               recentSpeedMps > 0.5,
+               lastResumeDate.map({ $0 <= last.timestamp }) ?? true {
+                distStep = min(max(delta, recentSpeedMps * dt), maxPlausibleSpeed * dt)
+            }
+
+            distanceMeters += distStep
 
             // Elevation gain (only count positive)
             if let lastAlt = lastAltitude {
@@ -272,9 +359,11 @@ final class RunTracker: ObservableObject {
                 }
             }
 
-            // Current pace — sliding time-window from GPS coordinates (same method as splits).
-            // Se houve um buraco na entrega de GPS (tela bloqueada), zera a janela para ela
-            // reconstruir a partir de fixes novos em vez de cruzar o gap e mostrar pace lento.
+            // Current pace — janela deslizante de deltas de posição (NÃO o location.speed).
+            // O medidor nativo do iOS é pré-suavizado pelo chip e atrasa em mudança de ritmo
+            // (tiro), travando o pace exibido perto do ritmo de recuperação; deltas respondem
+            // direto ao movimento. Se houve um buraco na entrega de GPS (tela bloqueada), zera
+            // a janela para reconstruir a partir de fixes novos em vez de cruzar o gap.
             if let lastInWindow = paceWindow.last,
                location.timestamp.timeIntervalSince(lastInWindow.timestamp) > paceGapResetSeconds {
                 paceWindow.removeAll()
@@ -292,6 +381,9 @@ final class RunTracker: ObservableObject {
                 let windowTime = paceWindow.last!.timestamp.timeIntervalSince(paceWindow.first!.timestamp)
                 if windowDist > 5, windowTime > 0 {
                     currentPaceSecondsPerKm = (windowTime / windowDist) * 1000.0
+                    // Velocidade recente para o bridge de distância em buracos — derivada
+                    // da mesma janela de deltas (não do Doppler).
+                    recentSpeedMps = windowDist / windowTime
                 }
             }
 
@@ -348,10 +440,12 @@ final class RunTracker: ObservableObject {
 
     private func advanceSegment(skipped: Bool) {
         let completed = playlist[activeSegmentIndex]
+        recordCompletedSegment(completed, endDate: Date(), skipped: skipped)
         activeSegmentIndex += 1
         countdownFired = false
         segmentStartDistance = distanceMeters
         segmentStartElapsed = elapsedTime
+        segmentStartDate = Date()
 
         let isSetDone = !skipped
             && completed.setIndex != nil
@@ -404,6 +498,30 @@ struct RunResult {
     let caloriesBurned: Double
     let locations: [CLLocation]
     let splits: [SplitData]
+    /// Fronteiras reais dos segmentos executados (vazio em corrida livre).
+    var segmentRecords: [SegmentRecord] = []
+}
+
+/// Um segmento do treino estruturado como foi de fato executado. Persiste no
+/// HealthKit como HKWorkoutEvent(.segment) com metadata — é a fonte que permite
+/// à análise da IA avaliar tiros/recuperações com distância e duração reais.
+struct SegmentRecord: Sendable {
+    let kind: SegmentKind
+    let setIndex: Int?
+    let setTotal: Int?
+    let label: String
+    let startDate: Date
+    let endDate: Date
+    let distanceMeters: Double
+    /// Duração ativa (pausas descontadas).
+    let durationSeconds: Double
+    let skipped: Bool
+
+    /// Pace do segmento isolado (s/km). É este — não o split de km, que mistura tiro
+    /// com recuperação — que reflete o ritmo real do tiro.
+    var paceSecondsPerKm: Double {
+        distanceMeters > 0 ? durationSeconds / (distanceMeters / 1000.0) : 0
+    }
 }
 
 struct SplitData {

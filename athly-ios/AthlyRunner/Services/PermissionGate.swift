@@ -3,7 +3,8 @@ import Foundation
 enum PermissionGate {
     // Versioned keys — bump version when the requested type set changes
     private static let healthKitReadKey = "permission.healthkit.read.requested.v1"
-    private static let healthKitWriteKey = "permission.healthkit.write.requested.v1"
+    // v2: passou a incluir a permissão de escrita de rota (HKSeriesType.workoutRoute) → re-solicita.
+    private static let healthKitWriteKey = "permission.healthkit.write.requested.v2"
 
     static var shouldRequestHealthKitRead: Bool {
         !UserDefaults.standard.bool(forKey: healthKitReadKey)

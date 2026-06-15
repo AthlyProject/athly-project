@@ -1,6 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
+import { isAdminEmail } from '../../common/admin-emails';
 
 const TRIAL_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -78,14 +79,31 @@ export class BillingService {
     return 'active';
   }
 
-  /** Entitlement = paywall desligado, OU trial (createdAt+7d), OU assinatura ativa e não expirada. */
+  /** True se o e-mail está em `ADMIN_EMAILS` (contas de admin/dev — isentas de cobrança). */
+  isAdminEmail(email: string | undefined | null): boolean {
+    return isAdminEmail(email, this.config.get<string>('ADMIN_EMAILS'));
+  }
+
+  /**
+   * Entitlement = paywall desligado, OU admin (ADMIN_EMAILS / role ADMIN), OU trial (createdAt+7d),
+   * OU assinatura ativa e não expirada.
+   */
   async isEntitled(userId: string): Promise<boolean> {
     if (!this.paywallEnabled) return true;
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { createdAt: true, subscriptionStatus: true, subscriptionExpiresAt: true },
+      select: {
+        createdAt: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true,
+        email: true,
+        role: true,
+      },
     });
     if (!user) return false;
+
+    // Bypass de admin/dev: nunca cobrado, nunca bloqueado.
+    if (user.role === 'ADMIN' || this.isAdminEmail(user.email)) return true;
 
     const now = Date.now();
     const trialEnds = user.createdAt.getTime() + TRIAL_DAYS * DAY_MS;

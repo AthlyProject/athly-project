@@ -11,6 +11,12 @@ struct AthlyRunnerAttributes: ActivityAttributes {
         var distanceMeters: Double
         /// Pace atual em segundos por km (0 = sem dado)
         var paceSecondsPerKm: Double
+        /// Início "virtual" do cronômetro (agora − tempo decorrido, pausas já descontadas).
+        /// Permite ao widget renderizar Text(timerInterval:) — o relógio anda sozinho no
+        /// processo do widget, sem o app empurrar update a cada segundo.
+        var startedAt: Date? = nil
+        /// Pausado → o widget mostra o tempo estático (elapsedSeconds congelado).
+        var isPaused: Bool = false
     }
 
     /// Título do treino prescrito (se o usuário iniciou a corrida a partir de um treino)
@@ -38,8 +44,7 @@ extension AthlyRunnerAttributes.ContentState {
         guard paceSecondsPerKm > 0, paceSecondsPerKm.isFinite, paceSecondsPerKm < 3600 else {
             return "--:--"
         }
-        let m = Int(paceSecondsPerKm) / 60
-        let s = Int(paceSecondsPerKm) % 60
-        return String(format: "%d:%02d", m, s)
+        let total = Int(paceSecondsPerKm.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }

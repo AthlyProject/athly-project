@@ -13,6 +13,11 @@ configFiles:
   Debug: Config/Config.xcconfig
   Release: Config/Config.xcconfig
 
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios-spm.git
+    from: "5.0.0"          # 5.x: SDK + RevenueCatUI (Paywalls v2 + Customer Center)
+
 # Variáveis definidas nas configFiles (ex: User.xcconfig) ficam disponíveis como build settings.
 # DEV_API_URL é definido em Config/User.xcconfig (gitignored) para testes no device físico.
 
@@ -20,7 +25,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: "8C9GB8F87Q"
+    CODE_SIGN_STYLE: Automatic
 
 targets:
   AthlyRunner:
@@ -44,6 +50,7 @@ targets:
       path: AthlyRunner/Info.plist
       properties:
         DEV_API_URL: "$(DEV_API_URL)"
+        REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
         CFBundleDisplayName: Athly Runner
         CFBundleDevelopmentRegion: pt-BR
         UIApplicationSceneManifest:
@@ -80,6 +87,10 @@ targets:
     dependencies:
       - target: AthlyRunnerLiveActivity
         embed: true
+      - package: RevenueCat
+        product: RevenueCat
+      - package: RevenueCat
+        product: RevenueCatUI
 
   AthlyRunnerLiveActivity:
     type: app-extension

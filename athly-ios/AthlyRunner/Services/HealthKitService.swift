@@ -25,6 +25,13 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
 
+    // Metadata dos HKWorkoutEvents(.segment) gravados pelo app — lidos de volta pelo
+    // WorkoutDetailFetcher para reconstruir a estrutura executada com valores reais.
+    static let segmentKindMetadataKey = "athlySegmentKind"
+    static let segmentIndexMetadataKey = "athlySegmentIndex"
+    static let segmentDistanceMetadataKey = "athlyDistanceMeters"
+    static let segmentDurationMetadataKey = "athlyDurationSeconds"
+
     /// Verifica se o HealthKit está disponível (não disponível no simulador em muitos casos).
     var isHealthDataAvailable: Bool {
         HKHealthStore.isHealthDataAvailable()
@@ -58,7 +65,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HealthKitService.energyType,
-            HealthKitService.distanceType
+            HealthKitService.distanceType,
+            HKSeriesType.workoutRoute()
         ]
         try await store.requestAuthorization(toShare: typesToShare, read: [])
         PermissionGate.markHealthKitWriteRequested()
@@ -118,13 +126,40 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             }
         }
 
+        // Fronteiras reais dos segmentos executados (treino estruturado). Sem esses
+        // eventos a estrutura do treino se perde na releitura e a análise da IA vê a
+        // corrida como km splits genéricos ("nenhum tiro detectado"). Best-effort.
+        let segmentEvents: [HKWorkoutEvent] = result.segmentRecords.compactMap { record in
+            guard record.endDate > record.startDate else { return nil }
+            var metadata: [String: Any] = [
+                Self.segmentKindMetadataKey: record.kind.rawValue,
+                Self.segmentDistanceMetadataKey: record.distanceMeters,
+                Self.segmentDurationMetadataKey: record.durationSeconds
+            ]
+            if let setIndex = record.setIndex {
+                metadata[Self.segmentIndexMetadataKey] = setIndex
+            }
+            return HKWorkoutEvent(
+                type: .segment,
+                dateInterval: DateInterval(start: record.startDate, end: record.endDate),
+                metadata: metadata
+            )
+        }
+        if !segmentEvents.isEmpty {
+            try? await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                builder.addWorkoutEvents(segmentEvents) { _, error in
+                    if let error { cont.resume(throwing: error) } else { cont.resume() }
+                }
+            }
+        }
+
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
             builder.endCollection(withEnd: result.endDate) { _, error in
                 if let error { cont.resume(throwing: error) } else { cont.resume() }
             }
         }
 
-        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<HKWorkout?, Error>) in
+        let workout = try await withCheckedThrowingContinuation { (cont: CheckedContinuation<HKWorkout?, Error>) in
             builder.finishWorkout { workout, error in
                 if let error {
                     cont.resume(throwing: error)
@@ -132,6 +167,32 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
                     cont.resume(returning: workout)
                 }
             }
+        }
+
+        // Anexa a rota GPS (best-effort) para o Histórico mostrar mapa + splits.
+        if let workout, !result.locations.isEmpty {
+            await saveRoute(result.locations, to: workout)
+        }
+
+        return workout
+    }
+
+    /// Anexa a rota GPS (CLLocations) ao HKWorkout já salvo. Best-effort: falha não invalida a corrida.
+    private func saveRoute(_ locations: [CLLocation], to workout: HKWorkout) async {
+        let routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: .local())
+        do {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                routeBuilder.insertRouteData(locations) { _, error in
+                    if let error { cont.resume(throwing: error) } else { cont.resume() }
+                }
+            }
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                routeBuilder.finishRoute(with: workout, metadata: nil) { _, error in
+                    if let error { cont.resume(throwing: error) } else { cont.resume() }
+                }
+            }
+        } catch {
+            // Ignora: a corrida já está salva; só a rota não foi anexada.
         }
     }
 
@@ -249,6 +310,115 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             elevationGainMeters: elevationGainMeters
         )
     }
+
+    // MARK: - Detalhe de uma corrida (rota + splits + FC) para o histórico
+
+    /// Monta o detalhe de uma corrida (rota, splits por km e FC) a partir do UUID do HKWorkout.
+    /// Retorna nil se a corrida não for encontrada ou o HealthKit estiver indisponível. Sem rota
+    /// (ex.: Garmin/Nike/esteira) → `coordinates`/`splits` vazios e a tela mostra só os stats.
+    func fetchRunDetail(workoutUUID: String) async -> RunRouteDetail? {
+        guard isHealthDataAvailable,
+              let uuid = UUID(uuidString: workoutUUID),
+              let workout = await fetchWorkout(uuid: uuid) else { return nil }
+
+        let locations = await fetchRouteLocations(for: workout)
+        let splits = locations.count >= 2 ? SplitCalculator.kmSplits(from: locations) : []
+        let coordinates = locations.map {
+            RunCoordinate(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
+        }
+        let hr = await fetchHRStats(for: workout)
+
+        return RunRouteDetail(coordinates: coordinates, splits: splits, avgHR: hr?.avg, maxHR: hr?.max)
+    }
+
+    private func fetchWorkout(uuid: UUID) async -> HKWorkout? {
+        let predicate = HKQuery.predicateForObject(with: uuid)
+        return await withCheckedContinuation { (cont: CheckedContinuation<HKWorkout?, Never>) in
+            let query = HKSampleQuery(
+                sampleType: HKObjectType.workoutType(),
+                predicate: predicate,
+                limit: 1,
+                sortDescriptors: nil
+            ) { _, samples, _ in
+                cont.resume(returning: (samples as? [HKWorkout])?.first)
+            }
+            store.execute(query)
+        }
+    }
+
+    private func fetchRouteLocations(for workout: HKWorkout) async -> [CLLocation] {
+        let routes: [HKWorkoutRoute] = await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Never>) in
+            let predicate = HKQuery.predicateForObjects(from: workout)
+            let query = HKAnchoredObjectQuery(
+                type: HKSeriesType.workoutRoute(),
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit
+            ) { _, samples, _, _, _ in
+                cont.resume(returning: (samples as? [HKWorkoutRoute]) ?? [])
+            }
+            store.execute(query)
+        }
+        guard !routes.isEmpty else { return [] }
+
+        var all: [CLLocation] = []
+        for route in routes {
+            all.append(contentsOf: await fetchLocations(for: route))
+        }
+        all.sort { $0.timestamp < $1.timestamp }
+        return all
+    }
+
+    private func fetchLocations(for route: HKWorkoutRoute) async -> [CLLocation] {
+        let buffer = LocationsBuffer()
+        return await withCheckedContinuation { (cont: CheckedContinuation<[CLLocation], Never>) in
+            let query = HKWorkoutRouteQuery(route: route) { _, locations, done, _ in
+                if let locations { buffer.append(locations) }
+                if done { cont.resume(returning: buffer.snapshot()) }
+            }
+            store.execute(query)
+        }
+    }
+
+    private func fetchHRStats(for workout: HKWorkout) async -> (avg: Double, max: Double)? {
+        guard let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) else { return nil }
+        let predicate = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: .strictStartDate)
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        return await withCheckedContinuation { (cont: CheckedContinuation<(avg: Double, max: Double)?, Never>) in
+            let query = HKStatisticsQuery(
+                quantityType: hrType,
+                quantitySamplePredicate: predicate,
+                options: [.discreteAverage, .discreteMax]
+            ) { _, stats, _ in
+                let avg = stats?.averageQuantity()?.doubleValue(for: unit) ?? 0
+                let mx = stats?.maximumQuantity()?.doubleValue(for: unit) ?? 0
+                cont.resume(returning: avg > 0 ? (avg, mx) : nil)
+            }
+            store.execute(query)
+        }
+    }
+}
+
+/// Buffer thread-safe para acumular os locations entregues em lotes pelo `HKWorkoutRouteQuery`.
+private final class LocationsBuffer: @unchecked Sendable {
+    private var items: [CLLocation] = []
+    private let lock = NSLock()
+    func append(_ new: [CLLocation]) { lock.lock(); items.append(contentsOf: new); lock.unlock() }
+    func snapshot() -> [CLLocation] { lock.lock(); defer { lock.unlock() }; return items }
+}
+
+/// Detalhe de uma corrida para a tela de summary do histórico. Sendable para cruzar para o @MainActor.
+struct RunRouteDetail: Sendable {
+    let coordinates: [RunCoordinate]
+    let splits: [KmSplit]
+    let avgHR: Double?
+    let maxHR: Double?
+    var hasRoute: Bool { coordinates.count >= 2 }
+}
+
+struct RunCoordinate: Sendable {
+    let latitude: Double
+    let longitude: Double
 }
 
 enum HealthKitError: LocalizedError {

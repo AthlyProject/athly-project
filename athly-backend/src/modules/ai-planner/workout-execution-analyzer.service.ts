@@ -14,12 +14,22 @@ export interface PrescribedWorkoutSummary {
   expectedRepDistanceKm?: number;
   expectedMainDurationMin?: number;
   totalDistanceKm?: number;
+  /** Duração prescrita do aquecimento (estimada a partir da árvore de segments). */
+  warmupSeconds?: number;
+  warmupDistanceM?: number;
+  cooldownSeconds?: number;
+  cooldownDistanceM?: number;
 }
 
 export interface ExecutionAnalysis {
   meanRepPace?: string;
   fastestRep?: string;
   slowestRep?: string;
+  /**
+   * Pace do bloco principal (aquecimento/volta à calma excluídos quando identificáveis).
+   * É este — e não o pace médio da sessão — que deve embasar julgamento de fitness.
+   */
+  mainPace?: string;
   pacingStrategy?: 'fade' | 'even' | 'negative' | 'erratic' | 'n/a';
   paceVarianceSeconds?: number;
   targetAdherence?: 'within' | 'undershot' | 'overshot' | 'unknown';
@@ -142,16 +152,27 @@ export class WorkoutExecutionAnalyzerService {
     const blocks = Array.isArray(workout.blocks) ? workout.blocks : [];
     const mainBlock = blocks.find((b: any) => b?.type === 'main') ?? blocks[0];
     const mainDescription: string = mainBlock?.instructions ?? workout.description ?? '';
-    const totalDistanceKm = blocks.reduce(
-      (sum: number, b: any) => sum + (typeof b?.distanceKm === 'number' ? b.distanceKm : 0),
+
+    // Fonte da verdade: a árvore de segments persistida com o treino. Os blocks
+    // legados achatam a faixa de pace e perdem a estrutura de reps — só servem de fallback.
+    const tree = this.extractSegmentTree(workout.segments);
+    const fromTree = tree ? this.summarizeFromTree(tree) : null;
+
+    const legacyDistanceKm = blocks.reduce(
+      (sum: number, b: any) => sum + (this.blockDistanceKm(b) ?? 0),
       0,
     );
-    const targetPaceRange = this.parsePaceRange(mainBlock?.targetPace);
-    const { expectedRepCount, expectedRepDistanceKm } = this.parseRepStructure(mainDescription);
+    const targetPaceRange = fromTree?.targetPaceRange ?? this.parsePaceRange(mainBlock?.targetPace);
+    const repStructure =
+      fromTree?.expectedRepCount && fromTree.expectedRepCount > 0
+        ? { expectedRepCount: fromTree.expectedRepCount, expectedRepDistanceKm: fromTree.expectedRepDistanceKm }
+        : this.parseRepStructure(mainDescription);
     const expectedMainDurationMin =
-      typeof mainBlock?.durationMinutes === 'number' && mainBlock.durationMinutes > 0
-        ? mainBlock.durationMinutes
-        : this.parseDurationPrescription(mainDescription);
+      fromTree?.expectedMainDurationMin ??
+      this.blockDurationMin(mainBlock) ??
+      this.parseDurationPrescription(mainDescription);
+    const totalDistanceKm =
+      fromTree?.totalDistanceKm ?? (legacyDistanceKm > 0 ? Number(legacyDistanceKm.toFixed(2)) : undefined);
 
     return {
       id: workout.id,
@@ -160,10 +181,154 @@ export class WorkoutExecutionAnalyzerService {
       intensity: workout.intensity ?? null,
       mainBlockDescription: mainDescription.slice(0, 240),
       targetPaceRange,
-      expectedRepCount,
-      expectedRepDistanceKm,
+      expectedRepCount: repStructure.expectedRepCount,
+      expectedRepDistanceKm: repStructure.expectedRepDistanceKm,
       expectedMainDurationMin,
-      totalDistanceKm: totalDistanceKm > 0 ? Number(totalDistanceKm.toFixed(2)) : undefined,
+      totalDistanceKm,
+      warmupSeconds: fromTree?.warmupSeconds,
+      warmupDistanceM: fromTree?.warmupDistanceM,
+      cooldownSeconds: fromTree?.cooldownSeconds,
+      cooldownDistanceM: fromTree?.cooldownDistanceM,
+    };
+  }
+
+  /** Blocks legados gravam `distance`/`duration`; dados antigos podem ter `distanceKm`/`durationMinutes`. */
+  private blockDistanceKm(block: any): number | undefined {
+    if (typeof block?.distance === 'number' && block.distance > 0) return block.distance;
+    if (typeof block?.distanceKm === 'number' && block.distanceKm > 0) return block.distanceKm;
+    return undefined;
+  }
+
+  private blockDurationMin(block: any): number | undefined {
+    if (typeof block?.duration === 'number' && block.duration > 0) return block.duration;
+    if (typeof block?.durationMinutes === 'number' && block.durationMinutes > 0) return block.durationMinutes;
+    return undefined;
+  }
+
+  /** Aceita tanto o envelope `{schemaVersion, sport, segments}` quanto um array puro. */
+  private extractSegmentTree(raw: unknown): any[] | null {
+    if (Array.isArray(raw)) return raw.length > 0 ? raw : null;
+    if (raw && typeof raw === 'object' && Array.isArray((raw as any).segments)) {
+      const segs = (raw as any).segments;
+      return segs.length > 0 ? segs : null;
+    }
+    return null;
+  }
+
+  private summarizeFromTree(segments: any[]): {
+    targetPaceRange?: { minSecPerKm: number; maxSecPerKm: number };
+    expectedRepCount?: number;
+    expectedRepDistanceKm?: number;
+    expectedMainDurationMin?: number;
+    totalDistanceKm?: number;
+    warmupSeconds?: number;
+    warmupDistanceM?: number;
+    cooldownSeconds?: number;
+    cooldownDistanceM?: number;
+  } {
+    const paceHints: number[] = [];
+    let repCount = 0;
+    let repDistanceKm: number | undefined;
+    const standaloneWorks: any[] = [];
+    let mainDurationSec = 0;
+    let mainDistanceMNoPace = 0;
+    let totalDistanceM = 0;
+    let warmupSeconds = 0;
+    let warmupDistanceM = 0;
+    let cooldownSeconds = 0;
+    let cooldownDistanceM = 0;
+
+    const collectPace = (seg: any) => {
+      const t = seg?.target;
+      if (t && typeof t === 'object') {
+        if (typeof t.paceSecPerKmMin === 'number' && t.paceSecPerKmMin > 0) paceHints.push(t.paceSecPerKmMin);
+        if (typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0) paceHints.push(t.paceSecPerKmMax);
+      }
+    };
+
+    const endOf = (seg: any): { by?: string; value?: number } => seg?.end ?? {};
+
+    const accumulateMain = (seg: any, mult: number) => {
+      const end = endOf(seg);
+      if (end.by === 'durationSec' && typeof end.value === 'number') mainDurationSec += end.value * mult;
+      if (end.by === 'distanceM' && typeof end.value === 'number') {
+        totalDistanceM += end.value * mult;
+        mainDistanceMNoPace += end.value * mult;
+      }
+    };
+
+    for (const seg of segments) {
+      if (!seg || typeof seg !== 'object') continue;
+      const end = endOf(seg);
+      if (seg.kind === 'warmup') {
+        if (end.by === 'durationSec' && typeof end.value === 'number') warmupSeconds += end.value;
+        if (end.by === 'distanceM' && typeof end.value === 'number') {
+          warmupDistanceM += end.value;
+          totalDistanceM += end.value;
+        }
+      } else if (seg.kind === 'cooldown') {
+        if (end.by === 'durationSec' && typeof end.value === 'number') cooldownSeconds += end.value;
+        if (end.by === 'distanceM' && typeof end.value === 'number') {
+          cooldownDistanceM += end.value;
+          totalDistanceM += end.value;
+        }
+      } else if (seg.kind === 'rest') {
+        continue;
+      } else if (seg.kind === 'set' && Array.isArray(seg.children)) {
+        const reps = typeof seg.repetitions === 'number' && seg.repetitions >= 1 ? seg.repetitions : 1;
+        for (const child of seg.children) {
+          if (!child || typeof child !== 'object') continue;
+          accumulateMain(child, reps);
+          if (child.kind === 'work') {
+            collectPace(child);
+            repCount += reps;
+            const childEnd = endOf(child);
+            if (repDistanceKm === undefined && childEnd.by === 'distanceM' && typeof childEnd.value === 'number') {
+              repDistanceKm = childEnd.value / 1000;
+            }
+          }
+        }
+      } else {
+        accumulateMain(seg, 1);
+        if (seg.kind === 'work') {
+          collectPace(seg);
+          standaloneWorks.push(seg);
+        }
+      }
+    }
+
+    // Pirâmides e afins: vários works soltos alternados com recovery contam como reps.
+    if (repCount === 0 && standaloneWorks.length >= 2) {
+      repCount = standaloneWorks.length;
+      const firstDist = standaloneWorks
+        .map((w) => endOf(w))
+        .find((e) => e.by === 'distanceM' && typeof e.value === 'number');
+      if (firstDist?.value) repDistanceKm = firstDist.value / 1000;
+    }
+
+    let targetPaceRange: { minSecPerKm: number; maxSecPerKm: number } | undefined;
+    if (paceHints.length > 0) {
+      const lo = Math.min(...paceHints);
+      const hi = Math.max(...paceHints);
+      targetPaceRange = lo === hi ? { minSecPerKm: lo - 10, maxSecPerKm: hi + 10 } : { minSecPerKm: lo, maxSecPerKm: hi };
+    }
+
+    // Converte os trechos por distância usando o meio da faixa de pace, quando existir.
+    if (mainDistanceMNoPace > 0 && targetPaceRange) {
+      const midPace = (targetPaceRange.minSecPerKm + targetPaceRange.maxSecPerKm) / 2;
+      mainDurationSec += (mainDistanceMNoPace / 1000) * midPace;
+    }
+
+    return {
+      targetPaceRange,
+      expectedRepCount: repCount > 0 ? repCount : undefined,
+      expectedRepDistanceKm: repDistanceKm,
+      expectedMainDurationMin: mainDurationSec > 0 ? Math.round(mainDurationSec / 60) : undefined,
+      totalDistanceKm: totalDistanceM > 0 ? Number((totalDistanceM / 1000).toFixed(2)) : undefined,
+      warmupSeconds: warmupSeconds > 0 ? warmupSeconds : undefined,
+      warmupDistanceM: warmupDistanceM > 0 ? warmupDistanceM : undefined,
+      cooldownSeconds: cooldownSeconds > 0 ? cooldownSeconds : undefined,
+      cooldownDistanceM: cooldownDistanceM > 0 ? cooldownDistanceM : undefined,
     };
   }
 
@@ -181,37 +346,55 @@ export class WorkoutExecutionAnalyzerService {
     const recoveries = session.segments.filter((s) => s.label === SegmentLabel.rec);
 
     if (reps.length === 0) {
-      if (prescribed?.expectedRepCount && prescribed.expectedRepCount > 0) {
-        observations.push(
-          isLowGranularity
-            ? `O treino previa ${prescribed.expectedRepCount} tiros, mas esta corrida chegou sem splits/laps reais (origem só com totais) — não dá para verificar a execução dos tiros.`
-            : `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed.expectedRepCount} repetições.`,
-        );
+      const isIntervalPrescription = !!(prescribed?.expectedRepCount && prescribed.expectedRepCount > 0);
+      if (isIntervalPrescription) {
+        if (isLowGranularity) {
+          observations.push(
+            `O treino previa ${prescribed!.expectedRepCount} tiros, mas esta corrida chegou sem splits/laps reais (origem só com totais) — não dá para verificar a execução dos tiros.`,
+          );
+        } else if (session.splitsSource === 'route') {
+          observations.push(
+            `O treino previa ${prescribed!.expectedRepCount} tiros, mas a corrida chegou apenas com splits por km (sem laps de treino) — não é possível verificar os tiros individualmente; NÃO conclua que o atleta deixou de executá-los.`,
+          );
+        } else {
+          observations.push(
+            `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed!.expectedRepCount} repetições.`,
+          );
+        }
       }
+
+      // Compara pace contra o BLOCO PRINCIPAL, não contra a sessão inteira: o pace
+      // médio da sessão carrega aquecimento e volta à calma e sai sistematicamente
+      // mais lento que o alvo, gerando falso "undershot".
+      const main = this.extractMainPortion(session, prescribed);
+      const mainPaceSec = main.paceSecPerKm ?? session.averagePaceSecondsPerKm;
+      const scopeLabel = main.trimmed ? 'Bloco principal executado' : 'Treino executado';
 
       let targetAdherence: ExecutionAnalysis['targetAdherence'] = 'unknown';
       let deviationFromTargetSecPerKm: number | undefined;
-      const sessionPaceSec = session.averagePaceSecondsPerKm;
       if (
+        !isIntervalPrescription &&
         prescribed?.targetPaceRange &&
-        typeof sessionPaceSec === 'number' &&
-        sessionPaceSec > 0
+        typeof mainPaceSec === 'number' &&
+        mainPaceSec > 0
       ) {
+        // Prescrição de tiros sem laps na execução fica 'unknown': comparar pace de
+        // sessão contínua com pace alvo de tiro é incomparável por definição.
         const { minSecPerKm, maxSecPerKm } = prescribed.targetPaceRange;
-        if (sessionPaceSec >= minSecPerKm && sessionPaceSec <= maxSecPerKm) {
+        if (mainPaceSec >= minSecPerKm && mainPaceSec <= maxSecPerKm) {
           targetAdherence = 'within';
           deviationFromTargetSecPerKm = 0;
-        } else if (sessionPaceSec < minSecPerKm) {
+        } else if (mainPaceSec < minSecPerKm) {
           targetAdherence = 'overshot';
-          deviationFromTargetSecPerKm = Math.round(sessionPaceSec - minSecPerKm);
+          deviationFromTargetSecPerKm = Math.round(mainPaceSec - minSecPerKm);
           observations.push(
-            `Treino executado ${Math.abs(deviationFromTargetSecPerKm)}s/km mais rápido que o prescrito (overshot).`,
+            `${scopeLabel} ${Math.abs(deviationFromTargetSecPerKm)}s/km mais rápido que o prescrito (overshot).`,
           );
         } else {
           targetAdherence = 'undershot';
-          deviationFromTargetSecPerKm = Math.round(sessionPaceSec - maxSecPerKm);
+          deviationFromTargetSecPerKm = Math.round(mainPaceSec - maxSecPerKm);
           observations.push(
-            `Treino executado ${deviationFromTargetSecPerKm}s/km mais lento que o prescrito (undershot).`,
+            `${scopeLabel} ${deviationFromTargetSecPerKm}s/km mais lento que o prescrito (undershot).`,
           );
         }
       }
@@ -224,8 +407,9 @@ export class WorkoutExecutionAnalyzerService {
           'Esta corrida veio sem splits reais (origem só com totais, ex.: Garmin/Nike via Apple Health) — análise limitada ao ritmo médio; não é possível avaliar tiros nem variação de pace.',
         );
       } else {
-        // Variance/strategy a partir de splits "easy" reais (Phase A do iOS entrega isso).
-        const easyPaces = session.segments
+        // Variance/strategy a partir dos splits do bloco principal — incluir o aquecimento
+        // e a volta à calma aqui transformava um tempo run bem executado em "erratic"/"fade".
+        const easyPaces = main.segments
           .filter((s) => s.label === SegmentLabel.easy)
           .map((s) => s.avgPaceSecondsPerKm)
           .filter((p): p is number => typeof p === 'number' && p > 0);
@@ -239,11 +423,11 @@ export class WorkoutExecutionAnalyzerService {
           if (paceVarianceSeconds > 25) {
             pacingStrategy = 'erratic';
             observations.push(
-              `Variação grande entre splits (~${paceVarianceSeconds}s/km entre o mais rápido e o mais lento).`,
+              `Variação grande entre splits do bloco principal (~${paceVarianceSeconds}s/km entre o mais rápido e o mais lento).`,
             );
           } else if (delta > 5) {
             pacingStrategy = 'fade';
-            observations.push('Pacing degradou na segunda metade do treino (+5s/km ou mais).');
+            observations.push('Pacing degradou na segunda metade do bloco principal (+5s/km ou mais).');
           } else if (delta < -5) {
             pacingStrategy = 'negative';
           } else {
@@ -255,6 +439,8 @@ export class WorkoutExecutionAnalyzerService {
       this.addContextualObservations(observations, prescribed, feedback, session, targetAdherence);
 
       return {
+        mainPace:
+          typeof mainPaceSec === 'number' && mainPaceSec > 0 ? formatPace(mainPaceSec) : undefined,
         pacingStrategy,
         targetAdherence,
         deviationFromTargetSecPerKm,
@@ -350,6 +536,7 @@ export class WorkoutExecutionAnalyzerService {
 
     return {
       meanRepPace: meanPaceSec > 0 ? formatPace(meanPaceSec) : undefined,
+      mainPace: meanPaceSec > 0 ? formatPace(meanPaceSec) : undefined,
       fastestRep:
         fastestIdx >= 0 && fastest < Infinity
           ? `${formatPace(fastest)} (rep${fastestIdx + 1})`
@@ -363,6 +550,77 @@ export class WorkoutExecutionAnalyzerService {
       avgHrRecoveryBpm,
       observations,
     };
+  }
+
+  /**
+   * Isola o bloco principal da sessão para julgamento de pace/pacing.
+   * Prioridade: labels explícitos (warmup/cooldown) > trim por duração prescrita
+   * (corta do início/fim os splits cobertos pelo aquecimento/volta à calma da
+   * prescrição) > sessão inteira como fallback.
+   */
+  private extractMainPortion(
+    session: DetailedSessionDto,
+    prescribed: PrescribedWorkoutSummary | null,
+  ): { segments: SegmentDto[]; paceSecPerKm?: number; trimmed: boolean } {
+    const segs = session.segments ?? [];
+    const stats = (list: SegmentDto[], trimmed: boolean) => {
+      const distKm = list.reduce((s, x) => s + (x.distanceKm ?? 0), 0);
+      const durSec = list.reduce((s, x) => s + (x.durationSeconds ?? 0), 0);
+      return {
+        segments: list,
+        paceSecPerKm: distKm > 0 && durSec > 0 ? durSec / distKm : undefined,
+        trimmed,
+      };
+    };
+
+    const hasBoundaryLabels = segs.some(
+      (s) => s.label === SegmentLabel.warmup || s.label === SegmentLabel.cooldown,
+    );
+    if (hasBoundaryLabels) {
+      const main = segs.filter(
+        (s) => s.label !== SegmentLabel.warmup && s.label !== SegmentLabel.cooldown,
+      );
+      if (main.length > 0) return stats(main, true);
+    }
+
+    if (session.splitsSource === 'synthetic' || segs.length < 3 || !prescribed) {
+      return stats(segs, false);
+    }
+
+    const totalDur = segs.reduce((s, x) => s + (x.durationSeconds ?? 0), 0);
+    const sessionPace =
+      session.averagePaceSecondsPerKm ??
+      (session.distanceMeters > 0 ? session.durationSeconds / (session.distanceMeters / 1000) : 0);
+    const toSeconds = (sec?: number, distM?: number) =>
+      (sec ?? 0) + (distM && sessionPace > 0 ? (distM / 1000) * sessionPace : 0);
+
+    const warmupSec = toSeconds(prescribed.warmupSeconds, prescribed.warmupDistanceM);
+    const cooldownSec = toSeconds(prescribed.cooldownSeconds, prescribed.cooldownDistanceM);
+    if (warmupSec <= 0 && cooldownSec <= 0) return stats(segs, false);
+
+    // Um split é descartado quando COMEÇA dentro da janela prescrita: o split de
+    // transição (meio aquecimento, meio bloco) contaminaria o pace do bloco principal,
+    // e na dúvida é mais seguro excluí-lo do que julgar fitness com warmup na conta.
+    // Caps de segurança: nunca cortar mais de 40% do início nem 30% do fim.
+    const frontCap = Math.min(warmupSec, totalDur * 0.4);
+    const backCap = Math.min(cooldownSec, totalDur * 0.3);
+
+    let start = 0;
+    let cumFront = 0;
+    while (start < segs.length && cumFront < frontCap) {
+      cumFront += segs[start].durationSeconds ?? 0;
+      start++;
+    }
+    let end = segs.length;
+    let cumBack = 0;
+    while (end > start && cumBack < backCap) {
+      cumBack += segs[end - 1].durationSeconds ?? 0;
+      end--;
+    }
+
+    const main = segs.slice(start, end);
+    if (main.length === 0) return stats(segs, false);
+    return stats(main, start > 0 || end < segs.length);
   }
 
   /**

@@ -12,6 +12,18 @@ private enum AthlyLiveActivityStyle {
     static let border = accentNeon.opacity(0.28)
 }
 
+private extension AthlyRunnerAttributes.ContentState {
+    /// Relógio do widget: Text(timerInterval:) anda sozinho no processo do widget —
+    /// o app não precisa empurrar update a cada segundo (menos bateria e sem risco
+    /// de throttling do ActivityKit). Pausado/sem startedAt → tempo estático.
+    var timeText: Text {
+        if !isPaused, let startedAt {
+            return Text(timerInterval: startedAt...Date.distantFuture, countsDown: false)
+        }
+        return Text(formattedTime)
+    }
+}
+
 private struct AthlyWidgetLogo: View {
     let size: CGFloat
 
@@ -78,7 +90,7 @@ struct AthlyLockScreenView: View {
 
             HStack(spacing: 0) {
                 metricCell(
-                    value: context.state.formattedTime,
+                    value: context.state.timeText,
                     label: "TEMPO",
                     icon: "timer"
                 )
@@ -86,7 +98,7 @@ struct AthlyLockScreenView: View {
                 metricDivider
 
                 metricCell(
-                    value: "\(context.state.formattedDistance) km",
+                    value: Text("\(context.state.formattedDistance) km"),
                     label: "DISTÂNCIA",
                     icon: "ruler"
                 )
@@ -94,7 +106,7 @@ struct AthlyLockScreenView: View {
                 metricDivider
 
                 metricCell(
-                    value: "\(context.state.formattedPace)/km",
+                    value: Text("\(context.state.formattedPace)/km"),
                     label: "PACE",
                     icon: "speedometer"
                 )
@@ -127,17 +139,18 @@ struct AthlyLockScreenView: View {
         }
     }
 
-    private func metricCell(value: String, label: String, icon: String) -> some View {
+    private func metricCell(value: Text, label: String, icon: String) -> some View {
         VStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.system(size: 11))
                 .foregroundStyle(AthlyLiveActivityStyle.accentNeon.opacity(0.85))
 
-            Text(value)
+            value
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+                .multilineTextAlignment(.center)
 
             Text(label)
                 .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -161,7 +174,7 @@ struct AthlyDynamicIslandCompact: View {
     var body: some View {
         HStack(spacing: 4) {
             AthlyWidgetLogo(size: 14)
-            Text(context.state.formattedTime)
+            context.state.timeText
                 .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
             Text("·")
@@ -193,9 +206,9 @@ struct AthlyDynamicIslandExpanded: View {
             }
 
             HStack(spacing: 0) {
-                miniMetric(value: context.state.formattedTime, label: "TEMPO")
-                miniMetric(value: "\(context.state.formattedDistance)", label: "KM")
-                miniMetric(value: context.state.formattedPace, label: "/KM")
+                miniMetric(value: context.state.timeText, label: "TEMPO")
+                miniMetric(value: Text("\(context.state.formattedDistance)"), label: "KM")
+                miniMetric(value: Text(context.state.formattedPace), label: "/KM")
             }
         }
         .padding(.horizontal, 8)
@@ -207,11 +220,14 @@ struct AthlyDynamicIslandExpanded: View {
         }
     }
 
-    private func miniMetric(value: String, label: String) -> some View {
+    private func miniMetric(value: Text, label: String) -> some View {
         VStack(spacing: 1) {
-            Text(value)
+            value
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
             Text(label)
                 .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(.white.opacity(0.5))
@@ -263,9 +279,12 @@ struct AthlyRunnerLiveActivityWidget: Widget {
             } compactLeading: {
                 AthlyWidgetLogo(size: 16)
             } compactTrailing: {
-                Text(context.state.formattedTime)
+                context.state.timeText
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white)
+                    .frame(maxWidth: 56)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
             } minimal: {
                 AthlyWidgetLogo(size: 13)
             }

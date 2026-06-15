@@ -36,9 +36,13 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         let hrSamples = (try? await fetchHeartRateSamples(for: workout)) ?? []
         let hrStats = summarizeHR(samples: hrSamples)
 
-        // Cadeia de fallback: lap markers > GPS real > splits sintéticos.
+        // Cadeia de fallback: segments do próprio app (metadata exata) > laps de terceiros
+        // com rota (distância real interpolada) > GPS real (km splits) > splits sintéticos.
         var splitsSource: SplitsSource = .events
-        var rawSegments = segmentsFromEvents(workout: workout)
+        var rawSegments = segmentsFromAthlyEvents(workout: workout)
+        if rawSegments == nil {
+            rawSegments = await segmentsFromThirdPartyEvents(workout: workout)
+        }
         if rawSegments == nil {
             if let real = try? await realKmSplitsFromRoute(workout: workout) {
                 rawSegments = real
@@ -109,21 +113,90 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         var durationSeconds: Double? = nil
     }
 
-    /// Try to build segments from `HKWorkoutEvent`s of type `.segment` or `.lap`.
-    /// Auto-classifies rep vs rec based on relative duration (reps are typically shorter & faster,
-    /// rec are the alternating slower gaps). A simple heuristic — good enough to let the AI
-    /// reason about interval structure; backend analyzer validates the adherence numerically.
-    private func segmentsFromEvents(workout: HKWorkout) -> [RawSegment]? {
+    /// Segmentos gravados pelo próprio app: HKWorkoutEvents(.segment) com metadata exata
+    /// (kind, distância e duração ativa reais por segmento). Caminho de maior fidelidade —
+    /// preserva a estrutura prescrita exatamente como foi executada.
+    private func segmentsFromAthlyEvents(workout: HKWorkout) -> [RawSegment]? {
+        let events = (workout.workoutEvents ?? []).filter {
+            $0.type == .segment && $0.metadata?[HealthKitService.segmentKindMetadataKey] is String
+        }
+        guard !events.isEmpty else { return nil }
+
+        let sorted = events.sorted(by: { $0.dateInterval.start < $1.dateInterval.start })
+
+        // Works soltos (sem set): 1 = bloco contínuo (tempo run); 2+ = tiros de estrutura
+        // heterogênea (pirâmide) — rotular como tempo faria o backend procurar reps e
+        // concluir que o atleta não fez os tiros.
+        let standaloneWorkCount = sorted.filter {
+            ($0.metadata?[HealthKitService.segmentKindMetadataKey] as? String) == "work"
+                && $0.metadata?[HealthKitService.segmentIndexMetadataKey] == nil
+        }.count
+
+        var repCounter = 0
+        var recCounter = 0
+        var segments: [RawSegment] = []
+        for event in sorted {
+            guard let kindRaw = event.metadata?[HealthKitService.segmentKindMetadataKey] as? String else { continue }
+            let distance = (event.metadata?[HealthKitService.segmentDistanceMetadataKey] as? Double) ?? 0
+            let duration = event.metadata?[HealthKitService.segmentDurationMetadataKey] as? Double
+            let setIndex = event.metadata?[HealthKitService.segmentIndexMetadataKey] as? Int
+
+            let label: SegmentLabel
+            var idx: Int? = nil
+            switch kindRaw {
+            case "warmup":
+                label = .warmup
+            case "cooldown":
+                label = .cooldown
+            case "recovery":
+                recCounter += 1
+                label = .rec
+                idx = setIndex ?? recCounter
+            case "work":
+                if setIndex != nil || standaloneWorkCount >= 2 {
+                    repCounter += 1
+                    label = .rep
+                    idx = setIndex ?? repCounter
+                } else {
+                    label = .tempo
+                }
+            case "rest":
+                continue
+            default:
+                label = .easy
+            }
+
+            segments.append(RawSegment(
+                label: label,
+                index: idx,
+                start: event.dateInterval.start,
+                end: event.dateInterval.end,
+                distanceMeters: distance,
+                durationSeconds: duration
+            ))
+        }
+        return segments.isEmpty ? nil : segments
+    }
+
+    /// Laps de terceiros (`.segment`/`.lap` sem metadata do app). A distância de cada trecho
+    /// vem da rota GPS interpolada nas fronteiras — ratear a distância total pelo tempo dava a
+    /// TODO trecho o pace médio da sessão (pace fabricado), e a classificação rep/rec virava
+    /// circular. Sem rota, retorna nil e o caller cai para totals-only (synthetic), que é o
+    /// que o backend trata honestamente como "sem splits reais".
+    private func segmentsFromThirdPartyEvents(workout: HKWorkout) async -> [RawSegment]? {
         let events = (workout.workoutEvents ?? []).filter {
             $0.type == .segment || $0.type == .lap
         }
         guard events.count >= 2 else { return nil }
+        guard let locations = try? await fetchAllLocations(for: workout), locations.count >= 2 else {
+            return nil
+        }
 
         let boundaries = events
             .map { $0.dateInterval.start }
             .sorted()
 
-        var ranges: [(Date, Date)] = []
+        var ranges: [(start: Date, end: Date)] = []
         if let first = boundaries.first, first > workout.startDate {
             ranges.append((workout.startDate, first))
         }
@@ -132,41 +205,47 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             let end = i + 1 < boundaries.count ? boundaries[i + 1] : workout.endDate
             if end > start { ranges.append((start, end)) }
         }
-
-        let totalDuration = workout.endDate.timeIntervalSince(workout.startDate)
-        let totalDistance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
-        guard totalDuration > 0 else { return nil }
-
-        // Proportional distance per range (HealthKit doesn't attach distance to events).
-        let rangedDistances = ranges.map { range -> Double in
-            let d = range.1.timeIntervalSince(range.0)
-            return totalDistance * (d / totalDuration)
+        guard !ranges.isEmpty,
+              let rangedDistances = SplitCalculator.distances(forRanges: ranges, from: locations) else {
+            return nil
         }
 
-        // Classify: alternate rep/rec after warmup, then cooldown at the end.
-        // Heuristic: first range = warmup if longer than 4 min, last range = cooldown if longer than 3 min.
+        // Heurística de fronteiras: primeiro trecho = warmup se >= 4 min, último = cooldown se >= 3 min.
+        let warmupIdx = ranges.first.map { $0.end.timeIntervalSince($0.start) >= 240 ? 0 : -1 } ?? -1
+        let cooldownIdx: Int = {
+            guard let last = ranges.last else { return -1 }
+            return last.end.timeIntervalSince(last.start) >= 180 ? ranges.count - 1 : -1
+        }()
+
+        // Paces reais dos trechos do meio. rep/rec é classificado pelo desvio relativo à
+        // mediana — um limiar absoluto (ex.: 6:00/km) erra para corredores mais lentos ou
+        // mais rápidos. Se os paces são todos parecidos (< 30s/km de spread), é corrida
+        // contínua com auto-laps: nada é tiro.
+        let middlePaces: [Double] = ranges.enumerated().compactMap { (i, range) in
+            guard i != warmupIdx && i != cooldownIdx else { return nil }
+            let duration = range.end.timeIntervalSince(range.start)
+            return rangedDistances[i] > 50 ? duration / (rangedDistances[i] / 1000.0) : Double.infinity
+        }
+        let finitePaces = middlePaces.filter { $0.isFinite }.sorted()
+        let median = finitePaces.isEmpty ? Double.infinity : finitePaces[finitePaces.count / 2]
+        let spread = (finitePaces.last ?? 0) - (finitePaces.first ?? 0)
+        let hasIntervalStructure = finitePaces.count >= 2 && spread >= 30
+
         var classified: [RawSegment] = []
         var repCounter = 0
         var recCounter = 0
-        let warmupIdx = ranges.first.map { $0.1.timeIntervalSince($0.0) >= 240 ? 0 : -1 } ?? -1
-        let cooldownIdx: Int = {
-            guard let last = ranges.last else { return -1 }
-            return last.1.timeIntervalSince(last.0) >= 180 ? ranges.count - 1 : -1
-        }()
 
         for (i, range) in ranges.enumerated() {
-            let duration = range.1.timeIntervalSince(range.0)
+            let duration = range.end.timeIntervalSince(range.start)
+            let pace = rangedDistances[i] > 50 ? duration / (rangedDistances[i] / 1000.0) : Double.infinity
             let label: SegmentLabel
             var idx: Int? = nil
             if i == warmupIdx {
                 label = .warmup
             } else if i == cooldownIdx {
                 label = .cooldown
-            } else {
-                // Within the middle, alternate rep/rec based on average pace.
-                // Shorter segments → rep; longer → rec. Approximation when distance is proportional.
-                let pace = rangedDistances[i] > 0 ? duration / (rangedDistances[i] / 1000.0) : Double.infinity
-                let isRep = pace < 360 || duration < 180 // pace < 6:00/km or under 3 min
+            } else if hasIntervalStructure {
+                let isRep = pace.isFinite && pace < median - 5
                 if isRep {
                     repCounter += 1
                     label = .rep
@@ -176,12 +255,14 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
                     label = .rec
                     idx = recCounter
                 }
+            } else {
+                label = .easy
             }
             classified.append(RawSegment(
                 label: label,
                 index: idx,
-                start: range.0,
-                end: range.1,
+                start: range.start,
+                end: range.end,
                 distanceMeters: rangedDistances[i]
             ))
         }
@@ -193,14 +274,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
     /// Lê o `HKWorkoutRoute` do treino e quebra os locations em segmentos reais de 1km.
     /// Retorna nil se não houver rota (ex.: esteira, treino sem GPS) — caller cai no synthetic.
     private func realKmSplitsFromRoute(workout: HKWorkout) async throws -> [RawSegment]? {
-        let routes = try await fetchRoutes(for: workout)
-        guard !routes.isEmpty else { return nil }
-
-        var locations: [CLLocation] = []
-        for route in routes {
-            let routeLocs = try await fetchLocations(for: route)
-            locations.append(contentsOf: routeLocs)
-        }
+        let locations = try await fetchAllLocations(for: workout)
         guard locations.count >= 2 else { return nil }
 
         // Mesmo algoritmo dos splits da tela: filtro de salto por velocidade, exclusão de
@@ -218,6 +292,18 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
                 durationSeconds: split.durationSeconds
             )
         }
+    }
+
+    /// Todas as CLLocations da(s) rota(s) do treino, na ordem. Vazio quando não há rota.
+    private func fetchAllLocations(for workout: HKWorkout) async throws -> [CLLocation] {
+        let routes = try await fetchRoutes(for: workout)
+        guard !routes.isEmpty else { return [] }
+        var locations: [CLLocation] = []
+        for route in routes {
+            let routeLocs = try await fetchLocations(for: route)
+            locations.append(contentsOf: routeLocs)
+        }
+        return locations
     }
 
     private func fetchRoutes(for workout: HKWorkout) async throws -> [HKWorkoutRoute] {

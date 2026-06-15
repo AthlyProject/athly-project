@@ -1,4 +1,5 @@
 import SwiftUI
+import RevenueCatUI
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -17,6 +18,7 @@ struct ProfileView: View {
     @State private var isSavingWeight = false
     @State private var weightError: String?
     @State private var remindersEnabled = true
+    @State private var showCustomerCenter = false
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -178,6 +180,23 @@ struct ProfileView: View {
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
+                    // Assinatura (Customer Center do RevenueCat: gerenciar/cancelar/restaurar)
+                    Section("Assinatura") {
+                        Button {
+                            showCustomerCenter = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "crown.fill")
+                                    .foregroundStyle(AthlyTheme.Color.primary)
+                                    .frame(width: 28)
+                                Text("Gerenciar assinatura")
+                                    .font(AthlyTheme.Typography.body())
+                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            }
+                        }
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
                     // Account
                     Section("Conta") {
                         Button("Sair", role: .destructive) {
@@ -283,6 +302,9 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("Isso apaga permanentemente sua conta e todos os seus dados (plano, treinos e histórico). Esta ação não pode ser desfeita.")
+            }
+            .sheet(isPresented: $showCustomerCenter) {
+                CustomerCenterView()
             }
         }
     }

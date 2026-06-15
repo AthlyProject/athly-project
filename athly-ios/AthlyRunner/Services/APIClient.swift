@@ -2,6 +2,12 @@ import Foundation
 
 extension Notification.Name {
     static let athlyTokensRefreshed = Notification.Name("athlyTokensRefreshed")
+    /// Emitida quando a sessão é definitivamente rejeitada pelo backend (401 e o refresh falhou).
+    /// O `AuthViewModel` escuta para deslogar e redirecionar para a tela de login.
+    static let athlySessionExpired = Notification.Name("athlySessionExpired")
+    /// Emitida pelo `AuthViewModel` em login/registro/restauração (authenticated=true) e logout
+    /// (false). O `EntitlementManager` escuta para fazer `Purchases.logIn(userId)`/`logOut()`.
+    static let athlyAuthChanged = Notification.Name("athlyAuthChanged")
 }
 
 actor APIClient {
@@ -31,6 +37,12 @@ actor APIClient {
     func clearTokens() {
         accessToken = nil
         refreshToken = nil
+    }
+
+    /// Avisa que a sessão morreu de vez (401 + refresh falhou). Ponto único para o app reagir
+    /// (logout + redirect ao login), independente de o chamador engolir o erro lançado.
+    private func notifySessionExpired() {
+        NotificationCenter.default.post(name: .athlySessionExpired, object: nil)
     }
 
     var isAuthenticated: Bool {
@@ -117,6 +129,29 @@ actor APIClient {
 
     func planFromHealth(_ request: PlanFromHealthRequest) async throws -> AiPlannerResponse {
         try await post("/ai-planner/plan-from-health", body: request, timeout: 120)
+    }
+
+    // MARK: - Billing / Entitlement
+
+    /// Snapshot de entitlement do backend (fonte de verdade do bypass de admin via ADMIN_EMAILS).
+    func getEntitlement() async throws -> EntitlementResponse {
+        try await get("/billing/entitlement")
+    }
+
+    /// Id do usuário Athly decodificado do `sub` do access token (JWT), sem chamada de rede.
+    /// Usado para `Purchases.logIn(userId)` (o app_user_id precisa casar com o webhook do RevenueCat).
+    func currentUserId() -> String? {
+        guard let token = accessToken else { return nil }
+        let parts = token.split(separator: ".")
+        guard parts.count >= 2 else { return nil }
+        var b64 = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        while b64.count % 4 != 0 { b64 += "=" }
+        guard let data = Data(base64Encoded: b64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let sub = json["sub"] as? String else { return nil }
+        return sub
     }
 
     // MARK: - Admin Endpoints
@@ -281,6 +316,7 @@ actor APIClient {
                         return try decoder.decode(T.self, from: decodableData)
                     }
                 } catch {
+                    notifySessionExpired()
                     throw APIError.unauthorized
                 }
             }
@@ -333,6 +369,7 @@ actor APIClient {
                     }
                     if retryHttp.statusCode == 404 { return nil }
                 } catch {
+                    notifySessionExpired()
                     throw APIError.unauthorized
                 }
             }
@@ -386,6 +423,11 @@ struct CompleteWorkoutRequest: Encodable {
         case actualDistanceMeters
         case actualDurationSeconds
     }
+}
+
+struct EntitlementResponse: Decodable, Sendable {
+    let entitled: Bool
+    let isAdmin: Bool
 }
 
 struct UserProfile: Decodable {

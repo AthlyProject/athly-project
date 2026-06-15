@@ -16,17 +16,23 @@ export class EffortZoneService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getOrCalculateForUser(userId: string, runs?: RunDataForZones[], dataSource?: 'apple_health'): Promise<FormattedZones> {
-    // Check for valid existing zones (not expired)
-    const existing = await this.prisma.userEffortZone.findFirst({
-      where: {
-        userId,
-        validUntil: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Com corridas novas, recalcula SEMPRE: o cálculo é matemática pura (custa
+    // microssegundos) e zonas em cache viram pace prescrito defasado — a geração
+    // de domingo podia reutilizar zonas da semana retrasada se caísse minutos antes
+    // do validUntil. O cache cobre apenas gerações sem dados (cold start/assessment).
+    const hasFreshRuns = (runs?.length ?? 0) > 0;
+    if (!hasFreshRuns) {
+      const existing = await this.prisma.userEffortZone.findFirst({
+        where: {
+          userId,
+          validUntil: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    if (existing) {
-      return this.formatForPrompt(existing);
+      if (existing) {
+        return this.formatForPrompt(existing);
+      }
     }
 
     // Calculate new zones

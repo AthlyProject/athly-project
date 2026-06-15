@@ -55,8 +55,11 @@ extension LocationManager: CLLocationManagerDelegate {
         // O iOS pode entregar vários pontos de uma vez (ex.: lote acumulado enquanto a
         // tela ficou bloqueada). Processamos TODOS em ordem cronológica, mantendo só os
         // de boa precisão — em vez de descartar os intermediários pegando só `.last`.
+        // Corte em 50m (não 30m): descartar pontos inteiros cria buracos na trajetória
+        // que viram distância em linha reta (split mais lento que o real); o filtro de
+        // velocidade implausível no consumidor já segura os teleportes dos pontos ruins.
         let valid = locations
-            .filter { $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy < 30 }
+            .filter { $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy < 50 }
             .sorted { $0.timestamp < $1.timestamp }
         guard !valid.isEmpty else { return }
 

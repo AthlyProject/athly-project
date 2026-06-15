@@ -225,6 +225,17 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
         df.dateFormat = "yyyy-MM-dd"
         return df.date(from: date) ?? Date()
     }
+
+    /// Pode iniciar este treino agora? Verdadeiro quando está `scheduled` e hoje está entre o dia
+    /// marcado e 2 dias depois (janela de tolerância). Não habilita treino futuro nem atrasado >2 dias.
+    var canStartNow: Bool {
+        guard status == .scheduled else { return false }
+        let cal = Calendar.current
+        let day = cal.startOfDay(for: parsedDate)
+        let today = cal.startOfDay(for: Date())
+        let delta = cal.dateComponents([.day], from: day, to: today).day ?? -1
+        return delta >= 0 && delta <= 2
+    }
 }
 
 // MARK: - Training Plan

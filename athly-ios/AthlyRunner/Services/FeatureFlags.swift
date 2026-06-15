@@ -1,7 +1,7 @@
 import Foundation
 
 enum FeatureFlags {
-    /// Liga o paywall (gating de assinatura). Mantenha `false` até o RevenueCat + App Store Connect
-    /// estarem configurados. Com `false`, todo o gating é fail-open (ninguém é bloqueado).
-    static let paywallEnabled = false
+    /// Liga o paywall (gating de assinatura). `true` agora que o RevenueCat está integrado.
+    /// Com `false`, todo o gating é fail-open (ninguém é bloqueado).
+    static let paywallEnabled = true
 }

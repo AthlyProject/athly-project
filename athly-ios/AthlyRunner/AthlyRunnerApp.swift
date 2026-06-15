@@ -1,4 +1,5 @@
 import SwiftUI
+import RevenueCat
 
 @main
 struct AthlyRunnerApp: App {
@@ -9,7 +10,20 @@ struct AthlyRunnerApp: App {
     @StateObject private var entitlementManager = EntitlementManager()
 
     init() {
+        configureRevenueCat()
         configureUIKitAppearance()
+    }
+
+    /// Configura o RevenueCat antes de qualquer uso do SDK. A key vem do Info.plist
+    /// (Config.xcconfig → REVENUECAT_API_KEY). O `app_user_id` é ligado depois via `Purchases.logIn`
+    /// no login (ver EntitlementManager). Roda antes das Tasks assíncronas do EntitlementManager.
+    private func configureRevenueCat() {
+        #if DEBUG
+        Purchases.logLevel = .debug
+        #endif
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String,
+              !key.isEmpty else { return }
+        Purchases.configure(withAPIKey: key)
     }
 
     var body: some Scene {

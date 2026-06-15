@@ -45,6 +45,13 @@ struct RunSummaryView: View {
                         // Stats grid
                         statsGrid(result: result)
 
+                        // Blocos do treino (tiros/recuperações) — pace por segmento real,
+                        // não diluído no split de km. Só aparece em treino estruturado.
+                        let blocks = displayableSegments(result.segmentRecords)
+                        if !blocks.isEmpty {
+                            segmentsSection(segments: blocks)
+                        }
+
                         // Splits
                         if !result.splits.isEmpty {
                             splitsSection(splits: result.splits)
@@ -227,6 +234,110 @@ struct RunSummaryView: View {
         }
     }
 
+    // MARK: - Segmentos (tiros/blocos)
+
+    /// Segmentos exibíveis: descarta descanso e blocos sem distância/duração úteis.
+    private func displayableSegments(_ records: [SegmentRecord]) -> [SegmentRecord] {
+        records.filter { $0.kind != .rest && $0.kind != .unknown && ($0.distanceMeters > 5 || $0.durationSeconds > 3) }
+    }
+
+    private func segmentsSection(segments: [SegmentRecord]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Blocos do treino")
+                .font(AthlyTheme.Typography.semibold(17))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .padding(.horizontal, 16)
+
+            VStack(spacing: 0) {
+                ForEach(Array(segments.enumerated()), id: \.offset) { index, seg in
+                    segmentRow(seg)
+
+                    if index < segments.count - 1 {
+                        Divider()
+                            .background(AthlyTheme.Color.borderDark)
+                            .padding(.horizontal, 16)
+                    }
+                }
+            }
+            .background(
+                ZStack {
+                    AthlyTheme.Color.surfaceCard
+                    LinearGradient(
+                        colors: [AthlyTheme.Color.primary.opacity(0.08), Color.clear],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                    .stroke(AthlyTheme.Gradient.gradientBorder, lineWidth: 1)
+            )
+            .padding(.horizontal, 16)
+        }
+    }
+
+    @ViewBuilder
+    private func segmentRow(_ seg: SegmentRecord) -> some View {
+        let isWork = seg.kind == .work
+        HStack(spacing: 10) {
+            Image(systemName: iconForKind(seg.kind))
+                .font(.system(size: 14))
+                .foregroundStyle(isWork ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(seg.skipped ? "\(seg.label) (pulado)" : seg.label)
+                    .font(AthlyTheme.Typography.medium(15))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Text(segmentDetail(seg))
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+            }
+
+            Spacer()
+
+            // Pace só faz sentido para blocos com distância real; recuperações curtas
+            // mostram só duração (via segmentDetail), sem um pace enganoso.
+            if seg.distanceMeters >= 100, seg.paceSecondsPerKm > 0 {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(formatPaceShort(seg.paceSecondsPerKm))
+                        .font(.custom("SpaceGrotesk-SemiBold", size: 16).monospacedDigit())
+                        .foregroundStyle(isWork ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
+                    Text("/km")
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    private func iconForKind(_ kind: SegmentKind) -> String {
+        switch kind {
+        case .warmup: return "figure.walk"
+        case .work: return "bolt.fill"
+        case .recovery: return "wind"
+        case .cooldown: return "figure.cooldown"
+        default: return "circle"
+        }
+    }
+
+    /// Linha de detalhe: distância + duração do segmento.
+    private func segmentDetail(_ seg: SegmentRecord) -> String {
+        let dist = seg.distanceMeters >= 1000
+            ? String(format: "%.2f km", seg.distanceMeters / 1000)
+            : String(format: "%.0f m", seg.distanceMeters)
+        return "\(dist) · \(formatDuration(seg.durationSeconds))"
+    }
+
+    private func formatPaceShort(_ pace: Double) -> String {
+        guard pace > 0, pace.isFinite, pace < 3600 else { return "--:--" }
+        let total = Int(pace.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
     private func formatDuration(_ seconds: Double) -> String {
         let h = Int(seconds) / 3600
         let m = (Int(seconds) % 3600) / 60
@@ -237,7 +348,8 @@ struct RunSummaryView: View {
 
     private func formatPace(_ pace: Double) -> String {
         guard pace > 0, pace.isFinite, pace < 3600 else { return "--:--" }
-        return String(format: "%d:%02d /km", Int(pace) / 60, Int(pace) % 60)
+        let total = Int(pace.rounded())
+        return String(format: "%d:%02d /km", total / 60, total % 60)
     }
 
     private func regionForCoordinates(_ coords: [CLLocationCoordinate2D]) -> MKCoordinateRegion {

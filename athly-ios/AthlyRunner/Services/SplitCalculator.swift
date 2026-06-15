@@ -39,6 +39,10 @@ enum SplitCalculator {
     static let startMovementMeters: Double = 20.0
     /// Distância mínima (m) para registrar um km parcial final.
     static let minTrailingMeters: Double = 50.0
+    /// Gap máximo (s) que ainda recebe crédito de distância pela velocidade pré-gap.
+    static let maxBridgeGapSeconds: Double = 90.0
+    /// Janela (s de tempo em movimento) usada para estimar a velocidade pré-gap.
+    static let speedLookbackSeconds: Double = 30.0
 
     /// Amostra normalizada da trajetória. `movingTime` é o tempo de movimento acumulado
     /// (pausas/buracos já descontados); `distance` é a distância acumulada já filtrada.
@@ -96,6 +100,36 @@ enum SplitCalculator {
         return splits
     }
 
+    /// Distância real percorrida em cada intervalo de tempo, derivada da rota com o mesmo
+    /// filtro de salto/pausa dos splits. Usada para dar distância (e portanto pace) real aos
+    /// laps de treino — ratear a distância total pelo tempo dava a todo lap o pace médio da
+    /// sessão. Retorna nil sem amostras suficientes.
+    static func distances(forRanges ranges: [(start: Date, end: Date)], from locations: [CLLocation]) -> [Double]? {
+        let samples = normalize(locations)
+        guard samples.count >= 2 else { return nil }
+        return ranges.map { range in
+            max(0, distance(at: range.end, samples) - distance(at: range.start, samples))
+        }
+    }
+
+    /// Distância acumulada (já filtrada) interpolada na data `date`.
+    private static func distance(at date: Date, _ samples: [Sample]) -> Double {
+        guard let first = samples.first, let last = samples.last else { return 0 }
+        if date <= first.date { return first.distance }
+        if date >= last.date { return last.distance }
+        for i in 1..<samples.count {
+            let a = samples[i - 1]
+            let b = samples[i]
+            if b.date >= date {
+                let span = b.date.timeIntervalSince(a.date)
+                guard span > 0 else { return b.distance }
+                let f = date.timeIntervalSince(a.date) / span
+                return a.distance + (b.distance - a.distance) * f
+            }
+        }
+        return last.distance
+    }
+
     // MARK: - Private
 
     /// Constrói a linha do tempo normalizada a partir dos fixes crus, aplicando o mesmo filtro
@@ -126,7 +160,19 @@ enum SplitCalculator {
             // movimento real (blackout de GPS enquanto corria) → conta o tempo todo.
             let timeStep = (dt > gapCapSeconds && impliedSpeed < stationarySpeed) ? 0 : dt
 
-            cumDistance += delta
+            // Gap com movimento: a corda entre o último ponto bom e este perde as curvas
+            // do trajeto — contar tempo cheio com distância encurtada fazia o km do buraco
+            // sair mais lento que o corrido. Credita a distância estimada pela velocidade
+            // dos últimos 30s antes do gap (a corda permanece como piso; teto plausível).
+            var distStep = delta
+            if dt > gapCapSeconds,
+               dt <= maxBridgeGapSeconds,
+               impliedSpeed >= stationarySpeed,
+               let speedBefore = recentSpeed(samples) {
+                distStep = min(max(delta, speedBefore * dt), maxPlausibleSpeed * dt)
+            }
+
+            cumDistance += distStep
             cumTime += timeStep
             samples.append(Sample(
                 date: loc.timestamp,
@@ -138,6 +184,21 @@ enum SplitCalculator {
         }
 
         return samples
+    }
+
+    /// Velocidade média (m/s) nos últimos `speedLookbackSeconds` de tempo em movimento
+    /// já normalizados. Nil quando não há histórico suficiente ou a velocidade não é
+    /// plausível para corrida.
+    private static func recentSpeed(_ samples: [Sample]) -> Double? {
+        guard let last = samples.last else { return nil }
+        let anchor = samples.last(where: { last.movingTime - $0.movingTime >= speedLookbackSeconds })
+            ?? samples.first
+        guard let anchor else { return nil }
+        let timeSpan = last.movingTime - anchor.movingTime
+        guard timeSpan >= 5 else { return nil }
+        let speed = (last.distance - anchor.distance) / timeSpan
+        guard speed >= stationarySpeed, speed <= maxPlausibleSpeed else { return nil }
+        return speed
     }
 
     /// Interpola linearmente a amostra (tempo/data/altitude) na distância acumulada `d`.

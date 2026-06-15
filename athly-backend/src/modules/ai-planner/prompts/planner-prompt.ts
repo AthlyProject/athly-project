@@ -117,8 +117,15 @@ function buildRecentSessionsDetailSection(analyzedSessions: AnalyzedSession[]): 
 Sessões recentes com análise mastigada (use como leitura direta, não recalcule estatísticas):
 ${JSON.stringify(payload, null, 2)}
 
-Leia o campo "executionAnalysis" de cada sessão como veredito pronto. Use "observations" para citar padrões concretos no "reasoning" dos próximos treinos (ex: se "fade", reduza intensidade OU reforce pacing; se "undershot", suba o estímulo; se recuperação cardíaca baixa, dê mais recovery entre reps).
+Como ler estes dados:
+- "totals.avgPace" é o pace médio da SESSÃO INTEIRA — inclui aquecimento, recuperações entre tiros e volta à calma. NUNCA use esse número para julgar o nível de fitness do atleta nem para concluir que ele "correu devagar". O indicador de fitness é "executionAnalysis.mainPace" (pace do bloco principal) e "meanRepPace" (pace médio dos tiros), quando presentes.
+- Leia o campo "executionAnalysis" de cada sessão como veredito pronto. Use "observations" para citar padrões concretos no "reasoning" dos próximos treinos.
+- Se "targetAdherence" = "undershot" (bloco principal mais LENTO que o prescrito): investigue a causa antes de reagir — se o esforço reportado foi alto, o alvo estava agressivo ou há fadiga (reduza o pace alvo ou mantenha o estímulo); NÃO aumente a carga por causa de um undershot.
+- Se "targetAdherence" = "overshot" em treino fácil/recuperação: o atleta correu rápido demais no easy — reforce disciplina de pace fácil, não interprete como evolução de fitness.
+- Se "pacingStrategy" = "fade": reduza intensidade OU reforce estratégia de pacing. Se recuperação cardíaca baixa entre tiros: dê mais recovery entre reps.
+- Se "targetAdherence" = "unknown": a fonte de dados não permite comparar com o prescrito (ex.: treino de tiros sem laps registrados) — NÃO conclua nada sobre execução de pace nessa sessão; use volume e feedback do atleta.
 Quando "splitsSource" = "synthetic", os "segments" são um preenchimento de pace uniforme (a fonte só tinha totais, ex.: Garmin/Nike via Apple Health) — NÃO interprete esses splits como ritmo real, NÃO afirme estratégia de pace nem execução de tiros para essa sessão; baseie-se só nos totais e no que o atleta relatou (feedback).
+Quando "splitsSource" = "route", os "segments" são splits por quilômetro (não refletem a estrutura de blocos do treino) — tiros não aparecem como segmentos separados nesse caso.
 </recentSessionsDetail>`;
 }
 
@@ -129,7 +136,7 @@ function buildLongitudinalTrendSection(weeks: LongitudinalWeek[]): string {
 Tendência das últimas ${weeks.length} semanas (agregado já calculado no backend):
 ${JSON.stringify(weeks, null, 2)}
 
-Use esse bloco para detectar stagnation, overreaching e progressão sustentável. Regras:
+Use esse bloco para detectar stagnation, overreaching e progressão sustentável. Atenção: "avgPace" aqui é a média de sessões inteiras (com aquecimento) — serve para comparar semanas entre si (mesmo viés em todas), não como valor absoluto de fitness. Regras:
 - Volume subiu > 10% por 3 semanas seguidas com pace estagnado → sinal de overreach, considere deload.
 - Volume caiu > 15% e aderência > 80% → atleta pode absorver progressão na próxima semana.
 - Pace melhorou > 5s/km sobre 4 semanas → progressão natural, mantenha estímulo.
@@ -166,13 +173,13 @@ function buildGoalAttemptLogicSection(goal: ParsedGoal | null | undefined): stri
   return `
 <goal_attempt_logic>
 O objetivo do atleta NÃO tem data programada. Avalie se ele tem condicionamento para tentar bater o objetivo NESTA semana usando:
-- Pace recente vs. pace alvo do objetivo (do summary/targetTime)
+- Pace recente vs. pace alvo do objetivo (do summary/targetTime). "Pace recente" = "executionAnalysis.mainPace"/"meanRepPace" das sessões em <recentSessionsDetail> e as zonas de VDOT — NUNCA o pace médio de sessão inteira ("totals.avgPace" ou o pace médio agregado), que inclui aquecimento e volta à calma e subestima o atleta.
 - Tendência das últimas 4 semanas (longitudinalTrend)
 - Aderência da semana anterior
 - Zonas de esforço (VDOT)
 
 REGRA DE FEASIBILITY: marque feasibility=true APENAS se TODAS as condições forem verdadeiras:
-1. Pace recente do atleta em distâncias similares está dentro de ~3% do pace alvo.
+1. Pace recente do atleta (mainPace/meanRepPace em esforços de distância similar, ou pace de limiar/intervalo das zonas VDOT para a distância alvo) está dentro de ~3% do pace alvo.
 2. Aderência recente >= 70%.
 3. Sem sinais de overreach (fadiga média > 7/10 ou volume subindo > 10% por 3 semanas seguidas com pace estagnado).
 
@@ -185,7 +192,7 @@ SE feasibility=true: escolha UM dia da semana para ser o "treino-alvo" (a tentat
 6. O dia seguinte deve ser descanso ou recuperação leve.
 7. O reasoning deve explicitar por que esta semana é viável (citar números: pace recente, pace alvo, aderência).
 
-SE feasibility=false: NÃO marque isGoalAttempt em nenhum dia. Continue periodizando normalmente, evoluindo o atleta em direção ao objetivo. O reasoning do dia mais "duro" da semana deve mencionar brevemente por que ainda não é o momento da tentativa (ex: "pace recente 5:30/km ainda longe do alvo 5:00/km — semana focada em volume").
+SE feasibility=false: NÃO marque isGoalAttempt em nenhum dia. Continue periodizando normalmente, evoluindo o atleta em direção ao objetivo. O reasoning do dia mais "duro" da semana deve mencionar brevemente por que ainda não é o momento da tentativa, citando o pace de bloco principal/tiros (ex: "mainPace recente 5:30/km ainda longe do alvo 5:00/km — semana focada em volume"). NUNCA cite o pace médio de sessão inteira como evidência de que o atleta está longe do objetivo.
 
 NUNCA marque mais de UM dia com isGoalAttempt=true por semana.
 </goal_attempt_logic>`;
@@ -565,7 +572,7 @@ ${profileSection}
 <athlete_data>
 Estatísticas resumidas (calculadas a partir de ${runSummaries.length} corridas recentes; sessões individuais detalhadas em <recentSessionsDetail>):
 - Distância média: ${avgDistKm.toFixed(2)} km
-- Pace médio: ${avgPace}
+- Pace médio: ${avgPace} (média de sessões INTEIRAS, com aquecimento/volta à calma — use como tendência geral, NÃO como teto de fitness; a referência de fitness são as zonas VDOT e o mainPace das sessões)
 - Frequência cardíaca média: ${hrCtx}
 - Maior corrida recente: ${maxDistKm.toFixed(2)} km
 - Distância total analisada: ${totalDistKm.toFixed(2)} km

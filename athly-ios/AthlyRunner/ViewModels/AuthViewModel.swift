@@ -16,6 +16,7 @@ final class AuthViewModel: ObservableObject {
         migrateTokensFromUserDefaultsIfNeeded()
         loadSavedTokens()
         observeTokenRefresh()
+        observeSessionExpiry()
     }
 
     private func observeTokenRefresh() {
@@ -31,6 +32,21 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    /// Sessão rejeitada pelo backend (401 irrecuperável, emitido pelo `APIClient`): desloga e
+    /// deixa o `RootView` redirecionar para a tela de login. Guard idempotente — vários requests
+    /// podem disparar 401 ao mesmo tempo, mas só o primeiro (já autenticado) efetiva o logout.
+    private func observeSessionExpiry() {
+        NotificationCenter.default.addObserver(
+            forName: .athlySessionExpired,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.isAuthenticated else { return }
+            self.errorMessage = "Sua sessão expirou. Faça login novamente."
+            self.logout()
+        }
+    }
+
     func login(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
@@ -39,6 +55,7 @@ final class AuthViewModel: ObservableObject {
             let response = try await APIClient.shared.login(email: email, password: password)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             isAuthenticated = true
+            postAuthChanged(true)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -56,6 +73,7 @@ final class AuthViewModel: ObservableObject {
             UserMetrics.weightKg = weight
             self.userName = name
             isAuthenticated = true
+            postAuthChanged(true)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -87,6 +105,7 @@ final class AuthViewModel: ObservableObject {
             await APIClient.shared.clearTokens()
         }
         isAuthenticated = false
+        postAuthChanged(false)
     }
 
     private func saveTokens(access: String, refresh: String) {
@@ -103,8 +122,17 @@ final class AuthViewModel: ObservableObject {
         Task {
             await APIClient.shared.setTokens(access: access, refresh: refresh)
             isAuthenticated = true
+            postAuthChanged(true)
             hasFinishedInitialSessionRestore = true
         }
+    }
+
+    /// Avisa o `EntitlementManager` (via NotificationCenter) para ligar/desligar o app_user_id do
+    /// RevenueCat. Mantém este ViewModel desacoplado do SDK de compras.
+    private func postAuthChanged(_ authenticated: Bool) {
+        NotificationCenter.default.post(
+            name: .athlyAuthChanged, object: nil, userInfo: ["authenticated": authenticated]
+        )
     }
 
     /// Migração única: tokens legados em UserDefaults → Keychain (e limpa o UserDefaults).

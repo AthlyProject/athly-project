@@ -3,6 +3,8 @@ import SwiftUI
 struct WorkoutDetailView: View {
     let workout: WorkoutModel
     var onComplete: (() -> Void)? = nil
+    /// Inicia a corrida deste treino (janela de 2 dias). Quando nil, o botão "Iniciar" não aparece.
+    var onStart: ((WorkoutModel) -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -18,17 +20,41 @@ struct WorkoutDetailView: View {
                 } else {
                     noBlocksCard
                 }
-                if workout.status == .scheduled, let onComplete {
+                if workout.canStartNow, let onStart {
                     Button {
-                        onComplete()
+                        onStart(workout)
                     } label: {
                         HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                            Text("Concluir treino")
+                            Image(systemName: "figure.run")
+                            Text("Iniciar treino")
                         }
                     }
                     .buttonStyle(AthlyGradientButtonStyle())
                     .padding(.top, 8)
+                }
+                if workout.status == .scheduled, let onComplete {
+                    if workout.canStartNow {
+                        Button {
+                            onComplete()
+                        } label: {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text("Concluir treino")
+                            }
+                        }
+                        .buttonStyle(AthlySecondaryButtonStyle())
+                    } else {
+                        Button {
+                            onComplete()
+                        } label: {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text("Concluir treino")
+                            }
+                        }
+                        .buttonStyle(AthlyGradientButtonStyle())
+                        .padding(.top, 8)
+                    }
                 }
             }
             .padding(AthlyTheme.Spacing.sm)

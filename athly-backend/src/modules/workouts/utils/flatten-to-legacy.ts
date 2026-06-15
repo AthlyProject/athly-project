@@ -4,7 +4,8 @@ import { EndCondition, RunTarget, Segment } from '../types/segment.types';
 interface LegacyAccumulator {
   distanceM: number;
   durationSec: number;
-  paceSecPerKmHints: number[];
+  paceSecPerKmMinHints: number[];
+  paceSecPerKmMaxHints: number[];
   prose: string[];
 }
 
@@ -64,8 +65,9 @@ const accumulate = (seg: Segment, mult: number, acc: LegacyAccumulator): void =>
   if (seg.end?.by === 'distanceM') acc.distanceM += seg.end.value * mult;
   if (seg.end?.by === 'durationSec') acc.durationSec += seg.end.value * mult;
 
-  if (isRunTarget(seg.target) && seg.target.paceSecPerKmMin) {
-    acc.paceSecPerKmHints.push(seg.target.paceSecPerKmMin);
+  if (isRunTarget(seg.target)) {
+    if (seg.target.paceSecPerKmMin) acc.paceSecPerKmMinHints.push(seg.target.paceSecPerKmMin);
+    if (seg.target.paceSecPerKmMax) acc.paceSecPerKmMaxHints.push(seg.target.paceSecPerKmMax);
   }
 };
 
@@ -78,7 +80,8 @@ const summaryBlock = (
   const acc: LegacyAccumulator = {
     distanceM: 0,
     durationSec: 0,
-    paceSecPerKmHints: [],
+    paceSecPerKmMinHints: [],
+    paceSecPerKmMaxHints: [],
     prose: [],
   };
   for (const s of segments) accumulate(s, 1, acc);
@@ -86,9 +89,14 @@ const summaryBlock = (
   const block: WorkoutBlock = { type };
   if (acc.distanceM > 0) block.distance = +(acc.distanceM / 1000).toFixed(2);
   if (acc.durationSec > 0) block.duration = Math.round(acc.durationSec / 60);
-  if (acc.paceSecPerKmHints.length > 0) {
-    const avg = acc.paceSecPerKmHints.reduce((a, b) => a + b, 0) / acc.paceSecPerKmHints.length;
-    block.targetPace = `${formatPace(avg)}/km`;
+  // Faixa real prescrita: limite rápido = menor min, limite lento = maior max.
+  // Achatar para a média dos mins escondia o teto da faixa e fazia o analisador
+  // julgar como "lento" um treino executado dentro do prescrito.
+  const allHints = [...acc.paceSecPerKmMinHints, ...acc.paceSecPerKmMaxHints];
+  if (allHints.length > 0) {
+    const lo = Math.min(...allHints);
+    const hi = Math.max(...allHints);
+    block.targetPace = lo === hi ? `${formatPace(lo)}/km` : `${formatPace(lo)}-${formatPace(hi)}/km`;
   }
   const proseParts = [...acc.prose];
   if (fallbackProse) proseParts.push(fallbackProse);

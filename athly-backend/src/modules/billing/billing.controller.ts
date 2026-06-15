@@ -1,11 +1,27 @@
-import { Body, Controller, Headers, HttpCode, Post } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiExcludeEndpoint, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
+import { UserModel } from '../users/models/user.model';
+import { EntitlementModel } from './models/entitlement.model';
 
 @ApiTags('billing')
 @Controller('billing')
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
+
+  /** Snapshot de entitlement para o app (fonte de verdade do bypass de admin via ADMIN_EMAILS). */
+  @Get('entitlement')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: EntitlementModel })
+  async entitlement(@CurrentUser() user: UserModel): Promise<EntitlementModel> {
+    return {
+      entitled: await this.billingService.isEntitled(user.id),
+      isAdmin: this.billingService.isAdminEmail(user.email) || user.role === 'ADMIN',
+    };
+  }
 
   /** Webhook do RevenueCat. Não usa JWT — autentica pelo header Authorization (segredo do RevenueCat). */
   @Post('revenuecat/webhook')

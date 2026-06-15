@@ -39,7 +39,9 @@ final class LiveActivityManager {
         let initialState = AthlyRunnerAttributes.ContentState(
             elapsedSeconds: 0,
             distanceMeters: 0,
-            paceSecondsPerKm: 0
+            paceSecondsPerKm: 0,
+            startedAt: Date(),
+            isPaused: false
         )
 
         liveActivityLogger.info("Existing activities before cleanup: \(Activity<AthlyRunnerAttributes>.activities.count, privacy: .public)")
@@ -62,7 +64,13 @@ final class LiveActivityManager {
 
     // MARK: - Update
 
-    func updateActivity(elapsedSeconds: Int, distanceMeters: Double, paceSecondsPerKm: Double) {
+    func updateActivity(
+        elapsedSeconds: Int,
+        distanceMeters: Double,
+        paceSecondsPerKm: Double,
+        startedAt: Date?,
+        isPaused: Bool
+    ) {
         #if targetEnvironment(simulator)
         return
         #else
@@ -70,7 +78,9 @@ final class LiveActivityManager {
         let updatedState = AthlyRunnerAttributes.ContentState(
             elapsedSeconds: elapsedSeconds,
             distanceMeters: distanceMeters,
-            paceSecondsPerKm: paceSecondsPerKm
+            paceSecondsPerKm: paceSecondsPerKm,
+            startedAt: startedAt,
+            isPaused: isPaused
         )
 
         Task { @MainActor in

@@ -65,7 +65,12 @@ struct HealthKitRunsView: View {
         ScrollView {
             LazyVStack(spacing: AthlyTheme.Spacing.sm) {
                 ForEach(viewModel.runs) { run in
-                    HealthKitRunCard(item: run)
+                    NavigationLink {
+                        HealthKitRunDetailView(item: run)
+                    } label: {
+                        HealthKitRunCard(item: run)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(AthlyTheme.Spacing.sm)

@@ -1,8 +1,12 @@
 import SwiftUI
+import RevenueCatUI
 
 struct PlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var entitlementManager: EntitlementManager
+
+    /// Inicia a corrida de um treino (passado pelo MainTabView: seta pendingWorkout + troca p/ aba Run).
+    var onStartWorkout: ((WorkoutModel) -> Void)? = nil
 
     @State private var viewMode: ViewMode = .list
     @State private var calendarMonth: Date = Date()
@@ -180,7 +184,15 @@ struct PlanView: View {
         .buttonStyle(AthlyGradientButtonStyle())
         .disabled(planVM.isGenerating)
         .sheet(isPresented: $showPaywall) {
-            PaywallView()
+            // Paywall do RevenueCat (renderiza a offering atual configurada no dashboard).
+            RevenueCatUI.PaywallView()
+                .onPurchaseCompleted { _ in
+                    showPaywall = false
+                    Task { await entitlementManager.refresh() }
+                }
+                .onRestoreCompleted { _ in
+                    Task { await entitlementManager.refresh() }
+                }
         }
     }
 
@@ -212,7 +224,7 @@ struct PlanView: View {
                     NavigationLink {
                         WorkoutDetailView(workout: workout, onComplete: {
                             workoutToComplete = workout
-                        })
+                        }, onStart: onStartWorkout)
                     } label: {
                         WorkoutCardView(
                             workout: workout,
@@ -495,7 +507,7 @@ struct PlanView: View {
                     NavigationLink {
                         WorkoutDetailView(workout: workout, onComplete: {
                             workoutToComplete = workout
-                        })
+                        }, onStart: onStartWorkout)
                     } label: {
                         WorkoutCardView(
                             workout: workout,

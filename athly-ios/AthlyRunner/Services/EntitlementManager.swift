@@ -2,17 +2,42 @@ import Foundation
 import SwiftUI
 
 /// Fonte única de verdade do entitlement premium no app.
-/// Enquanto `FeatureFlags.paywallEnabled == false`, `canUsePremium` é sempre true (fail-open).
-/// O trial de 7 dias e a assinatura são também validados pelo backend (SubscriptionGuard).
+/// `isEntitled` = entitlement do RevenueCat ativo **OU** o backend libera (cobre o bypass de admin
+/// via `ADMIN_EMAILS`, então admin/dev nunca vê paywall nem precisa comprar).
+/// Enquanto `FeatureFlags.paywallEnabled == false`, é sempre true (fail-open).
 @MainActor
 final class EntitlementManager: ObservableObject {
     @Published private(set) var isEntitled: Bool = true
 
     private let purchaseManager: PurchaseManager
 
-    init(purchaseManager: PurchaseManager = StubPurchaseManager()) {
+    init(purchaseManager: PurchaseManager = RevenueCatPurchaseManager()) {
         self.purchaseManager = purchaseManager
-        Task { await refresh() }
+        // Roda após o App.init() (onde o RevenueCat é configurado): seguro acessar o SDK aqui.
+        Task { [weak self] in
+            await self?.refresh()
+            await self?.observeEntitlementUpdates()
+        }
+        observeAuthChanges()
+    }
+
+    /// Liga/desliga o app_user_id do RevenueCat conforme o login/logout do app (postado pelo
+    /// `AuthViewModel`). Mantém o `EntitlementManager` como dono da integração — o `AuthViewModel`
+    /// só avisa, sem importar o SDK.
+    private func observeAuthChanges() {
+        NotificationCenter.default.addObserver(
+            forName: .athlyAuthChanged, object: nil, queue: .main
+        ) { [weak self] note in
+            let authenticated = (note.userInfo?["authenticated"] as? Bool) ?? false
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if authenticated, let userId = await APIClient.shared.currentUserId() {
+                    await self.identify(userId)
+                } else {
+                    await self.signOut()
+                }
+            }
+        }
     }
 
     /// True se o usuário pode usar recursos premium agora (ou se o paywall está desligado).
@@ -21,11 +46,21 @@ final class EntitlementManager: ObservableObject {
     }
 
     func refresh() async {
-        guard FeatureFlags.paywallEnabled else {
-            isEntitled = true
-            return
-        }
-        isEntitled = await purchaseManager.hasActiveEntitlement()
+        guard FeatureFlags.paywallEnabled else { isEntitled = true; return }
+        async let rcActive = purchaseManager.hasActiveEntitlement()
+        let backendEntitled = (try? await APIClient.shared.getEntitlement().entitled) ?? false
+        isEntitled = await rcActive || backendEntitled
+    }
+
+    /// Liga o RevenueCat ao id do usuário Athly (app_user_id = id Athly, para casar com o webhook).
+    func identify(_ userId: String) async {
+        await purchaseManager.identify(appUserId: userId)
+        await refresh()
+    }
+
+    func signOut() async {
+        await purchaseManager.signOut()
+        await refresh()
     }
 
     func purchase() async throws {
@@ -36,5 +71,17 @@ final class EntitlementManager: ObservableObject {
     func restore() async throws {
         try await purchaseManager.restorePurchases()
         await refresh()
+    }
+
+    /// Reage a renovação/expiração/compra fora do app. Em mudança do RevenueCat, se ativou libera
+    /// na hora; se desativou, re-checa o backend (mantém o override de admin).
+    private func observeEntitlementUpdates() async {
+        for await active in purchaseManager.entitlementUpdates() {
+            if active {
+                isEntitled = true
+            } else {
+                await refresh()
+            }
+        }
     }
 }

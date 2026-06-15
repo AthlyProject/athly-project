@@ -379,8 +379,7 @@ extension RunTracker {
               currentPaceSecondsPerKm < 3600 else {
             return "--:--"
         }
-        let minutes = Int(currentPaceSecondsPerKm) / 60
-        let seconds = Int(currentPaceSecondsPerKm) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        let total = Int(currentPaceSecondsPerKm.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }

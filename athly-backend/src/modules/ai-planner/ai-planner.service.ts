@@ -70,13 +70,19 @@ export class AiPlannerService {
     const availableDays = userHealth?.availableDays?.length ? userHealth.availableDays : DEFAULT_AVAILABLE_DAYS;
     const trainingDays = availableDays.length;
 
-    // Calculate effort zones from health runs
-    const runsForZones: RunDataForZones[] = input.runs.map((r) => ({
-      distanceMeters: r.distanceMeters,
-      durationSeconds: r.durationSeconds,
-      averageHeartRate: null,
-      maxHeartRate: null,
-    }));
+    // Calculate effort zones from health runs. O pace médio de corrida inteira inclui
+    // aquecimento/volta à calma e subestima o VDOT — por isso também entram como
+    // candidatos os melhores sub-esforços contínuos (janelas de splits reais) das
+    // sessões detalhadas.
+    const runsForZones: RunDataForZones[] = [
+      ...input.runs.map((r) => ({
+        distanceMeters: r.distanceMeters,
+        durationSeconds: r.durationSeconds,
+        averageHeartRate: null,
+        maxHeartRate: null,
+      })),
+      ...this.bestSubEffortsFromSessions(input.detailedSessions ?? []),
+    ];
     const effortZones = await this.effortZoneService.getOrCalculateForUser(userId, runsForZones, 'apple_health');
 
     // Build previous week analysis
@@ -265,13 +271,17 @@ export class AiPlannerService {
     trainingPlanId: string,
     currentWeekStart: Date,
   ): Promise<PreviousWeekAnalysis | null> {
-    // Find the most recent weekly goal before current week
-    const previousGoal = await this.prisma.weeklyGoal.findFirst({
+    // As duas semanas mais recentes antes da atual: a anterior (analisada) e a
+    // retrasada (baseline do volumeChange). Comparar executado × executado — o
+    // metrics.totalDistanceKm da própria goal é a soma das corridas de ENTRADA da
+    // geração e fabricava "reduziu 75%".
+    const recentGoals = await this.prisma.weeklyGoal.findMany({
       where: {
         trainingPlanId,
         weekEndDate: { lt: currentWeekStart },
       },
       orderBy: { weekStartDate: 'desc' },
+      take: 2,
       include: {
         workouts: {
           include: {
@@ -281,10 +291,13 @@ export class AiPlannerService {
       },
     });
 
+    const previousGoal = recentGoals[0];
     if (!previousGoal) return null;
 
-    const workouts = previousGoal.workouts;
-    const trainingWorkouts = workouts.filter((w) => w.sportType !== 'other');
+    const trainingWorkouts = this.adherenceEligibleWorkouts(
+      previousGoal.workouts,
+      previousGoal.createdAt,
+    );
     const completedWorkouts = trainingWorkouts.filter((w) => w.status === 'done').length;
     const totalWorkouts = trainingWorkouts.length;
     const skippedWorkouts = trainingWorkouts
@@ -300,27 +313,13 @@ export class AiPlannerService {
       ? parseFloat((allFeedback.reduce((sum, f) => sum + f.fatigue, 0) / allFeedback.length).toFixed(1))
       : null;
 
-    // Soma distância: prefere actualDistanceMeters (HK linkado) e cai pra blocks como fallback.
-    let totalDistanceKm = 0;
-    for (const w of trainingWorkouts.filter((w) => w.status === 'done')) {
-      if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
-        totalDistanceKm += w.actualDistanceMeters / 1000;
-        continue;
-      }
-      const blocks = w.blocks as any[];
-      if (Array.isArray(blocks)) {
-        for (const block of blocks) {
-          if (block.distanceKm) totalDistanceKm += block.distanceKm;
-        }
-      }
-    }
+    const totalDistanceKm = this.executedVolumeKm(previousGoal.workouts);
 
-    // Compare with current week's metrics to determine volume change
-    const prevMetrics = previousGoal.metrics as any;
-    const prevTotalDist = prevMetrics?.totalDistanceKm ?? 0;
+    const baselineGoal = recentGoals[1];
+    const baselineKm = baselineGoal ? this.executedVolumeKm(baselineGoal.workouts) : 0;
     let volumeChange = 'sem dados anteriores';
-    if (prevTotalDist > 0 && totalDistanceKm > 0) {
-      const pctChange = ((totalDistanceKm - prevTotalDist) / prevTotalDist) * 100;
+    if (baselineKm > 0 && totalDistanceKm > 0) {
+      const pctChange = ((totalDistanceKm - baselineKm) / baselineKm) * 100;
       if (pctChange > 5) volumeChange = `aumentou ${Math.round(pctChange)}%`;
       else if (pctChange < -5) volumeChange = `reduziu ${Math.round(Math.abs(pctChange))}%`;
       else volumeChange = 'manteve';
@@ -340,6 +339,96 @@ export class AiPlannerService {
       volumeChange,
       adherenceNote,
     };
+  }
+
+  /**
+   * Treinos que o atleta teve chance real de cumprir: exclui do denominador os dias
+   * que já estavam no passado quando a semana foi gerada (gerar plano na sexta criava
+   * seg–qui "não cumpridos" e derrubava a aderência artificialmente). Treino passado
+   * que ainda assim foi concluído conta a favor.
+   */
+  private adherenceEligibleWorkouts<
+    T extends { dateScheduled: Date; status: string; sportType: string },
+  >(workouts: T[], goalCreatedAt: Date): T[] {
+    const generationDayUtc = new Date(goalCreatedAt);
+    generationDayUtc.setUTCHours(0, 0, 0, 0);
+    return workouts.filter(
+      (w) =>
+        w.sportType !== 'other' && (w.status === 'done' || w.dateScheduled >= generationDayUtc),
+    );
+  }
+
+  /**
+   * Volume executado de uma semana: prefere actualDistanceMeters (HK linkado) e cai
+   * para a distância prescrita nos blocks. Blocks gravam `distance` (km); `distanceKm`
+   * cobre dados antigos — ler só `distanceKm` zerava o volume de treinos sem link HK.
+   */
+  private executedVolumeKm(workouts: Array<{ status: string; actualDistanceMeters?: number | null; blocks: unknown }>): number {
+    let totalKm = 0;
+    for (const w of workouts.filter((w) => w.status === 'done')) {
+      if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
+        totalKm += w.actualDistanceMeters / 1000;
+        continue;
+      }
+      const blocks = w.blocks as any[];
+      if (Array.isArray(blocks)) {
+        for (const block of blocks) {
+          const km =
+            typeof block?.distance === 'number' && block.distance > 0
+              ? block.distance
+              : typeof block?.distanceKm === 'number' && block.distanceKm > 0
+                ? block.distanceKm
+                : 0;
+          totalKm += km;
+        }
+      }
+    }
+    return totalKm;
+  }
+
+  /**
+   * Melhor sub-esforço contínuo (janela de splits reais >= 1.5km) por sessão detalhada,
+   * excluindo aquecimento/volta à calma. Alimenta o cálculo de VDOT com algo mais
+   * próximo do esforço real do que o pace médio de corrida inteira.
+   */
+  private bestSubEffortsFromSessions(sessions: DetailedSessionDto[]): RunDataForZones[] {
+    const candidates: RunDataForZones[] = [];
+    for (const session of sessions) {
+      if (session.splitsSource === 'synthetic') continue;
+      const segs = (session.segments ?? []).filter(
+        (s) =>
+          s.label !== 'warmup' &&
+          s.label !== 'cooldown' &&
+          s.distanceKm > 0 &&
+          s.durationSeconds > 0,
+      );
+      if (segs.length < 2) continue;
+
+      let best: { distM: number; durSec: number } | null = null;
+      for (let i = 0; i < segs.length; i++) {
+        let distM = 0;
+        let durSec = 0;
+        for (let j = i; j < segs.length; j++) {
+          distM += segs[j].distanceKm * 1000;
+          durSec += segs[j].durationSeconds;
+          if (distM >= 1500) {
+            const pace = durSec / (distM / 1000);
+            const bestPace = best ? best.durSec / (best.distM / 1000) : Infinity;
+            if (pace < bestPace) best = { distM, durSec };
+            break; // janela mínima >= 1.5km a partir de i; janelas maiores só diluem
+          }
+        }
+      }
+      if (best) {
+        candidates.push({
+          distanceMeters: best.distM,
+          durationSeconds: best.durSec,
+          averageHeartRate: null,
+          maxHeartRate: null,
+        });
+      }
+    }
+    return candidates;
   }
 
   private async buildLongitudinalTrend(
@@ -362,29 +451,13 @@ export class AiPlannerService {
 
     // Oldest-first so the AI reads chronological progression naturally.
     return recent.reverse().map((goal, idx) => {
-      const workouts = goal.workouts.filter((w) => w.sportType !== 'other');
+      const workouts = this.adherenceEligibleWorkouts(goal.workouts, goal.createdAt);
       const doneWorkouts = workouts.filter((w) => w.status === 'done');
       const completionRate =
         workouts.length > 0 ? parseFloat((doneWorkouts.length / workouts.length).toFixed(2)) : 0;
 
-      // Soma totalKm a partir dos actuals (HK linkado) — fallback para blocks, depois para metrics histórico.
-      let totalKm = 0;
-      for (const w of doneWorkouts) {
-        if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
-          totalKm += w.actualDistanceMeters / 1000;
-          continue;
-        }
-        const blocks = (w.blocks as any[]) ?? [];
-        if (Array.isArray(blocks)) {
-          for (const block of blocks) {
-            if (block?.distanceKm) totalKm += block.distanceKm;
-          }
-        }
-      }
-      if (totalKm === 0) {
-        const metrics = (goal.metrics ?? {}) as { totalDistanceKm?: number };
-        totalKm = metrics.totalDistanceKm ?? 0;
-      }
+      // Soma totalKm a partir dos actuals (HK linkado) — fallback para blocks (key `distance`).
+      const totalKm = this.executedVolumeKm(goal.workouts);
 
       const metrics = (goal.metrics ?? {}) as { avgPace?: string };
 

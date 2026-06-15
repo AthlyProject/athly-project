@@ -12,7 +12,10 @@ struct MainTabView: View {
             case .dashboard:
                 DashboardView(selectedTab: $selectedTab, pendingWorkout: $pendingWorkout)
             case .plan:
-                PlanView()
+                PlanView(onStartWorkout: { workout in
+                    pendingWorkout = workout
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .run }
+                })
             case .run:
                 RunStartView(isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
             case .history:
