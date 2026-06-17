@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { GradientText } from '@/components/ui/GradientText';
+import { companyDisclosure, companyInfo } from '@/config/company';
 import logoSrc from '@/assets/icons/main.png';
 
 export function FooterSection() {
@@ -15,8 +17,31 @@ export function FooterSection() {
           <p className="text-sm text-[var(--color-text-tertiary)]">
             Treino inteligente, movido por IA e ciência.
           </p>
+          <p className="max-w-2xl text-xs leading-relaxed text-[var(--color-text-disabled)]">
+            {companyDisclosure}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+            <Link
+              to="/company"
+              className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
+            >
+              Company
+            </Link>
+            <a
+              href={`mailto:${companyInfo.supportEmail}`}
+              className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
+            >
+              Support
+            </a>
+            <a
+              href={`mailto:${companyInfo.legalEmail}`}
+              className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
+            >
+              Legal
+            </a>
+          </div>
           <p className="text-xs text-[var(--color-text-disabled)]">
-            &copy; {new Date().getFullYear()} Athly. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()} {companyInfo.legalEntityName}. Todos os direitos reservados.
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { useAuthStore } from "@/store/authStore";
 import { LandingPage } from "@/pages/landing/LandingPage";
+import { CompanyPage } from "@/pages/CompanyPage";
 import { REGISTRATION_ENABLED } from "@/config/features";
 
 // Pages - lazy loaded for better performance
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <LandingPage />,
+  },
+  {
+    path: "/company",
+    element: <CompanyPage />,
   },
   {
     path: "/login",
