@@ -12,14 +12,14 @@ run:
   env:
     - name: NODE_ENV
       value: production
+    - name: OTEL_SERVICE_NAME
+      value: "athly-backend"
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp"
   secrets:
     - name: GEMINI_API_KEY
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"
     - name: DATABASE_URL
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL::"
-    - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp"
     - name: OTEL_EXPORTER_OTLP_HEADERS
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:OTEL_EXPORTER_OTLP_HEADERS::"
-    - name: OTEL_SERVICE_NAME
-      value: "athly-backend"
