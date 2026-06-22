@@ -3,6 +3,9 @@
 # Bundle ID local (outro dev/team)
 athly-ios/Config/User.xcconfig
 
+# OTel production credentials (Grafana Cloud API key)
+athly-ios/Config/OTel.User.xcconfig
+
 # Xcode local artifacts
 athly-ios/.deriveddata/
 *.xcuserstate

@@ -12,4 +12,5 @@ DEV_API_URL =
 // ⚠️ Antes do release de produção, troque pela App Store key (appl_…) do projeto no RevenueCat.
 REVENUECAT_API_KEY = test_iaxoybibCwjyiSQvMsPrFXHiLfO
 
+#include "OTel.xcconfig"
 #include? "User.xcconfig"

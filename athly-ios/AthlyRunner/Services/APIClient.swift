@@ -254,6 +254,12 @@ actor APIClient {
         request.httpMethod = method
         request.timeoutInterval = timeout
 
+        // Correlation headers — backend logs these to link iOS spans ↔ server request logs
+        request.setValue(OTelClient.sessionId, forHTTPHeaderField: "X-Athly-Session-Id")
+        if let traceId = OTelClient.currentTraceId {
+            request.setValue(traceId, forHTTPHeaderField: "X-Athly-Trace-Id")
+        }
+
         if authenticated {
             guard let token = accessToken else {
                 throw APIError.unauthorized
