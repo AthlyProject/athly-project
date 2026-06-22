@@ -1,9 +1,7 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
 import { logs } from '@opentelemetry/api-logs';
 import { Resource } from '@opentelemetry/resources';
@@ -21,13 +19,11 @@ loggerProvider.addLogRecordProcessor(
 );
 logs.setGlobalLoggerProvider(loggerProvider);
 
+// Metrics are auto-configured via OTEL_METRICS_EXPORTER=otlp env var (avoids sdk-metrics
+// version mismatch between sdk-node's internal copy and the top-level install).
 const sdk = new NodeSDK({
   resource,
   traceExporter: new OTLPTraceExporter(),
-  metricReader: new PeriodicExportingMetricReader({
-    exporter: new OTLPMetricExporter(),
-    exportIntervalMillis: 30_000,
-  }),
   instrumentations: [
     getNodeAutoInstrumentations({
       // fs instrumentation is too noisy for a typical NestJS app
