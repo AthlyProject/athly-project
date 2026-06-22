@@ -27,12 +27,18 @@ export function FooterSection() {
             >
               Company
             </Link>
-            <a
-              href={`mailto:${companyInfo.supportEmail}`}
+            <Link
+              to="/privacy"
+              className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/support"
               className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
             >
               Support
-            </a>
+            </Link>
             <a
               href={`mailto:${companyInfo.legalEmail}`}
               className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"

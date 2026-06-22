@@ -271,13 +271,23 @@ struct ProfileView: View {
                                 .font(AthlyTheme.Typography.body())
                                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                             Spacer()
-                            Text("1.0.0")
+                            Text(Bundle.main.appVersionDisplay)
                                 .font(AthlyTheme.Typography.medium(16))
                                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                         }
 
-                        Link(destination: URL(string: "https://athlyproject.app/privacy")!) {
+                        NavigationLink {
+                            PrivacyPolicyView()
+                        } label: {
                             Text("Política de Privacidade")
+                                .font(AthlyTheme.Typography.body())
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        }
+
+                        NavigationLink {
+                            SupportView()
+                        } label: {
+                            Text("Suporte")
                                 .font(AthlyTheme.Typography.body())
                                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                         }
