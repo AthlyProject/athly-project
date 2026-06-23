@@ -25,7 +25,7 @@ services:
     env_file:
       - ./athly-backend/.env
     environment:
-      - NODE_OPTIONS=--require @opentelemetry/auto-instrumentations-node/register
+      - NODE_OPTIONS=--require ./dist/src/otel-init.js
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=otlp
       - OTEL_TRACES_EXPORTER=otlp

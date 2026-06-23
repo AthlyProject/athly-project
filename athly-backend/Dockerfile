@@ -18,4 +18,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-CMD ["node", "--require", "@opentelemetry/auto-instrumentations-node/register", "dist/src/main.js"]
+CMD ["node", "--require", "./dist/src/otel-init.js", "dist/src/main.js"]
