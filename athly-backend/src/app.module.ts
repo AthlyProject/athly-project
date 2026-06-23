@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { OpenTelemetryModule, WideEventInterceptor } from 'nestjs-otel';
+import { OpenTelemetryModule } from 'nestjs-otel';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './database/prisma.module';
@@ -43,9 +42,6 @@ import { EmailModule } from './modules/email/email.module';
     WaitlistModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    { provide: APP_INTERCEPTOR, useClass: WideEventInterceptor },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}
