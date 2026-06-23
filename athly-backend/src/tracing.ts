@@ -32,7 +32,12 @@ const sdk = new NodeSDK({
   ],
 });
 
-sdk.start();
+try {
+  sdk.start();
+  console.log('[OTel] SDK started — exporting to', process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://localhost:4317');
+} catch (err) {
+  console.error('[OTel] SDK failed to start:', err);
+}
 
 process.on('SIGTERM', () => {
   sdk
