@@ -1,10 +1,12 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
 import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
 import { logs } from '@opentelemetry/api-logs';
 import { Resource } from '@opentelemetry/resources';
+import { WideEventSpanProcessor } from 'nestjs-otel';
 
 const resource = new Resource({
   'service.name': process.env.OTEL_SERVICE_NAME ?? 'athly-backend',
@@ -23,7 +25,10 @@ logs.setGlobalLoggerProvider(loggerProvider);
 // version mismatch between sdk-node's internal copy and the top-level install).
 const sdk = new NodeSDK({
   resource,
-  traceExporter: new OTLPTraceExporter(),
+  spanProcessors: [
+    new WideEventSpanProcessor(),                          // required by WideEventInterceptor in AppModule
+    new BatchSpanProcessor(new OTLPTraceExporter()),
+  ],
   instrumentations: [
     getNodeAutoInstrumentations({
       // fs instrumentation is too noisy for a typical NestJS app
