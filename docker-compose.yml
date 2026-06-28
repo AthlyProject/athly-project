@@ -11,7 +11,7 @@ services:
       - iafit_db:/var/lib/postgresql/data
 
   backend:
-    build: 
+    build:
       context: ./athly-backend
       dockerfile: Dockerfile.dev
     container_name: iafit-backend
@@ -24,8 +24,14 @@ services:
       - /app/node_modules
     env_file:
       - ./athly-backend/.env
+    environment:
+      - NODE_OPTIONS=--require ./dist/src/otel-init.js
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_TRACES_EXPORTER=otlp
     depends_on:
       - db
+      - otel-collector
 
   frontend:
     build:
@@ -44,5 +50,79 @@ services:
     depends_on:
       - backend
 
+  # ── Observability ──────────────────────────────────────────────────────────
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    container_name: athly-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    ports:
+      - "4317:4317"   # OTLP gRPC  (backend + iOS simulator → collector)
+      - "4318:4318"   # OTLP HTTP  (iOS device → collector)
+      - "13133:13133" # health_check
+    volumes:
+      - ./otel/otelcol-config.yml:/etc/otelcol-contrib/config.yaml
+    depends_on:
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: athly-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./otel/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: athly-tempo
+    restart: unless-stopped
+    ports:
+      - "3200:3200"   # Tempo HTTP API (Grafana queries)
+    volumes:
+      - ./otel/tempo-config.yml:/etc/tempo.yaml
+      - tempo_data:/tmp/tempo
+    command: -config.file=/etc/tempo.yaml
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: athly-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./otel/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: athly-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./otel/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+
 volumes:
   iafit_db:
+  loki_data:
+  tempo_data:
+  prometheus_data:
+  grafana_data:

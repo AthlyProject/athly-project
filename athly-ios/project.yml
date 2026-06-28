@@ -17,6 +17,9 @@ packages:
   RevenueCat:
     url: https://github.com/RevenueCat/purchases-ios-spm.git
     from: "5.0.0"          # 5.x: SDK + RevenueCatUI (Paywalls v2 + Customer Center)
+  opentelemetry-swift:
+    url: https://github.com/open-telemetry/opentelemetry-swift
+    from: "1.10.0"
 
 # Variáveis definidas nas configFiles (ex: User.xcconfig) ficam disponíveis como build settings.
 # DEV_API_URL é definido em Config/User.xcconfig (gitignored) para testes no device físico.
@@ -51,6 +54,8 @@ targets:
       properties:
         DEV_API_URL: "$(DEV_API_URL)"
         REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
+        OTEL_ENDPOINT: "$(OTEL_ENDPOINT)"
+        OTEL_API_KEY: "$(OTEL_API_KEY)"
         CFBundleDisplayName: Athly Runner
         CFBundleDevelopmentRegion: pt-BR
         UIApplicationSceneManifest:
@@ -93,6 +98,16 @@ targets:
         product: RevenueCat
       - package: RevenueCat
         product: RevenueCatUI
+      - package: opentelemetry-swift
+        product: OpenTelemetryApi
+      - package: opentelemetry-swift
+        product: OpenTelemetrySdk
+      - package: opentelemetry-swift
+        product: OpenTelemetryProtocolExporterHttp
+      - package: opentelemetry-swift
+        product: URLSessionInstrumentation
+      - package: opentelemetry-swift
+        product: ResourceExtension
 
   AthlyRunnerLiveActivity:
     type: app-extension

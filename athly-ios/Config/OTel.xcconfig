@@ -1,0 +1,19 @@
+// OpenTelemetry endpoint (OTLP HTTP base URL — without /v1/traces suffix).
+//
+// Local dev (iOS Simulator → docker on the same Mac):
+//   OTEL_ENDPOINT = http://localhost:4318
+//
+// Local dev (physical device on the same network):
+//   OTEL_ENDPOINT = http://192.168.X.X:4318   (run: ifconfig en0 | grep 'inet ')
+//
+// Production (Grafana Cloud) — override in OTel.User.xcconfig (gitignored):
+//   OTEL_ENDPOINT = https://otlp-gateway-prod-eu-west-0.grafana.net/otlp
+OTEL_ENDPOINT = http://localhost:4318
+
+// Grafana Cloud API key (base64 of "instanceID:apiToken").
+// Leave empty for local dev. Set in OTel.User.xcconfig for production.
+// ⚠️  Never commit a real key here.
+OTEL_API_KEY =
+
+// Personal / production overrides (this file must be in .gitignore).
+#include? "OTel.User.xcconfig"

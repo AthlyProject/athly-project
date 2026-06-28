@@ -10,6 +10,7 @@ struct AthlyRunnerApp: App {
     @StateObject private var entitlementManager = EntitlementManager()
 
     init() {
+        OTelClient.start()
         configureRevenueCat()
         configureUIKitAppearance()
     }

@@ -2,9 +2,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { OTelLoggerService } from './otel-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useLogger(new OTelLoggerService());
   app.enableCors({ origin: true, credentials: true });
   app.useGlobalPipes(
     new ValidationPipe({
