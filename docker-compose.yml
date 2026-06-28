@@ -26,9 +26,6 @@ services:
       - ./athly-backend/.env
     environment:
       - NODE_OPTIONS=--require ./dist/src/otel-init.js
-      - OTEL_LOGS_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=otlp
-      - OTEL_TRACES_EXPORTER=otlp
     depends_on:
       - db
       - otel-collector
@@ -75,7 +72,7 @@ services:
       - "3100:3100"
     volumes:
       - ./otel/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/tmp/loki
+      - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
 
   tempo:
@@ -86,7 +83,7 @@ services:
       - "3200:3200"   # Tempo HTTP API (Grafana queries)
     volumes:
       - ./otel/tempo-config.yml:/etc/tempo.yaml
-      - tempo_data:/tmp/tempo
+      - tempo_data:/var/tempo
     command: -config.file=/etc/tempo.yaml
 
   prometheus:
@@ -103,7 +100,7 @@ services:
       - "--storage.tsdb.retention.time=7d"
 
   grafana:
-    image: grafana/grafana:11.1.0
+    image: grafana/grafana:11.5.0
     container_name: athly-grafana
     restart: unless-stopped
     ports:
