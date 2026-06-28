@@ -16,13 +16,7 @@ diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4317';
 const protocol = process.env.OTEL_EXPORTER_OTLP_PROTOCOL ?? 'grpc';
-
-// Parse "key=value,key2=value2" — splits only on the first '=' so base64 values survive.
-const headers: Record<string, string> = {};
-for (const pair of (process.env.OTEL_EXPORTER_OTLP_HEADERS ?? '').split(',')) {
-  const eq = pair.indexOf('=');
-  if (eq > 0) headers[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
-}
+const headers = process.env.OTEL_EXPORTER_OTLP_HEADERS ?? 'undefined';
 
 const isGrpc = protocol === 'grpc';
 
