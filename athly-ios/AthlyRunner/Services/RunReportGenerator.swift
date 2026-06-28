@@ -46,10 +46,14 @@ enum RunReportGenerator {
                           result.durationSeconds, distanceKm,
                           result.averagePaceSecondsPerKm, pace(result.averagePaceSecondsPerKm)))
         out.append("")
+        let distDelta = result.distanceMeters - splitDist
         out.append(String(format: "Soma das distâncias dos splits: %.1f m", splitDist))
+        out.append(String(format: "Δ distância (total − splits):   %+.1f m", distDelta))
+        out.append("   → > 0: trecho inicial antes do 1º movimento (descartado nos splits).")
+        out.append("   → < 0 indicava bug: distância fantasma creditada no buraco de uma pausa.")
         out.append("Soma das durações dos splits:   \(sec(splitDur)) s  (\(clock(splitDur)))")
-        out.append(String(format: "Δ duração (total − splits):     %.1f s", delta))
-        out.append("   → tempo que os splits descontam: parado inicial + pausas + buracos de GPS.")
+        out.append(String(format: "Δ duração (total − splits):     %+.1f s", delta))
+        out.append("   → Δ ≥ 0: os splits descontam do total o parado inicial + pausas + buracos parados.")
         out.append("   → o pace médio usa a duração TOTAL; os splits usam só o tempo em movimento.")
         out.append("Pace 'em movimento' (base splits): \(pace(movingPace))   (\(sec(movingPace)) s/km)")
         out.append("")

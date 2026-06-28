@@ -23,6 +23,35 @@ export function calculateVdot(distanceMeters: number, durationSeconds: number): 
 }
 
 /**
+ * Predict the race time (seconds) for a given VDOT at a given distance —
+ * the Daniels "equivalent performance" / race predictor. Inverts calculateVdot.
+ *
+ * For a fixed distance, calculateVdot is monotonically DECREASING in duration:
+ * a faster time (smaller t) sustains a higher %VO2max at a higher velocity and
+ * therefore implies a higher VDOT. So we binary-search the duration whose VDOT
+ * matches the target. The required VDOT to hit a target time is, conversely,
+ * simply calculateVdot(distance, targetTime).
+ */
+export function predictRaceTime(vdot: number, distanceMeters: number): number {
+  if (vdot <= 0 || distanceMeters <= 0) return 0;
+  const km = distanceMeters / 1000;
+  // Bracket the search with implausibly fast/slow paces so any real VDOT lands inside.
+  let lo = km * 120; // 2:00/km
+  let hi = km * 900; // 15:00/km
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    const v = calculateVdot(distanceMeters, mid);
+    if (v > vdot) {
+      // This time is too fast (VDOT above target) → athlete needs a slower time.
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return Math.round((lo + hi) / 2);
+}
+
+/**
  * Given a VDOT score and a target %VO2max, calculate the corresponding pace (seconds per km)
  * Uses the inverse of the VO2-velocity relationship.
  */
@@ -132,14 +161,20 @@ export function findBestEffort(runs: Array<{ distanceMeters: number; durationSec
   const eligible = runs.filter(r => r.distanceMeters >= 1500 && r.durationSeconds > 0);
   if (eligible.length === 0) return null;
 
-  // Sort by pace (seconds per km) ascending = fastest first
-  eligible.sort((a, b) => {
-    const paceA = (a.durationSeconds / a.distanceMeters) * 1000;
-    const paceB = (b.durationSeconds / b.distanceMeters) * 1000;
-    return paceA - paceB;
-  });
-
-  return eligible[0];
+  // Melhor esforço = o que produz o VDOT mais alto, NÃO o pace bruto mais rápido.
+  // Um tiro curto e veloz (ex.: 1,6 km a 4:00) pode ter pace melhor que um tempo run
+  // longo (5 km a 4:45) e ainda assim representar um VDOT menor, porque o esforço curto
+  // roda em regime supramáximo. Ranquear por VDOT escolhe o esforço mais representativo.
+  let best = eligible[0];
+  let bestVdot = calculateVdot(best.distanceMeters, best.durationSeconds);
+  for (let i = 1; i < eligible.length; i++) {
+    const vdot = calculateVdot(eligible[i].distanceMeters, eligible[i].durationSeconds);
+    if (vdot > bestVdot) {
+      bestVdot = vdot;
+      best = eligible[i];
+    }
+  }
+  return best;
 }
 
 /**

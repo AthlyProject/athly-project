@@ -15,6 +15,10 @@ final class RunSession: Identifiable, Codable {
 
     var routePoints: [RoutePoint]
     var splits: [Split]
+    /// Janelas de pausa explícita. Opcional para o decode tolerar registros antigos (o RunStore
+    /// decodifica o array inteiro de uma vez — uma chave ausente lançaria e zeraria o histórico).
+    /// Usado na releitura offline dos splits para descontar a pausa igual ao caminho ao vivo.
+    var pauseIntervals: [SplitCalculator.PauseInterval]?
 
     // Sync with backend
     var backendId: String?
@@ -33,6 +37,7 @@ final class RunSession: Identifiable, Codable {
         self.sportType = sportType
         self.routePoints = []
         self.splits = []
+        self.pauseIntervals = []
         self.backendId = nil
         self.synced = false
     }

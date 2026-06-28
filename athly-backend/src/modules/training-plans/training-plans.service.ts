@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { Prisma, SportType } from '@prisma/client';
+import { Prisma, SportType, TrainingPlanStatus } from '@prisma/client';
 import { CreateTrainingPlanDto } from './dto/create-training-plan.dto';
 import { UpdateTrainingPlanDto } from './dto/update-training-plan.dto';
 import { TrainingPlanModel } from './models/training-plan.model';
+import { TrainingReportService } from '../training-report/training-report.service';
 
 @Injectable()
 export class TrainingPlansService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trainingReportService: TrainingReportService,
+  ) {}
 
   async getMyTrainingPlan(userId: string): Promise<TrainingPlanModel | null> {
     const plan = await this.prisma.trainingPlan.findUnique({
@@ -102,6 +106,10 @@ export class TrainingPlansService {
       throw new NotFoundException('Training plan not found');
     }
 
+    // Capture a laudo of the last weeks BEFORE the cascade wipes them, so the next
+    // plan's first AI generation keeps continuity instead of starting cold.
+    await this.trainingReportService.captureFromPlan(userId, id);
+
     await this.prisma.trainingPlan.delete({
       where: { id },
     });
@@ -114,6 +122,7 @@ export class TrainingPlansService {
     targetDate: Date | null;
     sports: SportType[];
     autoGenerate: boolean;
+    status: TrainingPlanStatus;
     createdAt: Date;
     updatedAt: Date;
   }): TrainingPlanModel {
@@ -124,6 +133,7 @@ export class TrainingPlansService {
       targetDate: plan.targetDate,
       sports: plan.sports,
       autoGenerate: plan.autoGenerate,
+      status: plan.status,
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
     };

@@ -30,10 +30,14 @@ final class RunTracker: ObservableObject {
     private var startTime: Date?
     private var pausedDuration: TimeInterval = 0
     private var pauseStart: Date?
+    /// Janelas de pausa explícita (botão de pausa). Vão para o `RunResult` e persistem no
+    /// `RunSession` para o cálculo offline de splits descontar a pausa igual ao caminho ao vivo.
+    private var pauseIntervals: [SplitCalculator.PauseInterval] = []
     private var lastLocation: CLLocation?
     private var splitStartTime: Date?
     private var splitStartDistance: Double = 0
-    private var lastAltitude: Double?
+    /// Ganho de elevação filtrado (gate de vAcc + suavização + deadband). Ver ElevationAccumulator.
+    private var elevationAccumulator = ElevationAccumulator()
     private var locationCancellable: AnyCancellable?
     private var locations: [CLLocation] = []
 
@@ -118,7 +122,7 @@ final class RunTracker: ObservableObject {
         splitStartDistance = 0
         currentSplitKm = 0
         lastLocation = nil
-        lastAltitude = nil
+        elevationAccumulator.reset()
         locations = []
         routeCoordinates = []
         paceWindow = []
@@ -149,6 +153,13 @@ final class RunTracker: ObservableObject {
         guard state == .running else { return }
         state = .paused
         pauseStart = Date()
+        // A corda entre o último fix e o primeiro pós-resume é deriva do GPS parado — não deve
+        // somar distância. Zerar `lastLocation` faz o primeiro fix pós-resume cair no ramo
+        // `lastLocation == nil` (distância zero); a janela de pace e a velocidade recente também
+        // são reiniciadas para não atravessar o buraco da pausa.
+        lastLocation = nil
+        paceWindow = []
+        recentSpeedMps = 0
         timer?.invalidate()
         timer = nil
         // Congela o relógio do widget imediatamente (isPaused → tempo estático).
@@ -159,7 +170,9 @@ final class RunTracker: ObservableObject {
         guard state == .paused else { return }
         state = .running
         if let pauseStart {
-            pausedDuration += Date().timeIntervalSince(pauseStart)
+            let now = Date()
+            pausedDuration += now.timeIntervalSince(pauseStart)
+            pauseIntervals.append(.init(start: pauseStart, end: now))
         }
         pauseStart = nil
         lastResumeDate = Date()
@@ -177,6 +190,7 @@ final class RunTracker: ObservableObject {
         let stopTime = Date()
         if let pauseStart {
             pausedDuration += stopTime.timeIntervalSince(pauseStart)
+            pauseIntervals.append(.init(start: pauseStart, end: stopTime))
         }
 
         let finalDuration = stopTime.timeIntervalSince(startTime ?? stopTime) - pausedDuration
@@ -202,7 +216,8 @@ final class RunTracker: ObservableObject {
             caloriesBurned: calories,
             locations: locations,
             splits: buildSplits(),
-            segmentRecords: segmentRecords
+            segmentRecords: segmentRecords,
+            pauseIntervals: pauseIntervals
         )
 
         LiveActivityManager.shared.endActivity()
@@ -234,8 +249,9 @@ final class RunTracker: ObservableObject {
         routeCoordinates = []
         pausedDuration = 0
         pauseStart = nil
+        pauseIntervals = []
         lastLocation = nil
-        lastAltitude = nil
+        elevationAccumulator.reset()
         locations = []
         paceWindow = []
         activeSegmentIndex = 0
@@ -323,6 +339,12 @@ final class RunTracker: ObservableObject {
         routeCoordinates.append(location.coordinate)
         currentAltitude = location.altitude
 
+        // Ganho de elevação filtrado (gate de vAcc + suavização + deadband). Roda para todo fix
+        // aceito (inclusive logo após um resume) — o GPS cru inflava o número com o salto de
+        // aquecimento (ex.: +92 m em 2 s) e perdia rampas lentas no limiar por amostra.
+        elevationAccumulator.add(altitude: location.altitude, verticalAccuracy: location.verticalAccuracy)
+        elevationGain = elevationAccumulator.gain
+
         // Calculate distance
         if let last = lastLocation {
             let delta = location.distance(from: last)
@@ -350,14 +372,6 @@ final class RunTracker: ObservableObject {
             }
 
             distanceMeters += distStep
-
-            // Elevation gain (only count positive)
-            if let lastAlt = lastAltitude {
-                let elevDelta = location.altitude - lastAlt
-                if elevDelta > 0.5 { // threshold to reduce noise
-                    elevationGain += elevDelta
-                }
-            }
 
             // Current pace — janela deslizante de deltas de posição (NÃO o location.speed).
             // O medidor nativo do iOS é pré-suavizado pelo chip e atrasa em mudança de ritmo
@@ -404,7 +418,6 @@ final class RunTracker: ObservableObject {
         }
 
         lastLocation = location
-        lastAltitude = location.altitude
     }
 
     private func checkSegmentBoundary() {
@@ -477,7 +490,7 @@ final class RunTracker: ObservableObject {
     private func buildSplits() -> [SplitData] {
         // Mesma base de cálculo do pace ao vivo (filtro de salto, exclusão de pausa/buraco,
         // primeiro movimento, fronteiras exatas) via algoritmo compartilhado — ver SplitCalculator.
-        SplitCalculator.kmSplits(from: locations).map {
+        SplitCalculator.kmSplits(from: locations, pauses: pauseIntervals).map {
             SplitData(
                 kilometer: $0.kilometer,
                 distanceMeters: $0.distanceMeters,
@@ -500,6 +513,8 @@ struct RunResult {
     let splits: [SplitData]
     /// Fronteiras reais dos segmentos executados (vazio em corrida livre).
     var segmentRecords: [SegmentRecord] = []
+    /// Janelas de pausa explícita — descontadas no cálculo offline de splits e gravadas no Health.
+    var pauseIntervals: [SplitCalculator.PauseInterval] = []
 }
 
 /// Um segmento do treino estruturado como foi de fato executado. Persiste no

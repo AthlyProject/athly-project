@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SportType } from '@prisma/client';
+import { SportType, TrainingPlanStatus } from '@prisma/client';
 
 export class TrainingPlanModel {
   @ApiProperty()
@@ -19,6 +19,9 @@ export class TrainingPlanModel {
 
   @ApiProperty()
   autoGenerate: boolean;
+
+  @ApiProperty({ enum: TrainingPlanStatus })
+  status: TrainingPlanStatus;
 
   @ApiProperty()
   createdAt: Date;

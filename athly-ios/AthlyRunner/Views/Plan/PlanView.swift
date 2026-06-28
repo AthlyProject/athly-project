@@ -94,8 +94,14 @@ struct PlanView: View {
         ScrollView {
             VStack(spacing: AthlyTheme.Spacing.sm) {
                 if let plan = planVM.trainingPlanResponse {
-                    // Plan header
-                    planHeaderCard(plan)
+                    // Plan header → tela de detalhe (sumário + viabilidade + análise + excluir)
+                    NavigationLink {
+                        TrainingPlanDetailView()
+                            .environmentObject(planVM)
+                    } label: {
+                        planHeaderCard(plan)
+                    }
+                    .buttonStyle(.plain)
 
                     // AI Weekly Goal cards (current week)
                     if let currentGoal = planVM.currentWeekGoal {
@@ -144,9 +150,15 @@ struct PlanView: View {
 
     private func planHeaderCard(_ plan: TrainingPlanResponse) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(plan.objective)
-                .font(AthlyTheme.Typography.semibold(17))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
+            HStack(alignment: .top) {
+                Text(plan.objective)
+                    .font(AthlyTheme.Typography.semibold(17))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
             HStack {
                 Text("\(planVM.weeks.count) semanas")
                     .font(AthlyTheme.Typography.body(15))

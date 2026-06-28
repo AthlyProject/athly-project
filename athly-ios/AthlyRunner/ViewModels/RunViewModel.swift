@@ -98,6 +98,7 @@ final class RunViewModel: ObservableObject {
         session.elevationGainMeters = result.elevationGainMeters
         session.caloriesBurned = result.caloriesBurned
         session.status = "completed"
+        session.pauseIntervals = result.pauseIntervals
 
         for location in result.locations {
             let point = RoutePoint(location: location)

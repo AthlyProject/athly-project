@@ -145,9 +145,21 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
                 metadata: metadata
             )
         }
-        if !segmentEvents.isEmpty {
+
+        // Pausas explícitas como eventos .pause/.resume — permitem reconstruir, na releitura do
+        // Health, os mesmos splits do app (descontando a pausa) mesmo quando o match local falha.
+        let pauseEvents: [HKWorkoutEvent] = result.pauseIntervals.flatMap { interval -> [HKWorkoutEvent] in
+            guard interval.end > interval.start else { return [] }
+            return [
+                HKWorkoutEvent(type: .pause, dateInterval: DateInterval(start: interval.start, end: interval.start), metadata: nil),
+                HKWorkoutEvent(type: .resume, dateInterval: DateInterval(start: interval.end, end: interval.end), metadata: nil)
+            ]
+        }
+
+        let workoutEvents = segmentEvents + pauseEvents
+        if !workoutEvents.isEmpty {
             try? await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                builder.addWorkoutEvents(segmentEvents) { _, error in
+                builder.addWorkoutEvents(workoutEvents) { _, error in
                     if let error { cont.resume(throwing: error) } else { cont.resume() }
                 }
             }
@@ -311,6 +323,53 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         )
     }
 
+    // MARK: - Pausas
+
+    /// Extrai as janelas de pausa explícita de um HKWorkout, para o cálculo offline de splits
+    /// descontar a pausa igual ao caminho ao vivo (sem isso o gap da pausa virava distância
+    /// fantasma + tempo parado contado como movimento). Primeiro tenta os eventos .pause/.resume
+    /// (também aceita o auto-pause .motionPaused/.motionResumed do Apple Watch); se não houver,
+    /// cai para os gaps entre HKWorkoutActivity (treinos estruturados, iOS 17+). Vazio → sem pausa.
+    static func pauseIntervals(from workout: HKWorkout) -> [SplitCalculator.PauseInterval] {
+        let pauseTypes: Set<HKWorkoutEventType> = [.pause, .motionPaused]
+        let resumeTypes: Set<HKWorkoutEventType> = [.resume, .motionResumed]
+        let events = (workout.workoutEvents ?? [])
+            .filter { pauseTypes.contains($0.type) || resumeTypes.contains($0.type) }
+            .sorted { $0.dateInterval.start < $1.dateInterval.start }
+
+        var intervals: [SplitCalculator.PauseInterval] = []
+        var openPause: Date?
+        for event in events {
+            if pauseTypes.contains(event.type) {
+                if openPause == nil { openPause = event.dateInterval.start }
+            } else if resumeTypes.contains(event.type), let start = openPause {
+                let end = event.dateInterval.start
+                if end > start { intervals.append(.init(start: start, end: end)) }
+                openPause = nil
+            }
+        }
+        // Pausa sem resume → estende até o fim do treino.
+        if let start = openPause, workout.endDate > start {
+            intervals.append(.init(start: start, end: workout.endDate))
+        }
+        if !intervals.isEmpty { return intervals }
+
+        // Fallback: gaps entre as atividades estruturadas (a soma das atividades é o tempo ativo;
+        // os buracos entre elas são pausas).
+        if #available(iOS 17.0, *) {
+            let acts = workout.workoutActivities.sorted { $0.startDate < $1.startDate }
+            guard acts.count >= 2 else { return [] }
+            var gaps: [SplitCalculator.PauseInterval] = []
+            for i in 1..<acts.count {
+                let prevEnd = acts[i - 1].endDate ?? acts[i - 1].startDate
+                let nextStart = acts[i].startDate
+                if nextStart > prevEnd { gaps.append(.init(start: prevEnd, end: nextStart)) }
+            }
+            return gaps
+        }
+        return []
+    }
+
     // MARK: - Detalhe de uma corrida (rota + splits + FC) para o histórico
 
     /// Monta o detalhe de uma corrida (rota, splits por km e FC) a partir do UUID do HKWorkout.
@@ -322,7 +381,9 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
               let workout = await fetchWorkout(uuid: uuid) else { return nil }
 
         let locations = await fetchRouteLocations(for: workout)
-        let splits = locations.count >= 2 ? SplitCalculator.kmSplits(from: locations) : []
+        let splits = locations.count >= 2
+            ? SplitCalculator.kmSplits(from: locations, pauses: Self.pauseIntervals(from: workout))
+            : []
         let coordinates = locations.map {
             RunCoordinate(latitude: $0.coordinate.latitude, longitude: $0.coordinate.longitude)
         }

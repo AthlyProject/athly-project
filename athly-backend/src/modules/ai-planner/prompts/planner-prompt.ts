@@ -2,6 +2,7 @@ import type { AiPlannerInput, PreviousWeekAnalysis } from '../types/planner.type
 import type { FormattedZones } from '../../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './goal-parser-prompt';
 import type { AnalyzedSession } from '../workout-execution-analyzer.service';
+import type { PlannedWeek } from '../periodization';
 
 export type { AiPlannerInput };
 
@@ -164,12 +165,20 @@ function buildGoalSection(goal: ParsedGoal): string {
 }
 
 /**
- * Active only when the goal has distance + time but no programmed eventDate.
- * The AI evaluates feasibility from the data already in the prompt and may
- * mark exactly one day as the goal-attempt session.
+ * Two modes for a quantifiable goal (distance + time):
+ *  - WITH a programmed eventDate → countdown/periodization driven by the
+ *    macrocycle's PlannedWeek (base/build/peak/taper/race). See buildCountdownSection.
+ *  - WITHOUT an eventDate → the AI evaluates whether the athlete can attempt the
+ *    goal THIS week and may mark exactly one day as the goal-attempt session.
  */
-function buildGoalAttemptLogicSection(goal: ParsedGoal | null | undefined): string {
-  if (!goal || goal.eventDate || !goal.targetDistance || !goal.targetTime) return '';
+function buildGoalAttemptLogicSection(
+  goal: ParsedGoal | null | undefined,
+  plannedWeek?: PlannedWeek | null,
+): string {
+  if (!goal || !goal.targetDistance || !goal.targetTime) return '';
+  if (goal.eventDate) {
+    return plannedWeek ? buildCountdownSection(goal, plannedWeek) : '';
+  }
   return `
 <goal_attempt_logic>
 O objetivo do atleta NÃO tem data programada. Avalie se ele tem condicionamento para tentar bater o objetivo NESTA semana usando:
@@ -196,6 +205,52 @@ SE feasibility=false: NÃO marque isGoalAttempt em nenhum dia. Continue periodiz
 
 NUNCA marque mais de UM dia com isGoalAttempt=true por semana.
 </goal_attempt_logic>`;
+}
+
+const PHASE_LABEL: Record<PlannedWeek['phase'], string> = {
+  base: 'BASE (volume aeróbico)',
+  build: 'BUILD (qualidade progressiva)',
+  peak: 'PEAK (qualidade específica no pace alvo)',
+  taper: 'TAPER (afinamento)',
+  race: 'SEMANA DA PROVA',
+};
+
+/**
+ * Active when the goal HAS a programmed eventDate. Driven by the macrocycle's
+ * PlannedWeek for the current week (phase + volume targets + weeks-to-event).
+ * On the race week it instructs the goal attempt; otherwise it periodizes toward
+ * the date without marking any attempt.
+ */
+function buildCountdownSection(goal: ParsedGoal, plannedWeek: PlannedWeek): string {
+  const objetivo = goal.summary;
+  const alvo = [goal.targetDistance, goal.targetTime].filter(Boolean).join(' em ') || objetivo;
+
+  const raceWeekBlock = plannedWeek.isRaceWeek
+    ? `SEMANA DA PROVA (é agora — weeksToEvent=0):
+1. Marque o dia ${goal.eventDate} (ou o dia de treino disponível mais próximo) com "isGoalAttempt": true e título "Tentativa: ${objetivo}".
+2. Estruture o dia da prova: aquecimento (10–15 min) + main = a tentativa no pace alvo (${goal.targetTime ?? 'pace alvo'}) + cooldown (5–10 min).
+3. 1–2 dias ANTES: descanso ou treino muito leve (RPE <= 4). NENHUMA sessão intensa (RPE >= 7) adjacente à prova.
+4. Demais dias: muito leves (taper final). O dia seguinte à prova = descanso ou recuperação leve.
+5. O reasoning do dia da prova deve citar o pace alvo e por que o atleta chega afiado.`
+    : `Esta NÃO é a semana da prova: NÃO marque isGoalAttempt em nenhum dia. Periodize conforme a fase atual, evoluindo o atleta rumo ao pace alvo (${alvo}). O reasoning do dia mais duro deve citar a fase e a distância à meta (ex: "fase BUILD; mainPace recente 5:20/km rumo ao alvo 5:00/km").`;
+
+  return `
+<countdown_logic>
+A meta TEM data programada: ${goal.eventDate}. Faltam ${plannedWeek.weeksToEvent} semana(s) para a prova.
+Fase atual do macrociclo: ${PHASE_LABEL[plannedWeek.phase] ?? plannedWeek.phase}.
+Metas de REFERÊNCIA desta semana (adapte aos dados reais; NÃO ultrapasse +10% de volume vs. a média recente do atleta):
+- Volume-alvo: ~${plannedWeek.targetVolumeKm} km
+- Longão: ~${plannedWeek.longRunKm} km
+- Foco da fase: ${plannedWeek.intensityFocus}
+
+Princípios de periodização rumo à prova (siga a fase atual):
+- BASE: priorize volume fácil e construção aeróbica; no máximo 1 estímulo de qualidade leve.
+- BUILD: introduza limiar (tempo) e intervalos progressivos; volume ainda subindo gradualmente.
+- PEAK: máximo de qualidade específica no pace alvo; volume estabiliza.
+- TAPER: reduza volume mantendo toques curtos no pace alvo; priorize frescor e recuperação.
+
+${raceWeekBlock}
+</countdown_logic>`;
 }
 
 function buildUserProfileSection(profile: UserProfileContext): string {
@@ -331,7 +386,9 @@ const SEGMENT_CONSTRAINTS_PLANNER = `
 - Bloco principal (work ou set) na corrida deve ter pelo menos 20 min OU 2 km no acumulado.
 - Em sessões de intervalo: ENVOLVA as repetições em um nó "set" com repetitions correto e children = [work, recovery]. NÃO descreva o intervalo em texto.
 - Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".
-- Use as zonas de pace personalizadas para preencher target.paceSecPerKmMin/Max (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). NÃO invente paces.`;
+- Preencha target.paceSecPerKmMin/Max a partir das zonas de pace personalizadas (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). As zonas são a referência primária; NÃO invente números fora de uma âncora real (zona OU pace real observado).
+- CALIBRAÇÃO PELO DESEMPENHO REAL: se o "executionAnalysis.mainPace" (bloco principal) ou "meanRepPace" (tiros) em <recentSessionsDetail> for MAIS RÁPIDO do que a zona correspondente sugere, a estimativa de VDOT está subestimando o atleta — prescreva pela capacidade real observada: tempo/limiar ≈ mainPace de tempo runs recentes; intervalos ≈ meanRepPace recente; easy ≈ 60–90s/km mais lento que o pace de limiar observado. NUNCA prescreva um treino de qualidade mais lento do que o atleta já demonstrou correr confortavelmente.
+- EASY/RECUPERAÇÃO: para atletas com fitness intermediário+ demonstrado, prescreva o easy na METADE MAIS RÁPIDA da faixa Easy (perto de easyPaceMin), não no extremo lento. Reserve o extremo lento (easyPaceMax) apenas para dias explicitamente marcados como recuperação/regenerativo. Um easy bem prescrito fica tipicamente ~60–90s/km mais lento que o limiar do atleta — não mais lento que isso.`;
 
 const SEGMENT_CONSTRAINTS_ASSESSMENT = `
 - segments é OBRIGATÓRIO em todo treino — é a fonte da verdade que o tracker do app lê para tocar bipes/vibração/voz nas transições.
@@ -520,6 +577,8 @@ export function buildPlannerPrompt(
   userProfile?: UserProfileContext | null,
   analyzedSessions?: AnalyzedSession[],
   longitudinalWeeks?: LongitudinalWeek[],
+  plannedWeek?: PlannedWeek | null,
+  contextNote?: string | null,
 ): string {
   const {
     runSummaries,
@@ -541,7 +600,7 @@ export function buildPlannerPrompt(
     : '';
 
   const goalSection = goal ? buildGoalSection(goal) : '';
-  const goalAttemptSection = buildGoalAttemptLogicSection(goal);
+  const goalAttemptSection = buildGoalAttemptLogicSection(goal, plannedWeek);
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
   const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
     ? buildRecentSessionsDetailSection(analyzedSessions)
@@ -549,6 +608,7 @@ export function buildPlannerPrompt(
   const longitudinalSection = longitudinalWeeks && longitudinalWeeks.length > 0
     ? buildLongitudinalTrendSection(longitudinalWeeks)
     : '';
+  const laudoNoteSection = contextNote ? `\n<plano_anterior>\n${contextNote}\n</plano_anterior>` : '';
 
   const goalSummary = goal?.summary ?? 'evoluir como corredor';
 
@@ -591,7 +651,7 @@ Estatísticas resumidas (calculadas a partir de ${runSummaries.length} corridas 
 ${effortZones.formatted}
 
 ${detailedSessionsSection}
-
+${laudoNoteSection}
 ${longitudinalSection}
 
 ${previousWeekSection}
@@ -613,7 +673,7 @@ ${SEGMENT_RECIPES}
 - trend deve ser exatamente um de: "improving (volume)" | "improving (intensity)" | "maintaining" | "declining".
 - analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Semana de Base", "Progressão de Volume", "Deload"). Displayed in the calendar UI.
 - analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
-- isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando feasibility for verdadeira segundo <goal_attempt_logic>. Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
+- isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando: (a) <goal_attempt_logic> indicar feasibility verdadeira (meta sem data), OU (b) <countdown_logic> indicar que esta é a SEMANA DA PROVA (meta com data). Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
 - Corridas longas: nó "work" principal com end.by="distanceM" e value de pelo menos a distância prescrita; OU end.by="durationSec" com pelo menos 1800 (30 min).
 - Corridas de recuperação/fácil: nó "work" principal com pelo menos 1200s (20 min) ou >= 4000m.
 ${SEGMENT_CONSTRAINTS_PLANNER}

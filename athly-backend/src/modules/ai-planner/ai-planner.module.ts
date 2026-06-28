@@ -6,9 +6,10 @@ import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.se
 import { EffortZoneModule } from '../effort-zones/effort-zone.module';
 import { AssessmentModule } from '../assessment/assessment.module';
 import { BillingModule } from '../billing/billing.module';
+import { TrainingReportModule } from '../training-report/training-report.module';
 
 @Module({
-  imports: [EffortZoneModule, AssessmentModule, BillingModule],
+  imports: [EffortZoneModule, AssessmentModule, BillingModule, TrainingReportModule],
   controllers: [AiPlannerController],
   providers: [AiPlannerService, GeminiService, WorkoutExecutionAnalyzerService],
   exports: [GeminiService],

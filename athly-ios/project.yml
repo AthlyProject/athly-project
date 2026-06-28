@@ -70,6 +70,8 @@ targets:
           NSAllowsLocalNetworking: true
         NSHealthShareUsageDescription: "O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao."
         NSHealthUpdateUsageDescription: "O Athly salva suas corridas no Apple Health para manter seu historico de atividades atualizado."
+        NSCameraUsageDescription: "O Athly usa a camera para criar fotos com a marca d'agua dos resultados do seu treino."
+        NSPhotoLibraryAddUsageDescription: "O Athly salva na sua galeria as fotos com a marca d'agua do treino."
         UIUserInterfaceStyle: Dark
         UIBackgroundModes:
           - location
@@ -111,3 +113,27 @@ targets:
         NSSupportsLiveActivitiesFrequentUpdates: false
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  AthlyRunnerTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.1"
+    sources:
+      - path: AthlyRunnerTests
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.athly.runner.tests
+    dependencies:
+      - target: AthlyRunner
+
+schemes:
+  AthlyRunner:
+    build:
+      targets:
+        AthlyRunner: all
+        AthlyRunnerTests: [test]
+    test:
+      targets:
+        - AthlyRunnerTests

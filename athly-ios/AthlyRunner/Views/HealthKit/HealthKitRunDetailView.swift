@@ -19,6 +19,8 @@ struct HealthKitRunDetailView: View {
     @State private var reportURL: URL?
     @State private var isLoadingDetail = true
     @State private var resolved = false
+    /// Apresenta a câmera com marca d'água em tela cheia.
+    @State private var showCamera = false
 
     private let healthKitService = HealthKitService()
 
@@ -66,6 +68,17 @@ struct HealthKitRunDetailView: View {
                         .padding(.horizontal, 16)
                     }
 
+                    Button {
+                        showCamera = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "camera.fill")
+                            Text("Foto com marca d'água")
+                        }
+                    }
+                    .buttonStyle(AthlySecondaryButtonStyle())
+                    .padding(.horizontal, 16)
+
                     Spacer(minLength: AthlyTheme.Spacing.lg)
                 }
                 .padding(.top, 24)
@@ -75,6 +88,9 @@ struct HealthKitRunDetailView: View {
         .navigationTitle("Detalhes")
         .navigationBarTitleDisplayMode(.inline)
         .task { await resolveDetail() }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraWatermarkView(data: WatermarkData(from: item, coordinates: coordinates, avgHR: avgHR))
+        }
     }
 
     // MARK: - Resolução da fonte (local > HealthKit)
@@ -85,7 +101,8 @@ struct HealthKitRunDetailView: View {
 
         if let session = bestLocalMatch() {
             let locations = session.routePoints.map { $0.toCLLocation() }
-            let kmSplits = SplitCalculator.kmSplits(from: locations)
+            let pauses = session.pauseIntervals ?? []
+            let kmSplits = SplitCalculator.kmSplits(from: locations, pauses: pauses)
             coordinates = locations.map { $0.coordinate }
             splitRows = kmSplits.map { SplitRow(km: $0.kilometer, pace: $0.paceSecondsPerKm) }
 
@@ -105,7 +122,8 @@ struct HealthKitRunDetailView: View {
                         durationSeconds: $0.durationSeconds,
                         elevationDelta: $0.elevationDelta
                     )
-                }
+                },
+                pauseIntervals: pauses
             )
             reportURL = RunReportGenerator.fileURL(for: result)
         } else if let detail = await healthKitService.fetchRunDetail(workoutUUID: item.id) {

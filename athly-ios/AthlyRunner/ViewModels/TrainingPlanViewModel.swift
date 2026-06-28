@@ -14,8 +14,11 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var selectedWeekIndex: Int = 0
     @Published var isLoading: Bool = false
     @Published var isGenerating: Bool = false
+    @Published var isDeleting: Bool = false
     @Published var errorMessage: String?
     @Published var lastAnalysis: RunAnalysis?
+    /// Meta ativa do usuário (inclui o veredito de viabilidade vs. objetivo) — usada na tela de detalhe do plano.
+    @Published var activeGoal: CreateGoalResponse?
     /// Conquistas: treinos de tentativa de objetivo em que o atleta atingiu a meta (ver `AchievementStore`).
     @Published var achievementCount: Int = AchievementStore.shared.count
 
@@ -146,6 +149,9 @@ final class TrainingPlanViewModel: ObservableObject {
                 lastAnalysis = freshAnalysis
             }
 
+            // Meta ativa (com feasibility) para a tela de detalhe — falha aqui não quebra o load do plano.
+            activeGoal = try? await APIClient.shared.getActiveGoal()
+
             persistToCache()
             await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch APIError.notFound {
@@ -194,6 +200,40 @@ final class TrainingPlanViewModel: ObservableObject {
             updatedAt: Date()
         )
         TrainingPlanCache.shared.save(snapshot)
+    }
+
+    /// Carrega a meta ativa (com feasibility) sob demanda, se ainda não estiver em memória.
+    func loadActiveGoalIfNeeded() async {
+        guard activeGoal == nil else { return }
+        activeGoal = try? await APIClient.shared.getActiveGoal()
+    }
+
+    // MARK: - Delete Plan
+
+    /// Deleta o plano atual. O backend captura um laudo das últimas semanas (continuidade da IA)
+    /// antes do cascade. Limpa o estado local e o cache. Retorna `true` em caso de sucesso.
+    @discardableResult
+    func deleteTrainingPlan() async -> Bool {
+        guard let plan = trainingPlanResponse else { return false }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await APIClient.shared.deleteTrainingPlan(plan.id)
+            trainingPlanResponse = nil
+            weeks = []
+            allWorkouts = []
+            weeklyGoals = []
+            todayWorkout = nil
+            lastAnalysis = nil
+            activeGoal = nil
+            selectedWeekIndex = 0
+            TrainingPlanCache.shared.clear()
+            await NotificationService.shared.reschedule(workouts: [])
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     // MARK: - Generate Next Week

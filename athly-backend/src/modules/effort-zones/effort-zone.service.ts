@@ -116,7 +116,7 @@ export class EffortZoneService {
     let table = `<personalized_zones>\nVDOT estimado: ${zone.vdotScore ?? 'N/A'}\n\n`;
     table += `| Zona | Nome | Pace alvo | Uso típico |\n`;
     table += `|------|------|-----------|------------|\n`;
-    table += `| 1 | Easy/Recuperação | ${f(zone.easyPaceMin)}-${f(zone.easyPaceMax)}/km | Corridas de base, aquecimento, volta à calma |\n`;
+    table += `| 1 | Easy/Recuperação | ${f(zone.easyPaceMin)}-${f(zone.easyPaceMax)}/km | Corridas de base (use a METADE MAIS RÁPIDA, perto de ${f(zone.easyPaceMin)}); extremo lento (${f(zone.easyPaceMax)}) só em dias de recuperação |\n`;
     table += `| 2 | Maratona | ${f(zone.marathonPaceMin)}-${f(zone.marathonPaceMax)}/km | Corridas longas, resistência |\n`;
     table += `| 3 | Limiar (Tempo) | ${f(zone.thresholdPaceMin)}-${f(zone.thresholdPaceMax)}/km | Tempo runs, limiar lático |\n`;
     table += `| 4 | Intervalos (VO2max) | ${f(zone.intervalPaceMin)}-${f(zone.intervalPaceMax)}/km | Intervalos, potência aeróbica máxima |\n`;

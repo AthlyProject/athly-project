@@ -27,6 +27,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>O Athly usa a camera para criar fotos com a marca d'agua dos resultados do seu treino.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -37,6 +39,8 @@
 	<string>Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>O Athly salva na sua galeria as fotos com a marca d'agua do treino.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

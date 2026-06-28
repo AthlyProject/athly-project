@@ -27,6 +27,14 @@ struct KmSplit: Sendable {
 /// - o relógio do km 1 só começa no primeiro movimento real (descarta o tempo parado inicial);
 /// - fronteiras de km exatas por interpolação linear.
 enum SplitCalculator {
+    /// Intervalo de pausa explícita (botão de pausa). Cruzar um intervalo desses não conta nem
+    /// distância (a corda entre fim e retomada é deriva sem sentido) nem tempo — espelha o
+    /// caminho ao vivo, onde os fixes durante a pausa nem chegam a ser gravados.
+    struct PauseInterval: Codable, Sendable, Equatable {
+        let start: Date
+        let end: Date
+    }
+
     /// Velocidade máxima plausível em corrida (m/s ≈ 2:23/km). Acima disso é salto de GPS.
     static let maxPlausibleSpeed: Double = 7.0
     /// Gap (s) entre fixes acima do qual o intervalo é candidato a pausa/blackout de GPS.
@@ -54,8 +62,8 @@ enum SplitCalculator {
     }
 
     /// Quebra os locations em splits de 1 km. Retorna `[]` se não houver dados suficientes.
-    static func kmSplits(from locations: [CLLocation]) -> [KmSplit] {
-        let samples = normalize(locations)
+    static func kmSplits(from locations: [CLLocation], pauses: [PauseInterval] = []) -> [KmSplit] {
+        let samples = normalize(locations, pauses: pauses)
         guard samples.count >= 2 else { return [] }
 
         // Âncora de primeiro movimento: tudo antes de cruzar `startMovementMeters` é descartado.
@@ -104,8 +112,8 @@ enum SplitCalculator {
     /// filtro de salto/pausa dos splits. Usada para dar distância (e portanto pace) real aos
     /// laps de treino — ratear a distância total pelo tempo dava a todo lap o pace médio da
     /// sessão. Retorna nil sem amostras suficientes.
-    static func distances(forRanges ranges: [(start: Date, end: Date)], from locations: [CLLocation]) -> [Double]? {
-        let samples = normalize(locations)
+    static func distances(forRanges ranges: [(start: Date, end: Date)], from locations: [CLLocation], pauses: [PauseInterval] = []) -> [Double]? {
+        let samples = normalize(locations, pauses: pauses)
         guard samples.count >= 2 else { return nil }
         return ranges.map { range in
             max(0, distance(at: range.end, samples) - distance(at: range.start, samples))
@@ -134,7 +142,7 @@ enum SplitCalculator {
 
     /// Constrói a linha do tempo normalizada a partir dos fixes crus, aplicando o mesmo filtro
     /// de salto do tracker ao vivo e descontando o tempo de pausas/buracos.
-    private static func normalize(_ locations: [CLLocation]) -> [Sample] {
+    private static func normalize(_ locations: [CLLocation], pauses: [PauseInterval]) -> [Sample] {
         let sorted = locations.sorted { $0.timestamp < $1.timestamp }
         guard let first = sorted.first else { return [] }
 
@@ -156,16 +164,25 @@ enum SplitCalculator {
             let impliedSpeed = delta / dt
             if impliedSpeed > maxPlausibleSpeed { continue }
 
+            // O passo cruza uma pausa explícita? Então é tempo/posição "morta" entre o fim de um
+            // trecho e a retomada: nem distância (a corda é deriva do GPS parado), nem tempo. Sem
+            // isto o gap de uma pausa — cuja corda dá velocidade implícita ≥ 0.5 m/s — era lido
+            // como blackout de GPS em movimento, creditando distância fantasma e contando o tempo
+            // parado como movimento (splits não fechavam com o total). Espelha o caminho ao vivo,
+            // onde os fixes durante a pausa nem são gravados.
+            let crossesPause = pauses.contains { $0.start < loc.timestamp && $0.end > lastGood.timestamp }
+
             // Gap grande + pouco movimento → parado/pausa: não conta o tempo. Gap grande com
             // movimento real (blackout de GPS enquanto corria) → conta o tempo todo.
-            let timeStep = (dt > gapCapSeconds && impliedSpeed < stationarySpeed) ? 0 : dt
+            let timeStep = crossesPause ? 0 : ((dt > gapCapSeconds && impliedSpeed < stationarySpeed) ? 0 : dt)
 
             // Gap com movimento: a corda entre o último ponto bom e este perde as curvas
             // do trajeto — contar tempo cheio com distância encurtada fazia o km do buraco
             // sair mais lento que o corrido. Credita a distância estimada pela velocidade
             // dos últimos 30s antes do gap (a corda permanece como piso; teto plausível).
-            var distStep = delta
-            if dt > gapCapSeconds,
+            var distStep = crossesPause ? 0 : delta
+            if !crossesPause,
+               dt > gapCapSeconds,
                dt <= maxBridgeGapSeconds,
                impliedSpeed >= stationarySpeed,
                let speedBefore = recentSpeed(samples) {

@@ -89,6 +89,12 @@ actor APIClient {
         try await get("/weekly-goals/training-plan/\(trainingPlanId)")
     }
 
+    /// Deleta o plano (cascade no backend). Antes de apagar, o backend captura um laudo das
+    /// últimas semanas para brifar a IA na criação do próximo plano.
+    func deleteTrainingPlan(_ id: String) async throws {
+        let _: EmptyResponse = try await delete("/training-plans/\(id)")
+    }
+
     /// Backend pode retornar 200 com body `null` ou corpo vazio quando não há treino hoje.
     func getTodayWorkout() async throws -> WorkoutModel? {
         let request = try buildRequest(path: "/workouts/today", method: "GET", authenticated: true)

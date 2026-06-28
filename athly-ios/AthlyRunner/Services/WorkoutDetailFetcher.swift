@@ -206,7 +206,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             if end > start { ranges.append((start, end)) }
         }
         guard !ranges.isEmpty,
-              let rangedDistances = SplitCalculator.distances(forRanges: ranges, from: locations) else {
+              let rangedDistances = SplitCalculator.distances(forRanges: ranges, from: locations, pauses: HealthKitService.pauseIntervals(from: workout)) else {
             return nil
         }
 
@@ -279,7 +279,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
 
         // Mesmo algoritmo dos splits da tela: filtro de salto por velocidade, exclusão de
         // pausa/buraco e fronteiras exatas — para o pace do analisador bater com o do app.
-        let splits = SplitCalculator.kmSplits(from: locations)
+        let splits = SplitCalculator.kmSplits(from: locations, pauses: HealthKitService.pauseIntervals(from: workout))
         guard !splits.isEmpty else { return nil }
 
         return splits.map { split in

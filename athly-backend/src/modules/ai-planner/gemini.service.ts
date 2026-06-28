@@ -11,6 +11,7 @@ import {
 } from './prompts/planner-prompt';
 import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
 import type { AnalyzedSession } from './workout-execution-analyzer.service';
+import type { PlannedWeek } from './periodization';
 import { validateSegmentTree } from '../workouts/utils/validate-segments';
 
 export interface PlannerExecution {
@@ -46,6 +47,8 @@ export class GeminiService {
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
     longitudinalWeeks?: LongitudinalWeek[],
+    plannedWeek?: PlannedWeek | null,
+    contextNote?: string | null,
   ): Promise<PlannerExecution> {
     const model = this.getModel();
     const prompt = buildPlannerPrompt(
@@ -56,6 +59,8 @@ export class GeminiService {
       userProfile,
       analyzedSessions,
       longitudinalWeeks,
+      plannedWeek,
+      contextNote,
     );
 
     let rawResponse: string;

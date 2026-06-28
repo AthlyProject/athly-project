@@ -247,6 +247,8 @@ struct TrainingPlanResponse: Codable, Identifiable, Sendable {
     let targetDate: String?
     let sports: [SportType]
     let autoGenerate: Bool
+    /// Optional para tolerar caches/respostas antigas sem o campo. Valores: ACTIVE | DRAFT | COMPLETED | CANCELLED | LOCKED.
+    let status: String?
     let createdAt: String
     let updatedAt: String
 }
@@ -428,8 +430,28 @@ struct CreateGoalResponse: Decodable, Sendable {
     let id: String
     let rawText: String
     let parsedGoal: ParsedGoal
+    let feasibility: GoalFeasibility?
     let active: Bool
     let createdAt: String
+}
+
+/// Veredito determinístico (VDOT) de viabilidade da meta vs. objetivo do plano.
+struct GoalFeasibility: Codable, Sendable {
+    let verdict: String          // ready | feasible | ambitious | unrealistic
+    let currentVdot: Double
+    let requiredVdot: Double
+    let projectedVdot: Double
+    let targetDistanceMeters: Double
+    let targetTimeSec: Double
+    let currentProjectedTimeSec: Double
+    let weeksAvailable: Double
+    let lowConfidence: Bool
+    let suggestion: Suggestion?
+
+    struct Suggestion: Codable, Sendable {
+        let realisticTimeSec: Double?
+        let suggestedDate: String?
+    }
 }
 
 // MARK: - Update Profile

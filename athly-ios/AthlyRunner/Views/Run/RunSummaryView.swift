@@ -7,6 +7,8 @@ struct RunSummaryView: View {
 
     /// URL do .txt gerado pelo botão "I.A Report" (relatório para auditoria de pace/splits).
     @State private var reportURL: URL?
+    /// Apresenta a câmera com marca d'água em tela cheia.
+    @State private var showCamera = false
 
     var body: some View {
         ZStack {
@@ -90,6 +92,18 @@ struct RunSummaryView: View {
                             .buttonStyle(AthlySecondaryButtonStyle())
                         }
 
+                        if viewModel.lastRunResult != nil {
+                            Button {
+                                showCamera = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "camera.fill")
+                                    Text("Foto com marca d'água")
+                                }
+                            }
+                            .buttonStyle(AthlySecondaryButtonStyle())
+                        }
+
                         Button {
                             viewModel.dismissSummary()
                         } label: {
@@ -114,6 +128,11 @@ struct RunSummaryView: View {
         .onAppear {
             if let result = viewModel.lastRunResult {
                 reportURL = RunReportGenerator.fileURL(for: result)
+            }
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            if let result = viewModel.lastRunResult {
+                CameraWatermarkView(data: WatermarkData(from: result))
             }
         }
         .sheet(isPresented: $viewModel.showWorkoutFeedback) {

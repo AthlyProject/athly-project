@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { UserModel } from './models/user.model';
 
 @Injectable()
@@ -41,7 +41,7 @@ export class UsersService {
     data: Partial<UserModel>,
     password?: string,
   ): Promise<UserModel> {
-    const updateData: Partial<User> = {};
+    const updateData: Prisma.UserUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email;

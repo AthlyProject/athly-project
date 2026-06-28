@@ -79,6 +79,9 @@ model User {
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")
   subscriptionProductId String?   @map("subscription_product_id")
   revenueCatUserId      String?   @map("revenue_cat_user_id")
+  // Laudo das últimas semanas do plano deletado — brifa a IA na criação do próximo plano (consume-once).
+  lastTrainingReport    Json?     @map("last_training_report")
+  lastTrainingReportAt  DateTime? @map("last_training_report_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
@@ -275,13 +278,14 @@ model UserEffortZone {
 }
 
 model UserGoal {
-  id         String   @id @default(uuid())
-  userId     String   @map("user_id")
-  rawText    String   @map("raw_text")
-  parsedGoal Json     @map("parsed_goal")
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  rawText     String   @map("raw_text")
+  parsedGoal  Json     @map("parsed_goal")
+  feasibility Json?    @map("feasibility")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   trainingPlans TrainingPlan[]
