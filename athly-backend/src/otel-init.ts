@@ -5,6 +5,8 @@ import {
 } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 
@@ -16,8 +18,17 @@ diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 const grpcEndpoint =
   process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4317';
 
+// sdk-node bundles its own sdk-metrics, so PeriodicExportingMetricReader imported from
+// the top-level sdk-metrics triggers a TS "private property mismatch" — safe to cast.
 const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter({ url: grpcEndpoint }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metricReader: new PeriodicExportingMetricReader({
+    exporter: new OTLPMetricExporter({
+      url: `${grpcEndpoint.replace(':4317', ':4318')}/v1/metrics`,
+    }),
+    exportIntervalMillis: 15_000,
+  }) as any,
   logRecordProcessors: [
     new BatchLogRecordProcessor(new OTLPLogExporter({ url: grpcEndpoint })),
   ],
