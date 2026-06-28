@@ -9,6 +9,8 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
+import { Resource } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
@@ -27,6 +29,9 @@ if (rawHeaders.trimStart().startsWith('{')) {
 }
 
 const sdk = new NodeSDK({
+  resource: new Resource({
+    [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'athly-backend',
+  }),
   traceExporter: new OTLPTraceExporter({ url: `${base}/v1/traces`, headers }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metricReader: new PeriodicExportingMetricReader({
