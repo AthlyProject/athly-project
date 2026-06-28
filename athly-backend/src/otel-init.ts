@@ -3,10 +3,8 @@ import {
   getNodeAutoInstrumentations,
   getResourceDetectors,
 } from '@opentelemetry/auto-instrumentations-node';
-import { OTLPTraceExporter as OTLPTraceExporterGrpc } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPTraceExporter as OTLPTraceExporterProto } from '@opentelemetry/exporter-trace-otlp-proto';
-import { OTLPLogExporter as OTLPLogExporterGrpc } from '@opentelemetry/exporter-logs-otlp-grpc';
-import { OTLPLogExporter as OTLPLogExporterProto } from '@opentelemetry/exporter-logs-otlp-proto';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
@@ -14,45 +12,35 @@ import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentele
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
-const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4317';
-const protocol = process.env.OTEL_EXPORTER_OTLP_PROTOCOL ?? 'grpc';
-const headers = process.env.OTEL_EXPORTER_OTLP_HEADERS ?? 'undefined';
+const base = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4318';
 
-const isGrpc = protocol === 'grpc';
+// Supports OTel spec ("Authorization=Basic xxx") and JSON (AWS Secrets Manager default).
+const rawHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS ?? '';
+const headers: Record<string, string> = {};
+if (rawHeaders.trimStart().startsWith('{')) {
+  try { Object.assign(headers, JSON.parse(rawHeaders)); } catch { /* invalid JSON */ }
+} else {
+  for (const pair of rawHeaders.split(',')) {
+    const eq = pair.indexOf('=');
+    if (eq > 0) headers[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+}
 
-// gRPC local → derive the HTTP port for metrics (metrics exporter is always HTTP/proto).
-const httpBase = isGrpc ? endpoint.replace(':4317', ':4318') : endpoint;
-
-const traceExporter = isGrpc
-  ? new OTLPTraceExporterGrpc({ url: endpoint })
-  : new OTLPTraceExporterProto({ url: `${endpoint}/v1/traces`, headers });
-
-const logExporter = isGrpc
-  ? new OTLPLogExporterGrpc({ url: endpoint })
-  : new OTLPLogExporterProto({ url: `${endpoint}/v1/logs`, headers });
-
-const metricExporter = new OTLPMetricExporter({
-  url: `${httpBase}/v1/metrics`,
-  ...(isGrpc ? {} : { headers }),
-});
-
-// sdk-node bundles its own sdk-metrics so PeriodicExportingMetricReader types diverge — safe cast.
 const sdk = new NodeSDK({
-  traceExporter,
+  traceExporter: new OTLPTraceExporter({ url: `${base}/v1/traces`, headers }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metricReader: new PeriodicExportingMetricReader({
-    exporter: metricExporter,
+    exporter: new OTLPMetricExporter({ url: `${base}/v1/metrics`, headers }),
     exportIntervalMillis: 15_000,
   }) as any,
-  logRecordProcessors: [new BatchLogRecordProcessor(logExporter)],
+  logRecordProcessors: [
+    new BatchLogRecordProcessor(new OTLPLogExporter({ url: `${base}/v1/logs`, headers })),
+  ],
   resourceDetectors: getResourceDetectors(),
   instrumentations: [
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-fs': { enabled: false },
       '@opentelemetry/instrumentation-http': {
-        // responseHook fires at request start (statusCode still default 200).
-        // applyCustomAttributesOnSpan fires inside _onServerResponseFinish, after
-        // the final status code is written.
         applyCustomAttributesOnSpan(span, _request, response) {
           const status = (response as { statusCode?: number }).statusCode;
           if (typeof status === 'number' && status >= 400) {
@@ -66,7 +54,7 @@ const sdk = new NodeSDK({
 
 try {
   sdk.start();
-  diag.info(`[OTel] SDK started — ${endpoint} (${protocol}) ${headers}`);
+  diag.info(`[OTel] SDK started — ${base} headers=[${Object.keys(headers).join(', ') || 'none'}]`);
 } catch (err) {
   diag.error('[OTel] SDK failed to start', err as Error);
 }

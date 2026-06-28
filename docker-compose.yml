@@ -26,9 +26,6 @@ services:
       - ./athly-backend/.env
     environment:
       - NODE_OPTIONS=--require ./dist/src/otel-init.js
-      - OTEL_LOGS_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=otlp
-      - OTEL_TRACES_EXPORTER=otlp
     depends_on:
       - db
       - otel-collector
