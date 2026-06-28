@@ -176,8 +176,17 @@ export class AiPlannerService {
       }
     }
 
-    const plannerResult = isAssessment
-      ? await this.geminiService.generateAssessmentPlan(
+    // Reserva o slot da semana ANTES da chamada lenta do Gemini. Com a unique constraint
+    // (trainingPlanId, weekStartDate), um duplo-submit concorrente recebe ConflictException
+    // em vez de criar uma segunda semana sobreposta.
+    const reservedWeeklyGoal = await this.reserveWeeklyGoal(
+      trainingPlan.id,
+      weekStartDate,
+      weekEndDate,
+    );
+
+    const plannerResult = await (isAssessment
+      ? this.geminiService.generateAssessmentPlan(
           weekDates,
           trainingDays,
           availableDays,
@@ -186,7 +195,7 @@ export class AiPlannerService {
           userProfile,
           analyzedSessions,
         )
-      : await this.geminiService.generatePlan(
+      : this.geminiService.generatePlan(
           aiInput,
           effortZones,
           promptPreviousWeek,
@@ -196,14 +205,19 @@ export class AiPlannerService {
           promptLongitudinal,
           plannedWeek,
           laudoContextNote,
-        );
+        )
+    ).catch(async (err) => {
+      // Gemini falhou ou reprovou no gate de estrutura → libera o slot reservado.
+      await this.releaseReservation(reservedWeeklyGoal.id);
+      throw err;
+    });
 
-    const { weeklyGoal, workouts } = await this.prisma.$transaction(async (tx) => {
-      const weeklyGoal = await tx.weeklyGoal.create({
+    const { weeklyGoal, workouts } = await this.prisma
+      .$transaction(async (tx) => {
+      // Atualiza o placeholder reservado (não cria nova weekly_goal) — a reserva já garantiu unicidade.
+      const weeklyGoal = await tx.weeklyGoal.update({
+        where: { id: reservedWeeklyGoal.id },
         data: {
-          trainingPlanId: trainingPlan.id,
-          weekStartDate,
-          weekEndDate,
           status: WeeklyGoalStatus.GENERATED,
           metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
           previousWeekAnalysis: previousWeekAnalysis
@@ -275,7 +289,12 @@ export class AiPlannerService {
       });
 
       return { weeklyGoal, workouts };
-    });
+      })
+      .catch(async (err) => {
+        // Falha ao persistir após reservar → libera o slot para nova tentativa.
+        await this.releaseReservation(reservedWeeklyGoal.id);
+        throw err;
+      });
 
     // Laudo consumido com sucesso (consume-once) — limpa para não brifar planos futuros com dados velhos.
     if (laudoConsumed) {
@@ -596,22 +615,60 @@ export class AiPlannerService {
         weekStartDate: { lte: weekEndDate },
         weekEndDate: { gte: weekStartDate },
       },
+      include: { _count: { select: { workouts: true } } },
     });
 
     if (!existing) return;
 
+    const hasWorkouts = existing._count.workouts > 0;
+
+    // LOCKED, ou GENERATED já com workouts → semana real do usuário: recusa sobrescrever.
     if (
-      existing.status === WeeklyGoalStatus.GENERATED ||
-      existing.status === WeeklyGoalStatus.LOCKED
+      existing.status === WeeklyGoalStatus.LOCKED ||
+      (existing.status === WeeklyGoalStatus.GENERATED && hasWorkouts)
     ) {
       throw new ConflictException(
         'A plan for this week already exists. Delete the existing weekly goal and its workouts before regenerating.',
       );
     }
 
-    // PLANNED status → delete and overwrite
+    // PLANNED (esqueleto) OU reserva órfã (GENERATED sem workouts, de um processo que
+    // morreu antes do commit) → deleta e sobrescreve.
     await this.prisma.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
     await this.prisma.weeklyGoal.delete({ where: { id: existing.id } });
+  }
+
+  /**
+   * Cria o placeholder da semana ANTES da geração (reserva atômica). A unique constraint
+   * (trainingPlanId, weekStartDate) garante que apenas uma geração concorrente vença; as
+   * demais recebem ConflictException em vez de criar uma semana duplicada/sobreposta.
+   */
+  private async reserveWeeklyGoal(trainingPlanId: string, weekStartDate: Date, weekEndDate: Date) {
+    try {
+      return await this.prisma.weeklyGoal.create({
+        data: {
+          trainingPlanId,
+          weekStartDate,
+          weekEndDate,
+          status: WeeklyGoalStatus.GENERATED,
+          metrics: {} as unknown as Prisma.InputJsonValue,
+        },
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException(
+          'Uma geração para esta semana já está em andamento ou já existe.',
+        );
+      }
+      throw err;
+    }
+  }
+
+  /** Libera (deleta) um placeholder reservado quando a geração/persistência falha. */
+  private async releaseReservation(weeklyGoalId: string) {
+    await this.prisma.weeklyGoal
+      .delete({ where: { id: weeklyGoalId } })
+      .catch(() => undefined);
   }
 
   /**
@@ -676,15 +733,22 @@ export class AiPlannerService {
         select: { id: true },
       });
       if (exists) continue;
-      await this.prisma.weeklyGoal.create({
-        data: {
-          trainingPlanId,
-          weekStartDate: start,
-          weekEndDate: end,
-          status: WeeklyGoalStatus.PLANNED,
-          metrics: w as unknown as Prisma.InputJsonValue,
-        },
-      });
+      try {
+        await this.prisma.weeklyGoal.create({
+          data: {
+            trainingPlanId,
+            weekStartDate: start,
+            weekEndDate: end,
+            status: WeeklyGoalStatus.PLANNED,
+            metrics: w as unknown as Prisma.InputJsonValue,
+          },
+        });
+      } catch (err) {
+        // Corrida na montagem do esqueleto: outra geração já criou esta semana. Idempotente.
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) {
+          throw err;
+        }
+      }
     }
   }
 

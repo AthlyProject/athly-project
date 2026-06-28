@@ -88,3 +88,28 @@ export const validateSegmentTree = (segments: unknown): ValidationResult => {
   }
   return { ok: true };
 };
+
+/**
+ * Structural quality gate for a RUN day (sportType !== 'other'). Beyond being a
+ * valid tree, a real running session must have a warmup, a main effort
+ * (work or set), and a cooldown — otherwise it collapses to a single legacy
+ * "main" block (the degenerate output we want to reject and regenerate).
+ *
+ * Returns ok:false with a human-readable reason naming what is missing.
+ */
+export const isStructurallyCompleteRun = (segments: unknown): ValidationResult => {
+  const tree = validateSegmentTree(segments);
+  if (!tree.ok) return tree;
+
+  const top = segments as Segment[];
+  const has = (kind: SegmentKind) => top.some((s) => s.kind === kind);
+  const missing: string[] = [];
+  if (!has('warmup')) missing.push('warmup');
+  if (!has('work') && !has('set')) missing.push('main (work/set)');
+  if (!has('cooldown')) missing.push('cooldown');
+
+  if (missing.length > 0) {
+    return { ok: false, reason: `run is missing required segment(s): ${missing.join(', ')}` };
+  }
+  return { ok: true };
+};

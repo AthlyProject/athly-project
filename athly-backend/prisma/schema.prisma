@@ -234,6 +234,8 @@ model WeeklyGoal {
   aiReasonings AiReasoning[]
   promptLog    AiPlannerPromptLog?
 
+  // Uma única semana por (plano, data de início): bloqueia geração duplicada/sobreposta.
+  @@unique([trainingPlanId, weekStartDate])
   @@map("weekly_goals")
 }
 

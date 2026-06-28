@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AiPlannerService } from './ai-planner.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { SegmentLabel, DetailedSessionDto } from './dto/plan-from-health.dto';
@@ -136,5 +138,39 @@ describe('AiPlannerService.plannedWeekFromMetrics — leitura do contexto do mac
   it('retorna null para metrics ausente ou de outro formato (ex.: RunAnalysis de uma semana GERADA)', () => {
     expect(fromMetrics(null)).toBeNull();
     expect(fromMetrics({ title: 'Semana de Base', totalDistanceKm: 30 })).toBeNull(); // sem phase
+  });
+});
+
+describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana duplicada', () => {
+  const buildWith = (createImpl: () => Promise<unknown>) =>
+    new AiPlannerService(
+      { weeklyGoal: { create: createImpl } } as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
+  const reserve = (svc: AiPlannerService) =>
+    (svc as any).reserveWeeklyGoal('tp-1', new Date('2026-06-29'), new Date('2026-07-05'));
+
+  it('mapeia violação de unicidade (P2002) para ConflictException', async () => {
+    const p2002 = new Prisma.PrismaClientKnownRequestError('dup', {
+      code: 'P2002',
+      clientVersion: 'test',
+    });
+    const svc = buildWith(() => Promise.reject(p2002));
+    await expect(reserve(svc)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('repassa erros que não são de unicidade', async () => {
+    const svc = buildWith(() => Promise.reject(new Error('db down')));
+    await expect(reserve(svc)).rejects.toThrow('db down');
+  });
+
+  it('retorna o placeholder criado no caminho feliz', async () => {
+    const row = { id: 'wg-1' };
+    const svc = buildWith(() => Promise.resolve(row));
+    await expect(reserve(svc)).resolves.toBe(row);
   });
 });
