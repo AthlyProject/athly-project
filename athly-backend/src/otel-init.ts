@@ -3,8 +3,10 @@ import {
   getNodeAutoInstrumentations,
   getResourceDetectors,
 } from '@opentelemetry/auto-instrumentations-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { OTLPTraceExporter as OTLPTraceExporterGrpc } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPTraceExporter as OTLPTraceExporterProto } from '@opentelemetry/exporter-trace-otlp-proto';
+import { OTLPLogExporter as OTLPLogExporterGrpc } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { OTLPLogExporter as OTLPLogExporterProto } from '@opentelemetry/exporter-logs-otlp-proto';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
@@ -12,34 +14,51 @@ import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentele
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
-// Explicit exporter construction bypasses BasicTracerProvider._buildExporterFromEnv(),
-// which silently falls back to NoopSpanProcessor when the 'otlp' factory is not
-// registered in its static _registeredExporters map.
-const grpcEndpoint =
-  process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4317';
+const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4317';
+const protocol = process.env.OTEL_EXPORTER_OTLP_PROTOCOL ?? 'grpc';
 
-// sdk-node bundles its own sdk-metrics, so PeriodicExportingMetricReader imported from
-// the top-level sdk-metrics triggers a TS "private property mismatch" — safe to cast.
+// Parse "key=value,key2=value2" — splits only on the first '=' so base64 values survive.
+const headers: Record<string, string> = {};
+for (const pair of (process.env.OTEL_EXPORTER_OTLP_HEADERS ?? '').split(',')) {
+  const eq = pair.indexOf('=');
+  if (eq > 0) headers[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+}
+
+const isGrpc = protocol === 'grpc';
+
+// gRPC local → derive the HTTP port for metrics (metrics exporter is always HTTP/proto).
+const httpBase = isGrpc ? endpoint.replace(':4317', ':4318') : endpoint;
+
+const traceExporter = isGrpc
+  ? new OTLPTraceExporterGrpc({ url: endpoint })
+  : new OTLPTraceExporterProto({ url: `${endpoint}/v1/traces`, headers });
+
+const logExporter = isGrpc
+  ? new OTLPLogExporterGrpc({ url: endpoint })
+  : new OTLPLogExporterProto({ url: `${endpoint}/v1/logs`, headers });
+
+const metricExporter = new OTLPMetricExporter({
+  url: `${httpBase}/v1/metrics`,
+  ...(isGrpc ? {} : { headers }),
+});
+
+// sdk-node bundles its own sdk-metrics so PeriodicExportingMetricReader types diverge — safe cast.
 const sdk = new NodeSDK({
-  traceExporter: new OTLPTraceExporter({ url: grpcEndpoint }),
+  traceExporter,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metricReader: new PeriodicExportingMetricReader({
-    exporter: new OTLPMetricExporter({
-      url: `${grpcEndpoint.replace(':4317', ':4318')}/v1/metrics`,
-    }),
+    exporter: metricExporter,
     exportIntervalMillis: 15_000,
   }) as any,
-  logRecordProcessors: [
-    new BatchLogRecordProcessor(new OTLPLogExporter({ url: grpcEndpoint })),
-  ],
+  logRecordProcessors: [new BatchLogRecordProcessor(logExporter)],
   resourceDetectors: getResourceDetectors(),
   instrumentations: [
     getNodeAutoInstrumentations({
       '@opentelemetry/instrumentation-fs': { enabled: false },
       '@opentelemetry/instrumentation-http': {
-        // responseHook fires at request start (statusCode still 200); use
-        // applyCustomAttributesOnSpan which fires inside _onServerResponseFinish
-        // after the final status code is set.
+        // responseHook fires at request start (statusCode still default 200).
+        // applyCustomAttributesOnSpan fires inside _onServerResponseFinish, after
+        // the final status code is written.
         applyCustomAttributesOnSpan(span, _request, response) {
           const status = (response as { statusCode?: number }).statusCode;
           if (typeof status === 'number' && status >= 400) {
@@ -53,7 +72,7 @@ const sdk = new NodeSDK({
 
 try {
   sdk.start();
-  diag.info(`[OTel] SDK started — exporting to ${grpcEndpoint}`);
+  diag.info(`[OTel] SDK started — ${endpoint} (${protocol}) ${headers}`);
 } catch (err) {
   diag.error('[OTel] SDK failed to start', err as Error);
 }
