@@ -79,5 +79,4 @@ export interface PreviousWeekAnalysis {
   avgFatigue: number | null;
   skippedWorkouts: string[];
   volumeChange: string;
-  adherenceNote: string;
 }

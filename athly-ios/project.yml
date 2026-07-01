@@ -79,6 +79,7 @@ targets:
         NSPhotoLibraryAddUsageDescription: "O Athly salva na sua galeria as fotos com a marca d'agua do treino."
         UIUserInterfaceStyle: Dark
         UIBackgroundModes:
+          - audio
           - location
         UIAppFonts:
           - SpaceGrotesk-Regular.ttf
@@ -103,7 +104,7 @@ targets:
       - package: opentelemetry-swift
         product: OpenTelemetrySdk
       - package: opentelemetry-swift
-        product: OpenTelemetryProtocolExporterHttp
+        product: OpenTelemetryProtocolExporterHTTP
       - package: opentelemetry-swift
         product: URLSessionInstrumentation
       - package: opentelemetry-swift

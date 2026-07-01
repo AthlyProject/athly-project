@@ -11,6 +11,7 @@ final class RunViewModel: ObservableObject {
     @Published var isSaved = false
     @Published var saveError: String?
     @Published var showWorkoutFeedback = false
+    @Published var targetAlert: RunTargetAlert?
 
     /// Workout agendado que originou esta corrida (definido quando o usuario
     /// clica "Iniciar treino agora" na dashboard). Após salvar, dispara a sheet de feedback.
@@ -54,7 +55,9 @@ final class RunViewModel: ObservableObject {
             return
         }
         tracker.userWeightKg = UserMetrics.weightKg ?? 70
+        tracker.configureTargetAlert(targetAlert)
         tracker.start()
+        targetAlert = nil
     }
 
     func pauseRun() {
@@ -69,6 +72,7 @@ final class RunViewModel: ObservableObject {
         let result = tracker.stop()
         lastRunResult = result
         showSummary = true
+        targetAlert = nil
     }
 
     func discardRun() {
@@ -80,6 +84,7 @@ final class RunViewModel: ObservableObject {
         pendingWorkout = nil
         lastSavedHealthKitUUID = nil
         showWorkoutFeedback = false
+        targetAlert = nil
     }
 
     func saveRun(runStore: RunStore) async {
@@ -149,5 +154,6 @@ final class RunViewModel: ObservableObject {
         lastRunResult = nil
         isSaved = false
         saveError = nil
+        targetAlert = nil
     }
 }

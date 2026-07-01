@@ -6,10 +6,10 @@
 import Foundation
 
 // Thin observability wrapper over opentelemetry-swift.
-// Keeps business logic decoupled from the SDK — swap the provider without touching call sites.
+// Keeps business logic decoupled from the SDK; swap the provider without touching call sites.
 enum OTelClient {
     nonisolated(unsafe) private static var urlSessionInstrumentation: URLSessionInstrumentation?
-    nonisolated(unsafe) static let sessionId = UUID().uuidString
+    static let sessionId = UUID().uuidString
 
     // Call once at app launch, before any network activity.
     static func start() {
@@ -54,7 +54,7 @@ enum OTelClient {
     // Associates the current user with subsequent spans (call after login).
     static func setUser(id: String) {
         let span = tracer.spanBuilder(spanName: "user.set").startSpan()
-        span.setAttribute("user.id", value: id)
+        span.setAttribute(key: "user.id", value: id)
         span.end()
     }
 
@@ -66,22 +66,28 @@ enum OTelClient {
     @discardableResult
     static func startSpan(_ name: String, attributes: [String: String] = [:]) -> any Span {
         let span = tracer.spanBuilder(spanName: name).startSpan()
-        for (k, v) in attributes { span.setAttribute(k, value: v) }
+        for (key, value) in attributes {
+            span.setAttribute(key: key, value: value)
+        }
         return span
     }
 
     // Fire-and-forget event (span that immediately ends).
     static func addEvent(_ name: String, attributes: [String: String] = [:]) {
         let span = tracer.spanBuilder(spanName: name).startSpan()
-        for (k, v) in attributes { span.setAttribute(k, value: v) }
+        for (key, value) in attributes {
+            span.setAttribute(key: key, value: value)
+        }
         span.end()
     }
 
     // Records a non-fatal error as a span with error status.
     static func recordError(_ error: Error, context: [String: String] = [:]) {
         let span = tracer.spanBuilder(spanName: "exception").startSpan()
-        span.setAttribute("exception.message", value: error.localizedDescription)
-        for (k, v) in context { span.setAttribute(k, value: v) }
+        span.setAttribute(key: "exception.message", value: error.localizedDescription)
+        for (key, value) in context {
+            span.setAttribute(key: key, value: value)
+        }
         span.status = .error(description: error.localizedDescription)
         span.end()
     }

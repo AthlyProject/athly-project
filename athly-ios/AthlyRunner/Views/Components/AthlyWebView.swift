@@ -83,12 +83,17 @@ private struct WebViewRepresentable: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
+        webView.scrollView.contentInset.bottom = AthlyTheme.Layout.tabBarContentBottomClearance
+        webView.scrollView.scrollIndicatorInsets.bottom = AthlyTheme.Layout.tabBarContentBottomClearance
         context.coordinator.loadedToken = reloadToken
         webView.load(URLRequest(url: url))
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        webView.scrollView.contentInset.bottom = AthlyTheme.Layout.tabBarContentBottomClearance
+        webView.scrollView.scrollIndicatorInsets.bottom = AthlyTheme.Layout.tabBarContentBottomClearance
+
         // Reload only when the retry button bumps the token.
         guard context.coordinator.loadedToken != reloadToken else { return }
         context.coordinator.loadedToken = reloadToken

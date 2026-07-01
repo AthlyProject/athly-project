@@ -1,4 +1,5 @@
 import SwiftUI
+import RevenueCat
 import RevenueCatUI
 
 struct PlanView: View {
@@ -103,19 +104,15 @@ struct PlanView: View {
                     }
                     .buttonStyle(.plain)
 
-                    // AI Weekly Goal cards (current week)
-                    if let currentGoal = planVM.currentWeekGoal {
-                        WeeklyGoalInsightCard(goal: currentGoal)
-                            .padding(.horizontal, AthlyTheme.Spacing.sm)
-                        PreviousWeekFeedbackCard(goal: currentGoal)
-                            .padding(.horizontal, AthlyTheme.Spacing.sm)
-                    }
-
                     if let analysis = planVM.lastAnalysis {
                         Button {
                             showAnalysisDetails = true
                         } label: {
-                            AnalysisSummaryCard(analysis: analysis, isInteractive: true)
+                            AnalysisSummaryCard(
+                                analysis: analysis,
+                                previousWeekAnalysis: planVM.currentWeekGoal?.previousWeekAnalysis,
+                                isInteractive: true
+                            )
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, AthlyTheme.Spacing.sm)
@@ -145,6 +142,7 @@ struct PlanView: View {
             }
             .padding(AthlyTheme.Spacing.sm)
         }
+        .athlyTabBarContentClearance()
         .scrollContentBackground(.hidden)
     }
 
@@ -196,8 +194,8 @@ struct PlanView: View {
         .buttonStyle(AthlyGradientButtonStyle())
         .disabled(planVM.isGenerating)
         .sheet(isPresented: $showPaywall) {
-            // Paywall do RevenueCat (renderiza a offering atual configurada no dashboard).
-            RevenueCatUI.PaywallView()
+            // Founder vê a offering founder; demais usuários veem a offering default.
+            AthlyPaywallView(founderEligible: entitlementManager.isFounderEligible)
                 .onPurchaseCompleted { _ in
                     showPaywall = false
                     Task { await entitlementManager.refresh() }
@@ -487,6 +485,7 @@ struct PlanView: View {
                     }
                 }
             }
+            .athlyTabBarContentClearance()
             .scrollContentBackground(.hidden)
         }
     }
@@ -540,6 +539,51 @@ struct PlanView: View {
         formatter.dateFormat = "MMMM yyyy"
         formatter.locale = Locale(identifier: "pt-BR")
         return formatter.string(from: date).capitalized
+    }
+}
+
+// MARK: - RevenueCat Paywall
+
+private struct AthlyPaywallView: View {
+    let founderEligible: Bool
+
+    @State private var offering: Offering?
+    @State private var didFinishLoading = false
+
+    var body: some View {
+        Group {
+            if let offering {
+                RevenueCatUI.PaywallView(offering: offering)
+            } else if didFinishLoading {
+                RevenueCatUI.PaywallView()
+            } else {
+                ZStack {
+                    AthlyTheme.Color.backgroundDark
+                        .ignoresSafeArea()
+                    ProgressView()
+                        .tint(AthlyTheme.Color.primary)
+                }
+            }
+        }
+        .task(id: founderEligible) {
+            await loadOffering()
+        }
+    }
+
+    @MainActor
+    private func loadOffering() async {
+        didFinishLoading = false
+        offering = nil
+
+        guard Purchases.isConfigured else {
+            didFinishLoading = true
+            return
+        }
+
+        let desiredOffering = founderEligible ? "founder" : "default"
+        let offerings = try? await Purchases.shared.offerings()
+        offering = offerings?.offering(identifier: desiredOffering) ?? offerings?.current
+        didFinishLoading = true
     }
 }
 

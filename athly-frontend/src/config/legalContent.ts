@@ -25,6 +25,9 @@ export interface LegalDoc {
 const LAST_UPDATED_PT = "22 de junho de 2026";
 const LAST_UPDATED_EN = "June 22, 2026";
 
+const TERMS_LAST_UPDATED_PT = "30 de junho de 2026";
+const TERMS_LAST_UPDATED_EN = "June 30, 2026";
+
 // ---------------------------------------------------------------------------
 // Privacy Policy
 // ---------------------------------------------------------------------------
@@ -469,6 +472,307 @@ export const privacyDoc: Record<Lang, LegalDoc> = {
 };
 
 // ---------------------------------------------------------------------------
+// Terms of Use
+// ---------------------------------------------------------------------------
+
+export const termsDoc: Record<Lang, LegalDoc> = {
+  pt: {
+    badge: "Termos",
+    title: "Termos de Uso",
+    subtitle: "Regras para usar o aplicativo Athly Runner e o site athlyproject.app.",
+    lastUpdated: TERMS_LAST_UPDATED_PT,
+    sections: [
+      {
+        id: "operador",
+        heading: "1. Quem opera o serviço",
+        blocks: [
+          {
+            type: "p",
+            text: `O aplicativo Athly Runner e o site athlyproject.app são operados por ${companyInfo.legalEntityName}, ${companyInfo.registrationLabel} ${companyInfo.registrationNumber}.`,
+          },
+          {
+            type: "p",
+            text: `O contato oficial para assuntos legais, privacidade, suporte e verificação da empresa é ${companyInfo.legalEmail}.`,
+          },
+          { type: "link", label: companyInfo.legalEmail, href: `mailto:${companyInfo.legalEmail}` },
+        ],
+      },
+      {
+        id: "servico",
+        heading: "2. O serviço Athly",
+        blocks: [
+          {
+            type: "p",
+            text: "O Athly é um produto digital de treino que oferece planos personalizados de corrida, acompanhamento de treinos, integração com Apple Saúde / HealthKit e recomendações assistidas por inteligência artificial.",
+          },
+          {
+            type: "p",
+            text: "As informações fornecidas pelo Athly têm finalidade informativa e de organização do treino. O Athly não substitui orientação médica, diagnóstico, tratamento ou acompanhamento profissional.",
+          },
+        ],
+      },
+      {
+        id: "conta",
+        heading: "3. Conta e elegibilidade",
+        blocks: [
+          {
+            type: "list",
+            items: [
+              "Você deve fornecer informações verdadeiras e manter seus dados de conta atualizados.",
+              "Você é responsável por proteger suas credenciais de acesso e por atividades realizadas na sua conta.",
+              "O Athly não se destina a menores de 13 anos.",
+              "Você pode excluir sua conta e seus dados diretamente no app, em Perfil > Excluir conta.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "saude",
+        heading: "4. Saúde e segurança",
+        blocks: [
+          {
+            type: "p",
+            text: "Antes de iniciar ou alterar uma rotina de exercícios, avalie sua condição física e procure orientação profissional quando necessário. Interrompa o treino e busque atendimento se sentir dor, tontura, falta de ar incomum ou qualquer sintoma preocupante.",
+          },
+          {
+            type: "p",
+            text: "Você é responsável por decidir se está em condições de realizar uma atividade física e por seguir as leis, regras de trânsito e condições de segurança do local onde treina.",
+          },
+        ],
+      },
+      {
+        id: "assinaturas",
+        heading: "5. Assinaturas e pagamentos",
+        blocks: [
+          {
+            type: "p",
+            text: "Compras, assinaturas, cancelamentos e reembolsos feitos no iOS são processados pela Apple por meio da App Store. Também usamos RevenueCat para gerenciar status e identificadores de assinatura. Não temos acesso ao número do seu cartão.",
+          },
+          {
+            type: "p",
+            text: "Cancelamentos e reembolsos seguem as regras da Apple e devem ser solicitados pelos canais da App Store, quando aplicável.",
+          },
+        ],
+      },
+      {
+        id: "uso-aceitavel",
+        heading: "6. Uso aceitável",
+        blocks: [
+          {
+            type: "list",
+            items: [
+              "Não use o Athly para fins ilegais, abusivos, fraudulentos ou que violem direitos de terceiros.",
+              "Não tente acessar contas, sistemas, APIs ou dados sem autorização.",
+              "Não copie, modifique, faça engenharia reversa ou explore o serviço de forma não autorizada.",
+              "Não envie conteúdo malicioso, automatize abuso ou interfira na disponibilidade do serviço.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "privacidade",
+        heading: "7. Privacidade",
+        blocks: [
+          {
+            type: "p",
+            text: "O tratamento de dados pessoais, dados de saúde, localização e informações de assinatura é explicado na nossa Política de Privacidade.",
+          },
+          { type: "link", label: "Política de Privacidade", href: "/privacy" },
+        ],
+      },
+      {
+        id: "terceiros",
+        heading: "8. Serviços de terceiros",
+        blocks: [
+          {
+            type: "p",
+            text: "O Athly pode integrar serviços de terceiros, incluindo Apple Saúde / HealthKit, RevenueCat, provedores de inteligência artificial, hospedagem em nuvem e serviços de e-mail transacional. Esses serviços podem ter termos e políticas próprios.",
+          },
+        ],
+      },
+      {
+        id: "disponibilidade",
+        heading: "9. Alterações e disponibilidade",
+        blocks: [
+          {
+            type: "p",
+            text: "Podemos atualizar o app, o site, recursos e estes Termos periodicamente. Também podemos suspender, limitar ou alterar funcionalidades por motivos técnicos, legais, de segurança ou de operação.",
+          },
+        ],
+      },
+      {
+        id: "responsabilidade",
+        heading: "10. Limitações de responsabilidade",
+        blocks: [
+          {
+            type: "p",
+            text: "Na extensão permitida por lei, o Athly é fornecido sem garantia de resultado esportivo, disponibilidade contínua ou adequação a uma condição individual específica. Nada nestes Termos limita direitos que não possam ser limitados pela legislação aplicável.",
+          },
+        ],
+      },
+      {
+        id: "contato",
+        heading: "11. Contato",
+        blocks: [
+          {
+            type: "p",
+            text: "Para dúvidas sobre estes Termos, suporte, conta, privacidade ou assuntos legais, fale com a empresa pelo contato oficial.",
+          },
+          { type: "link", label: companyInfo.legalEmail, href: `mailto:${companyInfo.legalEmail}` },
+        ],
+      },
+    ],
+  },
+  en: {
+    badge: "Terms",
+    title: "Terms of Use",
+    subtitle: "Rules for using the Athly Runner app and the athlyproject.app website.",
+    lastUpdated: TERMS_LAST_UPDATED_EN,
+    sections: [
+      {
+        id: "operator",
+        heading: "1. Who operates the service",
+        blocks: [
+          {
+            type: "p",
+            text: `The Athly Runner app and the athlyproject.app website are operated by ${companyInfo.legalEntityName}, ${companyInfo.registrationLabel} ${companyInfo.registrationNumber}.`,
+          },
+          {
+            type: "p",
+            text: `The official contact for legal, privacy, support, and company verification matters is ${companyInfo.legalEmail}.`,
+          },
+          { type: "link", label: companyInfo.legalEmail, href: `mailto:${companyInfo.legalEmail}` },
+        ],
+      },
+      {
+        id: "service",
+        heading: "2. The Athly service",
+        blocks: [
+          {
+            type: "p",
+            text: "Athly is a digital training product that provides personalized running plans, workout tracking, Apple Health / HealthKit integration, and AI-assisted training recommendations.",
+          },
+          {
+            type: "p",
+            text: "Information provided by Athly is for training organization and informational purposes. Athly does not replace medical advice, diagnosis, treatment, or professional supervision.",
+          },
+        ],
+      },
+      {
+        id: "account",
+        heading: "3. Account and eligibility",
+        blocks: [
+          {
+            type: "list",
+            items: [
+              "You must provide accurate information and keep your account details up to date.",
+              "You are responsible for protecting your credentials and for activity under your account.",
+              "Athly is not intended for children under 13.",
+              "You can delete your account and data directly in the app under Profile > Delete account.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "health-safety",
+        heading: "4. Health and safety",
+        blocks: [
+          {
+            type: "p",
+            text: "Before starting or changing an exercise routine, assess your physical condition and seek professional guidance when needed. Stop training and seek help if you feel pain, dizziness, unusual shortness of breath, or any concerning symptom.",
+          },
+          {
+            type: "p",
+            text: "You are responsible for deciding whether you are fit to perform physical activity and for following laws, traffic rules, and safety conditions where you train.",
+          },
+        ],
+      },
+      {
+        id: "subscriptions",
+        heading: "5. Subscriptions and payments",
+        blocks: [
+          {
+            type: "p",
+            text: "Purchases, subscriptions, cancellations, and refunds made on iOS are processed by Apple through the App Store. We also use RevenueCat to manage subscription status and identifiers. We do not have access to your card number.",
+          },
+          {
+            type: "p",
+            text: "Cancellations and refunds follow Apple's rules and must be requested through App Store channels where applicable.",
+          },
+        ],
+      },
+      {
+        id: "acceptable-use",
+        heading: "6. Acceptable use",
+        blocks: [
+          {
+            type: "list",
+            items: [
+              "Do not use Athly for illegal, abusive, fraudulent, or rights-infringing purposes.",
+              "Do not attempt to access accounts, systems, APIs, or data without authorization.",
+              "Do not copy, modify, reverse engineer, or exploit the service without authorization.",
+              "Do not send malicious content, automate abuse, or interfere with service availability.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "privacy",
+        heading: "7. Privacy",
+        blocks: [
+          {
+            type: "p",
+            text: "Our Privacy Policy explains how we process personal data, health data, location, and subscription information.",
+          },
+          { type: "link", label: "Privacy Policy", href: "/privacy" },
+        ],
+      },
+      {
+        id: "third-parties",
+        heading: "8. Third-party services",
+        blocks: [
+          {
+            type: "p",
+            text: "Athly may integrate third-party services, including Apple Health / HealthKit, RevenueCat, AI providers, cloud hosting, and transactional email services. These services may have their own terms and policies.",
+          },
+        ],
+      },
+      {
+        id: "availability",
+        heading: "9. Changes and availability",
+        blocks: [
+          {
+            type: "p",
+            text: "We may update the app, website, features, and these Terms from time to time. We may also suspend, limit, or change functionality for technical, legal, security, or operational reasons.",
+          },
+        ],
+      },
+      {
+        id: "liability",
+        heading: "10. Limitation of liability",
+        blocks: [
+          {
+            type: "p",
+            text: "To the extent permitted by law, Athly is provided without any guarantee of athletic outcome, continuous availability, or suitability for a specific individual condition. Nothing in these Terms limits rights that cannot be limited under applicable law.",
+          },
+        ],
+      },
+      {
+        id: "contact",
+        heading: "11. Contact",
+        blocks: [
+          {
+            type: "p",
+            text: "For questions about these Terms, support, account, privacy, or legal matters, contact the company through the official contact below.",
+          },
+          { type: "link", label: companyInfo.legalEmail, href: `mailto:${companyInfo.legalEmail}` },
+        ],
+      },
+    ],
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Support
 // ---------------------------------------------------------------------------
 
@@ -501,13 +805,14 @@ export const supportDoc: Record<Lang, LegalDoc> = {
       },
       {
         id: "privacidade",
-        heading: "Privacidade",
+        heading: "Privacidade e termos",
         blocks: [
           {
             type: "p",
-            text: "Saiba como tratamos seus dados na nossa Política de Privacidade.",
+            text: "Saiba como tratamos seus dados e consulte as regras de uso do Athly.",
           },
           { type: "link", label: "Política de Privacidade", href: "/privacy" },
+          { type: "link", label: "Termos de Uso", href: "/terms" },
         ],
       },
       {
@@ -545,13 +850,14 @@ export const supportDoc: Record<Lang, LegalDoc> = {
       },
       {
         id: "privacy",
-        heading: "Privacy",
+        heading: "Privacy and terms",
         blocks: [
           {
             type: "p",
-            text: "Learn how we handle your data in our Privacy Policy.",
+            text: "Learn how we handle your data and review the rules for using Athly.",
           },
           { type: "link", label: "Privacy Policy", href: "/privacy" },
+          { type: "link", label: "Terms of Use", href: "/terms" },
         ],
       },
       {

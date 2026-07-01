@@ -19,6 +19,8 @@ final class CueOrchestrator {
         case boundary(to: ActiveSegment)
         /// Fired when the last repetition of a set finishes.
         case setComplete(setLabel: String, setsTotal: Int)
+        /// Fired when a user-configured distance/time alert is reached.
+        case targetAlertReached(RunTargetAlert)
     }
 
     private init() {}
@@ -41,7 +43,18 @@ final class CueOrchestrator {
             audio.playSetComplete()
             let phrase = total > 1 ? "\(label) concluído" : "Série concluída"
             speech.announce(phrase, priority: .high)
+
+        case .targetAlertReached(let alert):
+            haptic.fire(.boundary)
+            audio.playBoundary()
+            speech.announce("Ponto de retorno alcançado, \(alert.spokenValue).", priority: .high)
         }
+    }
+
+    func stopAll() {
+        audio.stopAll()
+        speech.stop()
+        CueAudioSession.shared.forceDeactivate()
     }
 
     // MARK: - Private

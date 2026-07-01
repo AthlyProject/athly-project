@@ -58,8 +58,8 @@ struct WorkoutDetailView: View {
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
-            .padding(.bottom, 80)
         }
+        .athlyTabBarContentClearance()
         .background(AthlyTheme.Color.backgroundDark)
         .navigationTitle(workout.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -394,4 +394,3 @@ private struct BlockCardView: View {
         return String(format: "%.2f km", km)
     }
 }
-

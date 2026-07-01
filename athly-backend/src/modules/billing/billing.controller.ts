@@ -20,6 +20,7 @@ export class BillingController {
     return {
       entitled: await this.billingService.isEntitled(user.id),
       isAdmin: this.billingService.isAdminEmail(user.email) || user.role === 'ADMIN',
+      isFounderEligible: await this.billingService.isFounderEligibleEmail(user.email),
     };
   }
 

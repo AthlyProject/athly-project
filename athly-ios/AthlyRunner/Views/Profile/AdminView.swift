@@ -63,6 +63,7 @@ struct AdminView: View {
                 }
                 .padding(16)
             }
+            .athlyTabBarContentClearance()
         }
         .navigationTitle("Admin")
         .task { await vm.loadWeeks() }

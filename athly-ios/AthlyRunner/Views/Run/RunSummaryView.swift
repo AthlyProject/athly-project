@@ -116,7 +116,7 @@ struct RunSummaryView: View {
                         .disabled(viewModel.isSaving)
                     }
                     .padding(.horizontal, AthlyTheme.Spacing.md)
-                    .padding(.bottom, AthlyTheme.Spacing.lg)
+                    .padding(.bottom, AthlyTheme.Layout.fullScreenBottomActionPadding)
                 }
             }
             .scrollContentBackground(.hidden)

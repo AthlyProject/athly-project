@@ -48,6 +48,7 @@ struct RunSessionDetailView: View {
                     Spacer(minLength: AthlyTheme.Spacing.lg)
                 }
             }
+            .athlyTabBarContentClearance()
             .scrollContentBackground(.hidden)
         }
         .navigationTitle("Detalhes")

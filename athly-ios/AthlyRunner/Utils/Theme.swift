@@ -103,6 +103,13 @@ enum AthlyTheme {
         static let button: CGFloat = 16
         static let small: CGFloat = 12
     }
+
+    enum Layout {
+        static let floatingTabBarBottomPadding: CGFloat = 12
+        static let floatingTabBarTopClearance: CGFloat = 64
+        static let tabBarContentBottomClearance: CGFloat = 136
+        static let fullScreenBottomActionPadding: CGFloat = 48
+    }
 }
 
 // MARK: - Color(hex:) Extension
@@ -199,6 +206,16 @@ struct AthlyInsightCardModifier: ViewModifier {
     }
 }
 
+struct AthlyTabBarContentClearanceModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: AthlyTheme.Layout.tabBarContentBottomClearance)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
 extension View {
     func athlyCard(glow: Bool = false) -> some View {
         modifier(AthlyCardModifier(glow: glow))
@@ -206,5 +223,9 @@ extension View {
 
     func athlyInsightCard() -> some View {
         modifier(AthlyInsightCardModifier())
+    }
+
+    func athlyTabBarContentClearance() -> some View {
+        modifier(AthlyTabBarContentClearanceModifier())
     }
 }

@@ -302,6 +302,7 @@ struct ProfileView: View {
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
+                .athlyTabBarContentClearance()
             }
             .navigationTitle("Perfil")
             .task { await loadProfile() }

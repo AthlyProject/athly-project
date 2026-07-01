@@ -7,6 +7,7 @@ import { LandingPage } from "@/pages/landing/LandingPage";
 import { CompanyPage } from "@/pages/CompanyPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { SupportPage } from "@/pages/SupportPage";
+import { TermsPage } from "@/pages/TermsPage";
 import { REGISTRATION_ENABLED } from "@/config/features";
 
 // Pages - lazy loaded for better performance
@@ -51,6 +52,10 @@ export const router = createBrowserRouter([
   {
     path: "/privacy",
     element: <PrivacyPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsPage />,
   },
   {
     path: "/support",

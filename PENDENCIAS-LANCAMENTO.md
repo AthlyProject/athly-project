@@ -42,14 +42,16 @@ e que ficaram pendentes durante a implementação do MVP1. Organizados por prior
 > Hoje está tudo em **scaffold com `PAYWALL_ENABLED=false` (fail-open)** — ninguém é bloqueado.
 > Decisão de gating: **trial de 7 dias → tudo pago**.
 
-- [ ] **App Store Connect**: criar os produtos de assinatura + **trial de 7 dias** (intro offer).
-- [ ] **RevenueCat**: criar o projeto, o *entitlement* `premium`, a *offering* e gerar as **API keys**
-      (iOS public key + segredo do webhook).
+- [ ] **App Store Connect**: criar os 4 produtos de assinatura no grupo `Athly Basic` + **trial de 7 dias** (intro offer):
+      `com.athly.runner.basic.monthly`, `com.athly.runner.basic.yearly`,
+      `com.athly.runner.founder.monthly`, `com.athly.runner.founder.yearly`.
+- [ ] **RevenueCat**: criar o projeto, o *entitlement* `basic`, as offerings `default` e `founder`, e gerar as **API keys**
+      (iOS public key + segredo do webhook). Todos os 4 produtos devem liberar o entitlement `basic`.
 - [ ] **Backend**: setar `REVENUECAT_WEBHOOK_AUTH` e `PAYWALL_ENABLED=true`; apontar o webhook do
       RevenueCat para `…/billing/revenuecat/webhook`.
-- [ ] **iOS**: adicionar o SDK do RevenueCat (SPM) implementando `PurchaseManager`, chamar
-      `Purchases.logIn(user.id)` no login (o `app_user_id` precisa ser o id do usuário Athly para o
-      webhook casar) e setar `FeatureFlags.paywallEnabled = true`.
+- [ ] **iOS**: trocar `REVENUECAT_API_KEY` pela public SDK key `appl_...` do app iOS no RevenueCat.
+      O SDK, `PurchaseManager`, `Purchases.logIn(user.id)` e `FeatureFlags.paywallEnabled = true`
+      já estão integrados.
 - [ ] **Validar em sandbox StoreKit**: comprar → webhook marca `active` → `/ai-planner` libera;
       após o trial sem assinar → `/ai-planner` retorna 403 e o app mostra o paywall.
 

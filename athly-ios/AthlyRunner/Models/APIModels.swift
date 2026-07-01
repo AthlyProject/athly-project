@@ -226,6 +226,14 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
         return df.date(from: date) ?? Date()
     }
 
+    func isOnDay(_ day: Date, calendar: Calendar = .current) -> Bool {
+        calendar.isDate(parsedDate, inSameDayAs: day)
+    }
+
+    var isToday: Bool {
+        isOnDay(Date())
+    }
+
     /// Pode iniciar este treino agora? Verdadeiro quando está `scheduled` e hoje está entre o dia
     /// marcado e 2 dias depois (janela de tolerância). Não habilita treino futuro nem atrasado >2 dias.
     var canStartNow: Bool {
@@ -295,7 +303,6 @@ struct PreviousWeekAnalysis: Codable, Sendable {
     let avgFatigue: Double?
     let skippedWorkouts: [String]?
     let volumeChange: String?
-    let adherenceNote: String?
 }
 
 // MARK: - Weekly Goal

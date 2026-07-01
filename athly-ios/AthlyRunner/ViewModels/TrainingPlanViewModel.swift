@@ -80,7 +80,10 @@ final class TrainingPlanViewModel: ObservableObject {
     }
 
     var thisWeekNext: WorkoutModel? {
-        thisWeekWorkouts.first { $0.status == .scheduled }
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return thisWeekWorkouts.first {
+            $0.status == .scheduled && $0.parsedDate >= startOfToday
+        }
     }
 
     /// WeeklyGoal da semana atualmente selecionada (usada para exibir cards de AI insight).
@@ -134,16 +137,16 @@ final class TrainingPlanViewModel: ObservableObject {
 
             async let goalsTask = APIClient.shared.getWeeklyGoals(trainingPlanId: plan.id)
             async let workoutsTask = APIClient.shared.getWorkoutsByTrainingPlan(trainingPlanId: plan.id)
-            async let todayTask = APIClient.shared.getTodayWorkout()
 
-            let (goals, workouts, today) = try await (goalsTask, workoutsTask, todayTask)
+            let (goals, workouts) = try await (goalsTask, workoutsTask)
 
             weeklyGoals = goals.sorted { $0.parsedStartDate < $1.parsedStartDate }
             allWorkouts = workouts
-            todayWorkout = today
+            todayWorkout = Self.todayWorkout(from: allWorkouts)
 
             weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
             selectedWeekIndex = currentWeekIndex()
+            isLoading = false
 
             if let freshAnalysis = weeklyGoals.last?.metrics?.asRunAnalysis {
                 lastAnalysis = freshAnalysis
@@ -181,7 +184,9 @@ final class TrainingPlanViewModel: ObservableObject {
         trainingPlanResponse = snapshot.trainingPlan
         weeklyGoals = snapshot.weeklyGoals
         allWorkouts = snapshot.allWorkouts
-        todayWorkout = snapshot.todayWorkout
+        todayWorkout = Self.todayWorkout(from: allWorkouts) ?? snapshot.todayWorkout.flatMap {
+            $0.sportType != .other && $0.isToday ? $0 : nil
+        }
         if lastAnalysis == nil {
             lastAnalysis = snapshot.lastAnalysis
         }
@@ -456,6 +461,13 @@ final class TrainingPlanViewModel: ObservableObject {
         return max(0, weeks.count - 1)
     }
 
+    private static func todayWorkout(from workouts: [WorkoutModel]) -> WorkoutModel? {
+        workouts
+            .filter { $0.sportType != .other && $0.isToday }
+            .sorted { $0.parsedDate < $1.parsedDate }
+            .first
+    }
+
     /// Validação sem I.A. ao fim do treino: se for tentativa de objetivo (`isGoalAttempt`) e o
     /// resultado real bater a meta planejada (distância + pace), conta como conquista.
     private func recordAchievementIfEarned(workout: WorkoutModel, healthRun: HealthKitRunItem) {
@@ -471,9 +483,7 @@ final class TrainingPlanViewModel: ObservableObject {
 
     private func replaceWorkout(_ updated: WorkoutModel) {
         allWorkouts = allWorkouts.map { $0.id == updated.id ? updated : $0 }
-        if todayWorkout?.id == updated.id {
-            todayWorkout = updated
-        }
+        todayWorkout = Self.todayWorkout(from: allWorkouts)
         weeks = buildWeeks(goals: weeklyGoals, workouts: allWorkouts)
         persistToCache()
     }

@@ -16,6 +16,7 @@ struct RunStartView: View {
 
     @State private var isInitialized = false
     @State private var showLiveActivityAlert = false
+    @State private var showTargetAlertSheet = false
 
     var body: some View {
         NavigationStack {
@@ -40,6 +41,9 @@ struct RunStartView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Para acompanhar sua corrida na tela de bloqueio, ative Live Activities em Ajustes > Athly Runner > Live Activities.")
+        }
+        .sheet(isPresented: $showTargetAlertSheet) {
+            TargetAlertSetupSheet(alert: $viewModel.targetAlert)
         }
         .onChange(of: viewModel.tracker.liveActivityDisabled) { disabled in
             if disabled {
@@ -102,6 +106,7 @@ struct RunStartView: View {
 
                 Spacer()
             }
+            .padding(.bottom, AthlyTheme.Layout.tabBarContentBottomClearance)
         }
         .onAppear {
             // Request location early so map can show user position
@@ -187,28 +192,177 @@ struct RunStartView: View {
                     .foregroundStyle(.white)
             }
 
-            // Start button
-            Button {
-                viewModel.startRun()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(AthlyTheme.Gradient.neon)
-                        .frame(width: 130, height: 130)
-                        .shadow(color: AthlyTheme.Color.primary.opacity(0.6), radius: 24, y: 8)
+            VStack(spacing: 22) {
+                // Start button
+                Button {
+                    viewModel.startRun()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(AthlyTheme.Gradient.neon)
+                            .frame(width: 130, height: 130)
+                            .shadow(color: AthlyTheme.Color.primary.opacity(0.6), radius: 24, y: 8)
 
-                    Circle()
-                        .stroke(AthlyTheme.Color.primaryNeon.opacity(0.3), lineWidth: 2)
-                        .frame(width: 148, height: 148)
+                        Circle()
+                            .stroke(AthlyTheme.Color.primaryNeon.opacity(0.3), lineWidth: 2)
+                            .frame(width: 148, height: 148)
 
-                    Text("INICIAR")
-                        .font(AthlyTheme.Typography.heading(18))
-                        .foregroundStyle(.white)
+                        Text("INICIAR")
+                            .font(AthlyTheme.Typography.heading(18))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .disabled(locationManager.currentLocation == nil)
+                .opacity(locationManager.currentLocation == nil ? 0.5 : 1.0)
+
+                targetAlertButton
+            }
+        }
+    }
+
+    private var targetAlertButton: some View {
+        Button {
+            showTargetAlertSheet = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: viewModel.targetAlert == nil ? "bell.badge" : "bell.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(viewModel.targetAlert == nil ? "Adicionar aviso" : "Aviso configurado")
+                        .font(AthlyTheme.Typography.semibold(14))
+                    if let alert = viewModel.targetAlert {
+                        Text("Em \(alert.displayValue)")
+                            .font(AthlyTheme.Typography.body(12))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+            .foregroundStyle(AthlyTheme.Color.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(AthlyTheme.Color.surfaceCard.opacity(0.85))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AthlyTheme.Color.primary.opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct TargetAlertSetupSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var alert: RunTargetAlert?
+
+    @State private var selectedKind: RunTargetAlert.Kind
+    @State private var valueText: String
+
+    init(alert: Binding<RunTargetAlert?>) {
+        _alert = alert
+        let current = alert.wrappedValue
+        _selectedKind = State(initialValue: current?.kind ?? .distance)
+        _valueText = State(initialValue: current.map { RunTargetAlertInputFormatter.string(from: $0.value) } ?? "")
+    }
+
+    private var parsedValue: Double? {
+        RunTargetAlertInputFormatter.double(from: valueText)
+    }
+
+    private var draftAlert: RunTargetAlert? {
+        guard let parsedValue else { return nil }
+        return RunTargetAlert(kind: selectedKind, value: parsedValue)
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 22) {
+                Picker("Tipo", selection: $selectedKind) {
+                    Label("Distância", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
+                        .tag(RunTargetAlert.Kind.distance)
+                    Label("Tempo", systemImage: "timer")
+                        .tag(RunTargetAlert.Kind.time)
+                }
+                .pickerStyle(.segmented)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(selectedKind == .distance ? "Distância" : "Tempo")
+                        .font(AthlyTheme.Typography.semibold(15))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+                    HStack(spacing: 10) {
+                        TextField(selectedKind == .distance ? "2,5" : "20", text: $valueText)
+                            .keyboardType(.decimalPad)
+                            .font(.custom("SpaceGrotesk-Bold", size: 30).monospacedDigit())
+                            .foregroundStyle(AthlyTheme.Color.textPrimary)
+
+                        Text(selectedKind == .distance ? "km" : "min")
+                            .font(AthlyTheme.Typography.semibold(16))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(AthlyTheme.Color.surfaceCard)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                    Text("A voz vai avisar uma única vez quando esse ponto for alcançado.")
+                        .font(AthlyTheme.Typography.body(13))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+
+                if let alert {
+                    Button(role: .destructive) {
+                        self.alert = nil
+                        dismiss()
+                    } label: {
+                        Label("Remover aviso em \(alert.displayValue)", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(AthlySecondaryButtonStyle())
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .background(AthlyTheme.Color.backgroundDark.ignoresSafeArea())
+            .navigationTitle("Aviso de retorno")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancelar") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Salvar") {
+                        alert = draftAlert
+                        dismiss()
+                    }
+                    .disabled(draftAlert == nil)
                 }
             }
-            .disabled(locationManager.currentLocation == nil)
-            .opacity(locationManager.currentLocation == nil ? 0.5 : 1.0)
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private enum RunTargetAlertInputFormatter {
+    static func double(from string: String) -> Double? {
+        let normalized = string
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: ".")
+        guard let value = Double(normalized), value.isFinite, value > 0 else { return nil }
+        return value
+    }
+
+    static func string(from value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 }
 

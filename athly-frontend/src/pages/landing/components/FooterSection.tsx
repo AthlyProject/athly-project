@@ -34,6 +34,12 @@ export function FooterSection() {
               Privacy
             </Link>
             <Link
+              to="/terms"
+              className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
+            >
+              Terms
+            </Link>
+            <Link
               to="/support"
               className="font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary-neon)]"
             >

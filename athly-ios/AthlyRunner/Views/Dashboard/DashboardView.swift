@@ -47,12 +47,19 @@ struct DashboardView: View {
                     ScrollView {
                         VStack(spacing: AthlyTheme.Spacing.sm) {
                             greetingSection
-                            todayWorkoutSection
+                            if planVM.todayWorkout == nil {
+                                restDayCard
+                            }
                             weeklyProgressCard
                             activityBarsCard
+                            GeneralProgressCard(
+                                streak: planVM.currentStreak,
+                                achievements: planVM.achievementCount
+                            )
                         }
                         .padding(AthlyTheme.Spacing.sm)
                     }
+                    .athlyTabBarContentClearance()
                     .scrollContentBackground(.hidden)
                 }
             }
@@ -107,42 +114,7 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Today's Workout
-
-    @ViewBuilder
-    private var todayWorkoutSection: some View {
-        if let workout = planVM.todayWorkout {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.caption)
-                            .foregroundStyle(AthlyTheme.Color.primary)
-                        Text("Treino de Hoje")
-                            .font(AthlyTheme.Typography.semibold(17))
-                            .foregroundStyle(AthlyTheme.Color.textPrimary)
-                    }
-                    Spacer()
-                }
-
-                WorkoutCardView(workout: workout, compact: true)
-
-                if workout.status == .scheduled {
-                    Button("Iniciar treino agora") {
-                        pendingWorkout = workout
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTab = .run
-                        }
-                    }
-                    .buttonStyle(AthlyGradientButtonStyle())
-                }
-            }
-            .padding(AthlyTheme.Spacing.sm)
-            .athlyCard(glow: true)
-        } else {
-            restDayCard
-        }
-    }
+    // MARK: - Rest Day
 
     private var restDayCard: some View {
         HStack(spacing: 12) {
@@ -164,6 +136,10 @@ struct DashboardView: View {
     }
 
     // MARK: - Weekly Progress
+
+    private var highlightedWorkout: WorkoutModel? {
+        planVM.todayWorkout ?? planVM.thisWeekNext
+    }
 
     private var weeklyProgressCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -218,28 +194,22 @@ struct DashboardView: View {
             }
             .frame(height: 8)
 
-            // Stats row
-            HStack(spacing: 0) {
-                statMini(value: "\(planVM.thisWeekCompleted)", label: "Esta Semana", sfSymbol: "figure.strengthtraining.traditional")
-                Rectangle()
-                    .fill(AthlyTheme.Color.glassBorder)
-                    .frame(width: 1, height: 40)
-                statMini(value: planVM.allWorkouts.isEmpty ? "-" : "\(planVM.currentStreak)", label: "Sequência", sfSymbol: "flame")
-                Rectangle()
-                    .fill(AthlyTheme.Color.glassBorder)
-                    .frame(width: 1, height: 40)
-                statMini(value: "\(planVM.achievementCount)", label: "Conquistas", sfSymbol: "medal")
-            }
-
-            if let next = planVM.thisWeekNext {
+            if let workout = highlightedWorkout {
                 Rectangle()
                     .fill(AthlyTheme.Color.glassBorder)
                     .frame(height: 1)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("PRÓXIMO TREINO")
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(workout.isToday ? "TREINO DE HOJE" : "PRÓXIMO TREINO")
                         .font(AthlyTheme.Typography.label())
                         .foregroundStyle(AthlyTheme.Color.textTertiary)
-                    WorkoutCardView(workout: next, compact: true)
+                    highlightedWorkoutRow(workout)
+
+                    if workout.isToday && workout.status == .scheduled {
+                        Button("Iniciar treino agora") {
+                            startWorkout(workout)
+                        }
+                        .buttonStyle(AthlyGradientButtonStyle())
+                    }
                 }
             }
         }
@@ -247,19 +217,69 @@ struct DashboardView: View {
         .athlyInsightCard()
     }
 
-    private func statMini(value: String, label: String, sfSymbol: String) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: sfSymbol)
-                .font(.title3)
-                .foregroundStyle(AthlyTheme.Color.primary)
-            Text(value)
-                .font(AthlyTheme.Typography.semibold(15))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-            Text(label)
-                .font(AthlyTheme.Typography.body(11))
-                .foregroundStyle(AthlyTheme.Color.textSecondary)
+    private func highlightedWorkoutRow(_ workout: WorkoutModel) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(AthlyTheme.Color.primary.opacity(0.14))
+                        .frame(width: 42, height: 42)
+                    Image(systemName: workout.sportType.sfSymbol)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(workout.sportType.label)
+                        .font(AthlyTheme.Typography.label())
+                        .textCase(.uppercase)
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                    Text(workout.title)
+                        .font(AthlyTheme.Typography.semibold(16))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 8)
+                StatusBadgeView(status: workout.status)
+            }
+
+            HStack(spacing: 12) {
+                Label(workout.parsedDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+
+                if let intensity = workout.intensity {
+                    Label("Intensidade \(Int(intensity))", systemImage: "bolt.fill")
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(intensityColor(intensity))
+                }
+
+                Spacer()
+            }
         }
-        .frame(maxWidth: .infinity)
+        .padding(12)
+        .background(AthlyTheme.Color.surfaceDark.opacity(0.78))
+        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous)
+                .stroke(AthlyTheme.Color.glassBorder, lineWidth: 1)
+        )
+    }
+
+    private func startWorkout(_ workout: WorkoutModel) {
+        pendingWorkout = workout
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedTab = .run
+        }
+    }
+
+    private func intensityColor(_ value: Double) -> Color {
+        switch Int(value) {
+        case 1...3: return AthlyTheme.Color.success
+        case 4...6: return AthlyTheme.Color.warning
+        default: return AthlyTheme.Color.error
+        }
     }
 
     // MARK: - Activity Bars

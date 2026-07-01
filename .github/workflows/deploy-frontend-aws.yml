@@ -50,6 +50,15 @@ jobs:
         # --delete garante que arquivos antigos que não existem mais sejam apagados do S3
         run: aws s3 sync dist s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
 
+      - name: 🌐 Upload public SPA route entry points
+        run: |
+          for route in company privacy terms support; do
+            aws s3 cp dist/index.html "s3://${{ secrets.AWS_S3_BUCKET_NAME }}/${route}" \
+              --content-type "text/html; charset=utf-8"
+            aws s3 cp dist/index.html "s3://${{ secrets.AWS_S3_BUCKET_NAME }}/${route}/index.html" \
+              --content-type "text/html; charset=utf-8"
+          done
+
       - name: 🔄 Invalidate CloudFront
         # Invalida o cache no CDN para garantir que os usuários vejam a versão nova
         run: |

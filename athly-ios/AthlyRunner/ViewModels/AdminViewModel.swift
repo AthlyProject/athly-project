@@ -89,7 +89,6 @@ final class AdminViewModel: ObservableObject {
             out.append("avgEffort: \(p.avgEffort.map { String($0) } ?? "—")")
             out.append("avgFatigue: \(p.avgFatigue.map { String($0) } ?? "—")")
             out.append("volumeChange: \(p.volumeChange ?? "—")")
-            out.append("adherenceNote: \(p.adherenceNote ?? "—")")
         } else {
             out.append("(sem previousWeekAnalysis)")
         }

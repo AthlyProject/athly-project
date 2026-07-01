@@ -74,7 +74,11 @@ export class BillingService {
 
   private mapEventToStatus(type: string | undefined, expiresAt: Date | null): string {
     const t = (type ?? '').toUpperCase();
-    if (['CANCELLATION', 'EXPIRATION', 'SUBSCRIPTION_PAUSED'].includes(t)) return 'cancelled';
+    if (t === 'EXPIRATION') return 'expired';
+    if (t === 'SUBSCRIPTION_PAUSED') return 'cancelled';
+    if (t === 'CANCELLATION') {
+      return expiresAt && expiresAt.getTime() > Date.now() ? 'cancelled' : 'expired';
+    }
     if (expiresAt && expiresAt.getTime() < Date.now()) return 'expired';
     return 'active';
   }
@@ -82,6 +86,24 @@ export class BillingService {
   /** True se o e-mail está em `ADMIN_EMAILS` (contas de admin/dev — isentas de cobrança). */
   isAdminEmail(email: string | undefined | null): boolean {
     return isAdminEmail(email, this.config.get<string>('ADMIN_EMAILS'));
+  }
+
+  /** True se o e-mail entrou na waitlist e deve receber a oferta Founder. */
+  async isFounderEligibleEmail(email: string | undefined | null): Promise<boolean> {
+    const normalized = email?.trim().toLowerCase();
+    if (!normalized) return false;
+
+    const entry = await this.prisma.waitlistEntry.findFirst({
+      where: {
+        email: {
+          equals: normalized,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+
+    return !!entry;
   }
 
   /**
@@ -110,7 +132,7 @@ export class BillingService {
     if (now < trialEnds) return true;
 
     return (
-      user.subscriptionStatus === 'active' &&
+      ['active', 'cancelled'].includes(user.subscriptionStatus ?? '') &&
       !!user.subscriptionExpiresAt &&
       user.subscriptionExpiresAt.getTime() > now
     );

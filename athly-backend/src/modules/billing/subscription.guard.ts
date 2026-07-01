@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import { BillingService } from './billing.service';
 
 /**
- * Bloqueia endpoints premium quando o usuário não tem entitlement (fora do trial e sem assinatura).
+ * Bloqueia endpoints pagos quando o usuário não tem entitlement (fora do trial e sem assinatura).
  * Fail-open enquanto PAYWALL_ENABLED != 'true'. Deve rodar depois do JwtAuthGuard (usa request.user).
  */
 @Injectable()

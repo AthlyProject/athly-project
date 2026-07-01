@@ -1,21 +1,23 @@
 import Foundation
 import RevenueCat
 
-/// Identificadores do RevenueCat. O `entitlementID` precisa bater EXATAMENTE com o identifier do
-/// entitlement no dashboard do RevenueCat (case/espaço-sensível).
+/// Identificadores do RevenueCat. O entitlement precisa bater EXATAMENTE com o identifier do
+/// entitlement no dashboard do RevenueCat.
 enum Entitlements {
-    static let athlyBasic = "Athly Basic"
+    static let basic = "basic"
 }
 
 /// Abstração sobre o provedor de compras (RevenueCat). Mantém o resto do app desacoplado do SDK.
 protocol PurchaseManager: Sendable {
-    /// True se o entitlement premium ("Athly Basic") está ativo no `CustomerInfo` atual.
+    /// True se o entitlement basic está ativo no `CustomerInfo` atual.
     func hasActiveEntitlement() async -> Bool
     /// Compra o primeiro pacote da offering atual (fallback — o fluxo principal é o Paywall do RevenueCatUI).
     func purchaseDefaultProduct() async throws
     func restorePurchases() async throws
     /// Liga o `app_user_id` do RevenueCat ao id do usuário Athly (para o webhook casar no backend).
     func identify(appUserId: String) async
+    /// Mantém atributos úteis no RevenueCat para targeting/diagnóstico das ofertas.
+    func syncSubscriberAttributes(email: String?, isFounderEligible: Bool) async
     func signOut() async
     /// Stream que emite `isActive` do entitlement a cada mudança de `CustomerInfo` (renovação, expiração…).
     func entitlementUpdates() -> AsyncStream<Bool>
@@ -26,7 +28,7 @@ struct RevenueCatPurchaseManager: PurchaseManager {
     func hasActiveEntitlement() async -> Bool {
         guard Purchases.isConfigured else { return false }
         let info = try? await Purchases.shared.customerInfo()
-        return info?.entitlements[Entitlements.athlyBasic]?.isActive == true
+        return info?.entitlements[Entitlements.basic]?.isActive == true
     }
 
     func purchaseDefaultProduct() async throws {
@@ -46,6 +48,14 @@ struct RevenueCatPurchaseManager: PurchaseManager {
         _ = try? await Purchases.shared.logIn(appUserId)
     }
 
+    func syncSubscriberAttributes(email: String?, isFounderEligible: Bool) async {
+        guard Purchases.isConfigured else { return }
+        Purchases.shared.attribution.setEmail(email)
+        Purchases.shared.attribution.setAttributes([
+            "founder": isFounderEligible ? "true" : "false",
+        ])
+    }
+
     func signOut() async {
         guard Purchases.isConfigured else { return }
         _ = try? await Purchases.shared.logOut()
@@ -56,7 +66,7 @@ struct RevenueCatPurchaseManager: PurchaseManager {
             guard Purchases.isConfigured else { continuation.finish(); return }
             let task = Task {
                 for await info in Purchases.shared.customerInfoStream {
-                    continuation.yield(info.entitlements[Entitlements.athlyBasic]?.isActive == true)
+                    continuation.yield(info.entitlements[Entitlements.basic]?.isActive == true)
                 }
                 continuation.finish()
             }
@@ -71,6 +81,7 @@ struct StubPurchaseManager: PurchaseManager {
     func purchaseDefaultProduct() async throws { throw PurchaseError.notConfigured }
     func restorePurchases() async throws { throw PurchaseError.notConfigured }
     func identify(appUserId: String) async {}
+    func syncSubscriberAttributes(email: String?, isFounderEligible: Bool) async {}
     func signOut() async {}
     func entitlementUpdates() -> AsyncStream<Bool> { AsyncStream { $0.finish() } }
 }

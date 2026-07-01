@@ -53,7 +53,6 @@ Resumo da semana anterior:
 - Fadiga média reportada: ${analysis.avgFatigue !== null ? `${analysis.avgFatigue}/10` : 'sem dados'}
 - Volume total completado: ${analysis.totalDistanceKm} km
 - Mudança de volume: ${analysis.volumeChange}
-- ${analysis.adherenceNote}
 
 Considere estes dados ao planejar a próxima semana:
 - Se aderência foi baixa (< 70%), considere reduzir volume ou número de treinos intensos.

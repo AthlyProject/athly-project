@@ -24,10 +24,16 @@ struct MainTabView: View {
                 ProfileView()
             }
         }
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isRunInProgress {
-                FloatingTabBar(selectedTab: $selectedTab)
-                    .padding(.bottom, 8)
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: AthlyTheme.Layout.floatingTabBarTopClearance)
+                        .allowsHitTesting(false)
+
+                    FloatingTabBar(selectedTab: $selectedTab)
+                        .padding(.bottom, AthlyTheme.Layout.floatingTabBarBottomPadding)
+                }
             }
         }
         .ignoresSafeArea(.keyboard)

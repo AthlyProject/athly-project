@@ -140,8 +140,6 @@ export function computePreviousWeekAnalysis(
 
   const completionRate =
     totalWorkouts > 0 ? parseFloat((completedWorkouts / totalWorkouts).toFixed(2)) : 0;
-  const adherenceNote = `Atleta completou ${completedWorkouts}/${totalWorkouts} treinos${skippedWorkouts.length > 0 ? `, pulou: ${skippedWorkouts.join(', ')}` : ''}`;
-
   return {
     completedWorkouts,
     totalWorkouts,
@@ -151,6 +149,5 @@ export function computePreviousWeekAnalysis(
     avgFatigue,
     skippedWorkouts,
     volumeChange,
-    adherenceNote,
   };
 }

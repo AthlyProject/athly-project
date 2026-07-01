@@ -25,6 +25,8 @@ final class RunTracker: ObservableObject {
     /// HKWorkoutEvents para a análise da IA reconstruir a estrutura do treino.
     private var segmentRecords: [SegmentRecord] = []
     private var countdownFired: Bool = false
+    private var targetAlert: RunTargetAlert?
+    private var targetAlertFired = false
 
     private var timer: Timer?
     private var startTime: Date?
@@ -113,6 +115,11 @@ final class RunTracker: ObservableObject {
         advanceSegment(skipped: true)
     }
 
+    func configureTargetAlert(_ alert: RunTargetAlert?) {
+        targetAlert = alert
+        targetAlertFired = false
+    }
+
     // MARK: - Controls
 
     func start() {
@@ -132,6 +139,7 @@ final class RunTracker: ObservableObject {
         segmentStartDate = Date()
         segmentRecords = []
         countdownFired = false
+        targetAlertFired = false
 
         locationManager.startTracking()
         startTimer()
@@ -186,6 +194,7 @@ final class RunTracker: ObservableObject {
         timer = nil
         locationManager.stopTracking()
         locationCancellable?.cancel()
+        CueOrchestrator.shared.stopAll()
 
         let stopTime = Date()
         if let pauseStart {
@@ -230,6 +239,7 @@ final class RunTracker: ObservableObject {
         timer = nil
         locationManager.stopTracking()
         locationCancellable?.cancel()
+        CueOrchestrator.shared.stopAll()
         LiveActivityManager.shared.endActivity()
         reset()
     }
@@ -260,6 +270,8 @@ final class RunTracker: ObservableObject {
         segmentStartDate = nil
         segmentRecords = []
         countdownFired = false
+        targetAlert = nil
+        targetAlertFired = false
         recentSpeedMps = 0
         lastResumeDate = nil
         lastLiveActivityPush = .distantPast
@@ -282,6 +294,7 @@ final class RunTracker: ObservableObject {
     }
 
     private func startTimer() {
+        timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateElapsedTime()
@@ -290,10 +303,11 @@ final class RunTracker: ObservableObject {
     }
 
     private func updateElapsedTime() {
-        guard let startTime, state == .running else { return }
-        elapsedTime = Date().timeIntervalSince(startTime) - pausedDuration
+        guard state == .running else { return }
+        refreshElapsedTime()
         updateCalories()
         checkSegmentBoundary()
+        checkTargetAlert()
 
         // Em buraco de GPS prolongado (8s+ sem fix novo), invalida o pace exibido em vez de
         // congelar o último valor — evita mostrar um ritmo defasado quando o sinal cai.
@@ -303,6 +317,11 @@ final class RunTracker: ObservableObject {
         }
 
         pushLiveActivityIfDue()
+    }
+
+    private func refreshElapsedTime(at now: Date = Date()) {
+        guard let startTime, state == .running else { return }
+        elapsedTime = max(0, now.timeIntervalSince(startTime) - pausedDuration)
     }
 
     /// Empurra estado para a Live Activity no máximo a cada 3s — o relógio do widget
@@ -334,6 +353,7 @@ final class RunTracker: ObservableObject {
 
     private func processNewLocation(_ location: CLLocation) {
         guard state == .running else { return }
+        refreshElapsedTime()
 
         locations.append(location)
         routeCoordinates.append(location.coordinate)
@@ -407,6 +427,7 @@ final class RunTracker: ObservableObject {
             }
 
             checkSegmentBoundary()
+            checkTargetAlert()
 
             // Split detection
             let currentKm = Int(distanceMeters / 1000.0)
@@ -451,6 +472,22 @@ final class RunTracker: ObservableObject {
         }
     }
 
+    private func checkTargetAlert() {
+        guard let targetAlert, !targetAlertFired else { return }
+
+        let reached: Bool
+        switch targetAlert.kind {
+        case .distance:
+            reached = targetAlert.thresholdMeters.map { distanceMeters >= $0 } ?? false
+        case .time:
+            reached = targetAlert.thresholdSeconds.map { elapsedTime >= $0 } ?? false
+        }
+
+        guard reached else { return }
+        targetAlertFired = true
+        CueOrchestrator.shared.fire(.targetAlertReached(targetAlert))
+    }
+
     private func advanceSegment(skipped: Bool) {
         let completed = playlist[activeSegmentIndex]
         recordCompletedSegment(completed, endDate: Date(), skipped: skipped)
@@ -474,7 +511,9 @@ final class RunTracker: ObservableObject {
             ))
             Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 1_400_000_000)
-                guard let self, self.activeSegmentIndex < self.playlist.count else { return }
+                guard let self,
+                      self.state == .running,
+                      self.activeSegmentIndex < self.playlist.count else { return }
                 CueOrchestrator.shared.fire(.boundary(to: self.playlist[self.activeSegmentIndex]))
             }
         } else {

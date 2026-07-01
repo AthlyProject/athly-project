@@ -32,6 +32,7 @@ struct TrainingPlanDetailView: View {
                 }
                 .padding(AthlyTheme.Spacing.sm)
             }
+            .athlyTabBarContentClearance()
             .scrollContentBackground(.hidden)
         }
         .navigationTitle("Plano de Treino")

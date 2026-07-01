@@ -9,17 +9,116 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a0a0f" />
-    <meta name="description" content="Athly - Seu personal trainer inteligente movido por IA. Treinos personalizados para alcançar seus objetivos." />
+    <meta
+      name="description"
+      content="Athly Project é o site público oficial do Athly Runner, produto digital de treino personalizado operado pela AFJ DESENVOLVIMENTO DE SISTEMAS LTDA."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="AFJ DESENVOLVIMENTO DE SISTEMAS LTDA" />
+    <link rel="canonical" href="https://athlyproject.app/" />
+    <meta property="og:site_name" content="Athly Project" />
+    <meta property="og:title" content="Athly Project - Site oficial" />
+    <meta
+      property="og:description"
+      content="Site público oficial do Athly Runner, com informações da empresa, suporte, política de privacidade e termos de uso."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://athlyproject.app/" />
+    <meta property="og:image" content="https://athlyproject.app/apple-touch-icon.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Athly Project - Site oficial" />
+    <meta
+      name="twitter:description"
+      content="Site público oficial do Athly Runner e da AFJ DESENVOLVIMENTO DE SISTEMAS LTDA."
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://athlyproject.app/#organization",
+            "name": "AFJ DESENVOLVIMENTO DE SISTEMAS LTDA",
+            "legalName": "AFJ DESENVOLVIMENTO DE SISTEMAS LTDA",
+            "url": "https://athlyproject.app/",
+            "email": "support@athlyproject.app",
+            "taxID": "36.794.171/0001-87",
+            "identifier": "CNPJ 36.794.171/0001-87",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "R. ARTHUR HIPÓLITO BISSE, 63",
+              "addressCountry": "BR"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://athlyproject.app/#website",
+            "name": "Athly Project",
+            "url": "https://athlyproject.app/",
+            "publisher": {
+              "@id": "https://athlyproject.app/#organization"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://athlyproject.app/#athly-runner",
+            "name": "Athly Runner",
+            "applicationCategory": "HealthApplication",
+            "operatingSystem": "iOS",
+            "url": "https://athlyproject.app/",
+            "publisher": {
+              "@id": "https://athlyproject.app/#organization"
+            }
+          }
+        ]
+      }
+    </script>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400;1,9..40,500;1,9..40,600;1,9..40,700;1,9..40,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <title>Athly - Personal Trainer Inteligente com IA -</title>
+    <title>Athly Project - Site oficial</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <header>
+          <h1>Athly Project</h1>
+          <p>Site público oficial do Athly Runner.</p>
+        </header>
+
+        <section aria-labelledby="company-title">
+          <h2 id="company-title">Informações da empresa</h2>
+          <p>
+            Athly Runner é um produto digital de treino personalizado desenvolvido e operado pela
+            AFJ DESENVOLVIMENTO DE SISTEMAS LTDA.
+          </p>
+          <ul>
+            <li>Razão social: AFJ DESENVOLVIMENTO DE SISTEMAS LTDA</li>
+            <li>CNPJ: 36.794.171/0001-87</li>
+            <li>Endereço registrado: R. ARTHUR HIPÓLITO BISSE, 63</li>
+            <li>País: Brasil</li>
+            <li>Domínio oficial: https://athlyproject.app</li>
+            <li>Contato oficial: support@athlyproject.app</li>
+          </ul>
+        </section>
+
+        <nav aria-label="Documentos públicos">
+          <a href="/company">Empresa</a>
+          <a href="/privacy">Política de Privacidade</a>
+          <a href="/terms">Termos de Uso</a>
+          <a href="/support">Suporte</a>
+        </nav>
+      </main>
+    </div>
+    <noscript>
+      <p>
+        Este site também está disponível sem JavaScript para consulta das informações públicas da
+        empresa, privacidade, termos e suporte.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

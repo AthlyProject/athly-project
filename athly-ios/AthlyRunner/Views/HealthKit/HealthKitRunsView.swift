@@ -75,6 +75,7 @@ struct HealthKitRunsView: View {
             }
             .padding(AthlyTheme.Spacing.sm)
         }
+        .athlyTabBarContentClearance()
         .scrollContentBackground(.hidden)
         .refreshable { await viewModel.loadWorkouts() }
     }

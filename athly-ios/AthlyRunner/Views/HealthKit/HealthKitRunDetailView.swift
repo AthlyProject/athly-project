@@ -83,6 +83,7 @@ struct HealthKitRunDetailView: View {
                 }
                 .padding(.top, 24)
             }
+            .athlyTabBarContentClearance()
             .scrollContentBackground(.hidden)
         }
         .navigationTitle("Detalhes")

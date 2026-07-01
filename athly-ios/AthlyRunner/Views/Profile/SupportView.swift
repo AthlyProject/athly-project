@@ -69,6 +69,7 @@ struct SupportView: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .athlyTabBarContentClearance()
         }
         .navigationTitle("Suporte")
         .navigationBarTitleDisplayMode(.inline)

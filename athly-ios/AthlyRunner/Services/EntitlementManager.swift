@@ -1,13 +1,14 @@
 import Foundation
 import SwiftUI
 
-/// Fonte única de verdade do entitlement premium no app.
+/// Fonte única de verdade do entitlement pago no app.
 /// `isEntitled` = entitlement do RevenueCat ativo **OU** o backend libera (cobre o bypass de admin
 /// via `ADMIN_EMAILS`, então admin/dev nunca vê paywall nem precisa comprar).
 /// Enquanto `FeatureFlags.paywallEnabled == false`, é sempre true (fail-open).
 @MainActor
 final class EntitlementManager: ObservableObject {
     @Published private(set) var isEntitled: Bool = true
+    @Published private(set) var isFounderEligible: Bool = false
 
     private let purchaseManager: PurchaseManager
 
@@ -40,7 +41,7 @@ final class EntitlementManager: ObservableObject {
         }
     }
 
-    /// True se o usuário pode usar recursos premium agora (ou se o paywall está desligado).
+    /// True se o usuário pode usar recursos pagos agora (ou se o paywall está desligado).
     var canUsePremium: Bool {
         !FeatureFlags.paywallEnabled || isEntitled
     }
@@ -48,17 +49,25 @@ final class EntitlementManager: ObservableObject {
     func refresh() async {
         guard FeatureFlags.paywallEnabled else { isEntitled = true; return }
         async let rcActive = purchaseManager.hasActiveEntitlement()
-        let backendEntitled = (try? await APIClient.shared.getEntitlement().entitled) ?? false
+        let backendEntitlement = try? await APIClient.shared.getEntitlement()
+        let backendEntitled = backendEntitlement?.entitled ?? false
+        isFounderEligible = backendEntitlement?.isFounderEligible ?? false
         isEntitled = await rcActive || backendEntitled
     }
 
     /// Liga o RevenueCat ao id do usuário Athly (app_user_id = id Athly, para casar com o webhook).
     func identify(_ userId: String) async {
         await purchaseManager.identify(appUserId: userId)
+        let profile = try? await APIClient.shared.getUserProfile()
         await refresh()
+        await purchaseManager.syncSubscriberAttributes(
+            email: profile?.email,
+            isFounderEligible: isFounderEligible
+        )
     }
 
     func signOut() async {
+        isFounderEligible = false
         await purchaseManager.signOut()
         await refresh()
     }

@@ -90,8 +90,6 @@ describe('computePreviousWeekAnalysis', () => {
     expect(a!.avgFatigue).toBe(4);
     expect(a!.totalDistanceKm).toBeCloseTo(15, 5);
     expect(a!.volumeChange).toBe('aumentou 50%'); // 15 vs baseline 10
-    expect(a!.adherenceNote).toContain('3/4');
-    expect(a!.adherenceNote).toContain('Tiros');
   });
 
   it('retorna null sem semana anterior', () => {

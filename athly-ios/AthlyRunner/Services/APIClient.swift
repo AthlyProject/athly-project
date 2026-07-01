@@ -440,6 +440,7 @@ struct CompleteWorkoutRequest: Encodable {
 struct EntitlementResponse: Decodable, Sendable {
     let entitled: Bool
     let isAdmin: Bool
+    let isFounderEligible: Bool?
 }
 
 struct UserProfile: Decodable {

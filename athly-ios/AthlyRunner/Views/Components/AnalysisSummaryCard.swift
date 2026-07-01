@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AnalysisSummaryCard: View {
     let analysis: RunAnalysis
+    var previousWeekAnalysis: PreviousWeekAnalysis?
     var isInteractive: Bool = false
 
     var body: some View {
@@ -37,6 +38,30 @@ struct AnalysisSummaryCard: View {
                 metricChip(label: "Pace", value: analysis.avgPace)
             }
             .padding(.vertical, 4)
+
+            if let previousWeekAnalysis {
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(height: 1)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("SEMANA ANTERIOR")
+                        .font(AthlyTheme.Typography.label())
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+
+                    HStack(spacing: 0) {
+                        metricChip(label: "Treinos", value: previousWeekWorkouts(previousWeekAnalysis))
+                        Rectangle()
+                            .fill(AthlyTheme.Color.glassBorder)
+                            .frame(width: 1, height: 32)
+                        metricChip(label: "Distância", value: previousWeekDistance(previousWeekAnalysis))
+                        Rectangle()
+                            .fill(AthlyTheme.Color.glassBorder)
+                            .frame(width: 1, height: 32)
+                        metricChip(label: "Volume", value: previousWeekVolume(previousWeekAnalysis))
+                    }
+                }
+            }
 
             if !analysis.trend.isEmpty {
                 HStack(spacing: 4) {
@@ -78,6 +103,31 @@ struct AnalysisSummaryCard: View {
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func previousWeekWorkouts(_ analysis: PreviousWeekAnalysis) -> String {
+        guard let completed = analysis.completedWorkouts,
+              let total = analysis.totalWorkouts else { return "-" }
+        return "\(completed)/\(total)"
+    }
+
+    private func previousWeekDistance(_ analysis: PreviousWeekAnalysis) -> String {
+        guard let distance = analysis.totalDistanceKm else { return "-" }
+        return String(format: "%.1f km", distance)
+    }
+
+    private func previousWeekVolume(_ analysis: PreviousWeekAnalysis) -> String {
+        guard let volume = analysis.volumeChange, !volume.isEmpty else { return "-" }
+        return volumeLabel(volume)
+    }
+
+    private func volumeLabel(_ volume: String) -> String {
+        switch volume.lowercased() {
+        case "increase": return "Mais"
+        case "decrease": return "Menos"
+        case "maintain": return "Igual"
+        default: return volume
+        }
     }
 
     private func trendLabel(_ trend: String) -> String {
