@@ -13,6 +13,7 @@ protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     func requestWriteAuthorization() async throws
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
     func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async
+    func diagnoseZeppWorkouts(limit: Int) async
 }
 
 /// Serviço para leitura e escrita de corridas no Health Store.
@@ -24,6 +25,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     private static let energyType = HKQuantityType(.activeEnergyBurned)
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
+    private static let zeppDiagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "ZeppWorkout")
 
     // Metadata dos HKWorkoutEvents(.segment) gravados pelo app — lidos de volta pelo
     // WorkoutDetailFetcher para reconstruir a estrutura executada com valores reais.
@@ -31,6 +33,18 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     static let segmentIndexMetadataKey = "athlySegmentIndex"
     static let segmentDistanceMetadataKey = "athlyDistanceMeters"
     static let segmentDurationMetadataKey = "athlyDurationSeconds"
+
+    private struct HeartRateSummary {
+        let linkedCount: Int
+        let sameSourceCount: Int
+        let windowCount: Int
+        let avgBPM: Double?
+        let maxBPM: Double?
+
+        var availableCount: Int {
+            linkedCount > 0 ? linkedCount : sameSourceCount
+        }
+    }
 
     /// Verifica se o HealthKit está disponível (não disponível no simulador em muitos casos).
     var isHealthDataAvailable: Bool {
@@ -297,6 +311,203 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
     }
 
+    /// Diagnóstico focado em treinos gravados no Apple Health por Zepp/Amazfit.
+    /// Loga quais campos realmente chegaram ao HealthKit para validar se o fluxo
+    /// `plan-from-health` pode usar agregados, rota, splits e FC como fontes ricas.
+    func diagnoseZeppWorkouts(limit: Int = 10) async {
+        guard isHealthDataAvailable else {
+            Self.zeppDiagLogger.notice("[ZeppDiag] HealthKit indisponivel; diagnostico ignorado.")
+            return
+        }
+
+        let requestedLimit = max(1, limit)
+        let scanLimit = max(50, requestedLimit * 5)
+        let workouts = await fetchLatestRawWorkouts(limit: scanLimit)
+        let matches = Array(workouts.filter(isZeppOrAmazfitWorkout).prefix(requestedLimit))
+        let df = ISO8601DateFormatter()
+
+        Self.zeppDiagLogger.notice("[ZeppDiagStart] scanned=\(workouts.count, privacy: .public) matched=\(matches.count, privacy: .public) requestedLimit=\(requestedLimit, privacy: .public) scanLimit=\(scanLimit, privacy: .public)")
+
+        var withDistance = 0
+        var withRoute = 0
+        var withHR = 0
+        var withEvents = 0
+        var withSplits = 0
+
+        for workout in matches {
+            let distanceM = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+            let calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+            let routes = await fetchRoutes(for: workout)
+            var locations: [CLLocation] = []
+            for route in routes {
+                locations.append(contentsOf: await fetchLocations(for: route))
+            }
+            locations.sort { $0.timestamp < $1.timestamp }
+
+            let hr = await fetchHRSummary(for: workout)
+            let events = workout.workoutEvents ?? []
+            let splits = locations.count >= 2
+                ? SplitCalculator.kmSplits(from: locations, pauses: Self.pauseIntervals(from: workout))
+                : []
+            let sourceName = workout.sourceRevision.source.name
+            let bundle = workout.sourceRevision.source.bundleIdentifier
+            let brand = metadataString(workout, key: "HKWorkoutBrandName") ?? "-"
+            let metadataKeys = sortedMetadataKeys(workout).joined(separator: ",")
+            let eventTypes = eventSummary(events)
+            let activityTypeName = self.workoutActivityTypeName(workout.workoutActivityType)
+            let splitPaces = splits.prefix(8)
+                .map { String(format: "%d:%.0fs", $0.kilometer, $0.paceSecondsPerKm) }
+                .joined(separator: ",")
+
+            if distanceM > 0 { withDistance += 1 }
+            if !routes.isEmpty && locations.count >= 2 { withRoute += 1 }
+            if hr.availableCount > 0 { withHR += 1 }
+            if !events.isEmpty { withEvents += 1 }
+            if !splits.isEmpty { withSplits += 1 }
+
+            Self.zeppDiagLogger.notice("[ZeppDiag] uuid=\(workout.uuid.uuidString, privacy: .public) source=\(sourceName, privacy: .public) bundle=\(bundle, privacy: .public) brand=\(brand, privacy: .public) type=\(activityTypeName, privacy: .public) rawType=\(workout.workoutActivityType.rawValue, privacy: .public) start=\(df.string(from: workout.startDate), privacy: .public) end=\(df.string(from: workout.endDate), privacy: .public) durationS=\(String(format: "%.0f", workout.duration), privacy: .public) distanceM=\(String(format: "%.0f", distanceM), privacy: .public) calories=\(String(format: "%.0f", calories), privacy: .public) routes=\(routes.count, privacy: .public) routePoints=\(locations.count, privacy: .public) hrSamples=\(hr.availableCount, privacy: .public) hrLinkedSamples=\(hr.linkedCount, privacy: .public) hrSameSourceSamples=\(hr.sameSourceCount, privacy: .public) hrWindowSamples=\(hr.windowCount, privacy: .public) avgHR=\(String(format: "%.0f", hr.avgBPM ?? 0), privacy: .public) maxHR=\(String(format: "%.0f", hr.maxBPM ?? 0), privacy: .public) events=\(events.count, privacy: .public) eventTypes=\(eventTypes, privacy: .public) splits=\(splits.count, privacy: .public) splitPaces=\(splitPaces, privacy: .public) metadataKeys=\(metadataKeys, privacy: .public)")
+        }
+
+        if matches.isEmpty {
+            Self.zeppDiagLogger.notice("[ZeppDiagSummary] scanned=\(workouts.count, privacy: .public) matched=0 hint=Nenhum treino Zepp/Amazfit encontrado. Verifique se o Zepp sincronizou com Apple Health e se a permissao de leitura de Workouts foi concedida.")
+            return
+        }
+
+        Self.zeppDiagLogger.notice("[ZeppDiagSummary] scanned=\(workouts.count, privacy: .public) matched=\(matches.count, privacy: .public) withDistance=\(withDistance, privacy: .public) withRoute=\(withRoute, privacy: .public) withHR=\(withHR, privacy: .public) withEvents=\(withEvents, privacy: .public) withSplits=\(withSplits, privacy: .public)")
+    }
+
+    private func fetchLatestRawWorkouts(limit: Int) async -> [HKWorkout] {
+        let workoutType = HKObjectType.workoutType()
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: workoutType,
+                predicate: nil,
+                limit: limit,
+                sortDescriptors: [sort]
+            ) { _, samples, error in
+                if let error {
+                    Self.zeppDiagLogger.error("[ZeppDiag] falha ao buscar workouts: \(error.localizedDescription, privacy: .public)")
+                }
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+            }
+            store.execute(query)
+        }
+    }
+
+    private func isZeppOrAmazfitWorkout(_ workout: HKWorkout) -> Bool {
+        let metadataText = (workout.metadata ?? [:])
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: " ")
+        let haystack = [
+            workout.sourceRevision.source.name,
+            workout.sourceRevision.source.bundleIdentifier,
+            workout.sourceRevision.version ?? "",
+            metadataText,
+        ]
+            .joined(separator: " ")
+            .lowercased()
+
+        return ["zepp", "amazfit", "huami"].contains { haystack.contains($0) }
+    }
+
+    private func sortedMetadataKeys(_ workout: HKWorkout) -> [String] {
+        Array((workout.metadata ?? [:]).keys).sorted()
+    }
+
+    private func metadataString(_ workout: HKWorkout, key: String) -> String? {
+        guard let value = workout.metadata?[key] else { return nil }
+        return String(describing: value)
+    }
+
+    private func eventSummary(_ events: [HKWorkoutEvent]) -> String {
+        guard !events.isEmpty else { return "-" }
+        let counts = Dictionary(grouping: events, by: { $0.type.rawValue })
+            .mapValues(\.count)
+        return counts
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key):\($0.value)" }
+            .joined(separator: ",")
+    }
+
+    private func workoutActivityTypeName(_ type: HKWorkoutActivityType) -> String {
+        switch type {
+        case .running: return "running"
+        case .walking: return "walking"
+        case .cycling: return "cycling"
+        case .hiking: return "hiking"
+        case .traditionalStrengthTraining: return "strength"
+        case .functionalStrengthTraining: return "functional_strength"
+        case .highIntensityIntervalTraining: return "hiit"
+        case .swimming: return "swimming"
+        case .yoga: return "yoga"
+        case .other: return "other"
+        default: return "raw_\(type.rawValue)"
+        }
+    }
+
+    private func fetchHRSummary(for workout: HKWorkout) async -> HeartRateSummary {
+        guard let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+            return HeartRateSummary(linkedCount: 0, sameSourceCount: 0, windowCount: 0, avgBPM: nil, maxBPM: nil)
+        }
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        let linkedPredicate = HKQuery.predicateForObjects(from: workout)
+        let windowPredicate = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: .strictStartDate)
+
+        async let linkedSamples = fetchHeartRateSamples(type: hrType, predicate: linkedPredicate, workoutID: workout.uuid.uuidString, label: "linked")
+        async let windowSamples = fetchHeartRateSamples(type: hrType, predicate: windowPredicate, workoutID: workout.uuid.uuidString, label: "window")
+
+        let linked = await linkedSamples
+        let window = await windowSamples
+        let sourceName = workout.sourceRevision.source.name
+        let sourceBundle = workout.sourceRevision.source.bundleIdentifier
+        let sameSource = window.filter { sample in
+            sample.sourceRevision.source.name == sourceName ||
+                sample.sourceRevision.source.bundleIdentifier == sourceBundle
+        }
+        let preferred = linked.isEmpty ? sameSource : linked
+        let values = preferred
+            .map { $0.quantity.doubleValue(for: unit) }
+            .filter { $0 > 0 }
+
+        guard !values.isEmpty else {
+            return HeartRateSummary(
+                linkedCount: linked.count,
+                sameSourceCount: sameSource.count,
+                windowCount: window.count,
+                avgBPM: nil,
+                maxBPM: nil
+            )
+        }
+
+        let avg = values.reduce(0, +) / Double(values.count)
+        return HeartRateSummary(
+            linkedCount: linked.count,
+            sameSourceCount: sameSource.count,
+            windowCount: window.count,
+            avgBPM: avg,
+            maxBPM: values.max()
+        )
+    }
+
+    private func fetchHeartRateSamples(type: HKQuantityType, predicate: NSPredicate, workoutID: String, label: String) async -> [HKQuantitySample] {
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: nil
+            ) { _, samples, error in
+                if let error {
+                    Self.zeppDiagLogger.error("[ZeppDiag] falha ao buscar FC \(label, privacy: .public) para uuid=\(workoutID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
+                continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
+            }
+            store.execute(query)
+        }
+    }
+
     private func map(_ workout: HKWorkout) -> HealthKitRunItem {
         let distanceMeters = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
         let activeDuration = workout.metadata?["activeDurationSeconds"] as? Double ?? workout.duration
@@ -408,7 +619,19 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     private func fetchRouteLocations(for workout: HKWorkout) async -> [CLLocation] {
-        let routes: [HKWorkoutRoute] = await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Never>) in
+        let routes = await fetchRoutes(for: workout)
+        guard !routes.isEmpty else { return [] }
+
+        var all: [CLLocation] = []
+        for route in routes {
+            all.append(contentsOf: await fetchLocations(for: route))
+        }
+        all.sort { $0.timestamp < $1.timestamp }
+        return all
+    }
+
+    private func fetchRoutes(for workout: HKWorkout) async -> [HKWorkoutRoute] {
+        await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Never>) in
             let predicate = HKQuery.predicateForObjects(from: workout)
             let query = HKAnchoredObjectQuery(
                 type: HKSeriesType.workoutRoute(),
@@ -420,14 +643,6 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             }
             store.execute(query)
         }
-        guard !routes.isEmpty else { return [] }
-
-        var all: [CLLocation] = []
-        for route in routes {
-            all.append(contentsOf: await fetchLocations(for: route))
-        }
-        all.sort { $0.timestamp < $1.timestamp }
-        return all
     }
 
     private func fetchLocations(for route: HKWorkoutRoute) async -> [CLLocation] {

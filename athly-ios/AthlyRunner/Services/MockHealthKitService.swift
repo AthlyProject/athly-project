@@ -18,6 +18,10 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
         // No-op no simulador — diagnóstico só faz sentido em dispositivo físico.
     }
 
+    func diagnoseZeppWorkouts(limit: Int) async {
+        // No-op no simulador — diagnóstico só faz sentido em dispositivo físico.
+    }
+
     func fetchLatestRunningWorkouts(limit: Int = 20) async throws -> [HealthKitRunItem] {
         try await Task.sleep(nanoseconds: 400_000_000) // 0,4 s para simular rede/IO
         return Self.simulatorOwnerRuns.prefix(limit).map { $0 }

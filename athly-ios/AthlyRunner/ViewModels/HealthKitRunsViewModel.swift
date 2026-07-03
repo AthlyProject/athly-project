@@ -14,6 +14,10 @@ final class HealthKitRunsViewModel: ObservableObject {
     }
 
     @Published private(set) var state: State = .idle
+    #if DEBUG
+    @Published private(set) var isRunningZeppDiagnostic = false
+    @Published private(set) var zeppDiagnosticMessage: String?
+    #endif
 
     private let healthKitService: any HealthKitRunningWorkoutsProviding
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
@@ -85,4 +89,26 @@ final class HealthKitRunsViewModel: ObservableObject {
         state = .idle
         Task { await loadWorkouts() }
     }
+
+    #if DEBUG
+    func runZeppDiagnostic() async {
+        guard !isRunningZeppDiagnostic else { return }
+        guard healthKitService.isHealthDataAvailable else {
+            zeppDiagnosticMessage = "HealthKit indisponivel neste dispositivo."
+            return
+        }
+
+        isRunningZeppDiagnostic = true
+        zeppDiagnosticMessage = "Rodando diagnostico Zepp..."
+        defer { isRunningZeppDiagnostic = false }
+
+        do {
+            try await healthKitService.requestReadAuthorization()
+            await healthKitService.diagnoseZeppWorkouts(limit: 10)
+            zeppDiagnosticMessage = "Diagnostico Zepp enviado para os logs do Xcode."
+        } catch {
+            zeppDiagnosticMessage = "Falha no diagnostico Zepp: \(error.localizedDescription)"
+        }
+    }
+    #endif
 }
