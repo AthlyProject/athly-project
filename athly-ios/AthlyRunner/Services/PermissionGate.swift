@@ -1,18 +1,11 @@
 import Foundation
 
 enum PermissionGate {
-    // Versioned keys — bump version when the requested type set changes
-    private static let healthKitReadKey = "permission.healthkit.read.requested.v1"
+    // Versioned write key — bump when the requested share type set changes.
+    // Read authorization is requested directly because HealthKit does not expose per-type
+    // read status and repeated calls are safe.
     // v2: passou a incluir a permissão de escrita de rota (HKSeriesType.workoutRoute) → re-solicita.
     private static let healthKitWriteKey = "permission.healthkit.write.requested.v2"
-
-    static var shouldRequestHealthKitRead: Bool {
-        !UserDefaults.standard.bool(forKey: healthKitReadKey)
-    }
-
-    static func markHealthKitReadRequested() {
-        UserDefaults.standard.set(true, forKey: healthKitReadKey)
-    }
 
     static var shouldRequestHealthKitWrite: Bool {
         !UserDefaults.standard.bool(forKey: healthKitWriteKey)
