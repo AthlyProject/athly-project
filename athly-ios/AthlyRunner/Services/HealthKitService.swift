@@ -56,12 +56,12 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     /// Solicita apenas permissão de leitura para listar corridas existentes + HR para análise detalhada.
-    /// No-op após a primeira solicitação por instalação (guard via PermissionGate).
+    /// HealthKit não expõe status de permissão de leitura por tipo; chamar novamente é seguro e
+    /// permite que novos tipos adicionados pelo app sejam solicitados quando necessário.
     func requestReadAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        guard PermissionGate.shouldRequestHealthKitRead else { return }
         var typesToRead: Set<HKObjectType> = [
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
@@ -70,7 +70,6 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             typesToRead.insert(hrType)
         }
         try await store.requestAuthorization(toShare: [], read: typesToRead)
-        PermissionGate.markHealthKitReadRequested()
     }
 
     /// Solicita permissão de escrita para salvar corridas no Apple Health.
@@ -256,24 +255,35 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
 
         let workoutType = HKObjectType.workoutType()
-        let predicate = HKQuery.predicateForWorkouts(with: .running)
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        let strictPredicate = HKQuery.predicateForWorkouts(with: .running)
+        let strictWorkouts = try await queryWorkouts(
+            sampleType: workoutType,
+            predicate: strictPredicate,
+            limit: limit,
+            sortDescriptors: [sort]
+        )
 
-        return try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: workoutType,
-                predicate: predicate,
-                limit: limit,
-                sortDescriptors: [sort]
-            ) { _, samples, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
-            }
-            store.execute(query)
+        // Alguns importadores de wearables gravam corrida como `.other`, mesmo aparecendo
+        // como corrida no Fitness. Escaneamos uma janela maior e aceitamos só casos com
+        // forte evidência de corrida para não misturar bike/caminhada na ingestão.
+        let broadScanLimit = max(100, limit * 10)
+        let broadWorkouts = try await queryWorkouts(
+            sampleType: workoutType,
+            predicate: nil,
+            limit: broadScanLimit,
+            sortDescriptors: [sort]
+        )
+
+        var uniqueByUUID: [UUID: HKWorkout] = [:]
+        for workout in strictWorkouts + broadWorkouts where isRunningWorkoutCandidate(workout) {
+            uniqueByUUID[workout.uuid] = workout
         }
+
+        return Array(uniqueByUUID.values)
+            .sorted { $0.endDate > $1.endDate }
+            .prefix(limit)
+            .map { $0 }
     }
 
     /// Diagnóstico: executa query estrita (somente .running) e query ampla (todos os workout types)
@@ -310,7 +320,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             let bundle = w.sourceRevision.source.bundleIdentifier
             let appName = w.sourceRevision.source.name
             let brand = w.metadata?["HKWorkoutBrandName"] as? String ?? "-"
-            Self.diagLogger.debug("  [estrita] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
+            let device = deviceDescription(w)
+            Self.diagLogger.debug("  [estrita] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) device=\(device) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
         }
 
         // Query ampla (todos os workout types na janela — captura workouts com tipo diferente de .running)
@@ -326,8 +337,10 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             let bundle = w.sourceRevision.source.bundleIdentifier
             let appName = w.sourceRevision.source.name
             let brand = w.metadata?["HKWorkoutBrandName"] as? String ?? "-"
+            let device = deviceDescription(w)
             let inStrict = strictWorkouts.contains(where: { $0.uuid == w.uuid })
-            Self.diagLogger.debug("  [ampla\(inStrict ? "" : " ⚠️AUSENTE_DA_ESTRITA")] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
+            let accepted = isRunningWorkoutCandidate(w)
+            Self.diagLogger.debug("  [ampla\(inStrict ? "" : " AUSENTE_DA_ESTRITA")\(accepted ? " ACEITA_COMO_CORRIDA" : "")] uuid=\(w.uuid.uuidString) type=\(w.workoutActivityType.rawValue) app=\(appName) bundle=\(bundle) brand=\(brand) device=\(device) start=\(df.string(from: w.startDate)) distM=\(String(format: "%.0f", distM))")
         }
     }
 
@@ -372,6 +385,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             let sourceName = workout.sourceRevision.source.name
             let bundle = workout.sourceRevision.source.bundleIdentifier
             let brand = metadataString(workout, key: "HKWorkoutBrandName") ?? "-"
+            let device = deviceDescription(workout)
             let metadataKeys = sortedMetadataKeys(workout).joined(separator: ",")
             let eventTypes = eventSummary(events)
             let activityTypeName = self.workoutActivityTypeName(workout.workoutActivityType)
@@ -385,7 +399,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             if !events.isEmpty { withEvents += 1 }
             if !splits.isEmpty { withSplits += 1 }
 
-            Self.zeppDiagLogger.notice("[ZeppDiag] uuid=\(workout.uuid.uuidString, privacy: .public) source=\(sourceName, privacy: .public) bundle=\(bundle, privacy: .public) brand=\(brand, privacy: .public) type=\(activityTypeName, privacy: .public) rawType=\(workout.workoutActivityType.rawValue, privacy: .public) start=\(df.string(from: workout.startDate), privacy: .public) end=\(df.string(from: workout.endDate), privacy: .public) durationS=\(String(format: "%.0f", workout.duration), privacy: .public) distanceM=\(String(format: "%.0f", distanceM), privacy: .public) calories=\(String(format: "%.0f", calories), privacy: .public) routes=\(routes.count, privacy: .public) routePoints=\(locations.count, privacy: .public) hrSamples=\(hr.availableCount, privacy: .public) hrLinkedSamples=\(hr.linkedCount, privacy: .public) hrSameSourceSamples=\(hr.sameSourceCount, privacy: .public) hrWindowSamples=\(hr.windowCount, privacy: .public) avgHR=\(String(format: "%.0f", hr.avgBPM ?? 0), privacy: .public) maxHR=\(String(format: "%.0f", hr.maxBPM ?? 0), privacy: .public) events=\(events.count, privacy: .public) eventTypes=\(eventTypes, privacy: .public) splits=\(splits.count, privacy: .public) splitPaces=\(splitPaces, privacy: .public) metadataKeys=\(metadataKeys, privacy: .public)")
+            Self.zeppDiagLogger.notice("[ZeppDiag] uuid=\(workout.uuid.uuidString, privacy: .public) source=\(sourceName, privacy: .public) bundle=\(bundle, privacy: .public) brand=\(brand, privacy: .public) device=\(device, privacy: .public) type=\(activityTypeName, privacy: .public) rawType=\(workout.workoutActivityType.rawValue, privacy: .public) start=\(df.string(from: workout.startDate), privacy: .public) end=\(df.string(from: workout.endDate), privacy: .public) durationS=\(String(format: "%.0f", workout.duration), privacy: .public) distanceM=\(String(format: "%.0f", distanceM), privacy: .public) calories=\(String(format: "%.0f", calories), privacy: .public) routes=\(routes.count, privacy: .public) routePoints=\(locations.count, privacy: .public) hrSamples=\(hr.availableCount, privacy: .public) hrLinkedSamples=\(hr.linkedCount, privacy: .public) hrSameSourceSamples=\(hr.sameSourceCount, privacy: .public) hrWindowSamples=\(hr.windowCount, privacy: .public) avgHR=\(String(format: "%.0f", hr.avgBPM ?? 0), privacy: .public) maxHR=\(String(format: "%.0f", hr.maxBPM ?? 0), privacy: .public) events=\(events.count, privacy: .public) eventTypes=\(eventTypes, privacy: .public) splits=\(splits.count, privacy: .public) splitPaces=\(splitPaces, privacy: .public) metadataKeys=\(metadataKeys, privacy: .public)")
         }
 
         if matches.isEmpty {
@@ -420,16 +434,90 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         let metadataText = (workout.metadata ?? [:])
             .map { "\($0.key)=\($0.value)" }
             .joined(separator: " ")
-        let haystack = [
+        var haystackParts: [String] = [
             workout.sourceRevision.source.name,
             workout.sourceRevision.source.bundleIdentifier,
             workout.sourceRevision.version ?? "",
             metadataText,
         ]
+
+        if let device = workout.device {
+            haystackParts.append(contentsOf: [
+                device.name,
+                device.manufacturer,
+                device.model,
+                device.hardwareVersion,
+                device.firmwareVersion,
+                device.softwareVersion,
+                device.localIdentifier,
+                device.udiDeviceIdentifier,
+            ].compactMap { $0 })
+        }
+
+        let haystack = haystackParts
             .joined(separator: " ")
             .lowercased()
 
         return ["zepp", "amazfit", "huami"].contains { haystack.contains($0) }
+    }
+
+    private func isRunningWorkoutCandidate(_ workout: HKWorkout) -> Bool {
+        if workout.workoutActivityType == .running {
+            return true
+        }
+
+        guard workout.workoutActivityType == .other,
+              isZeppOrAmazfitWorkout(workout) else {
+            return false
+        }
+
+        let distanceMeters = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+        guard distanceMeters >= 400, workout.duration >= 120 else {
+            return false
+        }
+
+        let paceSecondsPerKm = workout.duration / (distanceMeters / 1000.0)
+        return paceSecondsPerKm >= 150 && paceSecondsPerKm <= 900
+    }
+
+    private func deviceDescription(_ workout: HKWorkout) -> String {
+        guard let device = workout.device else { return "-" }
+        let parts = [
+            device.name,
+            device.manufacturer,
+            device.model,
+            device.hardwareVersion,
+            device.firmwareVersion,
+            device.softwareVersion,
+            device.localIdentifier,
+            device.udiDeviceIdentifier,
+        ]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? "-" : parts.joined(separator: "|")
+    }
+
+    private func queryWorkouts(
+        sampleType: HKSampleType,
+        predicate: NSPredicate?,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKWorkout] {
+        try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: sampleType,
+                predicate: predicate,
+                limit: limit,
+                sortDescriptors: sortDescriptors
+            ) { _, samples, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+            }
+            store.execute(query)
+        }
     }
 
     private func sortedMetadataKeys(_ workout: HKWorkout) -> [String] {
