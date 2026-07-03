@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct HealthKitRunsView: View {
-    var title: String = "Corridas do Apple Health"
+    private let title: String
+    private let showsPlanTab: Bool
+
+    @EnvironmentObject private var planVM: TrainingPlanViewModel
 
     @StateObject private var viewModel: HealthKitRunsViewModel = {
         #if targetEnvironment(simulator)
@@ -10,6 +13,26 @@ struct HealthKitRunsView: View {
         return HealthKitRunsViewModel(healthKitService: HealthKitService())
         #endif
     }()
+
+    @State private var selectedTab: HistoryTab
+
+    init(title: String = "Corridas do Apple Health", showsPlanTab: Bool = true) {
+        self.title = title
+        self.showsPlanTab = showsPlanTab
+        _selectedTab = State(initialValue: showsPlanTab ? .plan : .healthKit)
+    }
+
+    private enum HistoryTab: String, CaseIterable {
+        case plan = "Plano"
+        case healthKit = "HealthKit"
+    }
+
+    private struct PrescribedRun: Identifiable {
+        let workout: WorkoutModel
+        let run: HealthKitRunItem
+
+        var id: String { workout.id }
+    }
 
     var body: some View {
         ZStack {
@@ -46,14 +69,8 @@ struct HealthKitRunsView: View {
                 healthUnavailableContent
             } else if let message = viewModel.errorMessage {
                 errorContent(message: message)
-            } else if viewModel.isEmptyAfterLoad {
-                emptyContent
-            } else if !viewModel.runs.isEmpty {
-                runsList
             } else {
-                ProgressView()
-                    .tint(AthlyTheme.Color.primary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                content
             }
 
             #if DEBUG
@@ -87,10 +104,60 @@ struct HealthKitRunsView: View {
             }
             #endif
         }
-        .task { await viewModel.loadWorkouts() }
+        .task { await loadData() }
     }
 
-    private var runsList: some View {
+    private var content: some View {
+        VStack(spacing: 0) {
+            if showsPlanTab {
+                Picker("Historico", selection: $selectedTab) {
+                    ForEach(HistoryTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+            }
+
+            if selectedTab == .plan && showsPlanTab {
+                prescribedRunsContent
+            } else {
+                healthKitRunsContent
+            }
+        }
+    }
+
+    private var healthKitRunsContent: some View {
+        Group {
+            if viewModel.isEmptyAfterLoad {
+                emptyContent
+            } else if !viewModel.runs.isEmpty {
+                healthKitRunsList
+            } else {
+                ProgressView()
+                    .tint(AthlyTheme.Color.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    private var prescribedRunsContent: some View {
+        Group {
+            if planVM.isLoading && planVM.allWorkouts.isEmpty {
+                ProgressView()
+                    .tint(AthlyTheme.Color.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if prescribedRuns.isEmpty {
+                emptyPrescribedContent
+            } else {
+                prescribedRunsList
+            }
+        }
+    }
+
+    private var healthKitRunsList: some View {
         ScrollView {
             LazyVStack(spacing: AthlyTheme.Spacing.sm) {
                 ForEach(viewModel.runs) { run in
@@ -106,7 +173,66 @@ struct HealthKitRunsView: View {
         }
         .athlyTabBarContentClearance()
         .scrollContentBackground(.hidden)
-        .refreshable { await viewModel.loadWorkouts() }
+        .refreshable { await refreshData() }
+    }
+
+    private var prescribedRunsList: some View {
+        ScrollView {
+            LazyVStack(spacing: AthlyTheme.Spacing.sm) {
+                ForEach(prescribedRuns) { item in
+                    NavigationLink {
+                        HealthKitRunDetailView(item: item.run, prescribedWorkout: item.workout)
+                    } label: {
+                        PrescribedRunCard(workout: item.workout, item: item.run)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(AthlyTheme.Spacing.sm)
+        }
+        .athlyTabBarContentClearance()
+        .scrollContentBackground(.hidden)
+        .refreshable { await refreshData() }
+    }
+
+    private var prescribedRuns: [PrescribedRun] {
+        var runsById: [String: HealthKitRunItem] = [:]
+        for run in viewModel.allKnownRuns {
+            runsById[run.id] = run
+        }
+
+        return planVM.allWorkouts.compactMap { workout in
+            guard workout.status == .done || workout.status == .partial,
+                  let uuid = healthKitUUID(for: workout),
+                  let run = runsById[uuid] else {
+                return nil
+            }
+            return PrescribedRun(workout: workout, run: run)
+        }
+        .sorted { $0.run.startDate > $1.run.startDate }
+    }
+
+    private var linkedHealthKitUUIDs: [String] {
+        planVM.allWorkouts.compactMap { healthKitUUID(for: $0) }
+    }
+
+    private func healthKitUUID(for workout: WorkoutModel) -> String? {
+        workout.appleHealthWorkoutUUID
+            ?? RunWorkoutLinkStore.shared.healthKitUUID(forAthlyWorkoutId: workout.id)
+    }
+
+    private func loadData() async {
+        if showsPlanTab {
+            await planVM.loadData()
+        }
+        await viewModel.loadWorkouts()
+        if showsPlanTab {
+            await viewModel.ensureRunItems(workoutUUIDs: linkedHealthKitUUIDs)
+        }
+    }
+
+    private func refreshData() async {
+        await loadData()
     }
 
     private var emptyContent: some View {
@@ -118,6 +244,23 @@ struct HealthKitRunsView: View {
                 .font(AthlyTheme.Typography.semibold(17))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
             Text("Nao ha corridas no Apple Health neste dispositivo. No simulador pode nao haver dados.")
+                .font(AthlyTheme.Typography.body(15))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var emptyPrescribedContent: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "list.clipboard")
+                .font(.system(size: 48))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+            Text("Nenhum treino prescrito com corrida vinculada")
+                .font(AthlyTheme.Typography.semibold(17))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+            Text("Quando um treino do plano for concluido com uma corrida do Apple Health, ele aparece aqui com o prescrito e o executado.")
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -255,6 +398,88 @@ struct HealthKitRunCard: View {
                     .foregroundStyle(AthlyTheme.Color.textSecondary)
                 }
             }
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+    }
+
+    private func mainStat(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(AthlyTheme.Typography.semibold(16))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(label)
+                .font(AthlyTheme.Typography.body(11))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct PrescribedRunCard: View {
+    let workout: WorkoutModel
+    let item: HealthKitRunItem
+
+    private var dateTimeText: String {
+        if Calendar.current.isDateInToday(item.startDate) {
+            item.startDate.formatted(date: .omitted, time: .shortened)
+        } else {
+            item.startDate.formatted(date: .abbreviated, time: .shortened)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: workout.sportType.sfSymbol)
+                    .font(.system(size: 16))
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                    .frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(dateTimeText)
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                    Text(workout.title)
+                        .font(AthlyTheme.Typography.semibold(17))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        .lineLimit(2)
+                    if let description = workout.description, !description.isEmpty {
+                        Text(description)
+                            .font(AthlyTheme.Typography.body(12))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+
+            HStack(alignment: .top, spacing: 0) {
+                mainStat(value: item.formattedDuration, label: "Tempo")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(item.formattedDistance) km", label: "Distancia")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(item.formattedPace)/km", label: "Pace")
+            }
+            .padding(.vertical, 4)
+
+            HStack(spacing: 14) {
+                Label("Prescrito", systemImage: "list.clipboard")
+                Label(String(format: "%.0f kcal", item.activeEnergyBurned), systemImage: "flame")
+            }
+            .font(AthlyTheme.Typography.body(12))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
         .padding(AthlyTheme.Spacing.sm)
         .athlyCard()

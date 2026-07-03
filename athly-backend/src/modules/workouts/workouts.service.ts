@@ -18,6 +18,8 @@ const workoutCompletionSelect = {
   status: true,
   intensity: true,
   stravaActivityId: true,
+  appleHealthWorkoutUUID: true,
+  isGoalAttempt: true,
 } satisfies Prisma.WorkoutSelect;
 
 @Injectable()

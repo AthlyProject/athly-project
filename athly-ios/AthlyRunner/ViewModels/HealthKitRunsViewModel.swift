@@ -14,6 +14,7 @@ final class HealthKitRunsViewModel: ObservableObject {
     }
 
     @Published private(set) var state: State = .idle
+    @Published private(set) var linkedRunsById: [String: HealthKitRunItem] = [:]
     #if DEBUG
     @Published private(set) var isRunningZeppDiagnostic = false
     @Published private(set) var zeppDiagnosticMessage: String?
@@ -29,6 +30,14 @@ final class HealthKitRunsViewModel: ObservableObject {
     var runs: [HealthKitRunItem] {
         if case .loaded(let items) = state { return items }
         return []
+    }
+
+    var allKnownRuns: [HealthKitRunItem] {
+        var byId = Dictionary(uniqueKeysWithValues: runs.map { ($0.id, $0) })
+        for (id, item) in linkedRunsById {
+            byId[id] = item
+        }
+        return byId.values.sorted { $0.startDate > $1.startDate }
     }
 
     var isLoading: Bool {
@@ -63,6 +72,9 @@ final class HealthKitRunsViewModel: ObservableObject {
         do {
             try await healthKitService.requestReadAuthorization()
             let items = try await healthKitService.fetchLatestRunningWorkouts(limit: 20)
+            linkedRunsById = linkedRunsById.filter { cached in
+                !items.contains { $0.id == cached.key }
+            }
 
             let df = ISO8601DateFormatter()
             Self.diagLogger.debug("[HealthKitRunsView] fetchLatestRunningWorkouts(limit:20) retornou \(items.count) corrida(s)")
@@ -88,6 +100,22 @@ final class HealthKitRunsViewModel: ObservableObject {
     func retry() {
         state = .idle
         Task { await loadWorkouts() }
+    }
+
+    func ensureRunItems(workoutUUIDs: [String]) async {
+        guard healthKitService.isHealthDataAvailable else { return }
+        let requested = Set(workoutUUIDs.filter { !$0.isEmpty })
+        guard !requested.isEmpty else { return }
+
+        let known = Set(runs.map(\.id)).union(linkedRunsById.keys)
+        let missing = requested.subtracting(known)
+        guard !missing.isEmpty else { return }
+
+        for uuid in missing {
+            if let item = try? await healthKitService.fetchRunningWorkout(uuid: uuid) {
+                linkedRunsById[uuid] = item
+            }
+        }
     }
 
     #if DEBUG

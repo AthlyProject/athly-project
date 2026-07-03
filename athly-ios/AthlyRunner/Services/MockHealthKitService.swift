@@ -27,6 +27,10 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
         return Self.simulatorOwnerRuns.prefix(limit).map { $0 }
     }
 
+    func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem? {
+        Self.simulatorOwnerRuns.first { $0.id == uuid }
+    }
+
     // MARK: - Dados do “dono do iPhone” do simulador (tipados)
 
     private static let calendar = Calendar.current

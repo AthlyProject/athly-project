@@ -231,7 +231,7 @@ struct ProfileView: View {
                     // Integração (teste HealthKit)
                     Section("Integracao") {
                         NavigationLink {
-                            HealthKitRunsView()
+                            HealthKitRunsView(showsPlanTab: false)
                         } label: {
                             HStack {
                                 Image(systemName: "heart.fill")

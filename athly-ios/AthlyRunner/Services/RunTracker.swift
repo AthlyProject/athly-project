@@ -559,7 +559,7 @@ struct RunResult {
 /// Um segmento do treino estruturado como foi de fato executado. Persiste no
 /// HealthKit como HKWorkoutEvent(.segment) com metadata — é a fonte que permite
 /// à análise da IA avaliar tiros/recuperações com distância e duração reais.
-struct SegmentRecord: Sendable {
+struct SegmentRecord: Codable, Equatable, Sendable {
     let kind: SegmentKind
     let setIndex: Int?
     let setTotal: Int?

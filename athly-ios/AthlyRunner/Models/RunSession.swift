@@ -15,6 +15,8 @@ final class RunSession: Identifiable, Codable {
 
     var routePoints: [RoutePoint]
     var splits: [Split]
+    /// Segmentos reais executados em treinos estruturados. Opcional para tolerar registros antigos.
+    var segmentRecords: [SegmentRecord]?
     /// Janelas de pausa explícita. Opcional para o decode tolerar registros antigos (o RunStore
     /// decodifica o array inteiro de uma vez — uma chave ausente lançaria e zeraria o histórico).
     /// Usado na releitura offline dos splits para descontar a pausa igual ao caminho ao vivo.
@@ -37,6 +39,7 @@ final class RunSession: Identifiable, Codable {
         self.sportType = sportType
         self.routePoints = []
         self.splits = []
+        self.segmentRecords = []
         self.pauseIntervals = []
         self.backendId = nil
         self.synced = false

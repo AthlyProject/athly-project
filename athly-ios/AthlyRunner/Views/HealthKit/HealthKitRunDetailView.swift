@@ -10,11 +10,18 @@ import CoreLocation
 /// Sem rota em nenhuma via (Garmin/Nike/esteira) → mostra só os stats.
 struct HealthKitRunDetailView: View {
     let item: HealthKitRunItem
+    let prescribedWorkout: WorkoutModel?
+
+    init(item: HealthKitRunItem, prescribedWorkout: WorkoutModel? = nil) {
+        self.item = item
+        self.prescribedWorkout = prescribedWorkout
+    }
 
     @EnvironmentObject private var runStore: RunStore
 
     @State private var coordinates: [CLLocationCoordinate2D] = []
     @State private var splitRows: [SplitRow] = []
+    @State private var segmentRecords: [SegmentRecord] = []
     @State private var avgHR: Double?
     @State private var reportURL: URL?
     @State private var isLoadingDetail = true
@@ -39,6 +46,10 @@ struct HealthKitRunDetailView: View {
                 VStack(spacing: AthlyTheme.Spacing.md) {
                     header
 
+                    if let prescribedWorkout {
+                        WorkoutPrescriptionSection(workout: prescribedWorkout)
+                    }
+
                     if !coordinates.isEmpty {
                         SummaryMapView(coordinates: coordinates)
                             .allowsHitTesting(false)
@@ -51,10 +62,17 @@ struct HealthKitRunDetailView: View {
                             .frame(height: 80)
                     }
 
-                    statsGrid
+                    RunStatsGrid(stats: .healthRun(item: item, splitCount: splitRows.count, avgHR: avgHR))
+
+                    let executedSegments = RunExecutedSegmentsSection.displayableSegments(segmentRecords)
+                    if !executedSegments.isEmpty {
+                        RunExecutedSegmentsSection(segments: executedSegments)
+                    }
 
                     if !splitRows.isEmpty {
-                        splitsSection
+                        RunSplitsSection(splits: splitRows.map {
+                            RunSplitRow(kilometer: $0.km, paceSecondsPerKm: $0.pace)
+                        })
                     }
 
                     if let reportURL {
@@ -106,6 +124,7 @@ struct HealthKitRunDetailView: View {
             let kmSplits = SplitCalculator.kmSplits(from: locations, pauses: pauses)
             coordinates = locations.map { $0.coordinate }
             splitRows = kmSplits.map { SplitRow(km: $0.kilometer, pace: $0.paceSecondsPerKm) }
+            segmentRecords = session.segmentRecords ?? []
 
             let result = RunResult(
                 startDate: session.startDate,
@@ -124,14 +143,23 @@ struct HealthKitRunDetailView: View {
                         elevationDelta: $0.elevationDelta
                     )
                 },
+                segmentRecords: segmentRecords,
                 pauseIntervals: pauses
             )
             reportURL = RunReportGenerator.fileURL(for: result)
+
+            if let detail = await healthKitService.fetchRunDetail(workoutUUID: item.id) {
+                if segmentRecords.isEmpty {
+                    segmentRecords = detail.segmentRecords
+                }
+                avgHR = detail.avgHR
+            }
         } else if let detail = await healthKitService.fetchRunDetail(workoutUUID: item.id) {
             coordinates = detail.coordinates.map {
                 CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
             }
             splitRows = detail.splits.map { SplitRow(km: $0.kilometer, pace: $0.paceSecondsPerKm) }
+            segmentRecords = detail.segmentRecords
             avgHR = detail.avgHR
         }
 
@@ -161,84 +189,4 @@ struct HealthKitRunDetailView: View {
         }
     }
 
-    private var statsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-            statCard(icon: "ruler", value: "\(item.formattedDistance) km", label: "Distancia")
-            statCard(icon: "clock", value: item.formattedDuration, label: "Duracao")
-            statCard(icon: "speedometer", value: "\(item.formattedPace) /km", label: "Pace medio")
-            statCard(icon: "flame", value: String(format: "%.0f kcal", item.activeEnergyBurned), label: "Calorias")
-            if let avgHR, avgHR > 0 {
-                statCard(icon: "heart", value: "\(Int(avgHR)) bpm", label: "FC media")
-            }
-            if !splitRows.isEmpty {
-                statCard(icon: "number", value: "\(splitRows.count)", label: "Splits")
-            }
-        }
-        .padding(.horizontal, 16)
-    }
-
-    private func statCard(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(AthlyTheme.Color.primary)
-            Text(value)
-                .font(AthlyTheme.Typography.heading(20))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-            Text(label)
-                .font(AthlyTheme.Typography.body(12))
-                .foregroundStyle(AthlyTheme.Color.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .athlyCard()
-    }
-
-    private var splitsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Splits")
-                .font(AthlyTheme.Typography.semibold(17))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-                .padding(.horizontal, 16)
-
-            VStack(spacing: 0) {
-                ForEach(Array(splitRows.enumerated()), id: \.element.id) { index, split in
-                    HStack {
-                        Text("Km \(split.km)")
-                            .font(AthlyTheme.Typography.medium(16))
-                            .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        Spacer()
-                        Text(formattedPace(split.pace))
-                            .font(.custom("SpaceGrotesk-SemiBold", size: 16).monospacedDigit())
-                            .foregroundStyle(AthlyTheme.Color.primary)
-                        Text("/km")
-                            .font(AthlyTheme.Typography.body(12))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-
-                    if index < splitRows.count - 1 {
-                        Divider()
-                            .background(AthlyTheme.Color.borderDark)
-                            .padding(.horizontal, 16)
-                    }
-                }
-            }
-            .background(AthlyTheme.Color.surfaceCard)
-            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
-                    .stroke(AthlyTheme.Gradient.gradientBorder, lineWidth: 1)
-            )
-            .padding(.horizontal, 16)
-        }
-    }
-
-    private func formattedPace(_ secondsPerKm: Double) -> String {
-        guard secondsPerKm > 0, secondsPerKm.isFinite else { return "--:--" }
-        let minutes = Int(secondsPerKm) / 60
-        let seconds = Int(secondsPerKm) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
 }

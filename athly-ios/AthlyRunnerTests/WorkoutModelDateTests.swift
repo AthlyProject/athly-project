@@ -26,6 +26,51 @@ final class WorkoutModelDateTests: XCTestCase {
         XCTAssertTrue(workout.isOnDay(reference, calendar: calendar))
     }
 
+    func testWorkoutModelDecodesAppleHealthWorkoutUUID() throws {
+        let data = Data("""
+        {
+          "id": "workout-1",
+          "date": "2026-06-30",
+          "sportType": "running",
+          "title": "Tiros",
+          "blocks": [],
+          "status": "done",
+          "appleHealthWorkoutUUID": "hk-uuid-1"
+        }
+        """.utf8)
+
+        let workout = try JSONDecoder().decode(WorkoutModel.self, from: data)
+
+        XCTAssertEqual(workout.appleHealthWorkoutUUID, "hk-uuid-1")
+    }
+
+    func testRunSessionDecodesWithoutSegmentRecords() throws {
+        let data = Data("""
+        {
+          "id": "2C9B012B-40D1-47DA-9DAB-0F4F4E49E3E9",
+          "startDate": "2026-06-30T10:00:00Z",
+          "endDate": "2026-06-30T10:30:00Z",
+          "distanceMeters": 5000,
+          "durationSeconds": 1800,
+          "averagePaceSecondsPerKm": 360,
+          "elevationGainMeters": 20,
+          "caloriesBurned": 300,
+          "status": "completed",
+          "sportType": "running",
+          "routePoints": [],
+          "splits": [],
+          "backendId": null,
+          "synced": false
+        }
+        """.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let session = try decoder.decode(RunSession.self, from: data)
+
+        XCTAssertNil(session.segmentRecords)
+    }
+
     private var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -57,7 +102,8 @@ final class WorkoutModelDateTests: XCTestCase {
             weeklyGoalId: "week-1",
             intensity: 3,
             isGoalAttempt: false,
-            stravaActivityId: nil
+            stravaActivityId: nil,
+            appleHealthWorkoutUUID: nil
         )
     }
 }

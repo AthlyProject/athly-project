@@ -40,6 +40,12 @@ final class RunWorkoutLinkStore: @unchecked Sendable {
         fetchLink(for: healthKitUUID)?.athlyWorkoutId
     }
 
+    func healthKitUUID(forAthlyWorkoutId athlyWorkoutId: String) -> String? {
+        queue.sync {
+            cache.values.first { $0.athlyWorkoutId == athlyWorkoutId }?.healthKitUUID
+        }
+    }
+
     func allOrphanCandidates(healthKitUUIDs: [String]) -> [String] {
         queue.sync { healthKitUUIDs.filter { cache[$0] == nil } }
     }

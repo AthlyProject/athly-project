@@ -213,6 +213,7 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let intensity: Double?
     let isGoalAttempt: Bool?
     let stravaActivityId: String?
+    let appleHealthWorkoutUUID: String?
 
     var parsedDate: Date {
         let formatter = ISO8601DateFormatter()

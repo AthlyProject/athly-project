@@ -12,6 +12,7 @@ protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     func requestReadAuthorization() async throws
     func requestWriteAuthorization() async throws
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
+    func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem?
     func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async
     func diagnoseZeppWorkouts(limit: Int) async
 }
@@ -31,8 +32,11 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     // WorkoutDetailFetcher para reconstruir a estrutura executada com valores reais.
     static let segmentKindMetadataKey = "athlySegmentKind"
     static let segmentIndexMetadataKey = "athlySegmentIndex"
+    static let segmentSetTotalMetadataKey = "athlySegmentSetTotal"
+    static let segmentLabelMetadataKey = "athlySegmentLabel"
     static let segmentDistanceMetadataKey = "athlyDistanceMeters"
     static let segmentDurationMetadataKey = "athlyDurationSeconds"
+    static let segmentSkippedMetadataKey = "athlySegmentSkipped"
 
     private struct HeartRateSummary {
         let linkedCount: Int
@@ -147,11 +151,16 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             guard record.endDate > record.startDate else { return nil }
             var metadata: [String: Any] = [
                 Self.segmentKindMetadataKey: record.kind.rawValue,
+                Self.segmentLabelMetadataKey: record.label,
                 Self.segmentDistanceMetadataKey: record.distanceMeters,
-                Self.segmentDurationMetadataKey: record.durationSeconds
+                Self.segmentDurationMetadataKey: record.durationSeconds,
+                Self.segmentSkippedMetadataKey: record.skipped
             ]
             if let setIndex = record.setIndex {
                 metadata[Self.segmentIndexMetadataKey] = setIndex
+            }
+            if let setTotal = record.setTotal {
+                metadata[Self.segmentSetTotalMetadataKey] = setTotal
             }
             return HKWorkoutEvent(
                 type: .segment,
@@ -226,6 +235,17 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     func fetchLatestRunningWorkouts(limit: Int = 20) async throws -> [HealthKitRunItem] {
         let workouts = try await fetchLatestRawRunningWorkouts(limit: limit)
         return workouts.map { self.map($0) }
+    }
+
+    /// Busca uma corrida específica pelo UUID do HKWorkout.
+    func fetchRunningWorkout(uuid workoutUUID: String) async throws -> HealthKitRunItem? {
+        guard isHealthDataAvailable,
+              let uuid = UUID(uuidString: workoutUUID),
+              let workout = await fetchWorkout(uuid: uuid),
+              workout.workoutActivityType == .running else {
+            return nil
+        }
+        return map(workout)
     }
 
     /// Busca os últimos `HKWorkout` brutos (sem mapeamento). Usado pelo `WorkoutDetailFetcher`
@@ -581,6 +601,87 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         return []
     }
 
+    // MARK: - Segmentos executados
+
+    /// Reconstrói os blocos executados gravados pelo Athly como `HKWorkoutEvent(.segment)`.
+    static func segmentRecords(from workout: HKWorkout) -> [SegmentRecord] {
+        let events = (workout.workoutEvents ?? [])
+            .filter { $0.type == .segment && $0.metadata?[segmentKindMetadataKey] is String }
+            .sorted { $0.dateInterval.start < $1.dateInterval.start }
+
+        guard !events.isEmpty else { return [] }
+
+        var repCounter = 0
+        var recoveryCounter = 0
+
+        return events.compactMap { event in
+            guard event.dateInterval.end > event.dateInterval.start,
+                  let kindRaw = event.metadata?[segmentKindMetadataKey] as? String else {
+                return nil
+            }
+
+            let kind = SegmentKind(rawValue: kindRaw) ?? .unknown
+            let setIndex = metadataInt(event.metadata, key: segmentIndexMetadataKey)
+            let setTotal = metadataInt(event.metadata, key: segmentSetTotalMetadataKey)
+            let distance = metadataDouble(event.metadata, key: segmentDistanceMetadataKey) ?? 0
+            let duration = metadataDouble(event.metadata, key: segmentDurationMetadataKey)
+                ?? event.dateInterval.duration
+            let skipped = metadataBool(event.metadata, key: segmentSkippedMetadataKey) ?? false
+
+            let label: String
+            if let stored = event.metadata?[segmentLabelMetadataKey] as? String, !stored.isEmpty {
+                label = stored
+            } else {
+                switch kind {
+                case .work:
+                    repCounter += 1
+                    label = setIndex.map { "Tiro \($0)" } ?? "Tiro \(repCounter)"
+                case .recovery:
+                    recoveryCounter += 1
+                    label = setIndex.map { "Recuperacao \($0)" } ?? "Recuperacao \(recoveryCounter)"
+                case .warmup:
+                    label = "Aquecimento"
+                case .cooldown:
+                    label = "Desaceleramento"
+                case .rest:
+                    label = "Descanso"
+                case .set, .unknown:
+                    label = "Bloco"
+                }
+            }
+
+            return SegmentRecord(
+                kind: kind,
+                setIndex: setIndex,
+                setTotal: setTotal,
+                label: label,
+                startDate: event.dateInterval.start,
+                endDate: event.dateInterval.end,
+                distanceMeters: distance,
+                durationSeconds: duration,
+                skipped: skipped
+            )
+        }
+    }
+
+    private static func metadataDouble(_ metadata: [String: Any]?, key: String) -> Double? {
+        if let value = metadata?[key] as? Double { return value }
+        if let value = metadata?[key] as? NSNumber { return value.doubleValue }
+        return nil
+    }
+
+    private static func metadataInt(_ metadata: [String: Any]?, key: String) -> Int? {
+        if let value = metadata?[key] as? Int { return value }
+        if let value = metadata?[key] as? NSNumber { return value.intValue }
+        return nil
+    }
+
+    private static func metadataBool(_ metadata: [String: Any]?, key: String) -> Bool? {
+        if let value = metadata?[key] as? Bool { return value }
+        if let value = metadata?[key] as? NSNumber { return value.boolValue }
+        return nil
+    }
+
     // MARK: - Detalhe de uma corrida (rota + splits + FC) para o histórico
 
     /// Monta o detalhe de uma corrida (rota, splits por km e FC) a partir do UUID do HKWorkout.
@@ -600,7 +701,13 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
         let hr = await fetchHRStats(for: workout)
 
-        return RunRouteDetail(coordinates: coordinates, splits: splits, avgHR: hr?.avg, maxHR: hr?.max)
+        return RunRouteDetail(
+            coordinates: coordinates,
+            splits: splits,
+            segmentRecords: Self.segmentRecords(from: workout),
+            avgHR: hr?.avg,
+            maxHR: hr?.max
+        )
     }
 
     private func fetchWorkout(uuid: UUID) async -> HKWorkout? {
@@ -687,6 +794,7 @@ private final class LocationsBuffer: @unchecked Sendable {
 struct RunRouteDetail: Sendable {
     let coordinates: [RunCoordinate]
     let splits: [KmSplit]
+    let segmentRecords: [SegmentRecord]
     let avgHR: Double?
     let maxHR: Double?
     var hasRoute: Bool { coordinates.count >= 2 }
