@@ -55,9 +55,38 @@ struct HealthKitRunsView: View {
                     .tint(AthlyTheme.Color.primary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+
+            #if DEBUG
+            if let message = viewModel.zeppDiagnosticMessage {
+                debugDiagnosticBanner(message)
+                    .padding(.horizontal, AthlyTheme.Spacing.sm)
+                    .padding(.bottom, AthlyTheme.Spacing.md)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .transition(.opacity)
+                    .allowsHitTesting(false)
+            }
+            #endif
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            #if DEBUG
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    Task { await viewModel.runZeppDiagnostic() }
+                } label: {
+                    if viewModel.isRunningZeppDiagnostic {
+                        ProgressView()
+                            .tint(AthlyTheme.Color.primary)
+                    } else {
+                        Image(systemName: "waveform.path.ecg")
+                    }
+                }
+                .disabled(viewModel.isRunningZeppDiagnostic)
+                .accessibilityLabel("Rodar diagnostico Zepp")
+            }
+            #endif
+        }
         .task { await viewModel.loadWorkouts() }
     }
 
@@ -140,6 +169,28 @@ struct HealthKitRunsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    #if DEBUG
+    private func debugDiagnosticBanner(_ message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "waveform.path.ecg")
+                .foregroundStyle(AthlyTheme.Color.primary)
+            Text(message)
+                .font(AthlyTheme.Typography.body(12))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(AthlyTheme.Color.surfaceDark.opacity(0.96))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AthlyTheme.Color.glassBorder, lineWidth: 1)
+        )
+    }
+    #endif
 }
 
 // MARK: - Card (estilo Fitness + Athly)
