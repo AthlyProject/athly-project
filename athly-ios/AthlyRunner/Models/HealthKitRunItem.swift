@@ -1,7 +1,7 @@
 import Foundation
 
 /// Modelo de apresentação para uma corrida lida do HealthKit (somente leitura).
-struct HealthKitRunItem: Identifiable {
+struct HealthKitRunItem: Identifiable, Codable, Equatable, Sendable {
     let id: String
     let startDate: Date
     let endDate: Date

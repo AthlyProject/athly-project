@@ -61,11 +61,7 @@ struct HealthKitRunsView: View {
             )
             .ignoresSafeArea()
 
-            if viewModel.isLoading {
-                ProgressView()
-                    .tint(AthlyTheme.Color.primary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if viewModel.isHealthUnavailable {
+            if viewModel.isHealthUnavailable {
                 healthUnavailableContent
             } else if let message = viewModel.errorMessage {
                 errorContent(message: message)
@@ -145,7 +141,7 @@ struct HealthKitRunsView: View {
 
     private var prescribedRunsContent: some View {
         Group {
-            if planVM.isLoading && planVM.allWorkouts.isEmpty {
+            if shouldShowPrescribedLoading {
                 ProgressView()
                     .tint(AthlyTheme.Color.primary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -167,6 +163,15 @@ struct HealthKitRunsView: View {
                         HealthKitRunCard(item: run)
                     }
                     .buttonStyle(.plain)
+                    .onAppear {
+                        Task { await viewModel.loadMoreIfNeeded(currentItem: run) }
+                    }
+                }
+
+                if viewModel.isLoadingMore {
+                    ProgressView()
+                        .tint(AthlyTheme.Color.primary)
+                        .padding(.vertical, AthlyTheme.Spacing.md)
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
@@ -193,6 +198,15 @@ struct HealthKitRunsView: View {
         .athlyTabBarContentClearance()
         .scrollContentBackground(.hidden)
         .refreshable { await refreshData() }
+    }
+
+    private var shouldShowPrescribedLoading: Bool {
+        if !prescribedRuns.isEmpty { return false }
+        if case .idle = viewModel.state { return true }
+        return (planVM.isLoading && planVM.allWorkouts.isEmpty)
+            || viewModel.isInitialLoading
+            || viewModel.isRefreshing
+            || viewModel.isResolvingLinkedRuns
     }
 
     private var prescribedRuns: [PrescribedRun] {
@@ -223,11 +237,12 @@ struct HealthKitRunsView: View {
 
     private func loadData() async {
         if showsPlanTab {
-            await planVM.loadData()
-        }
-        await viewModel.loadWorkouts()
-        if showsPlanTab {
+            async let planLoad: Void = planVM.loadData()
+            async let healthLoad: Void = viewModel.loadWorkouts()
+            _ = await (planLoad, healthLoad)
             await viewModel.ensureRunItems(workoutUUIDs: linkedHealthKitUUIDs)
+        } else {
+            await viewModel.loadWorkouts()
         }
     }
 
@@ -505,5 +520,6 @@ struct HealthKitRunsView_Previews: PreviewProvider {
         NavigationStack {
             HealthKitRunsView()
         }
+        .environmentObject(TrainingPlanViewModel())
     }
 }

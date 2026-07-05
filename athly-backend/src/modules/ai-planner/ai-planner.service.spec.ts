@@ -174,3 +174,79 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
     await expect(reserve(svc)).resolves.toBe(row);
   });
 });
+
+describe('AiPlannerService.assessUndatedGoalAttempt', () => {
+  const assess = (sessions: any[]) =>
+    (planner as any).assessUndatedGoalAttempt(
+      {
+        isRunningRelated: true,
+        targetDistance: '5k',
+        targetTime: '00:25:00',
+        eventDate: null,
+        eventName: null,
+        experienceLevel: 'intermediate',
+        summary: 'Correr 5km em menos de 25 minutos',
+        rejectionReason: null,
+      },
+      {
+        completedWorkouts: 3,
+        totalWorkouts: 3,
+        completionRate: 1,
+        totalDistanceKm: 12.22,
+        avgEffort: 4.7,
+        avgFatigue: 4.3,
+        skippedWorkouts: [],
+        volumeChange: 'manteve',
+      },
+      sessions,
+      undefined,
+    );
+
+  const continuous5k = (mainPace: string) => [
+    {
+      session: {
+        distanceMeters: 6980,
+        durationSeconds: 2412,
+        segments: [
+          { label: SegmentLabel.warmup, distanceKm: 1.64, durationSeconds: 601 },
+          { label: SegmentLabel.tempo, distanceKm: 5.01, durationSeconds: 1586 },
+          { label: SegmentLabel.cooldown, distanceKm: 0.33, durationSeconds: 225 },
+        ],
+      },
+      executionAnalysis: { mainPace },
+    },
+  ];
+
+  it('bloqueia tentativa quando o 5k recente está fora da margem de 3%', () => {
+    const verdict = assess(continuous5k('5:17'));
+    expect(verdict.feasible).toBe(false);
+    expect(verdict.targetPace).toBe('5:00/km');
+    expect(verdict.recentPace).toBe('5:17/km');
+  });
+
+  it('não usa tiros curtos como prova de sustentação do 5k', () => {
+    const verdict = assess([
+      {
+        session: {
+          distanceMeters: 3950,
+          durationSeconds: 1380,
+          segments: [
+            { label: SegmentLabel.warmup, distanceKm: 1.68, durationSeconds: 600 },
+            { label: SegmentLabel.rep, distanceKm: 0.4, durationSeconds: 108 },
+            { label: SegmentLabel.rec, distanceKm: 0.33, durationSeconds: 120 },
+            { label: SegmentLabel.rep, distanceKm: 0.41, durationSeconds: 108 },
+          ],
+        },
+        executionAnalysis: { mainPace: '4:27', meanRepPace: '4:27' },
+      },
+    ]);
+
+    expect(verdict.feasible).toBe(false);
+    expect(verdict.recentPace).toBeUndefined();
+  });
+
+  it('permite tentativa quando há esforço contínuo similar dentro de 3%', () => {
+    const verdict = assess(continuous5k('5:07'));
+    expect(verdict.feasible).toBe(true);
+  });
+});

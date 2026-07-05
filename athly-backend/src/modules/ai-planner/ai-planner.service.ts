@@ -14,14 +14,25 @@ import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.se
 import { PlanFromHealthDto, DetailedSessionDto, SegmentLabel } from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
+  PlannerGuardrails,
   PreviousWeekAnalysis,
+  RunAnalysis,
   RunSummary,
 } from './types/planner.types';
 import type { RunDataForZones } from '../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './prompts/goal-parser-prompt';
-import type { UserProfileContext, LongitudinalWeek } from './prompts/planner-prompt';
+import type {
+  DeterministicPlannerContext,
+  GoalAttemptContext,
+  UserProfileContext,
+  LongitudinalWeek,
+} from './prompts/planner-prompt';
 import { buildMacrocycle, type PlannedWeek } from './periodization';
-import { assessGoalFeasibility, parseTargetDistanceMeters } from './goal-feasibility';
+import {
+  assessGoalFeasibility,
+  parseTargetDistanceMeters,
+  parseTargetTimeSeconds,
+} from './goal-feasibility';
 import {
   computeLongitudinalWeeks,
   computePreviousWeekAnalysis,
@@ -30,8 +41,7 @@ import { TrainingReportService } from '../training-report/training-report.servic
 import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
 import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
 
-const PROMPT_VERSION = 'v3.0';
-const MODEL_USED = 'gemini-2.5-flash';
+const PROMPT_VERSION = 'v3.1';
 const DETAILED_FIRST_GEN = 5;
 const DETAILED_MID_PLAN = 7;
 const HISTORICAL_FIRST_GEN = 20;
@@ -116,8 +126,14 @@ export class AiPlannerService {
     ];
     const effortZones = await this.effortZoneService.getOrCalculateForUser(userId, runsForZones, 'apple_health');
 
+    const detailedSessionsForMetrics = input.detailedSessions ?? [];
+
     // Build previous week analysis
-    const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(trainingPlan.id, weekStartDate);
+    const previousWeekAnalysis = await this.buildPreviousWeekAnalysis(
+      trainingPlan.id,
+      weekStartDate,
+      detailedSessionsForMetrics,
+    );
     const isFirstGeneration = previousWeekAnalysis === null;
 
     // Slice historical runs per generation-context budget.
@@ -135,7 +151,7 @@ export class AiPlannerService {
     // Longitudinal trend only makes sense mid-plan (requires prior WeeklyGoal metrics).
     const longitudinalWeeks = isFirstGeneration
       ? undefined
-      : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate);
+      : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate, detailedSessionsForMetrics);
 
     // Cold start: sem corridas no Apple Health → plano de avaliação (mesmo prompt do
     // antigo fluxo sem histórico, agora sob o único endpoint plan-from-health).
@@ -176,6 +192,15 @@ export class AiPlannerService {
       }
     }
 
+    const deterministicContext = this.buildDeterministicContext(
+      aiInput,
+      promptPreviousWeek,
+      activeGoal,
+      analyzedSessions,
+      promptLongitudinal,
+    );
+    const plannerGuardrails = this.buildPlannerGuardrails(aiInput, deterministicContext, promptLongitudinal);
+
     // Reserva o slot da semana ANTES da chamada lenta do Gemini. Com a unique constraint
     // (trainingPlanId, weekStartDate), um duplo-submit concorrente recebe ConflictException
     // em vez de criar uma segunda semana sobreposta.
@@ -205,6 +230,8 @@ export class AiPlannerService {
           promptLongitudinal,
           plannedWeek,
           laudoContextNote,
+          plannerGuardrails,
+          deterministicContext,
         )
     ).catch(async (err) => {
       // Gemini falhou ou reprovou no gate de estrutura → libera o slot reservado.
@@ -267,7 +294,7 @@ export class AiPlannerService {
                   trend: plannerResult.parsed.analysis.trend,
                 } as unknown as Prisma.InputJsonValue,
                 promptVersion: PROMPT_VERSION,
-                modelUsed: MODEL_USED,
+                modelUsed: plannerResult.modelUsed,
               },
             });
           } else if (day.sportType !== 'other' && !day.reasoning) {
@@ -281,7 +308,7 @@ export class AiPlannerService {
           weeklyGoalId: weeklyGoal.id,
           generationType: isAssessment ? 'assessment' : 'planner',
           promptVersion: PROMPT_VERSION,
-          modelUsed: MODEL_USED,
+          modelUsed: plannerResult.modelUsed,
           promptText: plannerResult.prompt,
           rawResponse: plannerResult.rawResponse,
           parsedResponse: plannerResult.parsed as unknown as Prisma.InputJsonValue,
@@ -364,6 +391,7 @@ export class AiPlannerService {
   private async buildPreviousWeekAnalysis(
     trainingPlanId: string,
     currentWeekStart: Date,
+    detailedSessions: DetailedSessionDto[] = [],
   ): Promise<PreviousWeekAnalysis | null> {
     // As duas semanas mais recentes antes da atual: a anterior (analisada) e a
     // retrasada (baseline do volumeChange). Comparar executado × executado — o
@@ -386,7 +414,174 @@ export class AiPlannerService {
     });
 
     // recentGoals[0] = semana anterior (analisada); [1] = baseline do volumeChange.
-    return computePreviousWeekAnalysis(recentGoals);
+    return computePreviousWeekAnalysis(recentGoals, { detailedSessions });
+  }
+
+  private buildDeterministicContext(
+    input: AiPlannerInput,
+    previousWeek: PreviousWeekAnalysis | null | undefined,
+    goal: ParsedGoal | null,
+    analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
+    longitudinalWeeks?: LongitudinalWeek[],
+  ): DeterministicPlannerContext {
+    const fallbackBaseline = input.avgDistKm > 0
+      ? input.avgDistKm * Math.max(1, input.trainingDays)
+      : input.totalDistKm;
+    const weeklyVolumeBaselineKm = round2(
+      previousWeek?.totalDistanceKm && previousWeek.totalDistanceKm > 0
+        ? previousWeek.totalDistanceKm
+        : fallbackBaseline,
+    );
+    const weeklyVolumeMaxKm = round2(Math.max(weeklyVolumeBaselineKm, 0) * 1.1);
+
+    return {
+      weeklyVolumeBaselineKm,
+      weeklyVolumeMaxKm,
+      volumeConfidence: previousWeek?.volumeConfidence ?? 'high',
+      goalAttempt: this.assessUndatedGoalAttempt(goal, previousWeek, analyzedSessions, longitudinalWeeks),
+    };
+  }
+
+  private buildPlannerGuardrails(
+    input: AiPlannerInput,
+    deterministicContext: DeterministicPlannerContext,
+    longitudinalWeeks?: LongitudinalWeek[],
+  ): PlannerGuardrails {
+    return {
+      weekDates: input.weekDates,
+      availableDays: input.availableDays,
+      weeklyVolumeMaxKm: deterministicContext.weeklyVolumeMaxKm,
+      goalAttemptAllowed: deterministicContext.goalAttempt?.feasible,
+      analysisOverride: this.buildAnalysisOverride(input, longitudinalWeeks),
+      defaultPaceSecPerKm: parsePace(input.avgPace) ?? 390,
+    };
+  }
+
+  private buildAnalysisOverride(
+    input: AiPlannerInput,
+    longitudinalWeeks?: LongitudinalWeek[],
+  ): Omit<RunAnalysis, 'title' | 'fitnessInsights'> {
+    const dates = input.runSummaries
+      .map((r) => r.date)
+      .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort();
+    const period =
+      dates.length > 0 ? `${dates[0]} — ${dates[dates.length - 1]}` : 'Sem dados';
+
+    return {
+      runsAnalyzed: input.runSummaries.length,
+      period,
+      avgDistanceKm: round2(input.avgDistKm),
+      avgPace: input.avgPace === 'N/A' ? 'N/A' : `${input.avgPace} /km`,
+      avgHeartRate: input.avgHR,
+      totalDistanceKm: round2(input.totalDistKm),
+      trend: this.deriveTrend(longitudinalWeeks),
+    };
+  }
+
+  private deriveTrend(longitudinalWeeks?: LongitudinalWeek[]): RunAnalysis['trend'] {
+    if (!longitudinalWeeks || longitudinalWeeks.length < 2) return 'maintaining';
+    const first = longitudinalWeeks[0];
+    const last = longitudinalWeeks[longitudinalWeeks.length - 1];
+    const firstPace = parsePace(first.avgPace);
+    const lastPace = parsePace(last.avgPace);
+    const paceImproved = firstPace != null && lastPace != null && firstPace - lastPace > 5;
+
+    if (last.totalKm < first.totalKm * 0.85) return 'declining';
+    if (last.totalKm > first.totalKm * 1.1) return 'improving (volume)';
+    if (paceImproved) return 'improving (intensity)';
+    return 'maintaining';
+  }
+
+  private assessUndatedGoalAttempt(
+    goal: ParsedGoal | null,
+    previousWeek: PreviousWeekAnalysis | null | undefined,
+    analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
+    longitudinalWeeks?: LongitudinalWeek[],
+  ): GoalAttemptContext | undefined {
+    if (!goal || goal.eventDate || !goal.targetDistance || !goal.targetTime) return undefined;
+    const targetDistanceMeters = parseTargetDistanceMeters(goal.targetDistance);
+    const targetTimeSec = parseTargetTimeSeconds(goal.targetTime);
+    if (!targetDistanceMeters || !targetTimeSec) return undefined;
+
+    const targetPaceSec = targetTimeSec / (targetDistanceMeters / 1000);
+    const targetPace = `${this.formatPaceFromSecondsPerKm(targetPaceSec)}/km`;
+    const recentSpecificPaceSec = this.bestSimilarContinuousPace(analyzedSessions, targetDistanceMeters);
+    const adherence = previousWeek?.completionRate ?? 1;
+    const adherencePct = Math.round(adherence * 100);
+    const fatigue = previousWeek?.avgFatigue ?? null;
+    const hasOverreach = (fatigue !== null && fatigue > 7) || this.hasSustainedOverreach(longitudinalWeeks);
+
+    const paceReady = recentSpecificPaceSec !== null && recentSpecificPaceSec <= targetPaceSec * 1.03;
+    const feasible = paceReady && adherence >= 0.7 && !hasOverreach;
+    const recentPace = recentSpecificPaceSec !== null
+      ? `${this.formatPaceFromSecondsPerKm(recentSpecificPaceSec)}/km`
+      : undefined;
+
+    let reason: string;
+    if (feasible) {
+      reason = `Viável: pace recente específico ${recentPace} está dentro de 3% do alvo ${targetPace}, aderência ${adherencePct}% e sem sinal de overreach.`;
+    } else if (recentSpecificPaceSec === null) {
+      reason = `Ainda não é viável: não há esforço contínuo recente de distância similar para validar o alvo ${targetPace}; tiros curtos não bastam para provar sustentação em ${goal.targetDistance}.`;
+    } else if (!paceReady) {
+      reason = `Ainda não é viável: pace recente específico ${recentPace} está fora da margem de 3% do alvo ${targetPace}; aderência ${adherencePct}%.`;
+    } else if (adherence < 0.7) {
+      reason = `Ainda não é viável: aderência recente ${adherencePct}% está abaixo do mínimo de 70%, apesar do pace estar próximo do alvo ${targetPace}.`;
+    } else {
+      reason = `Ainda não é viável: há sinal de overreach/fadiga recente, então a semana deve priorizar absorção antes de tentar ${goal.targetDistance}.`;
+    }
+
+    return {
+      feasible,
+      targetPace,
+      recentPace,
+      adherencePct,
+      reason,
+    };
+  }
+
+  private bestSimilarContinuousPace(
+    analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
+    targetDistanceMeters: number,
+  ): number | null {
+    const minSimilarKm = (targetDistanceMeters / 1000) * 0.7;
+    let best: number | null = null;
+
+    for (const analyzed of analyzedSessions) {
+      if (analyzed.session.segments.some((s) => s.label === SegmentLabel.rep)) continue;
+      const mainDistanceKm = this.mainContinuousDistanceKm(analyzed.session);
+      if (mainDistanceKm < minSimilarKm) continue;
+      const pace = parsePace(analyzed.executionAnalysis.mainPace);
+      if (pace === null) continue;
+      if (best === null || pace < best) best = pace;
+    }
+
+    return best;
+  }
+
+  private mainContinuousDistanceKm(session: DetailedSessionDto): number {
+    const segs = session.segments ?? [];
+    if (segs.length === 0) return session.distanceMeters / 1000;
+    const hasBoundaryLabels = segs.some(
+      (s) => s.label === SegmentLabel.warmup || s.label === SegmentLabel.cooldown,
+    );
+    const main = hasBoundaryLabels
+      ? segs.filter((s) => s.label !== SegmentLabel.warmup && s.label !== SegmentLabel.cooldown)
+      : segs;
+    return main.reduce((sum, s) => sum + (s.distanceKm ?? 0), 0);
+  }
+
+  private hasSustainedOverreach(longitudinalWeeks?: LongitudinalWeek[]): boolean {
+    if (!longitudinalWeeks || longitudinalWeeks.length < 4) return false;
+    const last4 = longitudinalWeeks.slice(-4);
+    const volumeUpEveryWeek = last4
+      .slice(1)
+      .every((week, idx) => week.totalKm > last4[idx].totalKm * 1.1);
+    if (!volumeUpEveryWeek) return false;
+    const firstPace = parsePace(last4[0].avgPace);
+    const lastPace = parsePace(last4[last4.length - 1].avgPace);
+    const paceImproved = firstPace != null && lastPace != null && firstPace - lastPace > 5;
+    return !paceImproved;
   }
 
   /**
@@ -473,6 +668,7 @@ export class AiPlannerService {
   private async buildLongitudinalTrend(
     trainingPlanId: string,
     currentWeekStart: Date,
+    detailedSessions: DetailedSessionDto[] = [],
   ): Promise<LongitudinalWeek[] | undefined> {
     const recent = await this.prisma.weeklyGoal.findMany({
       where: {
@@ -487,7 +683,7 @@ export class AiPlannerService {
     });
 
     if (recent.length === 0) return undefined;
-    return computeLongitudinalWeeks(recent);
+    return computeLongitudinalWeeks(recent, { detailedSessions });
   }
 
   private buildAiInputFromHealthRuns(
@@ -515,7 +711,7 @@ export class AiPlannerService {
       return {
         index: i + 1,
         name: `Corrida ${i + 1}`,
-        date: new Date(r.startDate).toLocaleDateString(),
+        date: r.startDate.split('T')[0],
         distanceKm,
         durationMin,
         avgPace: paceStr,
@@ -827,4 +1023,15 @@ export class AiPlannerService {
       },
     ];
   }
+}
+
+function parsePace(pace: string | null | undefined): number | null {
+  if (!pace || pace === 'N/A') return null;
+  const match = pace.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }

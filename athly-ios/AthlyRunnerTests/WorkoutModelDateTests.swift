@@ -71,6 +71,95 @@ final class WorkoutModelDateTests: XCTestCase {
         XCTAssertNil(session.segmentRecords)
     }
 
+    func testHealthKitRunItemCodableRoundTrips() throws {
+        let run = makeHealthRun(id: "hk-run-1", daysAgo: 1)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let decoded = try decoder.decode(HealthKitRunItem.self, from: encoder.encode(run))
+
+        XCTAssertEqual(decoded, run)
+    }
+
+    @MainActor
+    func testHealthKitRunsViewModelKeepsCachedRunsWhenRefreshFails() async {
+        let cachedRun = makeHealthRun(id: "cached-run", daysAgo: 2)
+        let cache = MemoryHealthKitRunsCache(
+            snapshot: HealthKitRunsCacheSnapshot(
+                runs: [cachedRun],
+                linkedRunsById: [:],
+                updatedAt: makeDate(year: 2026, month: 7, day: 1)
+            )
+        )
+        let service = FakeHealthKitRunningWorkoutsProvider()
+        service.pageError = TestError.boom
+        let viewModel = HealthKitRunsViewModel(healthKitService: service, cache: cache, pageSize: 2)
+
+        await viewModel.loadWorkouts()
+
+        XCTAssertEqual(viewModel.runs, [cachedRun])
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.isInitialLoading)
+    }
+
+    @MainActor
+    func testHealthKitRunsViewModelShowsErrorWhenRefreshFailsWithoutCache() async {
+        let service = FakeHealthKitRunningWorkoutsProvider()
+        service.pageError = TestError.boom
+        let viewModel = HealthKitRunsViewModel(
+            healthKitService: service,
+            cache: MemoryHealthKitRunsCache(),
+            pageSize: 2
+        )
+
+        await viewModel.loadWorkouts()
+
+        XCTAssertTrue(viewModel.runs.isEmpty)
+        XCTAssertNotNil(viewModel.errorMessage)
+    }
+
+    @MainActor
+    func testHealthKitRunsViewModelFetchesLinkedRunsAndPersistsThem() async {
+        let linkedRun = makeHealthRun(id: "linked-run", daysAgo: 0)
+        let cache = MemoryHealthKitRunsCache()
+        let service = FakeHealthKitRunningWorkoutsProvider()
+        service.itemsByUUID = ["linked-run": linkedRun]
+        let viewModel = HealthKitRunsViewModel(healthKitService: service, cache: cache, pageSize: 2)
+
+        await viewModel.ensureRunItems(workoutUUIDs: ["linked-run"])
+
+        XCTAssertEqual(viewModel.linkedRunsById["linked-run"], linkedRun)
+        XCTAssertEqual(cache.snapshot?.linkedRunsById["linked-run"], linkedRun)
+        XCTAssertFalse(viewModel.isResolvingLinkedRuns)
+    }
+
+    @MainActor
+    func testHealthKitRunsViewModelLoadsMoreWithOldestEndDateCursor() async {
+        let newest = makeHealthRun(id: "newest", daysAgo: 0)
+        let older = makeHealthRun(id: "older", daysAgo: 1)
+        let oldest = makeHealthRun(id: "oldest", daysAgo: 2)
+        let service = FakeHealthKitRunningWorkoutsProvider()
+        service.pageHandler = { beforeEndDate in
+            beforeEndDate == nil ? [newest, older] : [oldest]
+        }
+        let viewModel = HealthKitRunsViewModel(
+            healthKitService: service,
+            cache: MemoryHealthKitRunsCache(),
+            pageSize: 2
+        )
+
+        await viewModel.loadWorkouts()
+        await viewModel.loadMoreIfNeeded(currentItem: older)
+
+        XCTAssertEqual(service.requestedPageCursors.count, 2)
+        XCTAssertNil(service.requestedPageCursors[0])
+        XCTAssertEqual(service.requestedPageCursors[1], older.endDate)
+        XCTAssertEqual(viewModel.runs.map(\.id), ["newest", "older", "oldest"])
+        XCTAssertFalse(viewModel.canLoadMore)
+    }
+
     private var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -106,4 +195,83 @@ final class WorkoutModelDateTests: XCTestCase {
             appleHealthWorkoutUUID: nil
         )
     }
+
+    private func makeHealthRun(id: String, daysAgo: Int) -> HealthKitRunItem {
+        let baseDate = makeDate(year: 2026, month: 7, day: 3, hour: 7)
+        let startDate = calendar.date(byAdding: .day, value: -daysAgo, to: baseDate)!
+        let durationSeconds = 1_800.0
+        let distanceMeters = 5_000.0
+        return HealthKitRunItem(
+            id: id,
+            startDate: startDate,
+            endDate: startDate.addingTimeInterval(durationSeconds),
+            durationSeconds: durationSeconds,
+            distanceMeters: distanceMeters,
+            averagePaceSecondsPerKm: durationSeconds / (distanceMeters / 1_000),
+            activeEnergyBurned: 300,
+            elevationGainMeters: 20
+        )
+    }
+}
+
+private enum TestError: Error {
+    case boom
+}
+
+private final class MemoryHealthKitRunsCache: HealthKitRunsCaching, @unchecked Sendable {
+    var snapshot: HealthKitRunsCacheSnapshot?
+
+    init(snapshot: HealthKitRunsCacheSnapshot? = nil) {
+        self.snapshot = snapshot
+    }
+
+    func load() -> HealthKitRunsCacheSnapshot? {
+        snapshot
+    }
+
+    func save(_ snapshot: HealthKitRunsCacheSnapshot) {
+        self.snapshot = snapshot
+    }
+
+    func clear() {
+        snapshot = nil
+    }
+}
+
+private final class FakeHealthKitRunningWorkoutsProvider: HealthKitRunningWorkoutsProviding, @unchecked Sendable {
+    var isHealthDataAvailable = true
+    var pageError: Error?
+    var pageHandler: ((Date?) async throws -> [HealthKitRunItem])?
+    var requestedPageCursors: [Date?] = []
+    var itemsByUUID: [String: HealthKitRunItem] = [:]
+
+    func requestReadAuthorization() async throws {}
+
+    func requestWriteAuthorization() async throws {}
+
+    func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem] {
+        try await fetchRunningWorkoutsPage(limit: limit, beforeEndDate: nil)
+    }
+
+    func fetchRunningWorkoutsPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem] {
+        requestedPageCursors.append(beforeEndDate)
+        if let pageError {
+            throw pageError
+        }
+        let items: [HealthKitRunItem]
+        if let pageHandler {
+            items = try await pageHandler(beforeEndDate)
+        } else {
+            items = []
+        }
+        return items.prefix(limit).map { $0 }
+    }
+
+    func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem? {
+        itemsByUUID[uuid]
+    }
+
+    func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async {}
+
+    func diagnoseZeppWorkouts(limit: Int) async {}
 }

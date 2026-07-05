@@ -6,6 +6,9 @@ athly-ios/Config/User.xcconfig
 # OTel production credentials (Grafana Cloud API key)
 athly-ios/Config/OTel.User.xcconfig
 
+# Apple In-App Purchase Key (nunca commitar)
+*.p8
+
 # Xcode local artifacts
 athly-ios/.deriveddata/
 *.xcuserstate

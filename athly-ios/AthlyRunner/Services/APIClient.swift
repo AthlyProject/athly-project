@@ -441,6 +441,10 @@ struct EntitlementResponse: Decodable, Sendable {
     let entitled: Bool
     let isAdmin: Bool
     let isFounderEligible: Bool?
+    /// Fim do trial backend (ISO). Null quando não aplicável (admin, assinante ou expirado).
+    let trialEndsAt: String?
+    /// Dias restantes do trial backend. Null quando não aplicável.
+    let trialDaysRemaining: Int?
 }
 
 struct UserProfile: Decodable {

@@ -11,7 +11,7 @@ backend, reaproveitando o `RoleEnum` existente.
 ## Repos / arquivos afetados
 
 ### App Store Connect
-- Criar produtos de assinatura Basic e Founder (mensal/anual) + **trial**.
+- Criar produtos de assinatura Basic e Founder (mensal/anual).
 - Configurar o app no RevenueCat (API keys, offerings, entitlement `basic`).
 
 ### iOS (`athly-ios`, target 16.1)
@@ -31,8 +31,8 @@ backend, reaproveitando o `RoleEnum` existente.
 - **Guard de assinatura** (`SubscriptionGuard`) nos endpoints pagos (ex.: `/ai-planner/*`).
 
 ## Decisão de gating
-**Trial de 7 dias, depois tudo pago.** Backend: entitlement = `paywall OFF` OU dentro de
-`createdAt + 7d` OU assinatura ativa não expirada. Usuários cujo e-mail está em `waitlist_entries`
+**Trial de 14 dias, depois tudo pago.** Backend: entitlement = `paywall OFF` OU dentro de
+`createdAt + 14d` OU assinatura ativa não expirada. Usuários cujo e-mail está em `waitlist_entries`
 veem a oferta Founder. **Abordagem: scaffold com `PAYWALL_ENABLED=false` (fail-open)** — toda a
 infra está pronta e dormente; ligar quando o RevenueCat/ASC estiverem prontos.
 
@@ -47,13 +47,13 @@ infra está pronta e dormente; ligar quando o RevenueCat/ASC estiverem prontos.
   - `com.athly.runner.founder.yearly`
 
 ## Checklist
-- [ ] Produtos Basic + Founder + trial criados no App Store Connect *(externo — você)*
+- [ ] Produtos Basic + Founder criados no App Store Connect *(externo — você)*
 - [ ] App configurado no RevenueCat (entitlement `basic`, offerings `default`/`founder`, API keys) *(externo — você)*
 - [x] iOS: `PurchaseManager` real com RevenueCat SDK, `Purchases.logIn(userId)` e observer de entitlement
 - [x] iOS: `RevenueCatUI.PaywallView` + `EntitlementManager` + gate em `PlanView`
 - [x] Backend: webhook `POST /billing/revenuecat/webhook` atualiza assinatura do usuário
 - [x] Backend: `SubscriptionGuard` em `/ai-planner/*` (fail-open via `PAYWALL_ENABLED`)
-- [x] Fronteira de gating decidida (trial 7d → pago) e implementada no backend
+- [x] Fronteira de gating decidida (trial 14d → pago) e implementada no backend
 
 > **Para ativar (depois):** criar produtos no ASC + projeto RevenueCat → setar `REVENUECAT_API_KEY`
 > no iOS com a public SDK key `appl_...` → setar `REVENUECAT_WEBHOOK_AUTH` e `PAYWALL_ENABLED=true`
@@ -68,7 +68,7 @@ infra está pronta e dormente; ligar quando o RevenueCat/ASC estiverem prontos.
 - [ ] iOS `xcodebuild` → BUILD SUCCEEDED; backend `tsc` → exit 0
 
 ## Dependências / observações
-- **Decisão de produto pendente:** o que é grátis vs pago. Sugestão — onboarding + 1ª semana
+- **Decisão de produto pendente:** o que é grátis vs pago. Sugestão — onboarding + 14 dias
   grátis; replanejamento semanal e uso contínuo atrás do paywall.
 - Independente dos outros workstreams, mas o guard deve cobrir endpoints que possam surgir no WS4.
 - iOS 16.1 suporta StoreKit 2 (lançado no iOS 15); só as views de paywall nativas exigem iOS 17+.

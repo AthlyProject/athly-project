@@ -80,6 +80,46 @@ describe('GeminiService.assessStructure', () => {
   });
 });
 
+describe('GeminiService.assessPlanQuality', () => {
+  const assessQuality = (p: unknown, guardrails: unknown) =>
+    (gemini as any).assessPlanQuality(p, guardrails);
+  const guardrails = {
+    weekDates: [
+      '2026-07-06',
+      '2026-07-07',
+      '2026-07-08',
+      '2026-07-09',
+      '2026-07-10',
+      '2026-07-11',
+      '2026-07-12',
+    ],
+    availableDays: ['monday', 'wednesday', 'friday'],
+    weeklyVolumeMaxKm: 100,
+    goalAttemptAllowed: false,
+    defaultPaceSecPerKm: 390,
+  };
+
+  it('bloqueia tentativa de objetivo quando o backend marcou feasibility=false', () => {
+    const p = plan(true) as any;
+    p.weekPlan[0].isGoalAttempt = true;
+    expect(assessQuality(p, guardrails).join(' ')).toContain('isGoalAttempt=true');
+  });
+
+  it('bloqueia treino em dia fora da disponibilidade', () => {
+    const p = plan(true) as any;
+    expect(assessQuality(p, { ...guardrails, availableDays: ['wednesday'] }).join(' ')).toContain(
+      'outside available days',
+    );
+  });
+
+  it('bloqueia volume planejado acima do teto calculado pelo backend', () => {
+    const p = plan(true) as any;
+    expect(assessQuality(p, { ...guardrails, weeklyVolumeMaxKm: 5 }).join(' ')).toContain(
+      'planned volume',
+    );
+  });
+});
+
 describe('GeminiService.runWithStructureGate', () => {
   it('regenera quando vem degenerado e aceita a tentativa boa', async () => {
     const model = mockModelReturning([JSON.stringify(plan(false)), JSON.stringify(plan(true))]);

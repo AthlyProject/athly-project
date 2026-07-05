@@ -12,6 +12,7 @@ protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     func requestReadAuthorization() async throws
     func requestWriteAuthorization() async throws
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
+    func fetchRunningWorkoutsPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem]
     func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem?
     func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async
     func diagnoseZeppWorkouts(limit: Int) async
@@ -232,7 +233,12 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     /// Busca as últimas corridas (e opcionalmente caminhadas) do Health Store.
     func fetchLatestRunningWorkouts(limit: Int = 20) async throws -> [HealthKitRunItem] {
-        let workouts = try await fetchLatestRawRunningWorkouts(limit: limit)
+        try await fetchRunningWorkoutsPage(limit: limit, beforeEndDate: nil)
+    }
+
+    /// Busca uma página de corridas terminadas antes de `beforeEndDate`.
+    func fetchRunningWorkoutsPage(limit: Int = 20, beforeEndDate: Date? = nil) async throws -> [HealthKitRunItem] {
+        let workouts = try await fetchLatestRawRunningWorkouts(limit: limit, beforeEndDate: beforeEndDate)
         return workouts.map { self.map($0) }
     }
 
@@ -250,13 +256,20 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     /// Busca os últimos `HKWorkout` brutos (sem mapeamento). Usado pelo `WorkoutDetailFetcher`
     /// para extrair segmentos e HR por sessão.
     func fetchLatestRawRunningWorkouts(limit: Int) async throws -> [HKWorkout] {
+        try await fetchLatestRawRunningWorkouts(limit: limit, beforeEndDate: nil)
+    }
+
+    /// Busca uma página de `HKWorkout` brutos usando `endDate` como cursor.
+    func fetchLatestRawRunningWorkouts(limit: Int, beforeEndDate: Date?) async throws -> [HKWorkout] {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
 
         let workoutType = HKObjectType.workoutType()
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let strictPredicate = HKQuery.predicateForWorkouts(with: .running)
+        let endDatePredicate = Self.workoutEndDatePredicate(beforeEndDate: beforeEndDate)
+        let runningPredicate = HKQuery.predicateForWorkouts(with: .running)
+        let strictPredicate = Self.combinedPredicate([runningPredicate, endDatePredicate])
         let strictWorkouts = try await queryWorkouts(
             sampleType: workoutType,
             predicate: strictPredicate,
@@ -270,7 +283,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         let broadScanLimit = max(100, limit * 10)
         let broadWorkouts = try await queryWorkouts(
             sampleType: workoutType,
-            predicate: nil,
+            predicate: endDatePredicate,
             limit: broadScanLimit,
             sortDescriptors: [sort]
         )
@@ -518,6 +531,19 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             }
             store.execute(query)
         }
+    }
+
+    private static func workoutEndDatePredicate(beforeEndDate: Date?) -> NSPredicate? {
+        guard let beforeEndDate else { return nil }
+        let exclusiveCursor = beforeEndDate.addingTimeInterval(-0.001)
+        return HKQuery.predicateForSamples(withStart: nil, end: exclusiveCursor, options: .strictEndDate)
+    }
+
+    private static func combinedPredicate(_ predicates: [NSPredicate?]) -> NSPredicate? {
+        let concretePredicates = predicates.compactMap { $0 }
+        guard !concretePredicates.isEmpty else { return nil }
+        if concretePredicates.count == 1 { return concretePredicates[0] }
+        return NSCompoundPredicate(andPredicateWithSubpredicates: concretePredicates)
     }
 
     private func sortedMetadataKeys(_ workout: HKWorkout) -> [String] {

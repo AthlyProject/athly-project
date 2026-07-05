@@ -34,7 +34,7 @@ struct LoginView: View {
                             .frame(width: 100, height: 100)
                             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
 
-                        Text("Athly Runner")
+                        Text("Athly")
                             .font(AthlyTheme.Typography.heading(34))
                             .foregroundStyle(AthlyTheme.Gradient.brand)
 

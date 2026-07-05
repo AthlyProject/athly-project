@@ -23,8 +23,16 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
     }
 
     func fetchLatestRunningWorkouts(limit: Int = 20) async throws -> [HealthKitRunItem] {
+        try await fetchRunningWorkoutsPage(limit: limit, beforeEndDate: nil)
+    }
+
+    func fetchRunningWorkoutsPage(limit: Int = 20, beforeEndDate: Date? = nil) async throws -> [HealthKitRunItem] {
         try await Task.sleep(nanoseconds: 400_000_000) // 0,4 s para simular rede/IO
-        return Self.simulatorOwnerRuns.prefix(limit).map { $0 }
+        let filteredRuns = Self.simulatorOwnerRuns.filter { run in
+            guard let beforeEndDate else { return true }
+            return run.endDate < beforeEndDate
+        }
+        return filteredRuns.prefix(limit).map { $0 }
     }
 
     func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem? {
@@ -37,7 +45,7 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
 
     private static var simulatorOwnerRuns: [HealthKitRunItem] {
         let now = Date()
-        return [
+        let featuredRuns = [
             run(
                 id: "mock-run-1",
                 daysAgo: 0,
@@ -88,7 +96,20 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
                 calories: 398,
                 elevation: 32
             ),
-        ].map { buildItem(now: now, run: $0) }
+        ]
+        let generatedRuns = (5..<65).map { index in
+            run(
+                id: "mock-run-\(index + 1)",
+                daysAgo: index + 3,
+                hour: [6, 7, 18, 19][index % 4],
+                minute: [0, 15, 30, 45][index % 4],
+                durationMinutes: 24 + (index % 9) * 4,
+                distanceKm: 3.4 + Double(index % 12) * 0.55,
+                calories: 220 + Double(index % 10) * 34,
+                elevation: index % 3 == 0 ? nil : Double(8 + (index % 8) * 6)
+            )
+        }
+        return (featuredRuns + generatedRuns).map { buildItem(now: now, run: $0) }
     }
 
     private struct RunSpec {
