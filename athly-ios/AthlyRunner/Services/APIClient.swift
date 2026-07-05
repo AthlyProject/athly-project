@@ -137,6 +137,14 @@ actor APIClient {
         try await post("/ai-planner/plan-from-health", body: request, timeout: 120)
     }
 
+    func startPlanFromHealthGeneration(_ request: PlanFromHealthRequest) async throws -> AiPlannerGenerationStartResponse {
+        try await post("/ai-planner/plan-from-health/async", body: request, timeout: 30)
+    }
+
+    func getPlanFromHealthGenerationStatus(generationId: String) async throws -> AiPlannerGenerationStatusResponse {
+        try await get("/ai-planner/plan-from-health/generations/\(generationId)")
+    }
+
     // MARK: - Billing / Entitlement
 
     /// Snapshot de entitlement do backend (fonte de verdade do bypass de admin via ADMIN_EMAILS).

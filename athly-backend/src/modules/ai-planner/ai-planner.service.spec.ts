@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AiPlannerService } from './ai-planner.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
@@ -172,6 +172,53 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
     const row = { id: 'wg-1' };
     const svc = buildWith(() => Promise.resolve(row));
     await expect(reserve(svc)).resolves.toBe(row);
+  });
+});
+
+describe('AiPlannerService.startPlanFromHealthGeneration', () => {
+  const buildService = () =>
+    new AiPlannerService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
+  const flushAsyncJob = () => new Promise((resolve) => setImmediate(resolve));
+
+  it('retorna generationId imediatamente e marca completed quando a geração termina', async () => {
+    const svc = buildService();
+    jest.spyOn(svc, 'planFromHealth').mockResolvedValue({} as any);
+
+    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
+    expect(started.status).toBe('processing');
+    expect(started.generationId).toEqual(expect.any(String));
+
+    await flushAsyncJob();
+
+    expect(svc.getPlanFromHealthGenerationStatus('user-1', started.generationId)).toMatchObject({
+      generationId: started.generationId,
+      status: 'completed',
+    });
+  });
+
+  it('marca failed quando a geração em segundo plano falha', async () => {
+    const svc = buildService();
+    jest.spyOn(svc, 'planFromHealth').mockRejectedValue(new Error('gemini down'));
+
+    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
+    await flushAsyncJob();
+
+    expect(svc.getPlanFromHealthGenerationStatus('user-1', started.generationId)).toMatchObject({
+      generationId: started.generationId,
+      status: 'failed',
+      error: 'gemini down',
+    });
+  });
+
+  it('não expõe status de outro usuário', async () => {
+    const svc = buildService();
+    jest.spyOn(svc, 'planFromHealth').mockResolvedValue({} as any);
+
+    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
+
+    expect(() =>
+      svc.getPlanFromHealthGenerationStatus('user-2', started.generationId),
+    ).toThrow(NotFoundException);
   });
 });
 

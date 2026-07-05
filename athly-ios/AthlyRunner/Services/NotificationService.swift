@@ -84,6 +84,32 @@ final class NotificationService {
         }
     }
 
+    func notifyWeeklyPlanGenerated() async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = await requestAuthorization()
+        }
+
+        let updatedSettings = await center.notificationSettings()
+        guard updatedSettings.authorizationStatus == .authorized || updatedSettings.authorizationStatus == .provisional else {
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Semana gerada"
+        content.body = "Seus treinos da próxima semana já estão prontos."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "weekly-plan-generated-\(UUID().uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        try? await center.add(request)
+    }
+
     func cancelAll() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
     }

@@ -1,4 +1,5 @@
-import { Injectable, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import {
   Prisma,
   SportType,
@@ -57,10 +58,25 @@ const MIN_EFFORT_METERS = 1500;
 const REP_EFFORT_PENALTY = 1.05;
 
 const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
+const GENERATION_JOB_TTL_MS = 60 * 60 * 1000;
+
+type GenerationJobStatus = 'processing' | 'completed' | 'failed';
+
+type GenerationJob = {
+  id: string;
+  userId: string;
+  status: GenerationJobStatus;
+  pollAfterSeconds: number;
+  message: string;
+  error?: string;
+  startedAt: number;
+  updatedAt: number;
+};
 
 @Injectable()
 export class AiPlannerService {
   private readonly logger = new Logger(AiPlannerService.name);
+  private readonly generationJobs = new Map<string, GenerationJob>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -361,6 +377,73 @@ export class AiPlannerService {
       aiUsage: plannerResult.usage,
       isAssessment,
     };
+  }
+
+  async startPlanFromHealthGeneration(userId: string, input: PlanFromHealthDto) {
+    this.cleanupGenerationJobs();
+    const job: GenerationJob = {
+      id: randomUUID(),
+      userId,
+      status: 'processing',
+      pollAfterSeconds: 5,
+      message: 'A geração da semana foi iniciada e continuará em segundo plano.',
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    this.generationJobs.set(job.id, job);
+
+    // Fire-and-poll flow: the HTTP request returns immediately while the Nest
+    // process keeps generating the plan. This avoids mobile/proxy timeouts
+    // without limiting model thinking or output budget.
+    void this.planFromHealth(userId, input)
+      .then(() => {
+        Object.assign(job, {
+          status: 'completed' satisfies GenerationJobStatus,
+          message: 'A semana foi gerada com sucesso.',
+          updatedAt: Date.now(),
+        });
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        Object.assign(job, {
+          status: 'failed' satisfies GenerationJobStatus,
+          message: 'Não foi possível gerar a semana.',
+          error: message,
+          updatedAt: Date.now(),
+        });
+        this.logger.error(`Async weekly plan generation failed for user ${userId}: ${message}`);
+      });
+
+    return {
+      generationId: job.id,
+      status: job.status,
+      pollAfterSeconds: job.pollAfterSeconds,
+      message: job.message,
+    };
+  }
+
+  getPlanFromHealthGenerationStatus(userId: string, generationId: string) {
+    const job = this.generationJobs.get(generationId);
+    if (!job || job.userId !== userId) {
+      throw new NotFoundException('Geração não encontrada');
+    }
+
+    return {
+      generationId: job.id,
+      status: job.status,
+      pollAfterSeconds: job.pollAfterSeconds,
+      message: job.message,
+      error: job.error,
+    };
+  }
+
+  private cleanupGenerationJobs() {
+    const threshold = Date.now() - GENERATION_JOB_TTL_MS;
+    for (const [id, job] of this.generationJobs.entries()) {
+      if (job.updatedAt < threshold) {
+        this.generationJobs.delete(id);
+      }
+    }
   }
 
   private buildUserProfile(answers: any): UserProfileContext {

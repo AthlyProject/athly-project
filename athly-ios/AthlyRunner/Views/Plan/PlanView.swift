@@ -218,14 +218,16 @@ struct PlanView: View {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(0.8)
+                } else if planVM.isGeneratingInBackground {
+                    Image(systemName: "clock.arrow.circlepath")
                 } else {
                     Image(systemName: "sparkles")
                 }
-                Text(planVM.isGenerating ? "Gerando..." : "Gerar Próxima Semana")
+                Text(generateButtonTitle)
             }
         }
         .buttonStyle(AthlyGradientButtonStyle())
-        .disabled(planVM.isGenerating)
+        .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
         .sheet(isPresented: $showPaywall) {
             // Founder vê a offering founder; demais usuários veem a offering default.
             AthlyPaywallView(founderEligible: entitlementManager.isFounderEligible)
@@ -237,6 +239,12 @@ struct PlanView: View {
                     Task { await entitlementManager.refresh() }
                 }
         }
+    }
+
+    private var generateButtonTitle: String {
+        if planVM.isGenerating { return "Iniciando geração..." }
+        if planVM.isGeneratingInBackground { return "Gerando em segundo plano" }
+        return "Gerar Próxima Semana"
     }
 
     private var nextFiveWorkoutsSection: some View {

@@ -417,6 +417,21 @@ struct AiPlannerResponse: Decodable, Sendable {
     let analysis: RunAnalysis
 }
 
+struct AiPlannerGenerationStartResponse: Decodable, Sendable {
+    let generationId: String
+    let status: String
+    let pollAfterSeconds: Int
+    let message: String
+}
+
+struct AiPlannerGenerationStatusResponse: Decodable, Sendable {
+    let generationId: String
+    let status: String
+    let pollAfterSeconds: Int
+    let message: String
+    let error: String?
+}
+
 // MARK: - User Goal
 
 struct ParsedGoal: Codable, Sendable {

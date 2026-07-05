@@ -201,7 +201,10 @@ struct CreatePlanView: View {
                     HStack {
                         if planVM.isGenerating {
                             ProgressView().tint(.white).scaleEffect(0.85)
-                            Text("Gerando treinos...")
+                            Text("Iniciando geração...")
+                        } else if planVM.isGeneratingInBackground {
+                            Image(systemName: "clock.arrow.circlepath")
+                            Text("Gerando em segundo plano")
                         } else {
                             Image(systemName: "sparkles")
                             Text("Gerar primeira semana de treinos")
@@ -209,7 +212,7 @@ struct CreatePlanView: View {
                     }
                 }
                 .buttonStyle(AthlyGradientButtonStyle())
-                .disabled(planVM.isGenerating)
+                .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
 
                 Button {
                     dismiss()
