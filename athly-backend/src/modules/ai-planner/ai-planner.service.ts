@@ -311,7 +311,10 @@ export class AiPlannerService {
           modelUsed: plannerResult.modelUsed,
           promptText: plannerResult.prompt,
           rawResponse: plannerResult.rawResponse,
-          parsedResponse: plannerResult.parsed as unknown as Prisma.InputJsonValue,
+          parsedResponse: {
+            ...plannerResult.parsed,
+            aiUsage: plannerResult.usage,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -355,6 +358,7 @@ export class AiPlannerService {
         stravaActivityId: w.stravaActivityId ?? null,
       })),
       analysis: plannerResult.parsed.analysis,
+      aiUsage: plannerResult.usage,
       isAssessment,
     };
   }

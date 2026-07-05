@@ -1,6 +1,9 @@
 import { Injectable, InternalServerErrorException, BadGatewayException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import {
+  GoogleGenAI,
+  type GenerateContentResponse,
+} from '@google/genai';
 import type {
   AiPlannerInput,
   PlannerGuardrails,
@@ -26,84 +29,114 @@ export interface PlannerExecution {
   rawResponse: string;
   parsed: PlannerResults;
   modelUsed: string;
+  usage: AiPlannerUsage;
+}
+
+export interface AiPlannerUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  thinkingTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number | null;
+  pricing: {
+    inputUsdPer1M: number | null;
+    outputUsdPer1M: number | null;
+    source: 'ai.google.dev/pricing';
+  };
+  attempts: number;
+  tokenSource: 'usageMetadata' | 'estimatedFromText' | 'mixed';
 }
 
 const runTargetSchema = {
-  type: SchemaType.OBJECT,
+  type: 'object',
   properties: {
-    paceSecPerKmMin: { type: SchemaType.INTEGER },
-    paceSecPerKmMax: { type: SchemaType.INTEGER },
-    hrZone: { type: SchemaType.INTEGER },
-    rpe: { type: SchemaType.INTEGER },
+    paceSecPerKmMin: { type: 'integer' },
+    paceSecPerKmMax: { type: 'integer' },
+    hrZone: { type: 'integer' },
+    rpe: { type: 'integer' },
   },
 };
 
 const endSchema = {
-  type: SchemaType.OBJECT,
+  type: 'object',
   properties: {
     by: {
-      type: SchemaType.STRING,
-      format: 'enum',
+      type: 'string',
       enum: ['distanceM', 'durationSec', 'reps'],
     },
-    value: { type: SchemaType.NUMBER },
+    value: { type: 'number' },
   },
   required: ['by', 'value'],
 };
 
 const childSegmentSchema = {
-  type: SchemaType.OBJECT,
+  type: 'object',
   properties: {
-    id: { type: SchemaType.STRING },
+    id: { type: 'string' },
     kind: {
-      type: SchemaType.STRING,
-      format: 'enum',
+      type: 'string',
       enum: ['warmup', 'work', 'recovery', 'cooldown', 'rest'],
     },
-    label: { type: SchemaType.STRING },
+    label: { type: 'string' },
     end: endSchema,
     target: runTargetSchema,
   },
-  required: ['id', 'kind', 'end'],
+  required: ['id', 'kind', 'label', 'end'],
+};
+
+const nonSetSegmentSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    kind: {
+      type: 'string',
+      enum: ['warmup', 'work', 'recovery', 'cooldown', 'rest'],
+    },
+    label: { type: 'string' },
+    end: endSchema,
+    target: runTargetSchema,
+  },
+  required: ['id', 'kind', 'label', 'end'],
+};
+
+const setSegmentSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    kind: {
+      type: 'string',
+      enum: ['set'],
+    },
+    label: { type: 'string' },
+    repetitions: { type: 'integer', minimum: 1 },
+    children: { type: 'array', items: childSegmentSchema },
+  },
+  required: ['id', 'kind', 'label', 'repetitions', 'children'],
 };
 
 const segmentSchema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    id: { type: SchemaType.STRING },
-    kind: {
-      type: SchemaType.STRING,
-      format: 'enum',
-      enum: ['warmup', 'work', 'recovery', 'cooldown', 'rest', 'set'],
-    },
-    label: { type: SchemaType.STRING },
-    end: endSchema,
-    target: runTargetSchema,
-    repetitions: { type: SchemaType.INTEGER },
-    children: { type: SchemaType.ARRAY, items: childSegmentSchema },
-  },
-  required: ['id', 'kind'],
+  anyOf: [nonSetSegmentSchema, setSegmentSchema],
 };
 
-const plannerResponseSchema = {
-  type: SchemaType.OBJECT,
+export const plannerResponseSchema = {
+  type: 'object',
   properties: {
     analysis: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
-        title: { type: SchemaType.STRING },
-        runsAnalyzed: { type: SchemaType.INTEGER },
-        period: { type: SchemaType.STRING },
-        avgDistanceKm: { type: SchemaType.NUMBER },
-        avgPace: { type: SchemaType.STRING },
-        avgHeartRate: { type: SchemaType.NUMBER, nullable: true },
-        totalDistanceKm: { type: SchemaType.NUMBER },
+        title: { type: 'string' },
+        runsAnalyzed: { type: 'integer' },
+        period: { type: 'string' },
+        avgDistanceKm: { type: 'number' },
+        avgPace: { type: 'string' },
+        avgHeartRate: { type: 'number', nullable: true },
+        totalDistanceKm: { type: 'number' },
         trend: {
-          type: SchemaType.STRING,
-          format: 'enum',
+          type: 'string',
           enum: ['improving (volume)', 'improving (intensity)', 'maintaining', 'declining'],
         },
-        fitnessInsights: { type: SchemaType.STRING },
+        fitnessInsights: { type: 'string' },
       },
       required: [
         'title',
@@ -118,25 +151,22 @@ const plannerResponseSchema = {
       ],
     },
     weekPlan: {
-      type: SchemaType.ARRAY,
-      minItems: 7,
-      maxItems: 7,
+      type: 'array',
       items: {
-        type: SchemaType.OBJECT,
+        type: 'object',
         properties: {
-          date: { type: SchemaType.STRING },
-          dayOfWeek: { type: SchemaType.STRING },
-          title: { type: SchemaType.STRING },
-          description: { type: SchemaType.STRING },
+          date: { type: 'string' },
+          dayOfWeek: { type: 'string' },
+          title: { type: 'string' },
+          description: { type: 'string' },
           sportType: {
-            type: SchemaType.STRING,
-            format: 'enum',
+            type: 'string',
             enum: ['running', 'walking', 'other'],
           },
-          intensity: { type: SchemaType.INTEGER },
-          reasoning: { type: SchemaType.STRING },
-          isGoalAttempt: { type: SchemaType.BOOLEAN },
-          segments: { type: SchemaType.ARRAY, items: segmentSchema },
+          intensity: { type: 'integer' },
+          reasoning: { type: 'string' },
+          isGoalAttempt: { type: 'boolean' },
+          segments: { type: 'array', items: segmentSchema },
         },
         required: ['date', 'dayOfWeek', 'title', 'description', 'sportType', 'intensity', 'segments'],
       },
@@ -145,33 +175,60 @@ const plannerResponseSchema = {
   required: ['analysis', 'weekPlan'],
 };
 
+export const goalParserResponseSchema = {
+  type: 'object',
+  properties: {
+    isRunningRelated: { type: 'boolean' },
+    targetDistance: { type: 'string', nullable: true },
+    targetTime: { type: 'string', nullable: true },
+    eventDate: { type: 'string', nullable: true },
+    eventName: { type: 'string', nullable: true },
+    experienceLevel: {
+      type: 'string',
+      enum: ['beginner', 'intermediate', 'advanced'],
+      nullable: true,
+    },
+    summary: { type: 'string' },
+    rejectionReason: { type: 'string', nullable: true },
+  },
+  required: [
+    'isRunningRelated',
+    'targetDistance',
+    'targetTime',
+    'eventDate',
+    'eventName',
+    'experienceLevel',
+    'summary',
+    'rejectionReason',
+  ],
+};
+
+const GEMINI_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
+  'gemini-2.5-flash-lite': { input: 0.1, output: 0.4 },
+  'gemini-2.5-flash': { input: 0.3, output: 2.5 },
+  'gemini-2.5-pro': { input: 1.25, output: 10 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.5 },
+  'gemini-3-flash-preview': { input: 0.5, output: 3 },
+  'gemini-3.5-flash': { input: 1.5, output: 9 },
+  'gemini-3.1-pro-preview': { input: 2, output: 12 },
+};
+
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private readonly defaultPlannerModelName = 'gemini-3-flash-preview';
-  private readonly defaultGoalParserModelName = 'gemini-2.5-flash';
+  private readonly defaultGoalParserModelName = 'gemini-3.1-flash-lite';
   // Quantas vezes regerar quando a IA devolve treino degenerado (bloco único).
   private readonly MAX_STRUCTURE_ATTEMPTS = 3;
 
   constructor(private readonly configService: ConfigService) {}
 
-  private getModel(modelName: string, usePlannerSchema = true) {
+  private getClient(): GoogleGenAI {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
       throw new InternalServerErrorException('GEMINI_API_KEY is not configured.');
     }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({
-      model: modelName,
-      // maxOutputTokens generoso: o "thinking" do 2.5-flash consome do orçamento de saída;
-      // um teto baixo trunca o JSON do plano (7 dias + segments aninhados) e degenera os treinos.
-      generationConfig: {
-        responseMimeType: 'application/json',
-        ...(usePlannerSchema ? { responseSchema: plannerResponseSchema as any } : {}),
-        maxOutputTokens: 32768,
-        temperature: 0.4,
-      },
-    });
+    return new GoogleGenAI({ apiKey });
   }
 
   private plannerModelName(): string {
@@ -234,13 +291,14 @@ export class GeminiService {
   }
 
   async parseGoal(goalText: string): Promise<ParsedGoal> {
-    const model = this.getModel(this.goalParserModelName(), false);
+    const modelName = this.goalParserModelName();
     const prompt = buildGoalParserPrompt(goalText);
 
     let responseText: string;
     try {
-      const result = await model.generateContent(prompt);
-      responseText = result.response.text();
+      const result = await this.generateJson(prompt, modelName, goalParserResponseSchema);
+      responseText = result.rawResponse;
+      this.logger.log(this.formatUsageLog('goal_parser', result.usage));
     } catch (err) {
       throw new BadGatewayException(
         `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -273,15 +331,16 @@ export class GeminiService {
     guardrails: PlannerGuardrails | undefined,
     modelName: string,
   ): Promise<PlannerExecution> {
-    const model = this.getModel(modelName);
     let best: { rawResponse: string; parsed: PlannerResults; degenerate: string[] } | null = null;
     let prompt = basePrompt;
+    let aggregateUsage = this.emptyUsage(modelName);
 
     for (let attempt = 1; attempt <= this.MAX_STRUCTURE_ATTEMPTS; attempt++) {
       let rawResponse: string;
       try {
-        const result = await model.generateContent(prompt);
-        rawResponse = result.response.text();
+        const result = await this.generateJson(prompt, modelName, plannerResponseSchema);
+        rawResponse = result.rawResponse;
+        aggregateUsage = this.mergeUsage(aggregateUsage, result.usage);
       } catch (err) {
         throw new BadGatewayException(
           `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -298,7 +357,10 @@ export class GeminiService {
             err instanceof Error ? err.message : String(err)
           }`,
         );
-        if (attempt === this.MAX_STRUCTURE_ATTEMPTS && !best) throw err;
+        if (attempt === this.MAX_STRUCTURE_ATTEMPTS && !best) {
+          this.logger.log(this.formatUsageLog('weekly_plan_failed', aggregateUsage));
+          throw err;
+        }
         prompt = `${basePrompt}\n${this.buildCorrectiveNote([])}`;
         continue;
       }
@@ -310,7 +372,8 @@ export class GeminiService {
       if (degenerate.length === 0) {
         this.finalizeSegments(parsed.weekPlan);
         this.applyAnalysisOverride(parsed, guardrails);
-        return { prompt, rawResponse, parsed, modelUsed: modelName };
+        this.logger.log(this.formatUsageLog('weekly_plan', aggregateUsage));
+        return { prompt, rawResponse, parsed, modelUsed: modelName, usage: aggregateUsage };
       }
 
       this.logger.warn(
@@ -327,9 +390,37 @@ export class GeminiService {
         best?.degenerate.join('; ') ?? 'unknown'
       }`,
     );
+    this.logger.log(this.formatUsageLog('weekly_plan_failed', aggregateUsage));
     throw new BadGatewayException(
       `O plano gerado veio com treinos sem estrutura completa após ${this.MAX_STRUCTURE_ATTEMPTS} tentativas. Tente gerar novamente.`,
     );
+  }
+
+  private async generateJson(
+    prompt: string,
+    modelName: string,
+    responseJsonSchema: unknown,
+  ): Promise<{ rawResponse: string; usage: AiPlannerUsage }> {
+    const response = await this.getClient().models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseJsonSchema,
+        maxOutputTokens: 32768,
+        temperature: 0.25,
+      },
+    });
+
+    const rawResponse = response.text;
+    if (!rawResponse) {
+      throw new BadGatewayException('Gemini AI returned an empty response.');
+    }
+
+    return {
+      rawResponse,
+      usage: this.buildUsage(modelName, response, prompt, rawResponse),
+    };
   }
 
   /** JSON parse + shape validation (analysis + exactly 7 days). Does NOT mutate segments. */
@@ -435,7 +526,10 @@ export class GeminiService {
         parsed.weekPlan,
         guardrails.defaultPaceSecPerKm ?? 390,
       );
-      if (estimatedKm > guardrails.weeklyVolumeMaxKm * 1.05) {
+      // Volume is a coaching quality guardrail, not a reason to make week creation fail
+      // for moderate model drift. The prompt still asks for the exact cap; this gate only
+      // rejects clearly excessive plans and asks the model to regenerate.
+      if (estimatedKm > guardrails.weeklyVolumeMaxKm * 1.25) {
         defects.push(
           `planned volume ${estimatedKm.toFixed(2)}km exceeds max ${guardrails.weeklyVolumeMaxKm.toFixed(2)}km`,
         );
@@ -499,6 +593,103 @@ REGERE o plano INTEIRO retornando JSON válido e garantindo que TODO dia de corr
 NUNCA retorne um dia de corrida com um único segmento. Siga <segment_schema> e <segment_recipes>.
 </correcao_obrigatoria>`;
   }
+
+  private buildUsage(
+    modelName: string,
+    response: GenerateContentResponse,
+    prompt: string,
+    rawResponse: string,
+  ): AiPlannerUsage {
+    const metadata = response.usageMetadata;
+    const hasMetadata =
+      typeof metadata?.promptTokenCount === 'number' ||
+      typeof metadata?.candidatesTokenCount === 'number' ||
+      typeof metadata?.totalTokenCount === 'number';
+
+    const inputTokens = hasMetadata
+      ? Math.max(0, metadata?.promptTokenCount ?? 0)
+      : estimateTextTokens(prompt);
+    const outputTokens = hasMetadata
+      ? Math.max(0, metadata?.candidatesTokenCount ?? 0)
+      : estimateTextTokens(rawResponse);
+    const thinkingTokens = hasMetadata ? Math.max(0, metadata?.thoughtsTokenCount ?? 0) : 0;
+    const totalTokens = hasMetadata
+      ? Math.max(0, metadata?.totalTokenCount ?? inputTokens + outputTokens + thinkingTokens)
+      : inputTokens + outputTokens;
+
+    return this.withCost({
+      model: modelName,
+      inputTokens,
+      outputTokens,
+      thinkingTokens,
+      totalTokens,
+      estimatedCostUsd: null,
+      pricing: {
+        inputUsdPer1M: null,
+        outputUsdPer1M: null,
+        source: 'ai.google.dev/pricing',
+      },
+      attempts: 1,
+      tokenSource: hasMetadata ? 'usageMetadata' : 'estimatedFromText',
+    });
+  }
+
+  private emptyUsage(modelName: string): AiPlannerUsage {
+    return this.withCost({
+      model: modelName,
+      inputTokens: 0,
+      outputTokens: 0,
+      thinkingTokens: 0,
+      totalTokens: 0,
+      estimatedCostUsd: null,
+      pricing: {
+        inputUsdPer1M: null,
+        outputUsdPer1M: null,
+        source: 'ai.google.dev/pricing',
+      },
+      attempts: 0,
+      tokenSource: 'usageMetadata',
+    });
+  }
+
+  private mergeUsage(a: AiPlannerUsage, b: AiPlannerUsage): AiPlannerUsage {
+    const tokenSource =
+      a.tokenSource === b.tokenSource ? a.tokenSource : a.attempts === 0 ? b.tokenSource : 'mixed';
+    return this.withCost({
+      model: a.model,
+      inputTokens: a.inputTokens + b.inputTokens,
+      outputTokens: a.outputTokens + b.outputTokens,
+      thinkingTokens: a.thinkingTokens + b.thinkingTokens,
+      totalTokens: a.totalTokens + b.totalTokens,
+      estimatedCostUsd: null,
+      pricing: a.pricing,
+      attempts: a.attempts + b.attempts,
+      tokenSource,
+    });
+  }
+
+  private withCost(usage: AiPlannerUsage): AiPlannerUsage {
+    const pricing = pricingForModel(usage.model, usage.inputTokens);
+    const estimatedCostUsd = pricing
+      ? (usage.inputTokens / 1_000_000) * pricing.input +
+        ((usage.outputTokens + usage.thinkingTokens) / 1_000_000) * pricing.output
+      : null;
+
+    return {
+      ...usage,
+      estimatedCostUsd: estimatedCostUsd === null ? null : roundUsd(estimatedCostUsd),
+      pricing: {
+        inputUsdPer1M: pricing?.input ?? null,
+        outputUsdPer1M: pricing?.output ?? null,
+        source: 'ai.google.dev/pricing',
+      },
+    };
+  }
+
+  private formatUsageLog(label: string, usage: AiPlannerUsage): string {
+    const cost = usage.estimatedCostUsd === null ? 'unknown' : `$${usage.estimatedCostUsd.toFixed(6)}`;
+    return `Gemini ${label} usage: model=${usage.model}, attempts=${usage.attempts}, inputTokens=${usage.inputTokens}, outputTokens=${usage.outputTokens}, thinkingTokens=${usage.thinkingTokens}, totalTokens=${usage.totalTokens}, estimatedCostUsd=${cost}, tokenSource=${usage.tokenSource}`;
+  }
 }
 
 function isoDayKey(date: string): string {
@@ -513,4 +704,20 @@ function targetMidPace(target: unknown): number | null {
   const max = typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0 ? t.paceSecPerKmMax : null;
   if (min !== null && max !== null) return (min + max) / 2;
   return min ?? max;
+}
+
+function pricingForModel(modelName: string, inputTokens = 0): { input: number; output: number } | null {
+  const normalized = modelName.replace(/^models\//, '').toLowerCase();
+  if (normalized === 'gemini-3.1-pro-preview' && inputTokens > 200_000) {
+    return { input: 4, output: 18 };
+  }
+  return GEMINI_PRICING_USD_PER_1M[normalized] ?? null;
+}
+
+function estimateTextTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+function roundUsd(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
 }

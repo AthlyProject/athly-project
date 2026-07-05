@@ -55,13 +55,29 @@ const plan = (complete: boolean) => ({
   ],
 });
 
-const mockModelReturning = (responses: string[]) => {
+const usage = (overrides: Partial<any> = {}) => ({
+  model: 'gemini-3-flash-preview',
+  inputTokens: 1000,
+  outputTokens: 500,
+  thinkingTokens: 0,
+  totalTokens: 1500,
+  estimatedCostUsd: 0.002,
+  pricing: {
+    inputUsdPer1M: 0.5,
+    outputUsdPer1M: 3,
+    source: 'ai.google.dev/pricing',
+  },
+  attempts: 1,
+  tokenSource: 'usageMetadata',
+  ...overrides,
+});
+
+const mockJsonReturning = (responses: string[]) => {
   let i = 0;
-  return {
-    generateContent: jest.fn(async () => ({
-      response: { text: () => responses[Math.min(i++, responses.length - 1)] },
-    })),
-  };
+  return jest.fn(async () => ({
+    rawResponse: responses[Math.min(i++, responses.length - 1)],
+    usage: usage(),
+  }));
 };
 
 describe('GeminiService.assessStructure', () => {
@@ -122,20 +138,61 @@ describe('GeminiService.assessPlanQuality', () => {
 
 describe('GeminiService.runWithStructureGate', () => {
   it('regenera quando vem degenerado e aceita a tentativa boa', async () => {
-    const model = mockModelReturning([JSON.stringify(plan(false)), JSON.stringify(plan(true))]);
-    (gemini as any).getModel = () => model;
+    const generateJson = mockJsonReturning([JSON.stringify(plan(false)), JSON.stringify(plan(true))]);
+    (gemini as any).generateJson = generateJson;
 
-    const res = await (gemini as any).runWithStructureGate('PROMPT');
+    const res = await (gemini as any).runWithStructureGate(
+      'PROMPT',
+      undefined,
+      'gemini-3-flash-preview',
+    );
 
-    expect(model.generateContent).toHaveBeenCalledTimes(2);
+    expect(generateJson).toHaveBeenCalledTimes(2);
     expect(res.parsed.weekPlan).toHaveLength(7);
+    expect(res.usage.attempts).toBe(2);
   });
 
   it('lança erro (não persiste) se continuar degenerado após o máximo de tentativas', async () => {
-    const model = mockModelReturning([JSON.stringify(plan(false))]);
-    (gemini as any).getModel = () => model;
+    const generateJson = mockJsonReturning([JSON.stringify(plan(false))]);
+    (gemini as any).generateJson = generateJson;
 
-    await expect((gemini as any).runWithStructureGate('PROMPT')).rejects.toThrow();
-    expect(model.generateContent).toHaveBeenCalledTimes(3); // MAX_STRUCTURE_ATTEMPTS
+    await expect(
+      (gemini as any).runWithStructureGate('PROMPT', undefined, 'gemini-3-flash-preview'),
+    ).rejects.toThrow();
+    expect(generateJson).toHaveBeenCalledTimes(3); // MAX_STRUCTURE_ATTEMPTS
+  });
+});
+
+describe('GeminiService.costEstimate', () => {
+  it('calcula custo por 1M tokens para gemini-2.5-flash', () => {
+    const res = (gemini as any).withCost(
+      usage({
+        model: 'gemini-2.5-flash',
+        inputTokens: 1_000_000,
+        outputTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        estimatedCostUsd: null,
+      }),
+    );
+
+    expect(res.estimatedCostUsd).toBe(2.8);
+    expect(res.pricing.inputUsdPer1M).toBe(0.3);
+    expect(res.pricing.outputUsdPer1M).toBe(2.5);
+  });
+
+  it('calcula custo por 1M tokens para gemini-3-flash-preview', () => {
+    const res = (gemini as any).withCost(
+      usage({
+        model: 'gemini-3-flash-preview',
+        inputTokens: 1_000_000,
+        outputTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        estimatedCostUsd: null,
+      }),
+    );
+
+    expect(res.estimatedCostUsd).toBe(3.5);
+    expect(res.pricing.inputUsdPer1M).toBe(0.5);
+    expect(res.pricing.outputUsdPer1M).toBe(3);
   });
 });

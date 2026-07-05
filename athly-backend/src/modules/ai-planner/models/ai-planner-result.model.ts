@@ -16,6 +16,9 @@ export class AiPlannerResultModel {
   @ApiProperty()
   analysis: any;
 
+  @ApiProperty({ required: false })
+  aiUsage?: any;
+
   @ApiProperty()
   isAssessment: boolean;
 }
