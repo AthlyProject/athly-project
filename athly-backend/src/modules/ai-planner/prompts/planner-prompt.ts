@@ -74,6 +74,7 @@ Considere estes dados ao planejar a próxima semana:
 - Se aderência foi baixa (< 70%), considere reduzir volume ou número de treinos intensos.
 - Se fadiga foi alta (> 7/10), inclua mais dias de recuperação ou reduza intensidade.
 - Se todos os treinos foram completados com esforço baixo (< 5/10), considere progredir intensidade ou volume.
+- Se aderência >= 90%, fadiga média <= 5/10 e confiança do volume for high/corrected, o atleta pode absorver progressão: use 95–100% do volume máximo da semana e deixe pelo menos um treino-chave realmente específico para o objetivo.
 - Se o atleta pulou treinos intensos, considere se a carga está adequada.
 </previous_week_review>`;
 }
@@ -444,6 +445,8 @@ const SEGMENT_CONSTRAINTS_PLANNER = `
 - Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".
 - Preencha target.paceSecPerKmMin/Max a partir das zonas de pace personalizadas (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). As zonas são a referência primária; NÃO invente números fora de uma âncora real (zona OU pace real observado).
 - CALIBRAÇÃO PELO DESEMPENHO REAL: se o "executionAnalysis.mainPace" (bloco principal) ou "meanRepPace" (tiros) em <recentSessionsDetail> for MAIS RÁPIDO do que a zona correspondente sugere, a estimativa de VDOT está subestimando o atleta — prescreva pela capacidade real observada: tempo/limiar ≈ mainPace de tempo runs recentes; intervalos ≈ meanRepPace recente; easy ≈ 60–90s/km mais lento que o pace de limiar observado. NUNCA prescreva um treino de qualidade mais lento do que o atleta já demonstrou correr confortavelmente.
+- ATLETA ADERENTE E COMPETITIVO: se a semana anterior teve aderência >= 90%, fadiga média <= 5/10, sem overreach, e os tiros recentes foram mais rápidos do que a zona de intervalo/repetição, use 95–100% do "Volume máximo planejado desta semana" e prescreva o treino-chave no lado agressivo, porém controlado, da capacidade observada. Progrida UMA variável por vez: aumente distância dos tiros, OU número de repetições, OU aperte levemente o pace; NUNCA aumente distância, repetições e pace ao mesmo tempo.
+- ESPECIFICIDADE DO OBJETIVO: quando a tentativa do objetivo ainda não for viável por falta de sustentação, não responda com esforços muito fáceis só porque o pace contínuo recente está longe do alvo. Escolha treinos que aproximem progressivamente o atleta da demanda específica do objetivo: para metas curtas, aumente gradualmente a duração/distância dos tiros em ritmo próximo ao alvo; para metas médias/longas, aumente blocos de ritmo controlado, tempo/limiar e volume fácil. Se o atleta já executou repetições curtas bem mais rápidas que o ritmo-alvo com RPE controlado, prefira alongar as repetições ou reduzir a recuperação antes de tornar o pace conservador demais.
 - EASY/RECUPERAÇÃO: para atletas com fitness intermediário+ demonstrado, prescreva o easy na METADE MAIS RÁPIDA da faixa Easy (perto de easyPaceMin), não no extremo lento. Reserve o extremo lento (easyPaceMax) apenas para dias explicitamente marcados como recuperação/regenerativo. Um easy bem prescrito fica tipicamente ~60–90s/km mais lento que o limiar do atleta — não mais lento que isso.`;
 
 const SEGMENT_CONSTRAINTS_ASSESSMENT = `
