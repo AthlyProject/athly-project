@@ -93,7 +93,10 @@ voce reconhecer a tela caso o App Store Connect apareca parcialmente traduzido.
 8. Testador sandbox:
    - `Usuarios e acesso > Sandbox > +`.
    - Use um e-mail que nao seja Apple Account real.
-   - No iPhone de teste, faca login em `Ajustes > App Store > Conta Sandbox`.
+   - No iPhone de teste, tente rolar ate o fim de `Ajustes > App Store` e procurar
+     `Conta Sandbox`.
+   - Se `Conta Sandbox` nao aparecer, nao bloqueia o teste: abra o app, toque para comprar no
+     paywall, e faca login com a conta sandbox no prompt de compra da Apple.
 
 ## RevenueCat
 
@@ -191,7 +194,8 @@ porque `/billing/entitlement` retorna liberado.
 2. Rode o app no device com:
    - Bundle ID `com.athly.runner`;
    - RevenueCat key `appl_...`;
-   - Conta Sandbox logada em `Ajustes > App Store > Conta Sandbox`.
+   - Conta Sandbox logada em `Ajustes > App Store > Conta Sandbox`, se essa opcao aparecer.
+     Se nao aparecer, use a conta sandbox quando a folha de compra da Apple pedir login.
 
 3. No app, va em `Plano > Gerar Proxima Semana`.
    - Sem entitlement, deve abrir o paywall.
