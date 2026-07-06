@@ -161,6 +161,11 @@ PAYWALL_ENABLED=true
 REVENUECAT_WEBHOOK_AUTH=Bearer <mesmo-valor-configurado-no-RevenueCat>
 ```
 
+No App Runner, essas keys precisam estar mapeadas como variaveis/segredos do servico. Se voce so
+editar o valor no AWS Secrets Manager, mas o App Runner nao mapear a key para o processo, o backend
+continua lendo o default `PAYWALL_ENABLED=false`. Depois de alterar segredo/config do App Runner,
+faca redeploy/restart do servico.
+
 Enquanto `PAYWALL_ENABLED=false`, o backend libera todo mundo e o app nao deve mostrar paywall,
 porque `/billing/entitlement` retorna liberado.
 
@@ -168,6 +173,20 @@ porque `/billing/entitlement` retorna liberado.
 
 1. Use um usuario Athly que nao seja admin e que ja tenha passado do trial de 14 dias, ou ajuste esse
    usuario no banco para simular trial expirado.
+
+   Para simular trial expirado em um usuario de teste:
+
+   ```sql
+   UPDATE users
+   SET
+     created_at = NOW() - INTERVAL '15 days',
+     subscription_status = NULL,
+     subscription_expires_at = NULL,
+     subscription_product_id = NULL
+   WHERE email = 'email-do-usuario-de-teste@example.com';
+   ```
+
+   Se esse e-mail estiver em `ADMIN_EMAILS` ou o `role` for `ADMIN`, o paywall nao aparece.
 
 2. Rode o app no device com:
    - Bundle ID `com.athly.runner`;
@@ -191,6 +210,31 @@ porque `/billing/entitlement` retorna liberado.
    - Aguarde a assinatura sandbox expirar ou cancele.
    - RevenueCat deve enviar webhook.
    - Backend deve voltar a bloquear quando `subscriptionExpiresAt` passar.
+
+## Se o paywall nao aparece
+
+1. Confirme que `PAYWALL_ENABLED=true` chegou ao processo do backend.
+   No App Runner, a key precisa estar em `run.secrets` ou nas variaveis/segredos do servico.
+   Editar somente o AWS Secrets Manager nao altera o processo se o App Runner nao mapear a key.
+
+2. Depois de alterar secret/config no App Runner, faca redeploy/restart do servico.
+
+3. Confirme que o usuario de teste nao esta dentro do trial backend de 14 dias.
+   Conta nova continua liberada e nao mostra paywall.
+
+4. Confirme que o usuario de teste nao e admin:
+   - e-mail fora de `ADMIN_EMAILS`;
+   - `role` diferente de `ADMIN`.
+
+5. Confirme que o usuario nao tem assinatura ativa no backend:
+   - `subscription_status` nao deve ser `active`;
+   - `subscription_expires_at` deve estar vazio ou no passado.
+
+6. Confirme que o app iOS esta usando a RevenueCat public SDK key do app iOS (`appl_...`), nao a key
+   `test_...`.
+
+7. O sandbox Apple so entra na hora da compra. Ele nao forca o paywall a aparecer; quem abre o
+   paywall e o app quando `/billing/entitlement` retorna `entitled=false`.
 
 ## Fontes oficiais
 
