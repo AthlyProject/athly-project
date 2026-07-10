@@ -9,16 +9,16 @@ import androidx.compose.ui.unit.sp
 import com.athly.runner.R
 
 /**
- * Família SpaceGrotesk. **Requer os 4 .ttf em `res/font/`** (passo manual):
- * baixe de https://fonts.google.com/specimen/Space+Grotesk e salve como
- * `spacegrotesk_regular.ttf`, `spacegrotesk_medium.ttf`, `spacegrotesk_semibold.ttf`, `spacegrotesk_bold.ttf`.
- * (Sem eles o build não resolve `R.font.spacegrotesk_*`.)
+ * Família SpaceGrotesk a partir da **fonte variável** `res/font/spacegrotesk_variable.ttf`
+ * (baixada de google/fonts, OFL). O SpaceGrotesk não distribui um SemiBold estático, então usamos
+ * a variável: `Font(resId, weight)` aplica o eixo `wght` automaticamente (minSdk 26 suporta),
+ * dando os pesos exatos 400/500/600/700.
  */
 val SpaceGrotesk = FontFamily(
-    Font(R.font.spacegrotesk_regular, FontWeight.Normal),
-    Font(R.font.spacegrotesk_medium, FontWeight.Medium),
-    Font(R.font.spacegrotesk_semibold, FontWeight.SemiBold),
-    Font(R.font.spacegrotesk_bold, FontWeight.Bold),
+    Font(R.font.spacegrotesk_variable, FontWeight.Normal),
+    Font(R.font.spacegrotesk_variable, FontWeight.Medium),
+    Font(R.font.spacegrotesk_variable, FontWeight.SemiBold),
+    Font(R.font.spacegrotesk_variable, FontWeight.Bold),
 )
 
 /** Helpers parametrizados por tamanho — espelham `AthlyTheme.Typography` do iOS. */
