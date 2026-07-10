@@ -1,22 +1,17 @@
 package com.athly.runner.core.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.athly.runner.core.designsystem.preview.DesignSystemScreen
+import com.athly.runner.feature.auth.ui.AuthGate
 
 /**
- * Stub de navegação. A navegação real (gate de auth + bottom nav de 5 abas + FloatingTabBar)
- * é implementada no prompt 05. Por ora o destino inicial mostra a galeria do design system (fatia 01),
- * para validação visual.
+ * Raiz de navegação do app — espelha `RootView`/`MainTabView` do iOS.
+ * O [AuthGate] cuida do splash e do gate de sessão (deslogado → login/registro); autenticado →
+ * [MainScaffold] com a bottom nav de 5 abas. Trocar de estado de auth troca o conteúdo raiz
+ * (back stack limpo por construção — não é um push de tela).
  */
 @Composable
 fun AthlyNavHost() {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "designSystem") {
-        composable("designSystem") {
-            DesignSystemScreen()
-        }
+    AuthGate { authViewModel ->
+        MainScaffold(authViewModel = authViewModel)
     }
 }
