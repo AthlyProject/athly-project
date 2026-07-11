@@ -18,6 +18,10 @@ val localProps = Properties().apply {
 val prodApiUrl = "https://api.athlyproject.app"
 val devApiUrl: String = (localProps.getProperty("DEV_API_URL") ?: "").trim()
 val mapsApiKey: String = (localProps.getProperty("MAPS_API_KEY") ?: "").trim()
+// Backend MOCK (offline, sem credenciais) — só no debug e opt-in via local.properties. Espelha o swap
+// por `#if targetEnvironment(simulator)` do iOS (MockHealthKitService). Vazio/false ⇒ backend real,
+// então builds de device físico/release ficam intactos.
+val mockBackend: Boolean = (localProps.getProperty("MOCK_BACKEND") ?: "").trim().equals("true", ignoreCase = true)
 
 android {
     namespace = "com.athly.runner"
@@ -37,6 +41,8 @@ android {
         debug {
             // Debug usa o backend local (DEV_API_URL) quando definido; senão produção.
             buildConfigField("String", "BASE_URL", "\"${devApiUrl.ifEmpty { prodApiUrl }}\"")
+            // MOCK_BACKEND só existe no debug; release é sempre false (backend real).
+            buildConfigField("Boolean", "MOCK_BACKEND", "$mockBackend")
         }
         release {
             isMinifyEnabled = false
@@ -45,6 +51,7 @@ android {
                 "proguard-rules.pro",
             )
             buildConfigField("String", "BASE_URL", "\"$prodApiUrl\"")
+            buildConfigField("Boolean", "MOCK_BACKEND", "false")
         }
     }
 
@@ -96,4 +103,8 @@ dependencies {
     implementation(libs.coil.compose)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

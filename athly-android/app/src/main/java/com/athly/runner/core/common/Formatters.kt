@@ -11,9 +11,15 @@ object Formatters {
 
     /** Pace em segundos/km → "M:SS /km" (ou "--:--" quando inválido). Espelha formatPace do iOS. */
     fun pace(secondsPerKm: Double): String {
+        val bare = paceNoSuffix(secondsPerKm)
+        return if (bare == "--:--") bare else "$bare /km"
+    }
+
+    /** "M:SS" sem sufixo — mesma guarda do iOS (`≤0 / !finite / ≥3600` → "--:--"). */
+    fun paceNoSuffix(secondsPerKm: Double): String {
         if (secondsPerKm <= 0 || !secondsPerKm.isFinite() || secondsPerKm >= 3600) return "--:--"
         val total = secondsPerKm.roundToInt()
-        return String.format(Locale.US, "%d:%02d /km", total / 60, total % 60)
+        return String.format(Locale.US, "%d:%02d", total / 60, total % 60)
     }
 
     /** Metros → "X.XX km". */
