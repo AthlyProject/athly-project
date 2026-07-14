@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RunTrackingView: View {
     @ObservedObject var viewModel: RunViewModel
-    @State private var showStopConfirmation = false
 
     var body: some View {
         ZStack {
@@ -44,23 +43,6 @@ struct RunTrackingView: View {
             .padding(.bottom, 16)
         }
         .navigationBarHidden(true)
-        .confirmationDialog(
-            "Finalizar corrida?",
-            isPresented: $showStopConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Finalizar e salvar") {
-                viewModel.finishRun()
-            }
-            Button("Descartar", role: .destructive) {
-                viewModel.discardRun()
-            }
-            Button("Continuar correndo", role: .cancel) {
-                if viewModel.isPaused {
-                    viewModel.resumeRun()
-                }
-            }
-        }
     }
 
     // MARK: - Segment banner
@@ -179,9 +161,9 @@ struct RunTrackingView: View {
     private var controlsPanel: some View {
         HStack(spacing: 40) {
             if viewModel.isPaused {
-                // Stop button
+                // Finish button
                 Button {
-                    showStopConfirmation = true
+                    viewModel.finishRun()
                 } label: {
                     ZStack {
                         Circle()

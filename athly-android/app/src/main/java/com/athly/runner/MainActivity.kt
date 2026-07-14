@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AthlyTheme {
+                // Raiz: gate de auth (splash → login/registro) + shell de abas quando autenticado.
                 AthlyNavHost()
             }
         }

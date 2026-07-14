@@ -14,6 +14,7 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var selectedWeekIndex: Int = 0
     @Published var isLoading: Bool = false
     @Published var isGenerating: Bool = false
+    @Published var isGeneratingInBackground: Bool = false
     @Published var isDeleting: Bool = false
     @Published var errorMessage: String?
     @Published var lastAnalysis: RunAnalysis?
@@ -21,6 +22,8 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var activeGoal: CreateGoalResponse?
     /// Conquistas: treinos de tentativa de objetivo em que o atleta atingiu a meta (ver `AchievementStore`).
     @Published var achievementCount: Int = AchievementStore.shared.count
+
+    private var generationPollTask: Task<Void, Never>?
 
     // MARK: - Computed Properties
 
@@ -269,6 +272,11 @@ final class TrainingPlanViewModel: ObservableObject {
         }
 
         let workoutIdsBefore = Set(allWorkouts.map { $0.id })
+        let generatedWeeklyGoalIdsBefore = Set(
+            weeklyGoals
+                .filter { $0.status == .GENERATED }
+                .map { $0.id }
+        )
 
         do {
             let payloads = healthRuns.map { HealthRunPayload(from: $0) }
@@ -282,20 +290,17 @@ final class TrainingPlanViewModel: ObservableObject {
                 detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
                 weekStartDate: nil
             )
-            let response = try await APIClient.shared.planFromHealth(request)
-            lastAnalysis = response.analysis
-            await loadData()
-            selectedWeekIndex = max(0, weeks.count - 1)
-            // Onboarding: após gerar o plano, oferece os lembretes e (re)agenda.
-            await NotificationService.shared.requestAuthorizationIfNeeded()
-            await NotificationService.shared.reschedule(workouts: allWorkouts)
+            let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
+            startGenerationPolling(
+                workoutIdsBefore: workoutIdsBefore,
+                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
+                generationId: response.generationId,
+                pollAfterSeconds: response.pollAfterSeconds
+            )
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
             // ignored
-        } catch let error as URLError where error.code == .timedOut {
-            // Backend ainda está gerando — iniciar polling silencioso
-            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -309,6 +314,11 @@ final class TrainingPlanViewModel: ObservableObject {
         errorMessage = nil
 
         let workoutIdsBefore = Set(allWorkouts.map { $0.id })
+        let generatedWeeklyGoalIdsBefore = Set(
+            weeklyGoals
+                .filter { $0.status == .GENERATED }
+                .map { $0.id }
+        )
 
         do {
             let payloads = runs.map { HealthRunPayload(from: $0) }
@@ -319,19 +329,17 @@ final class TrainingPlanViewModel: ObservableObject {
                 detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
                 weekStartDate: nil
             )
-            let response = try await APIClient.shared.planFromHealth(request)
-            lastAnalysis = response.analysis
-            await loadData()
-            selectedWeekIndex = max(0, weeks.count - 1)
-            // Onboarding: após gerar o plano, oferece os lembretes e (re)agenda.
-            await NotificationService.shared.requestAuthorizationIfNeeded()
-            await NotificationService.shared.reschedule(workouts: allWorkouts)
+            let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
+            startGenerationPolling(
+                workoutIdsBefore: workoutIdsBefore,
+                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
+                generationId: response.generationId,
+                pollAfterSeconds: response.pollAfterSeconds
+            )
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
             // ignored
-        } catch let error as URLError where error.code == .timedOut {
-            await pollUntilNewWorkouts(workoutIdsBefore: workoutIdsBefore)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -442,20 +450,68 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Polling helper (used after a timeout during generation)
+    // MARK: - Background generation polling
 
-    private func pollUntilNewWorkouts(workoutIdsBefore: Set<String>) async {
-        let maxAttempts = 18
-        for _ in 0..<maxAttempts {
-            try? await Task.sleep(nanoseconds: 5_000_000_000) // 5s
-            if Task.isCancelled { break }
+    private func startGenerationPolling(
+        workoutIdsBefore: Set<String>,
+        generatedWeeklyGoalIdsBefore: Set<String>,
+        generationId: String,
+        pollAfterSeconds: Int
+    ) {
+        generationPollTask?.cancel()
+        isGeneratingInBackground = true
+        generationPollTask = Task { [weak self] in
+            guard let self else { return }
+            _ = await self.pollUntilNewWorkouts(
+                workoutIdsBefore: workoutIdsBefore,
+                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
+                generationId: generationId,
+                intervalSeconds: pollAfterSeconds
+            )
+            self.isGeneratingInBackground = false
+        }
+    }
+
+    private func pollUntilNewWorkouts(
+        workoutIdsBefore: Set<String>,
+        generatedWeeklyGoalIdsBefore: Set<String>,
+        generationId: String,
+        intervalSeconds: Int
+    ) async -> Bool {
+        let intervalNanoseconds = UInt64(max(1, intervalSeconds)) * 1_000_000_000
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: intervalNanoseconds)
+            if Task.isCancelled { return false }
+            do {
+                let status = try await APIClient.shared.getPlanFromHealthGenerationStatus(generationId: generationId)
+                if status.status == "failed" {
+                    errorMessage = status.error ?? status.message
+                    return false
+                }
+            } catch APIError.notFound {
+                // O status fica em memória no backend; em deploy multi-instância, outro pod pode não
+                // conhecer o generationId. Continua pela fonte de verdade persistida: weeklyGoals/workouts.
+            } catch {
+                // Falha transitória de rede: mantém o polling sem encerrar por timeout.
+            }
+
             await loadData()
             let currentIds = Set(allWorkouts.map { $0.id })
-            if !currentIds.subtracting(workoutIdsBefore).isEmpty {
+            let generatedGoalIds = Set(
+                weeklyGoals
+                    .filter { $0.status == .GENERATED }
+                    .map { $0.id }
+            )
+            if !currentIds.subtracting(workoutIdsBefore).isEmpty ||
+                !generatedGoalIds.subtracting(generatedWeeklyGoalIdsBefore).isEmpty {
                 selectedWeekIndex = max(0, weeks.count - 1)
-                break
+                await NotificationService.shared.requestAuthorizationIfNeeded()
+                await NotificationService.shared.reschedule(workouts: allWorkouts)
+                await NotificationService.shared.notifyWeeklyPlanGenerated()
+                return true
             }
         }
+        return false
     }
 
     // MARK: - Private Helpers

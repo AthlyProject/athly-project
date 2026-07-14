@@ -35,3 +35,7 @@ run:
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:DATABASE_URL::"
     - name: OTEL_EXPORTER_OTLP_HEADERS
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:OTEL_EXPORTER_OTLP_HEADERS::"
+    - name: PAYWALL_ENABLED
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:PAYWALL_ENABLED::"
+    - name: REVENUECAT_WEBHOOK_AUTH
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:REVENUECAT_WEBHOOK_AUTH::"

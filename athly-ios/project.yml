@@ -56,7 +56,7 @@ targets:
         REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
         OTEL_ENDPOINT: "$(OTEL_ENDPOINT)"
         OTEL_API_KEY: "$(OTEL_API_KEY)"
-        CFBundleDisplayName: Athly Runner
+        CFBundleDisplayName: Athly
         CFBundleDevelopmentRegion: pt-BR
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -68,9 +68,9 @@ targets:
           - gps
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSLocationWhenInUseUsageDescription: "Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real."
-        NSLocationAlwaysAndWhenInUseUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada."
-        NSLocationAlwaysUsageDescription: "Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano."
+        NSLocationWhenInUseUsageDescription: "Athly precisa da sua localizacao para registrar o percurso da corrida em tempo real."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Athly precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada."
+        NSLocationAlwaysUsageDescription: "Athly precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSHealthShareUsageDescription: "O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao."

@@ -213,6 +213,7 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let intensity: Double?
     let isGoalAttempt: Bool?
     let stravaActivityId: String?
+    let appleHealthWorkoutUUID: String?
 
     var parsedDate: Date {
         let formatter = ISO8601DateFormatter()
@@ -414,6 +415,21 @@ struct AiPlannerResponse: Decodable, Sendable {
     let weeklyGoal: WeeklyGoalResponse
     let workouts: [WorkoutModel]
     let analysis: RunAnalysis
+}
+
+struct AiPlannerGenerationStartResponse: Decodable, Sendable {
+    let generationId: String
+    let status: String
+    let pollAfterSeconds: Int
+    let message: String
+}
+
+struct AiPlannerGenerationStatusResponse: Decodable, Sendable {
+    let generationId: String
+    let status: String
+    let pollAfterSeconds: Int
+    let message: String
+    let error: String?
 }
 
 // MARK: - User Goal

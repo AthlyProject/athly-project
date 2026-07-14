@@ -40,7 +40,7 @@ struct RunStartView: View {
             }
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Para acompanhar sua corrida na tela de bloqueio, ative Live Activities em Ajustes > Athly Runner > Live Activities.")
+            Text("Para acompanhar sua corrida na tela de bloqueio, ative Live Activities em Ajustes > Athly > Live Activities.")
         }
         .sheet(isPresented: $showTargetAlertSheet) {
             TargetAlertSetupSheet(alert: $viewModel.targetAlert)

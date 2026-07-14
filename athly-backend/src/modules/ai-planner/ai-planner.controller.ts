@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AiPlannerService } from './ai-planner.service';
 import { PlanFromHealthDto } from './dto/plan-from-health.dto';
@@ -22,5 +22,22 @@ export class AiPlannerController {
     @Body() input: PlanFromHealthDto,
   ): Promise<AiPlannerResultModel> {
     return this.aiPlannerService.planFromHealth(user.id, input) as Promise<AiPlannerResultModel>;
+  }
+
+  @Post('plan-from-health/async')
+  @HttpCode(202)
+  startPlanFromHealthGeneration(
+    @CurrentUser() user: UserModel,
+    @Body() input: PlanFromHealthDto,
+  ) {
+    return this.aiPlannerService.startPlanFromHealthGeneration(user.id, input);
+  }
+
+  @Get('plan-from-health/generations/:generationId')
+  getPlanFromHealthGenerationStatus(
+    @CurrentUser() user: UserModel,
+    @Param('generationId') generationId: string,
+  ) {
+    return this.aiPlannerService.getPlanFromHealthGenerationStatus(user.id, generationId);
   }
 }

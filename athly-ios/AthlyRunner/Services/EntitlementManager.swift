@@ -9,6 +9,9 @@ import SwiftUI
 final class EntitlementManager: ObservableObject {
     @Published private(set) var isEntitled: Bool = true
     @Published private(set) var isFounderEligible: Bool = false
+    /// Dias restantes do trial backend (banner "X dias restantes"). Nil = sem banner
+    /// (paywall desligado, admin, assinante ativo ou trial expirado).
+    @Published private(set) var trialDaysRemaining: Int? = nil
 
     private let purchaseManager: PurchaseManager
 
@@ -47,11 +50,16 @@ final class EntitlementManager: ObservableObject {
     }
 
     func refresh() async {
-        guard FeatureFlags.paywallEnabled else { isEntitled = true; return }
+        guard FeatureFlags.paywallEnabled else {
+            isEntitled = true
+            trialDaysRemaining = nil
+            return
+        }
         async let rcActive = purchaseManager.hasActiveEntitlement()
         let backendEntitlement = try? await APIClient.shared.getEntitlement()
         let backendEntitled = backendEntitlement?.entitled ?? false
         isFounderEligible = backendEntitlement?.isFounderEligible ?? false
+        trialDaysRemaining = backendEntitlement?.trialDaysRemaining
         isEntitled = await rcActive || backendEntitled
     }
 
@@ -68,6 +76,7 @@ final class EntitlementManager: ObservableObject {
 
     func signOut() async {
         isFounderEligible = false
+        trialDaysRemaining = nil
         await purchaseManager.signOut()
         await refresh()
     }

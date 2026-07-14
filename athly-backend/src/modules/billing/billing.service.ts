@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { isAdminEmail } from '../../common/admin-emails';
 
-const TRIAL_DAYS = 7;
+const TRIAL_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface RevenueCatEvent {
@@ -107,7 +107,47 @@ export class BillingService {
   }
 
   /**
-   * Entitlement = paywall desligado, OU admin (ADMIN_EMAILS / role ADMIN), OU trial (createdAt+7d),
+   * Info do trial backend para os clients exibirem "X dias restantes".
+   * Retorna nulls quando o banner não se aplica: paywall desligado, usuário admin,
+   * assinatura ativa/cancelada-mas-vigente, ou trial já expirado.
+   */
+  async trialInfo(
+    userId: string,
+  ): Promise<{ trialEndsAt: string | null; trialDaysRemaining: number | null }> {
+    const none = { trialEndsAt: null, trialDaysRemaining: null };
+    if (!this.paywallEnabled) return none;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        createdAt: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true,
+        email: true,
+        role: true,
+      },
+    });
+    if (!user) return none;
+    if (user.role === 'ADMIN' || this.isAdminEmail(user.email)) return none;
+
+    const now = Date.now();
+    const hasActiveSubscription =
+      ['active', 'cancelled'].includes(user.subscriptionStatus ?? '') &&
+      !!user.subscriptionExpiresAt &&
+      user.subscriptionExpiresAt.getTime() > now;
+    if (hasActiveSubscription) return none;
+
+    const trialEnds = user.createdAt.getTime() + TRIAL_DAYS * DAY_MS;
+    if (now >= trialEnds) return none;
+
+    return {
+      trialEndsAt: new Date(trialEnds).toISOString(),
+      trialDaysRemaining: Math.ceil((trialEnds - now) / DAY_MS),
+    };
+  }
+
+  /**
+   * Entitlement = paywall desligado, OU admin (ADMIN_EMAILS / role ADMIN), OU trial (createdAt+14d),
    * OU assinatura ativa e não expirada.
    */
   async isEntitled(userId: string): Promise<boolean> {

@@ -124,7 +124,7 @@ struct WatermarkOverlayView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(height: 20 * scale)
-                        Text("Athly Runner")
+                        Text("Athly")
                             .font(.custom("SpaceGrotesk-SemiBold", size: 13 * scale))
                             .foregroundStyle(.white)
                     }

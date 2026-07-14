@@ -10,3 +10,8 @@ MAPS_API_KEY=
 # Para backend local no device físico, use o IP da sua LAN (não localhost):
 # DEV_API_URL=http://192.168.1.67:4000
 DEV_API_URL=
+
+# Backend MOCK offline — só debug. true = FakeApiService (roda no emulador sem servidor nem
+# credenciais, login com qualquer email/senha); vazio/false = backend real. Espelha o swap por
+# `#if targetEnvironment(simulator)` do iOS. Device físico deve deixar false/vazio.
+MOCK_BACKEND=

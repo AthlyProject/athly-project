@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>pt-BR</string>
 	<key>CFBundleDisplayName</key>
-	<string>Athly Runner</string>
+	<string>Athly</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -34,11 +34,11 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>O Athly salva suas corridas no Apple Health para manter seu historico de atividades atualizado.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada.</string>
+	<string>Athly precisa de acesso continuo a localizacao para rastrear sua corrida mesmo com a tela bloqueada.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Athly Runner precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano.</string>
+	<string>Athly precisa de acesso continuo a localizacao para rastrear sua corrida em segundo plano.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Athly Runner precisa da sua localizacao para registrar o percurso da corrida em tempo real.</string>
+	<string>Athly precisa da sua localizacao para registrar o percurso da corrida em tempo real.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>O Athly salva na sua galeria as fotos com a marca d'agua do treino.</string>
 	<key>NSSupportsLiveActivities</key>

@@ -24,6 +24,21 @@ export interface UserProfileContext {
   parqFlags?: string[];
 }
 
+export interface GoalAttemptContext {
+  feasible: boolean;
+  targetPace: string;
+  recentPace?: string;
+  adherencePct?: number;
+  reason: string;
+}
+
+export interface DeterministicPlannerContext {
+  weeklyVolumeBaselineKm: number;
+  weeklyVolumeMaxKm: number;
+  volumeConfidence: 'high' | 'corrected' | 'low';
+  goalAttempt?: GoalAttemptContext;
+}
+
 const DAY_NAME_MAP: Record<string, string> = {
   monday: 'Segunda',
   tuesday: 'Terça',
@@ -53,13 +68,40 @@ Resumo da semana anterior:
 - Fadiga média reportada: ${analysis.avgFatigue !== null ? `${analysis.avgFatigue}/10` : 'sem dados'}
 - Volume total completado: ${analysis.totalDistanceKm} km
 - Mudança de volume: ${analysis.volumeChange}
+- Confiança do volume: ${analysis.volumeConfidence ?? 'high'}
 
 Considere estes dados ao planejar a próxima semana:
 - Se aderência foi baixa (< 70%), considere reduzir volume ou número de treinos intensos.
 - Se fadiga foi alta (> 7/10), inclua mais dias de recuperação ou reduza intensidade.
 - Se todos os treinos foram completados com esforço baixo (< 5/10), considere progredir intensidade ou volume.
+- Se aderência >= 90%, fadiga média <= 5/10 e confiança do volume for high/corrected, o atleta pode absorver progressão: use 95–100% do volume máximo da semana e deixe pelo menos um treino-chave realmente específico para o objetivo.
 - Se o atleta pulou treinos intensos, considere se a carga está adequada.
 </previous_week_review>`;
+}
+
+function buildDeterministicContextSection(context: DeterministicPlannerContext | null | undefined): string {
+  if (!context) return '';
+
+  const goalAttempt = context.goalAttempt
+    ? `
+Tentativa de objetivo nesta semana:
+- feasibility: ${context.goalAttempt.feasible ? 'true' : 'false'}
+- Pace alvo: ${context.goalAttempt.targetPace}
+- Pace recente específico: ${context.goalAttempt.recentPace ?? 'sem esforço específico suficiente'}
+- Aderência recente: ${context.goalAttempt.adherencePct != null ? `${context.goalAttempt.adherencePct}%` : 'sem dados'}
+- Veredito: ${context.goalAttempt.reason}
+`
+    : '';
+
+  return `
+<deterministic_guardrails>
+Estes números foram calculados pelo backend e são a fonte da verdade. NÃO recalcule nem contradiga estes valores no JSON.
+- Volume-base confiável para progressão: ${context.weeklyVolumeBaselineKm.toFixed(2)} km
+- Volume máximo planejado desta semana: ${context.weeklyVolumeMaxKm.toFixed(2)} km
+- Confiança do volume-base: ${context.volumeConfidence}
+- Os dias listados como "dias de treino" são disponibilidade máxima; use menos dias se necessário para respeitar volume, recuperação e periodização.
+${goalAttempt}
+</deterministic_guardrails>`;
 }
 
 function secondsToPace(secondsPerKm?: number): string {
@@ -174,10 +216,26 @@ function buildGoalSection(goal: ParsedGoal): string {
 function buildGoalAttemptLogicSection(
   goal: ParsedGoal | null | undefined,
   plannedWeek?: PlannedWeek | null,
+  goalAttempt?: GoalAttemptContext | null,
 ): string {
   if (!goal || !goal.targetDistance || !goal.targetTime) return '';
   if (goal.eventDate) {
     return plannedWeek ? buildCountdownSection(goal, plannedWeek) : '';
+  }
+  if (goalAttempt) {
+    return `
+<goal_attempt_logic>
+O backend já avaliou a viabilidade da tentativa do objetivo nesta semana.
+- feasibility=${goalAttempt.feasible ? 'true' : 'false'}
+- Pace alvo: ${goalAttempt.targetPace}
+- Pace recente específico: ${goalAttempt.recentPace ?? 'sem evidência suficiente'}
+- Aderência recente: ${goalAttempt.adherencePct != null ? `${goalAttempt.adherencePct}%` : 'sem dados'}
+- Justificativa: ${goalAttempt.reason}
+
+SE feasibility=true: marque exatamente UM dia como "isGoalAttempt": true e use o título "Tentativa: ${goal.summary}".
+SE feasibility=false: NÃO marque isGoalAttempt em nenhum dia. O reasoning do dia mais duro deve mencionar brevemente por que ainda não é o momento, usando os números acima.
+NUNCA marque mais de UM dia com isGoalAttempt=true por semana.
+</goal_attempt_logic>`;
   }
   return `
 <goal_attempt_logic>
@@ -383,11 +441,13 @@ const SEGMENT_CONSTRAINTS_PLANNER = `
 - Toda sessão de corrida deve começar com 1 segmento "warmup" e terminar com 1 segmento "cooldown". O meio pode ser "work", "set" (com filhos work+recovery) ou misto.
 - OBRIGATÓRIO para warmup: end.value >= 480 (8 min) quando by=durationSec OU >= 1000 (1 km) quando by=distanceM.
 - OBRIGATÓRIO para cooldown: end.value >= 300 (5 min) OU >= 500 (500 m).
-- Bloco principal (work ou set) na corrida deve ter pelo menos 20 min OU 2 km no acumulado.
+- Bloco principal (work ou set) na corrida deve ter pelo menos 15 min OU 2 km no acumulado; em semana com teto de volume apertado, recuperação pode ser 10–15 min ou 1.5–2 km.
 - Em sessões de intervalo: ENVOLVA as repetições em um nó "set" com repetitions correto e children = [work, recovery]. NÃO descreva o intervalo em texto.
 - Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".
 - Preencha target.paceSecPerKmMin/Max a partir das zonas de pace personalizadas (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). As zonas são a referência primária; NÃO invente números fora de uma âncora real (zona OU pace real observado).
 - CALIBRAÇÃO PELO DESEMPENHO REAL: se o "executionAnalysis.mainPace" (bloco principal) ou "meanRepPace" (tiros) em <recentSessionsDetail> for MAIS RÁPIDO do que a zona correspondente sugere, a estimativa de VDOT está subestimando o atleta — prescreva pela capacidade real observada: tempo/limiar ≈ mainPace de tempo runs recentes; intervalos ≈ meanRepPace recente; easy ≈ 60–90s/km mais lento que o pace de limiar observado. NUNCA prescreva um treino de qualidade mais lento do que o atleta já demonstrou correr confortavelmente.
+- ATLETA ADERENTE E COMPETITIVO: se a semana anterior teve aderência >= 90%, fadiga média <= 5/10, sem overreach, e os tiros recentes foram mais rápidos do que a zona de intervalo/repetição, use 95–100% do "Volume máximo planejado desta semana" e prescreva o treino-chave no lado agressivo, porém controlado, da capacidade observada. Progrida UMA variável por vez: aumente distância dos tiros, OU número de repetições, OU aperte levemente o pace; NUNCA aumente distância, repetições e pace ao mesmo tempo.
+- ESPECIFICIDADE DO OBJETIVO: quando a tentativa do objetivo ainda não for viável por falta de sustentação, não responda com esforços muito fáceis só porque o pace contínuo recente está longe do alvo. Escolha treinos que aproximem progressivamente o atleta da demanda específica do objetivo: para metas curtas, aumente gradualmente a duração/distância dos tiros em ritmo próximo ao alvo; para metas médias/longas, aumente blocos de ritmo controlado, tempo/limiar e volume fácil. Se o atleta já executou repetições curtas bem mais rápidas que o ritmo-alvo com RPE controlado, prefira alongar as repetições ou reduzir a recuperação antes de tornar o pace conservador demais.
 - EASY/RECUPERAÇÃO: para atletas com fitness intermediário+ demonstrado, prescreva o easy na METADE MAIS RÁPIDA da faixa Easy (perto de easyPaceMin), não no extremo lento. Reserve o extremo lento (easyPaceMax) apenas para dias explicitamente marcados como recuperação/regenerativo. Um easy bem prescrito fica tipicamente ~60–90s/km mais lento que o limiar do atleta — não mais lento que isso.`;
 
 const SEGMENT_CONSTRAINTS_ASSESSMENT = `
@@ -579,6 +639,7 @@ export function buildPlannerPrompt(
   longitudinalWeeks?: LongitudinalWeek[],
   plannedWeek?: PlannedWeek | null,
   contextNote?: string | null,
+  deterministicContext?: DeterministicPlannerContext | null,
 ): string {
   const {
     runSummaries,
@@ -600,8 +661,13 @@ export function buildPlannerPrompt(
     : '';
 
   const goalSection = goal ? buildGoalSection(goal) : '';
-  const goalAttemptSection = buildGoalAttemptLogicSection(goal, plannedWeek);
+  const goalAttemptSection = buildGoalAttemptLogicSection(
+    goal,
+    plannedWeek,
+    deterministicContext?.goalAttempt,
+  );
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
+  const deterministicSection = buildDeterministicContextSection(deterministicContext);
   const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
     ? buildRecentSessionsDetailSection(analyzedSessions)
     : '';
@@ -628,6 +694,8 @@ ${goalSection}
 ${goalAttemptSection}
 
 ${profileSection}
+
+${deterministicSection}
 
 <athlete_data>
 Estatísticas resumidas (calculadas a partir de ${runSummaries.length} corridas recentes; sessões individuais detalhadas em <recentSessionsDetail>):
@@ -664,7 +732,7 @@ ${SEGMENT_RECIPES}
 
 <constraints>
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Todos os outros dias = descanso obrigatório.
-- Nunca aumente o volume semanal em mais de 10% acima da média recente do atleta.
+- Nunca ultrapasse o volume máximo calculado em <deterministic_guardrails>. Se necessário, use menos dias de treino do que a disponibilidade máxima.
 - Sessões de intervalos devem incluir warmup de pelo menos 10 min e cooldown de pelo menos 5 min.
 - Se dados de FC não estiverem disponíveis, use target.rpe (1–10) em vez de target.hrZone.
 - weekPlan deve conter EXATAMENTE 7 entradas, uma por dia de ${weekDates[0]} a ${weekDates[6]}.
@@ -675,7 +743,7 @@ ${SEGMENT_RECIPES}
 - analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 - isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando: (a) <goal_attempt_logic> indicar feasibility verdadeira (meta sem data), OU (b) <countdown_logic> indicar que esta é a SEMANA DA PROVA (meta com data). Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
 - Corridas longas: nó "work" principal com end.by="distanceM" e value de pelo menos a distância prescrita; OU end.by="durationSec" com pelo menos 1800 (30 min).
-- Corridas de recuperação/fácil: nó "work" principal com pelo menos 1200s (20 min) ou >= 4000m.
+- Corridas de recuperação/fácil: ajuste o nó "work" ao teto de volume; use 15–25 min ou 2–4 km, e reduza para 10–15 min/1.5–2 km quando a semana exigir controle de carga.
 ${SEGMENT_CONSTRAINTS_PLANNER}
 </constraints>
 

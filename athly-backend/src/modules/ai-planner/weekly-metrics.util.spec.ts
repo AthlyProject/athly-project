@@ -49,6 +49,49 @@ describe('executedVolumeKm', () => {
     ];
     expect(executedVolumeKm(workouts)).toBeCloseTo(7.2, 5); // 4.2 + 3.0
   });
+
+  it('corrige fragmento de HealthKit usando sessão detalhada maior no mesmo dia', () => {
+    const workouts = [
+      wk({
+        id: 'w-frag',
+        status: 'done',
+        dateScheduled: new Date('2026-07-03T00:00:00Z'),
+        actualDistanceMeters: 340,
+        blocks: [{ distance: 3.8 }],
+        feedback: [{ effort: 7, fatigue: 6, completed: true }],
+      }),
+    ];
+
+    const detailedSessions = [
+      {
+        startDate: '2026-07-03T08:00:00Z',
+        appleHealthWorkoutUUID: 'fragment',
+        distanceMeters: 340,
+        durationSeconds: 150,
+      },
+      {
+        startDate: '2026-07-03T08:10:00Z',
+        appleHealthWorkoutUUID: 'full-run',
+        distanceMeters: 3950,
+        durationSeconds: 1380,
+      },
+    ];
+
+    expect(executedVolumeKm(workouts, { detailedSessions })).toBeCloseTo(3.95, 5);
+  });
+
+  it('mantém distância baixa quando não há evidência detalhada melhor', () => {
+    const workouts = [
+      wk({
+        status: 'done',
+        actualDistanceMeters: 340,
+        blocks: [{ distance: 3.8 }],
+        feedback: [{ effort: 10, fatigue: 10, completed: false }],
+      }),
+    ];
+
+    expect(executedVolumeKm(workouts)).toBeCloseTo(0.34, 5);
+  });
 });
 
 describe('adherenceEligibleWorkouts', () => {

@@ -110,6 +110,7 @@ final class AuthViewModel: ObservableObject {
         KeychainHelper.delete(tokenKey)
         KeychainHelper.delete(refreshKey)
         TrainingPlanCache.shared.clear()
+        HealthKitRunsCache.shared.clear()
         AchievementStore.shared.clear()
         Task {
             await APIClient.shared.clearTokens()

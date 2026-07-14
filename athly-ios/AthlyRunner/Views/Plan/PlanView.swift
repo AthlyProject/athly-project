@@ -33,6 +33,13 @@ struct PlanView: View {
                         .tint(AthlyTheme.Color.primary)
                 } else {
                     VStack(spacing: 0) {
+                        // Banner de trial (backend define quando aparece via trialDaysRemaining)
+                        if let days = entitlementManager.trialDaysRemaining, days > 0 {
+                            trialBanner(days: days)
+                                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                                .padding(.top, 8)
+                        }
+
                         // Segmented control
                         Picker("Modo", selection: $viewMode) {
                             ForEach(ViewMode.allCases, id: \.self) { mode in
@@ -87,6 +94,32 @@ struct PlanView: View {
                 Text(planVM.errorMessage ?? "")
             }
         }
+    }
+
+    // MARK: - Trial Banner
+
+    /// Banner discreto com os dias restantes do trial backend. Some quando o backend
+    /// devolve `trialDaysRemaining = null` (admin, assinante ativo ou trial expirado).
+    private func trialBanner(days: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hourglass")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AthlyTheme.Color.primary)
+            Text(days == 1
+                 ? "Último dia do seu período de teste"
+                 : "Período de teste: \(days) dias restantes")
+                .font(AthlyTheme.Typography.semibold(13))
+                .foregroundColor(AthlyTheme.Color.textSecondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(AthlyTheme.Color.primary.opacity(0.10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AthlyTheme.Color.primary.opacity(0.25), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     // MARK: - List Mode
@@ -185,14 +218,16 @@ struct PlanView: View {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(0.8)
+                } else if planVM.isGeneratingInBackground {
+                    Image(systemName: "clock.arrow.circlepath")
                 } else {
                     Image(systemName: "sparkles")
                 }
-                Text(planVM.isGenerating ? "Gerando..." : "Gerar Próxima Semana")
+                Text(generateButtonTitle)
             }
         }
         .buttonStyle(AthlyGradientButtonStyle())
-        .disabled(planVM.isGenerating)
+        .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
         .sheet(isPresented: $showPaywall) {
             // Founder vê a offering founder; demais usuários veem a offering default.
             AthlyPaywallView(founderEligible: entitlementManager.isFounderEligible)
@@ -204,6 +239,12 @@ struct PlanView: View {
                     Task { await entitlementManager.refresh() }
                 }
         }
+    }
+
+    private var generateButtonTitle: String {
+        if planVM.isGenerating { return "Iniciando geração..." }
+        if planVM.isGeneratingInBackground { return "Gerando em segundo plano" }
+        return "Gerar Próxima Semana"
     }
 
     private var nextFiveWorkoutsSection: some View {

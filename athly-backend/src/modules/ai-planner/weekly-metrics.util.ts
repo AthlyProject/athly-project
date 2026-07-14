@@ -6,16 +6,32 @@
 import type { LongitudinalWeek } from './prompts/planner-prompt';
 import type { PreviousWeekAnalysis } from './types/planner.types';
 
-type FeedbackLike = { effort: number; fatigue: number };
+type FeedbackLike = { effort: number; fatigue: number; completed?: boolean };
 
 export type WorkoutLike = {
+  id?: string;
   title: string;
   dateScheduled: Date;
   status: string;
   sportType: string;
+  appleHealthWorkoutUUID?: string | null;
   actualDistanceMeters?: number | null;
   blocks: unknown;
   feedback: FeedbackLike[];
+};
+
+export type DetailedSessionLike = {
+  startDate: string;
+  appleHealthWorkoutUUID?: string | null;
+  athlyWorkoutId?: string | null;
+  distanceMeters: number;
+  durationSeconds?: number;
+};
+
+export type VolumeConfidence = 'high' | 'corrected' | 'low';
+
+export type ExecutedVolumeOptions = {
+  detailedSessions?: DetailedSessionLike[];
 };
 
 export type WeeklyGoalLike = {
@@ -45,41 +61,139 @@ export function adherenceEligibleWorkouts<
  */
 export function executedVolumeKm(
   workouts: Array<{ status: string; actualDistanceMeters?: number | null; blocks: unknown }>,
+  options: ExecutedVolumeOptions = {},
 ): number {
   let totalKm = 0;
+  const sessions = normalizeSessions(options.detailedSessions ?? []);
   for (const w of workouts.filter((w) => w.status === 'done')) {
-    if (typeof w.actualDistanceMeters === 'number' && w.actualDistanceMeters > 0) {
-      totalKm += w.actualDistanceMeters / 1000;
+    const workout = w as WorkoutLike;
+    const prescribedKm = prescribedVolumeKm(workout.blocks);
+    const actualKm =
+      typeof workout.actualDistanceMeters === 'number' && workout.actualDistanceMeters > 0
+        ? workout.actualDistanceMeters / 1000
+        : null;
+    const sessionKm = bestMatchingSessionKm(workout, sessions);
+
+    if (actualKm !== null) {
+      totalKm += selectTrustedActualKm(workout, actualKm, prescribedKm, sessionKm);
       continue;
     }
-    const blocks = w.blocks as any[];
-    if (Array.isArray(blocks)) {
-      for (const block of blocks) {
-        const km =
-          typeof block?.distance === 'number' && block.distance > 0
-            ? block.distance
-            : typeof block?.distanceKm === 'number' && block.distanceKm > 0
-              ? block.distanceKm
-              : 0;
-        totalKm += km;
-      }
+
+    if (sessionKm !== null) {
+      totalKm += sessionKm;
+      continue;
     }
+
+    totalKm += prescribedKm;
   }
   return totalKm;
+}
+
+export function volumeConfidence(
+  workouts: WorkoutLike[],
+  options: ExecutedVolumeOptions = {},
+): VolumeConfidence {
+  const sessions = normalizeSessions(options.detailedSessions ?? []);
+  let corrected = false;
+  let low = false;
+
+  for (const workout of workouts.filter((w) => w.status === 'done')) {
+    const prescribedKm = prescribedVolumeKm(workout.blocks);
+    const actualKm =
+      typeof workout.actualDistanceMeters === 'number' && workout.actualDistanceMeters > 0
+        ? workout.actualDistanceMeters / 1000
+        : null;
+    const sessionKm = bestMatchingSessionKm(workout, sessions);
+
+    if (actualKm !== null && isSuspiciousActual(workout, actualKm, prescribedKm)) {
+      if (sessionKm !== null && sessionKm > actualKm) corrected = true;
+      else low = true;
+    } else if (actualKm === null && sessionKm === null && prescribedKm > 0) {
+      low = true;
+    }
+  }
+
+  if (corrected) return 'corrected';
+  if (low) return 'low';
+  return 'high';
+}
+
+function selectTrustedActualKm(
+  workout: WorkoutLike,
+  actualKm: number,
+  prescribedKm: number,
+  sessionKm: number | null,
+): number {
+  if (!isSuspiciousActual(workout, actualKm, prescribedKm)) return actualKm;
+  if (sessionKm !== null && sessionKm > actualKm) return sessionKm;
+  return actualKm;
+}
+
+function isSuspiciousActual(
+  workout: WorkoutLike,
+  actualKm: number,
+  prescribedKm: number,
+): boolean {
+  const completed = workout.feedback.some((f) => f.completed === true);
+  const tooSmallAbsolute = actualKm < 0.5;
+  const tooSmallVsPlan = prescribedKm > 0 && actualKm < prescribedKm * 0.3;
+
+  return tooSmallAbsolute || (completed && tooSmallVsPlan);
+}
+
+function prescribedVolumeKm(blocks: unknown): number {
+  if (!Array.isArray(blocks)) return 0;
+  return blocks.reduce((sum, block: any) => {
+    const km =
+      typeof block?.distance === 'number' && block.distance > 0
+        ? block.distance
+        : typeof block?.distanceKm === 'number' && block.distanceKm > 0
+          ? block.distanceKm
+          : 0;
+    return sum + km;
+  }, 0);
+}
+
+function normalizeSessions(sessions: DetailedSessionLike[]): DetailedSessionLike[] {
+  return sessions.filter((s) => s.distanceMeters >= 500 && !Number.isNaN(new Date(s.startDate).getTime()));
+}
+
+function bestMatchingSessionKm(
+  workout: WorkoutLike,
+  sessions: DetailedSessionLike[],
+): number | null {
+  if (sessions.length === 0) return null;
+
+  const sameWorkout = sessions.filter((s) => workout.id && s.athlyWorkoutId === workout.id);
+  const sameUuid = sessions.filter(
+    (s) => workout.appleHealthWorkoutUUID && s.appleHealthWorkoutUUID === workout.appleHealthWorkoutUUID,
+  );
+  const sameDay = sessions.filter((s) => dateKey(s.startDate) === dateKey(workout.dateScheduled));
+  const candidates = [...sameWorkout, ...sameUuid, ...sameDay];
+  if (candidates.length === 0) return null;
+
+  return Math.max(...candidates.map((s) => s.distanceMeters / 1000));
+}
+
+function dateKey(date: string | Date): string {
+  return (date instanceof Date ? date : new Date(date)).toISOString().split('T')[0];
 }
 
 /**
  * Builds the longitudinal trend rows from weekly goals ordered newest-first.
  * Returns them oldest-first so the AI reads chronological progression naturally.
  */
-export function computeLongitudinalWeeks(goalsNewestFirst: WeeklyGoalLike[]): LongitudinalWeek[] {
+export function computeLongitudinalWeeks(
+  goalsNewestFirst: WeeklyGoalLike[],
+  options: ExecutedVolumeOptions = {},
+): LongitudinalWeek[] {
   const n = goalsNewestFirst.length;
   return [...goalsNewestFirst].reverse().map((goal, idx) => {
     const workouts = adherenceEligibleWorkouts(goal.workouts, goal.createdAt);
     const doneWorkouts = workouts.filter((w) => w.status === 'done');
     const completionRate =
       workouts.length > 0 ? parseFloat((doneWorkouts.length / workouts.length).toFixed(2)) : 0;
-    const totalKm = executedVolumeKm(goal.workouts);
+    const totalKm = executedVolumeKm(goal.workouts, options);
     const metrics = (goal.metrics ?? {}) as { avgPace?: string };
     const allFeedback = workouts.flatMap((w) => w.feedback);
     const avgEffort =
@@ -105,6 +219,7 @@ export function computeLongitudinalWeeks(goalsNewestFirst: WeeklyGoalLike[]): Lo
  */
 export function computePreviousWeekAnalysis(
   goalsNewestFirst: WeeklyGoalLike[],
+  options: ExecutedVolumeOptions = {},
 ): PreviousWeekAnalysis | null {
   const previousGoal = goalsNewestFirst[0];
   if (!previousGoal) return null;
@@ -126,10 +241,10 @@ export function computePreviousWeekAnalysis(
       ? parseFloat((allFeedback.reduce((sum, f) => sum + f.fatigue, 0) / allFeedback.length).toFixed(1))
       : null;
 
-  const totalDistanceKm = executedVolumeKm(previousGoal.workouts);
+  const totalDistanceKm = executedVolumeKm(previousGoal.workouts, options);
 
   const baselineGoal = goalsNewestFirst[1];
-  const baselineKm = baselineGoal ? executedVolumeKm(baselineGoal.workouts) : 0;
+  const baselineKm = baselineGoal ? executedVolumeKm(baselineGoal.workouts, options) : 0;
   let volumeChange = 'sem dados anteriores';
   if (baselineKm > 0 && totalDistanceKm > 0) {
     const pctChange = ((totalDistanceKm - baselineKm) / baselineKm) * 100;
@@ -149,5 +264,6 @@ export function computePreviousWeekAnalysis(
     avgFatigue,
     skippedWorkouts,
     volumeChange,
+    volumeConfidence: volumeConfidence(previousGoal.workouts, options),
   };
 }

@@ -80,14 +80,14 @@ struct SupportView: View {
     /// Opens the user's mail client with the support address and a prefilled
     /// body containing app/device info to speed up triage.
     private func openSupportEmail() {
-        let body = "\n\n---\nApp: Athly Runner \(Bundle.main.appVersionDisplay)"
+        let body = "\n\n---\nApp: Athly \(Bundle.main.appVersionDisplay)"
             + "\nDispositivo: \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)"
 
         var components = URLComponents()
         components.scheme = "mailto"
         components.path = supportEmail
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "Suporte Athly Runner"),
+            URLQueryItem(name: "subject", value: "Suporte Athly"),
             URLQueryItem(name: "body", value: body),
         ]
 

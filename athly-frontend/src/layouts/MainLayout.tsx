@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
 import { BottomNav } from '@/components/BottomNav'
+import { TrialBanner } from '@/components/TrialBanner'
 import { Toaster } from 'react-hot-toast'
 
 export function MainLayout() {
@@ -24,6 +25,7 @@ export function MainLayout() {
       <Sidebar />
       <main className="pb-20 md:pb-0 md:pl-64">
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
+          <TrialBanner />
           <Outlet />
         </div>
       </main>

@@ -70,6 +70,15 @@ export interface PlannerResults {
   weekPlan: WorkoutDay[];
 }
 
+export interface PlannerGuardrails {
+  weekDates: string[];
+  availableDays: string[];
+  weeklyVolumeMaxKm?: number;
+  goalAttemptAllowed?: boolean;
+  analysisOverride?: Omit<RunAnalysis, 'title' | 'fitnessInsights'>;
+  defaultPaceSecPerKm?: number;
+}
+
 export interface PreviousWeekAnalysis {
   completedWorkouts: number;
   totalWorkouts: number;
@@ -79,4 +88,5 @@ export interface PreviousWeekAnalysis {
   avgFatigue: number | null;
   skippedWorkouts: string[];
   volumeChange: string;
+  volumeConfidence?: 'high' | 'corrected' | 'low';
 }
