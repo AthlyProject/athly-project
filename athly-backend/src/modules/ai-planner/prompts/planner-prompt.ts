@@ -167,6 +167,7 @@ Como ler estes dados:
 - Se "pacingStrategy" = "fade": reduza intensidade OU reforce estratégia de pacing. Se recuperação cardíaca baixa entre tiros: dê mais recovery entre reps.
 - Se "targetAdherence" = "unknown": a fonte de dados não permite comparar com o prescrito (ex.: treino de tiros sem laps registrados) — NÃO conclua nada sobre execução de pace nessa sessão; use volume e feedback do atleta.
 Quando "splitsSource" = "synthetic", os "segments" são um preenchimento de pace uniforme (a fonte só tinha totais, ex.: Garmin/Nike via Apple Health) — NÃO interprete esses splits como ritmo real, NÃO afirme estratégia de pace nem execução de tiros para essa sessão; baseie-se só nos totais e no que o atleta relatou (feedback).
+Quando "splitsSource" = "prescribed_low_confidence", os "segments" foram reconstruídos a partir da prescrição Athly, mas sem granularidade suficiente para confirmar tiros individualmente — leia o "executionAnalysis" como veredito e NÃO recalcule aderência.
 Quando "splitsSource" = "route", os "segments" são splits por quilômetro (não refletem a estrutura de blocos do treino) — tiros não aparecem como segmentos separados nesse caso.
 </recentSessionsDetail>`;
 }

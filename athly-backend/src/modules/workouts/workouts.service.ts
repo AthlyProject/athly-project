@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -142,14 +147,21 @@ export class WorkoutsService {
       };
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
-      this.logger.error(`submitWorkoutFeedback failed — workoutId=${workoutId} userId=${userId}`, err instanceof Error ? err.stack : String(err));
-      throw new InternalServerErrorException(`Falha ao salvar feedback: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `submitWorkoutFeedback failed — workoutId=${workoutId} userId=${userId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException(
+        `Falha ao salvar feedback: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
   async completeWorkout(userId: string, workoutId: string, input?: CompleteWorkoutDto) {
     try {
-      const data: Prisma.WorkoutUpdateManyMutationInput = { status: 'done' };
+      const data: Prisma.WorkoutUpdateManyMutationInput & {
+        executionDetails?: Prisma.InputJsonValue;
+      } = { status: 'done' };
       if (input?.appleHealthWorkoutUUID) {
         data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
       }
@@ -159,7 +171,12 @@ export class WorkoutsService {
       if (typeof input?.actualDurationSeconds === 'number' && input.actualDurationSeconds > 0) {
         data.actualDurationSeconds = input.actualDurationSeconds;
       }
-      this.logger.log(`completeWorkout — workoutId=${workoutId} userId=${userId} input=${JSON.stringify(input ?? null)}`);
+      if (input?.executionDetails) {
+        data.executionDetails = input.executionDetails as unknown as Prisma.InputJsonValue;
+      }
+      this.logger.log(
+        `completeWorkout — workoutId=${workoutId} userId=${userId} input=${JSON.stringify(input ?? null)}`,
+      );
       const updated = await this.prisma.workout.updateMany({
         where: { id: workoutId, userId },
         data,
@@ -177,8 +194,13 @@ export class WorkoutsService {
       return this.mapWorkout(workout);
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
-      this.logger.error(`completeWorkout failed — workoutId=${workoutId} userId=${userId}`, err instanceof Error ? err.stack : String(err));
-      throw new InternalServerErrorException('Falha ao completar treino. Tente novamente mais tarde.');
+      this.logger.error(
+        `completeWorkout failed — workoutId=${workoutId} userId=${userId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException(
+        'Falha ao completar treino. Tente novamente mais tarde.',
+      );
     }
   }
 

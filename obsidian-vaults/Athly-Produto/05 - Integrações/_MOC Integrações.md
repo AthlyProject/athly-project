@@ -17,6 +17,10 @@ Documentação detalhada de integrações do Athly.
 - [[Strava - Variáveis de ambiente]] — Config necesária
 - [[Strava - Modal obrigatória (StravaAuthModal)]] — UX constraint
 
+## Zepp/Amazfit
+
+- [[Zepp Amazfit - Treinos planejados]] — Viabilidade Athly → Active 3 Premium
+
 ## IA (Geração de Planos)
 
 - [[IA - Claude planejado]] — Especificação original (MVP_PRD)

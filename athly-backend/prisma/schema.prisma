@@ -127,6 +127,7 @@ model Workout {
   actualDurationSeconds  Float?        @map("actual_duration_seconds")
   stravaActivityId       String?       @unique @map("strava_activity_id")
   appleHealthWorkoutUUID String?       @unique @map("apple_health_workout_uuid")
+  executionDetails       Json?         @map("execution_details")
   createdAt              DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
