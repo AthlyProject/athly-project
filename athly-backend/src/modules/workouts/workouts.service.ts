@@ -18,6 +18,7 @@ const workoutCompletionSelect = {
   status: true,
   intensity: true,
   stravaActivityId: true,
+  appleHealthWorkoutUUID: true,
 } satisfies Prisma.WorkoutSelect;
 
 @Injectable()
@@ -147,7 +148,7 @@ export class WorkoutsService {
 
   async completeWorkout(userId: string, workoutId: string, input?: CompleteWorkoutDto) {
     try {
-      const data: Prisma.WorkoutUpdateManyMutationInput = { status: 'done' };
+      const data: Prisma.WorkoutUpdateManyMutationInput & { executionDetails?: Prisma.InputJsonValue } = { status: 'done' };
       if (input?.appleHealthWorkoutUUID) {
         data.appleHealthWorkoutUUID = input.appleHealthWorkoutUUID;
       }
@@ -156,6 +157,9 @@ export class WorkoutsService {
       }
       if (typeof input?.actualDurationSeconds === 'number' && input.actualDurationSeconds > 0) {
         data.actualDurationSeconds = input.actualDurationSeconds;
+      }
+      if (input?.executionDetails) {
+        data.executionDetails = input.executionDetails as unknown as Prisma.InputJsonValue;
       }
       this.logger.log(`completeWorkout — workoutId=${workoutId} userId=${userId} input=${JSON.stringify(input ?? null)}`);
       const updated = await this.prisma.workout.updateMany({

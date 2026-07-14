@@ -135,8 +135,9 @@ export class DetailedSessionDto {
   segments: SegmentDto[];
 
   @ApiPropertyOptional({
-    description: 'Origin of the segments: events (laps), route (real GPS), or synthetic (avg-pace fallback).',
-    enum: ['events', 'route', 'synthetic'],
+    description:
+      'Origin of the segments: events (laps), prescribed (Athly plan sliced against HealthKit), route (real GPS), or synthetic (avg-pace fallback).',
+    enum: ['events', 'prescribed', 'prescribed_low_confidence', 'route', 'synthetic'],
   })
   @IsOptional()
   @IsString()

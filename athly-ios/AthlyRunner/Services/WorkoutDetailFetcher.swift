@@ -20,7 +20,8 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
     /// or the workout has no usable data.
     func buildDetailedSession(
         for workout: HKWorkout,
-        athlyWorkoutId: String?
+        athlyWorkoutId: String?,
+        prescribedWorkout: WorkoutModel? = nil
     ) async throws -> DetailedSessionPayload? {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -36,10 +37,17 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         let hrSamples = (try? await fetchHeartRateSamples(for: workout)) ?? []
         let hrStats = summarizeHR(samples: hrSamples)
 
-        // Cadeia de fallback: segments do próprio app (metadata exata) > laps de terceiros
-        // com rota (distância real interpolada) > GPS real (km splits) > splits sintéticos.
+        // Cadeia de fallback: segments do próprio app (metadata exata) > prescrição Athly
+        // vinculada cortada na rota HealthKit > laps de terceiros com rota (distância real
+        // interpolada) > GPS real (km splits) > splits sintéticos.
         var splitsSource: SplitsSource = .events
         var rawSegments = segmentsFromAthlyEvents(workout: workout)
+        if rawSegments == nil,
+           let prescribedWorkout,
+           let prescribed = await segmentsFromPrescription(workout: workout, prescribedWorkout: prescribedWorkout) {
+            rawSegments = prescribed.segments
+            splitsSource = prescribed.lowConfidence ? .prescribedLowConfidence : .prescribed
+        }
         if rawSegments == nil {
             rawSegments = await segmentsFromThirdPartyEvents(workout: workout)
         }
@@ -97,6 +105,8 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
 
     enum SplitsSource: String {
         case events
+        case prescribed
+        case prescribedLowConfidence = "prescribed_low_confidence"
         case route
         case synthetic
     }
@@ -111,6 +121,11 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         let distanceMeters: Double
         /// Duração já corrigida (pausa/buraco descontados). Quando nil, o caller usa `end - start`.
         var durationSeconds: Double? = nil
+    }
+
+    private struct PrescribedSegmentation {
+        let segments: [RawSegment]
+        let lowConfidence: Bool
     }
 
     /// Segmentos gravados pelo próprio app: HKWorkoutEvents(.segment) com metadata exata
@@ -176,6 +191,185 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             ))
         }
         return segments.isEmpty ? nil : segments
+    }
+
+    /// Reconstrói a execução de uma corrida externa usando a árvore prescrita pelo Athly como régua.
+    /// Cortes por distância exigem rota GPS; sem isso, retornamos nil para cair em análise de baixa
+    /// granularidade e evitar inventar tiros a partir do pace médio da sessão.
+    private func segmentsFromPrescription(
+        workout: HKWorkout,
+        prescribedWorkout: WorkoutModel
+    ) async -> PrescribedSegmentation? {
+        guard let plannedSegments = prescribedWorkout.segments else { return nil }
+
+        let steps = plannedSegments
+            .flatten()
+            .filter { $0.kind != .rest && $0.kind != .unknown }
+        guard !steps.isEmpty else { return nil }
+
+        let locations = (try? await fetchAllLocations(for: workout)) ?? []
+        let hasRoute = locations.count >= 2
+        let requiresDistanceCuts = steps.contains { $0.end.by == .distanceM }
+        guard hasRoute || !requiresDistanceCuts else {
+            return nil
+        }
+
+        let pauses = HealthKitService.pauseIntervals(from: workout)
+        let standaloneWorkCount = steps.filter { $0.kind == .work && $0.setIndex == nil }.count
+        var cursor = workout.startDate
+        var segments: [RawSegment] = []
+        var lowConfidence = !hasRoute
+        var repCounter = 0
+        var recCounter = 0
+
+        for step in steps {
+            guard cursor < workout.endDate else { break }
+
+            let labelInfo = prescribedLabel(
+                for: step,
+                standaloneWorkCount: standaloneWorkCount,
+                repCounter: &repCounter,
+                recCounter: &recCounter
+            )
+
+            let raw: RawSegment?
+            switch step.end.by {
+            case .durationSec:
+                raw = prescribedDurationSegment(
+                    step: step,
+                    label: labelInfo.label,
+                    index: labelInfo.index,
+                    cursor: cursor,
+                    workoutEnd: workout.endDate,
+                    locations: locations,
+                    pauses: pauses,
+                    hasRoute: hasRoute
+                )
+                if !hasRoute { lowConfidence = true }
+            case .distanceM:
+                guard hasRoute,
+                      let segment = prescribedDistanceSegment(
+                        step: step,
+                        label: labelInfo.label,
+                        index: labelInfo.index,
+                        cursor: cursor,
+                        locations: locations,
+                        pauses: pauses
+                      ) else {
+                    return nil
+                }
+                if segment.distanceMeters < step.end.value * 0.8 {
+                    lowConfidence = true
+                }
+                raw = segment
+            case .reps:
+                lowConfidence = true
+                raw = nil
+            }
+
+            guard let raw else { continue }
+            segments.append(raw)
+            cursor = min(raw.end, workout.endDate)
+        }
+
+        guard !segments.isEmpty else { return nil }
+        return PrescribedSegmentation(segments: segments, lowConfidence: lowConfidence)
+    }
+
+    private func prescribedDurationSegment(
+        step: ActiveSegment,
+        label: SegmentLabel,
+        index: Int?,
+        cursor: Date,
+        workoutEnd: Date,
+        locations: [CLLocation],
+        pauses: [SplitCalculator.PauseInterval],
+        hasRoute: Bool
+    ) -> RawSegment? {
+        let target = step.end.value
+        guard target > 0 else { return nil }
+
+        if hasRoute,
+           let boundary = SplitCalculator.boundary(
+            afterMovingTimeSeconds: target,
+            from: cursor,
+            locations: locations,
+            pauses: pauses
+           ) {
+            return RawSegment(
+                label: label,
+                index: index,
+                start: cursor,
+                end: min(boundary.date, workoutEnd),
+                distanceMeters: boundary.distanceMeters,
+                durationSeconds: boundary.durationSeconds
+            )
+        }
+
+        let end = min(cursor.addingTimeInterval(target), workoutEnd)
+        guard end > cursor else { return nil }
+        return RawSegment(
+            label: label,
+            index: index,
+            start: cursor,
+            end: end,
+            distanceMeters: 0,
+            durationSeconds: end.timeIntervalSince(cursor)
+        )
+    }
+
+    private func prescribedDistanceSegment(
+        step: ActiveSegment,
+        label: SegmentLabel,
+        index: Int?,
+        cursor: Date,
+        locations: [CLLocation],
+        pauses: [SplitCalculator.PauseInterval]
+    ) -> RawSegment? {
+        let target = step.end.value
+        guard target > 0,
+              let boundary = SplitCalculator.boundary(
+                afterDistanceMeters: target,
+                from: cursor,
+                locations: locations,
+                pauses: pauses
+              ) else {
+            return nil
+        }
+        guard boundary.date > cursor else { return nil }
+        return RawSegment(
+            label: label,
+            index: index,
+            start: cursor,
+            end: boundary.date,
+            distanceMeters: boundary.distanceMeters,
+            durationSeconds: boundary.durationSeconds
+        )
+    }
+
+    private func prescribedLabel(
+        for step: ActiveSegment,
+        standaloneWorkCount: Int,
+        repCounter: inout Int,
+        recCounter: inout Int
+    ) -> (label: SegmentLabel, index: Int?) {
+        switch step.kind {
+        case .warmup:
+            return (.warmup, nil)
+        case .cooldown:
+            return (.cooldown, nil)
+        case .recovery:
+            recCounter += 1
+            return (.rec, step.setIndex ?? recCounter)
+        case .work:
+            if step.setIndex != nil || standaloneWorkCount >= 2 {
+                repCounter += 1
+                return (.rep, step.setIndex ?? repCounter)
+            }
+            return (.tempo, nil)
+        case .rest, .set, .unknown:
+            return (.easy, nil)
+        }
     }
 
     /// Laps de terceiros (`.segment`/`.lap` sem metadata do app). A distância de cada trecho

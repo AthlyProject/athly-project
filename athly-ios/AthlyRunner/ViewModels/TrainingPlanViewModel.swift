@@ -391,12 +391,14 @@ final class TrainingPlanViewModel: ObservableObject {
     func completeWorkoutWithHealthData(_ workout: WorkoutModel, healthRun: HealthKitRunItem) async {
         do {
             RunWorkoutLinkStore.shared.link(healthKitUUID: healthRun.id, athlyWorkoutId: workout.id)
+            let executionDetails = await buildExecutionDetails(for: workout, healthRun: healthRun)
 
             let updated = try await APIClient.shared.completeWorkout(
                 workoutId: workout.id,
                 appleHealthWorkoutUUID: healthRun.id,
                 actualDistanceMeters: healthRun.distanceMeters,
-                actualDurationSeconds: healthRun.durationSeconds
+                actualDurationSeconds: healthRun.durationSeconds,
+                executionDetails: executionDetails
             )
             replaceWorkout(updated)
             recordAchievementIfEarned(workout: workout, healthRun: healthRun)
@@ -407,6 +409,24 @@ final class TrainingPlanViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func buildExecutionDetails(for workout: WorkoutModel, healthRun: HealthKitRunItem) async -> DetailedSessionPayload? {
+        #if targetEnvironment(simulator)
+        return nil
+        #else
+        let service = HealthKitService()
+        guard service.isHealthDataAvailable else { return nil }
+        guard let rawWorkout = try? await service.fetchRawWorkout(uuid: healthRun.id) else {
+            return nil
+        }
+        let fetcher = WorkoutDetailFetcher()
+        return try? await fetcher.buildDetailedSession(
+            for: rawWorkout,
+            athlyWorkoutId: workout.id,
+            prescribedWorkout: workout
+        )
+        #endif
     }
 
     func skipWorkout(_ workout: WorkoutModel) async {

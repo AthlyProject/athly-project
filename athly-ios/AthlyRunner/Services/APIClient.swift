@@ -109,7 +109,8 @@ actor APIClient {
         workoutId: String,
         appleHealthWorkoutUUID: String? = nil,
         actualDistanceMeters: Double? = nil,
-        actualDurationSeconds: Double? = nil
+        actualDurationSeconds: Double? = nil,
+        executionDetails: DetailedSessionPayload? = nil
     ) async throws -> WorkoutModel {
         if let uuid = appleHealthWorkoutUUID {
             return try await patchWithBody(
@@ -117,7 +118,8 @@ actor APIClient {
                 body: CompleteWorkoutRequest(
                     appleHealthWorkoutUUID: uuid,
                     actualDistanceMeters: actualDistanceMeters,
-                    actualDurationSeconds: actualDurationSeconds
+                    actualDurationSeconds: actualDurationSeconds,
+                    executionDetails: executionDetails
                 )
             )
         }
@@ -429,11 +431,13 @@ struct CompleteWorkoutRequest: Encodable {
     let appleHealthWorkoutUUID: String
     let actualDistanceMeters: Double?
     let actualDurationSeconds: Double?
+    let executionDetails: DetailedSessionPayload?
 
     enum CodingKeys: String, CodingKey {
         case appleHealthWorkoutUUID = "appleHealthWorkoutUUID"
         case actualDistanceMeters
         case actualDurationSeconds
+        case executionDetails
     }
 }
 

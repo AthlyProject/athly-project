@@ -130,7 +130,11 @@ export class AiPlannerService {
       0,
       isFirstGeneration ? DETAILED_FIRST_GEN : DETAILED_MID_PLAN,
     );
-    const analyzedSessions = await this.executionAnalyzer.analyzeSessions(userId, detailedInput);
+    const analyzedSessions = await this.executionAnalyzer.analyzeSessions(userId, detailedInput, {
+      trainingPlanId: trainingPlan.id,
+      beforeDate: weekStartDate,
+      persistedLimit: isFirstGeneration ? DETAILED_FIRST_GEN : DETAILED_MID_PLAN,
+    });
 
     // Longitudinal trend only makes sense mid-plan (requires prior WeeklyGoal metrics).
     const longitudinalWeeks = isFirstGeneration

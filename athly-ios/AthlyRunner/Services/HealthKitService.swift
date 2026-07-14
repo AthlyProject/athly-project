@@ -266,6 +266,25 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             .map { $0 }
     }
 
+    /// Busca um `HKWorkout` bruto específico pelo UUID escolhido pelo usuário no vínculo HealthKit.
+    func fetchRawWorkout(uuid uuidString: String) async throws -> HKWorkout? {
+        guard isHealthDataAvailable else {
+            throw HealthKitError.notAvailable
+        }
+        guard let uuid = UUID(uuidString: uuidString) else {
+            return nil
+        }
+
+        let workoutType = HKObjectType.workoutType()
+        let predicate = HKQuery.predicateForObject(with: uuid)
+        return try await queryWorkouts(
+            sampleType: workoutType,
+            predicate: predicate,
+            limit: 1,
+            sortDescriptors: nil
+        ).first
+    }
+
     /// Diagnóstico: executa query estrita (somente .running) e query ampla (todos os workout types)
     /// na janela fornecida, logando resultado detalhado para identificar por que um workout do Nike
     /// Run Club (ou de outro app) pode estar ausente da listagem normal.

@@ -120,6 +120,54 @@ enum SplitCalculator {
         }
     }
 
+    /// Fronteira de segmento ao avançar uma distância real a partir de uma data.
+    /// Usa a rota normalizada (saltos/pausas filtrados), então a duração retornada é tempo em movimento.
+    static func boundary(
+        afterDistanceMeters targetDistance: Double,
+        from startDate: Date,
+        locations: [CLLocation],
+        pauses: [PauseInterval] = []
+    ) -> (date: Date, durationSeconds: Double, distanceMeters: Double)? {
+        let samples = normalize(locations, pauses: pauses)
+        guard samples.count >= 2, targetDistance > 0 else { return nil }
+
+        let startDistance = distance(at: startDate, samples)
+        let startMovingTime = movingTime(at: startDate, samples)
+        let endDistance = min(samples.last!.distance, startDistance + targetDistance)
+        guard endDistance > startDistance else { return nil }
+
+        let end = interpolate(samples, atDistance: endDistance)
+        return (
+            date: end.date,
+            durationSeconds: max(0, end.movingTime - startMovingTime),
+            distanceMeters: max(0, end.distance - startDistance)
+        )
+    }
+
+    /// Fronteira de segmento ao avançar tempo em movimento a partir de uma data.
+    /// Útil para cortar aquecimentos/recuperações por duração sem contar pausas explícitas.
+    static func boundary(
+        afterMovingTimeSeconds targetSeconds: Double,
+        from startDate: Date,
+        locations: [CLLocation],
+        pauses: [PauseInterval] = []
+    ) -> (date: Date, durationSeconds: Double, distanceMeters: Double)? {
+        let samples = normalize(locations, pauses: pauses)
+        guard samples.count >= 2, targetSeconds > 0 else { return nil }
+
+        let startDistance = distance(at: startDate, samples)
+        let startMovingTime = movingTime(at: startDate, samples)
+        let endMovingTime = min(samples.last!.movingTime, startMovingTime + targetSeconds)
+        guard endMovingTime > startMovingTime else { return nil }
+
+        let end = interpolate(samples, atMovingTime: endMovingTime)
+        return (
+            date: end.date,
+            durationSeconds: max(0, end.movingTime - startMovingTime),
+            distanceMeters: max(0, end.distance - startDistance)
+        )
+    }
+
     /// Distância acumulada (já filtrada) interpolada na data `date`.
     private static func distance(at date: Date, _ samples: [Sample]) -> Double {
         guard let first = samples.first, let last = samples.last else { return 0 }
@@ -136,6 +184,24 @@ enum SplitCalculator {
             }
         }
         return last.distance
+    }
+
+    /// Tempo em movimento acumulado (já descontadas pausas/buracos) interpolado na data `date`.
+    private static func movingTime(at date: Date, _ samples: [Sample]) -> Double {
+        guard let first = samples.first, let last = samples.last else { return 0 }
+        if date <= first.date { return first.movingTime }
+        if date >= last.date { return last.movingTime }
+        for i in 1..<samples.count {
+            let a = samples[i - 1]
+            let b = samples[i]
+            if b.date >= date {
+                let span = b.date.timeIntervalSince(a.date)
+                guard span > 0 else { return b.movingTime }
+                let f = date.timeIntervalSince(a.date) / span
+                return a.movingTime + (b.movingTime - a.movingTime) * f
+            }
+        }
+        return last.movingTime
     }
 
     // MARK: - Private
@@ -234,6 +300,29 @@ enum SplitCalculator {
                     date: a.date.addingTimeInterval(b.date.timeIntervalSince(a.date) * f),
                     movingTime: a.movingTime + (b.movingTime - a.movingTime) * f,
                     distance: d,
+                    altitude: a.altitude + (b.altitude - a.altitude) * f
+                )
+            }
+        }
+        return samples.last!
+    }
+
+    /// Interpola linearmente a amostra (data/distância/altitude) no tempo em movimento acumulado.
+    private static func interpolate(_ samples: [Sample], atMovingTime t: Double) -> Sample {
+        if t <= samples.first!.movingTime { return samples.first! }
+        if t >= samples.last!.movingTime { return samples.last! }
+
+        for i in 1..<samples.count {
+            let a = samples[i - 1]
+            let b = samples[i]
+            if b.movingTime >= t {
+                let span = b.movingTime - a.movingTime
+                guard span > 0 else { return b }
+                let f = (t - a.movingTime) / span
+                return Sample(
+                    date: a.date.addingTimeInterval(b.date.timeIntervalSince(a.date) * f),
+                    movingTime: t,
+                    distance: a.distance + (b.distance - a.distance) * f,
                     altitude: a.altitude + (b.altitude - a.altitude) * f
                 )
             }

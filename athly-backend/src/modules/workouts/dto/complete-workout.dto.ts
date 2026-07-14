@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, Length, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, Length, Min, ValidateNested } from 'class-validator';
+import { DetailedSessionDto } from '../../ai-planner/dto/plan-from-health.dto';
 
 export class CompleteWorkoutDto {
   @ApiPropertyOptional({ description: 'UUID of the HKWorkout that executed this prescribed workout' })
@@ -19,4 +21,13 @@ export class CompleteWorkoutDto {
   @IsNumber()
   @Min(0)
   actualDurationSeconds?: number;
+
+  @ApiPropertyOptional({
+    type: () => DetailedSessionDto,
+    description: 'Detailed execution reconstructed from the linked HKWorkout and Athly prescription',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DetailedSessionDto)
+  executionDetails?: DetailedSessionDto;
 }

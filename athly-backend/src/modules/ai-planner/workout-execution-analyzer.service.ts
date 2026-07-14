@@ -56,14 +56,16 @@ export class WorkoutExecutionAnalyzerService {
   async analyzeSessions(
     userId: string,
     sessions: DetailedSessionDto[],
+    options?: { trainingPlanId?: string; beforeDate?: Date; persistedLimit?: number },
   ): Promise<AnalyzedSession[]> {
-    if (sessions.length === 0) return [];
+    const mergedSessions = await this.withPersistedExecutionDetails(userId, sessions, options);
+    if (mergedSessions.length === 0) return [];
 
-    const workoutIds = sessions
+    const workoutIds = mergedSessions
       .map((s) => s.athlyWorkoutId)
       .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
-    const uuids = sessions.map((s) => s.appleHealthWorkoutUUID);
+    const uuids = mergedSessions.map((s) => s.appleHealthWorkoutUUID);
 
     const linkedByWorkoutId = new Map<string, Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]>();
     const linkedByUuid = new Map<string, Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]>();
@@ -86,7 +88,7 @@ export class WorkoutExecutionAnalyzerService {
       }
     }
 
-    const sessionDates = sessions.map((s) => new Date(s.startDate));
+    const sessionDates = mergedSessions.map((s) => new Date(s.startDate));
     const minDate = new Date(Math.min(...sessionDates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...sessionDates.map((d) => d.getTime())));
     minDate.setHours(0, 0, 0, 0);
@@ -109,7 +111,7 @@ export class WorkoutExecutionAnalyzerService {
       byDay.set(key, list);
     }
 
-    return sessions.map((session) => {
+    return mergedSessions.map((session) => {
       const workout = this.resolveWorkout(session, linkedByWorkoutId, linkedByUuid, byDay);
       const prescribed = workout ? this.summarizePrescribed(workout) : null;
       const lastFeedback = workout?.feedback?.[0];
@@ -123,6 +125,63 @@ export class WorkoutExecutionAnalyzerService {
       const executionAnalysis = this.analyzeExecution(session, prescribed, feedback);
       return { session, prescribed, executionAnalysis, feedback };
     });
+  }
+
+  private async withPersistedExecutionDetails(
+    userId: string,
+    sessions: DetailedSessionDto[],
+    options?: { trainingPlanId?: string; beforeDate?: Date; persistedLimit?: number },
+  ): Promise<DetailedSessionDto[]> {
+    if (!options?.trainingPlanId || !options.beforeDate) return sessions;
+
+    const persistedWorkouts = await this.prisma.workout.findMany({
+      where: {
+        userId,
+        trainingPlanId: options.trainingPlanId,
+        status: { in: ['done', 'partial'] },
+        dateScheduled: { lt: options.beforeDate },
+      },
+      orderBy: { dateScheduled: 'desc' },
+      take: options.persistedLimit ?? 7,
+    });
+
+    const seen = new Set<string>();
+    const merged: DetailedSessionDto[] = [];
+
+    const add = (session: DetailedSessionDto) => {
+      const key = session.appleHealthWorkoutUUID || session.athlyWorkoutId || session.startDate;
+      if (seen.has(key)) return;
+      seen.add(key);
+      merged.push(session);
+    };
+
+    sessions.forEach(add);
+
+    for (const workout of persistedWorkouts) {
+      const persisted = this.extractPersistedExecutionDetails((workout as any).executionDetails, workout.id);
+      if (persisted) add(persisted);
+    }
+
+    return merged;
+  }
+
+  private extractPersistedExecutionDetails(raw: unknown, workoutId: string): DetailedSessionDto | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const value = raw as Partial<DetailedSessionDto>;
+    if (
+      typeof value.startDate !== 'string' ||
+      typeof value.appleHealthWorkoutUUID !== 'string' ||
+      typeof value.distanceMeters !== 'number' ||
+      typeof value.durationSeconds !== 'number' ||
+      !Array.isArray(value.segments)
+    ) {
+      return null;
+    }
+    return {
+      ...value,
+      athlyWorkoutId: value.athlyWorkoutId ?? workoutId,
+      segments: value.segments,
+    } as DetailedSessionDto;
   }
 
   private resolveWorkout(
@@ -341,7 +400,8 @@ export class WorkoutExecutionAnalyzerService {
     // Quando a origem dos splits é sintética (ex.: Garmin/Nike lidos via Apple Health, que só carrega
     // totais), os "segments" são um preenchimento de pace uniforme — não dá para tirar veredito de
     // tiros/variação deles. Evita afirmar "pacing even" ou "sem tiros" como se fosse real.
-    const isLowGranularity = session.splitsSource === 'synthetic';
+    const isLowGranularity =
+      session.splitsSource === 'synthetic' || session.splitsSource === 'prescribed_low_confidence';
     const reps = session.segments.filter((s) => s.label === SegmentLabel.rep);
     const recoveries = session.segments.filter((s) => s.label === SegmentLabel.rec);
 
@@ -350,7 +410,7 @@ export class WorkoutExecutionAnalyzerService {
       if (isIntervalPrescription) {
         if (isLowGranularity) {
           observations.push(
-            `O treino previa ${prescribed!.expectedRepCount} tiros, mas esta corrida chegou sem splits/laps reais (origem só com totais) — não dá para verificar a execução dos tiros.`,
+            `O treino previa ${prescribed!.expectedRepCount} tiros, mas esta corrida chegou com granularidade baixa — não dá para verificar a execução dos tiros com segurança.`,
           );
         } else if (session.splitsSource === 'route') {
           observations.push(
@@ -402,9 +462,9 @@ export class WorkoutExecutionAnalyzerService {
       let pacingStrategy: ExecutionAnalysis['pacingStrategy'] = 'n/a';
       let paceVarianceSeconds: number | undefined;
       if (isLowGranularity) {
-        // Sem splits reais: não inventa estratégia de pace. Mantém só o nível de sessão (ritmo médio).
+        // Sem granularidade confiável: não inventa estratégia de pace. Mantém só o nível de sessão/bloco.
         observations.push(
-          'Esta corrida veio sem splits reais (origem só com totais, ex.: Garmin/Nike via Apple Health) — análise limitada ao ritmo médio; não é possível avaliar tiros nem variação de pace.',
+          'Esta corrida veio sem granularidade suficiente para avaliar variação de pace com segurança — análise limitada ao ritmo médio/bloco reconstruído; não é possível confirmar tiros individualmente.',
         );
       } else {
         // Variance/strategy a partir dos splits do bloco principal — incluir o aquecimento
@@ -445,6 +505,18 @@ export class WorkoutExecutionAnalyzerService {
         targetAdherence,
         deviationFromTargetSecPerKm,
         paceVarianceSeconds,
+        observations,
+      };
+    }
+
+    if (isLowGranularity) {
+      observations.push(
+        'Os blocos foram reconstruídos com baixa confiança; use duração/volume e feedback, mas não conclua aderência de tiros ou estratégia de pace.',
+      );
+      this.addContextualObservations(observations, prescribed, feedback, session, 'unknown');
+      return {
+        pacingStrategy: 'n/a',
+        targetAdherence: 'unknown',
         observations,
       };
     }
