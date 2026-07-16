@@ -163,6 +163,28 @@ describe('GeminiService.runWithStructureGate', () => {
   });
 });
 
+describe('GeminiService.generateJson', () => {
+  it('não envia limite manual de maxOutputTokens para o Gemini', async () => {
+    const generateContent = jest.fn(async () => ({
+      text: JSON.stringify(plan(true)),
+      usageMetadata: {
+        promptTokenCount: 100,
+        candidatesTokenCount: 50,
+        totalTokenCount: 150,
+      },
+    }));
+    const service = new GeminiService({ get: () => 'test-key' } as any);
+    (service as any).getClient = jest.fn(() => ({
+      models: { generateContent },
+    }));
+
+    await (service as any).generateJson('PROMPT', 'gemini-3-flash-preview', { type: 'object' });
+
+    expect(generateContent).toHaveBeenCalledTimes(1);
+    expect(generateContent.mock.calls[0][0].config).not.toHaveProperty('maxOutputTokens');
+  });
+});
+
 describe('GeminiService.costEstimate', () => {
   it('calcula custo por 1M tokens para gemini-2.5-flash', () => {
     const res = (gemini as any).withCost(

@@ -1,6 +1,4 @@
 import SwiftUI
-import RevenueCat
-import RevenueCatUI
 
 struct PlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
@@ -230,14 +228,16 @@ struct PlanView: View {
         .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
         .sheet(isPresented: $showPaywall) {
             // Founder vê a offering founder; demais usuários veem a offering default.
-            AthlyPaywallView(founderEligible: entitlementManager.isFounderEligible)
-                .onPurchaseCompleted { _ in
+            AthlyPaywallView(
+                founderEligible: entitlementManager.isFounderEligible,
+                onPurchaseCompleted: { _ in
                     showPaywall = false
                     Task { await entitlementManager.refresh() }
-                }
-                .onRestoreCompleted { _ in
+                },
+                onRestoreCompleted: { _ in
                     Task { await entitlementManager.refresh() }
                 }
+            )
         }
     }
 
@@ -580,51 +580,6 @@ struct PlanView: View {
         formatter.dateFormat = "MMMM yyyy"
         formatter.locale = Locale(identifier: "pt-BR")
         return formatter.string(from: date).capitalized
-    }
-}
-
-// MARK: - RevenueCat Paywall
-
-private struct AthlyPaywallView: View {
-    let founderEligible: Bool
-
-    @State private var offering: Offering?
-    @State private var didFinishLoading = false
-
-    var body: some View {
-        Group {
-            if let offering {
-                RevenueCatUI.PaywallView(offering: offering)
-            } else if didFinishLoading {
-                RevenueCatUI.PaywallView()
-            } else {
-                ZStack {
-                    AthlyTheme.Color.backgroundDark
-                        .ignoresSafeArea()
-                    ProgressView()
-                        .tint(AthlyTheme.Color.primary)
-                }
-            }
-        }
-        .task(id: founderEligible) {
-            await loadOffering()
-        }
-    }
-
-    @MainActor
-    private func loadOffering() async {
-        didFinishLoading = false
-        offering = nil
-
-        guard Purchases.isConfigured else {
-            didFinishLoading = true
-            return
-        }
-
-        let desiredOffering = founderEligible ? "founder" : "default"
-        let offerings = try? await Purchases.shared.offerings()
-        offering = offerings?.offering(identifier: desiredOffering) ?? offerings?.current
-        didFinishLoading = true
     }
 }
 

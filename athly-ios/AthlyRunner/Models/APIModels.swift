@@ -212,6 +212,8 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     /// Backend envia número (pode ser decimal); aceitamos Double para evitar falha de decode.
     let intensity: Double?
     let isGoalAttempt: Bool?
+    let actualDistanceMeters: Double?
+    let actualDurationSeconds: Double?
     let stravaActivityId: String?
     let appleHealthWorkoutUUID: String?
 

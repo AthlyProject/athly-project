@@ -8,6 +8,9 @@ final class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var userName: String = ""
     @Published private(set) var hasFinishedInitialSessionRestore = false
+    /// Gate do questionário de onboarding (mesmo fluxo do athly-frontend).
+    /// nil = ainda não sabemos (perfil não carregado) → não bloqueia; false = precisa responder.
+    @Published private(set) var assessmentCompleted: Bool? = nil
 
     private let tokenKey = "athly_access_token"
     private let refreshKey = "athly_refresh_token"
@@ -73,6 +76,8 @@ final class AuthViewModel: ObservableObject {
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             UserMetrics.weightKg = weight
             self.userName = userName
+            // Usuário recém-criado sempre precisa responder o questionário de onboarding.
+            assessmentCompleted = false
             isAuthenticated = true
             postAuthChanged(true)
         } catch {
@@ -92,6 +97,13 @@ final class AuthViewModel: ObservableObject {
     func refreshUserName() async {
         guard let profile = try? await APIClient.shared.getUserProfile() else { return }
         self.userName = profile.username ?? profile.name ?? ""
+        // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
+        self.assessmentCompleted = profile.assessmentCompleted ?? true
+    }
+
+    /// Chamado pela AssessmentView após o POST /assessment com sucesso.
+    func markAssessmentCompleted() {
+        assessmentCompleted = true
     }
 
     /// Exclui a conta no servidor (cascade de todos os dados) e limpa a sessão local.
@@ -116,6 +128,7 @@ final class AuthViewModel: ObservableObject {
             await APIClient.shared.clearTokens()
         }
         isAuthenticated = false
+        assessmentCompleted = nil
         postAuthChanged(false)
     }
 

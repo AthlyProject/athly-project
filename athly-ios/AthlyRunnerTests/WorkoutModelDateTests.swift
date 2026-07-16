@@ -69,6 +69,46 @@ final class WorkoutModelDateTests: XCTestCase {
         let session = try decoder.decode(RunSession.self, from: data)
 
         XCTAssertNil(session.segmentRecords)
+        XCTAssertNil(session.athlyWorkoutId)
+        XCTAssertNil(session.healthKitWorkoutUUID)
+        XCTAssertNil(session.healthKitSyncStatus)
+        XCTAssertNil(session.healthKitSyncError)
+    }
+
+    func testRunSessionDecodesHealthKitSyncMetadata() throws {
+        let data = Data("""
+        {
+          "id": "2C9B012B-40D1-47DA-9DAB-0F4F4E49E3E9",
+          "startDate": "2026-07-06T10:00:00Z",
+          "endDate": "2026-07-06T10:30:00Z",
+          "distanceMeters": 5000,
+          "durationSeconds": 1800,
+          "averagePaceSecondsPerKm": 360,
+          "elevationGainMeters": 20,
+          "caloriesBurned": 300,
+          "status": "completed",
+          "sportType": "running",
+          "routePoints": [],
+          "splits": [],
+          "segmentRecords": [],
+          "pauseIntervals": [],
+          "athlyWorkoutId": "workout-1",
+          "healthKitWorkoutUUID": "hk-uuid-1",
+          "healthKitSyncStatus": "synced",
+          "healthKitSyncError": null,
+          "backendId": null,
+          "synced": false
+        }
+        """.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let session = try decoder.decode(RunSession.self, from: data)
+
+        XCTAssertEqual(session.athlyWorkoutId, "workout-1")
+        XCTAssertEqual(session.healthKitWorkoutUUID, "hk-uuid-1")
+        XCTAssertEqual(session.healthKitSyncStatus, .synced)
+        XCTAssertNil(session.healthKitSyncError)
     }
 
     func testHealthKitRunItemCodableRoundTrips() throws {
@@ -191,6 +231,8 @@ final class WorkoutModelDateTests: XCTestCase {
             weeklyGoalId: "week-1",
             intensity: 3,
             isGoalAttempt: false,
+            actualDistanceMeters: nil,
+            actualDurationSeconds: nil,
             stravaActivityId: nil,
             appleHealthWorkoutUUID: nil
         )

@@ -112,11 +112,11 @@ actor APIClient {
         actualDurationSeconds: Double? = nil,
         executionDetails: DetailedSessionPayload? = nil
     ) async throws -> WorkoutModel {
-        if let uuid = appleHealthWorkoutUUID {
+        if appleHealthWorkoutUUID != nil || actualDistanceMeters != nil || actualDurationSeconds != nil {
             return try await patchWithBody(
                 "/workouts/\(workoutId)/complete",
                 body: CompleteWorkoutRequest(
-                    appleHealthWorkoutUUID: uuid,
+                    appleHealthWorkoutUUID: appleHealthWorkoutUUID,
                     actualDistanceMeters: actualDistanceMeters,
                     actualDurationSeconds: actualDurationSeconds,
                     executionDetails: executionDetails
@@ -145,6 +145,15 @@ actor APIClient {
 
     func getPlanFromHealthGenerationStatus(generationId: String) async throws -> AiPlannerGenerationStatusResponse {
         try await get("/ai-planner/plan-from-health/generations/\(generationId)")
+    }
+
+    // MARK: - Assessment (questionário de onboarding)
+
+    /// Envia o questionário de avaliação (mesmo payload do athly-frontend).
+    /// O backend marca `assessmentCompleted = true` no usuário.
+    @discardableResult
+    func submitAssessment(_ request: AssessmentSubmissionRequest) async throws -> EmptyResponse {
+        try await post("/assessment", body: request)
     }
 
     // MARK: - Billing / Entitlement
@@ -436,7 +445,7 @@ struct RefreshResponse: Decodable {
 }
 
 struct CompleteWorkoutRequest: Encodable {
-    let appleHealthWorkoutUUID: String
+    let appleHealthWorkoutUUID: String?
     let actualDistanceMeters: Double?
     let actualDurationSeconds: Double?
     let executionDetails: DetailedSessionPayload?
@@ -447,6 +456,56 @@ struct CompleteWorkoutRequest: Encodable {
         case actualDurationSeconds
         case executionDetails
     }
+}
+
+// MARK: - Assessment payload (espelha SubmitAssessmentDto do backend / athly-frontend)
+
+struct AssessmentGoals: Encodable, Sendable {
+    var practicesRegularly: String = ""
+    var targetDistance: String = ""
+    var motivations: [String] = []
+}
+
+struct AssessmentActivityHistory: Encodable, Sendable {
+    var currentActivities: [String] = []
+    var trainingPreparedBy: String = ""
+    var canRun3km: String = ""
+    var runningExperience: String = ""
+}
+
+struct AssessmentTrainingPlanning: Encodable, Sendable {
+    var availableDays: [String] = []
+    var startDate: String = ""
+    var hasTargetDate: String = ""
+    var targetDate: String?
+}
+
+struct AssessmentPerformanceHealth: Encodable, Sendable {
+    var referenceDistance: String = "5k"
+    var bestTime: String = ""
+    var sleepQuality: Int?
+    var hasChronicPain: String = ""
+    var chronicPainDescription: String?
+}
+
+struct AssessmentParq: Encodable, Sendable {
+    var heartCondition: Bool?
+    var chestPainDuringActivity: Bool?
+    var chestPainLastMonth: Bool?
+    var dizzinessOrLossOfConsciousness: Bool?
+    var boneJointProblem: Bool?
+    var takingBloodPressureMeds: Bool?
+    var otherReasonToAvoidExercise: Bool?
+}
+
+struct AssessmentSubmissionRequest: Encodable, Sendable {
+    var goals = AssessmentGoals()
+    var activityHistory = AssessmentActivityHistory()
+    var trainingPlanning = AssessmentTrainingPlanning()
+    var performanceHealth = AssessmentPerformanceHealth()
+    var parq = AssessmentParq()
+    var gender: String?
+    var termsAccepted: Bool = false
 }
 
 struct EntitlementResponse: Decodable, Sendable {

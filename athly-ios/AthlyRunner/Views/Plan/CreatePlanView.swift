@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreatePlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
+    @EnvironmentObject var entitlementManager: EntitlementManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var goalText: String = ""
@@ -9,6 +10,7 @@ struct CreatePlanView: View {
     @State private var errorMessage: String? = nil
     @State private var parsedGoal: ParsedGoal? = nil
     @State private var showConfirmation = false
+    @State private var showPaywall = false
 
     private let suggestions = [
         "Quero correr 5km sem parar",
@@ -194,8 +196,7 @@ struct CreatePlanView: View {
             VStack(spacing: 12) {
                 Button {
                     Task {
-                        await planVM.generateNextWeekWithHealth()
-                        dismiss()
+                        await generateFirstWeekOrShowPaywall()
                     }
                 } label: {
                     HStack {
@@ -213,6 +214,21 @@ struct CreatePlanView: View {
                 }
                 .buttonStyle(AthlyGradientButtonStyle())
                 .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
+                .sheet(isPresented: $showPaywall) {
+                    AthlyPaywallView(
+                        founderEligible: entitlementManager.isFounderEligible,
+                        onPurchaseCompleted: { _ in
+                            showPaywall = false
+                            Task {
+                                await entitlementManager.refresh()
+                                await generateFirstWeekOrShowPaywall()
+                            }
+                        },
+                        onRestoreCompleted: { _ in
+                            Task { await entitlementManager.refresh() }
+                        }
+                    )
+                }
 
                 Button {
                     dismiss()
@@ -224,6 +240,17 @@ struct CreatePlanView: View {
                 .buttonStyle(.plain)
             }
             .padding(AthlyTheme.Spacing.sm)
+        }
+    }
+
+    @MainActor
+    private func generateFirstWeekOrShowPaywall() async {
+        await entitlementManager.refresh()
+        if entitlementManager.canUsePremium {
+            await planVM.generateNextWeekWithHealth()
+            dismiss()
+        } else {
+            showPaywall = true
         }
     }
 

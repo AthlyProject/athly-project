@@ -114,6 +114,10 @@ final class HealthKitRunsViewModel: ObservableObject {
                 if !hasKnownRuns {
                     state = .healthUnavailable
                 }
+            case .writeDenied:
+                if !hasKnownRuns {
+                    state = .error(error.localizedDescription)
+                }
             }
         } catch {
             if !hasKnownRuns {

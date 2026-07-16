@@ -407,7 +407,6 @@ export class GeminiService {
       config: {
         responseMimeType: 'application/json',
         responseJsonSchema,
-        maxOutputTokens: 32768,
         temperature: 0.25,
       },
     });

@@ -8,9 +8,8 @@ ATHLY_BUNDLE_ID = com.athly.runner
 // Descubra seu IP local com: ifconfig en0 | grep 'inet '
 DEV_API_URL =
 
-// RevenueCat SDK key (pública — pode ir no binário). Hoje é a key de teste.
-// ⚠️ Antes do release de produção, troque pela App Store key (appl_…) do projeto no RevenueCat.
-REVENUECAT_API_KEY = test_iaxoybibCwjyiSQvMsPrFXHiLfO
+// RevenueCat SDK key (pública — pode ir no binário). App Store key do app iOS no RevenueCat.
+REVENUECAT_API_KEY = appl_GoaAgGdMCiQKCbhahvSfRpwIBoV
 
 #include "OTel.xcconfig"
 #include? "User.xcconfig"

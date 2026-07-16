@@ -395,6 +395,40 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
+    /// Conclui um treino prescrito usando a corrida que acabou de ser registrada pelo tracker Athly.
+    /// O HealthKit UUID é opcional: se a escrita HealthKit falhar, ainda enviamos as métricas reais.
+    func completeWorkoutWithRunResult(
+        _ workout: WorkoutModel,
+        result: RunResult,
+        healthKitUUID: String?
+    ) async {
+        do {
+            if let healthKitUUID {
+                RunWorkoutLinkStore.shared.link(healthKitUUID: healthKitUUID, athlyWorkoutId: workout.id)
+            }
+
+            let updated = try await APIClient.shared.completeWorkout(
+                workoutId: workout.id,
+                appleHealthWorkoutUUID: healthKitUUID,
+                actualDistanceMeters: result.distanceMeters,
+                actualDurationSeconds: result.durationSeconds
+            )
+            replaceWorkout(updated)
+            recordAchievementIfEarned(
+                workout: workout,
+                actualDistanceMeters: result.distanceMeters,
+                actualDurationSeconds: result.durationSeconds,
+                actualPaceSecPerKm: result.averagePaceSecondsPerKm
+            )
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     /// Conclui um treino prescrito vinculando dados reais de uma corrida do HealthKit.
     func completeWorkoutWithHealthData(_ workout: WorkoutModel, healthRun: HealthKitRunItem) async {
         do {
@@ -409,7 +443,12 @@ final class TrainingPlanViewModel: ObservableObject {
                 executionDetails: executionDetails
             )
             replaceWorkout(updated)
-            recordAchievementIfEarned(workout: workout, healthRun: healthRun)
+            recordAchievementIfEarned(
+                workout: workout,
+                actualDistanceMeters: healthRun.distanceMeters,
+                actualDurationSeconds: healthRun.durationSeconds,
+                actualPaceSecPerKm: healthRun.averagePaceSecondsPerKm
+            )
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -546,12 +585,17 @@ final class TrainingPlanViewModel: ObservableObject {
 
     /// Validação sem I.A. ao fim do treino: se for tentativa de objetivo (`isGoalAttempt`) e o
     /// resultado real bater a meta planejada (distância + pace), conta como conquista.
-    private func recordAchievementIfEarned(workout: WorkoutModel, healthRun: HealthKitRunItem) {
+    private func recordAchievementIfEarned(
+        workout: WorkoutModel,
+        actualDistanceMeters: Double,
+        actualDurationSeconds: Double,
+        actualPaceSecPerKm: Double
+    ) {
         guard WorkoutObjectiveValidator.isObjectiveAchieved(
             workout: workout,
-            actualDistanceMeters: healthRun.distanceMeters,
-            actualDurationSeconds: healthRun.durationSeconds,
-            actualPaceSecPerKm: healthRun.averagePaceSecondsPerKm
+            actualDistanceMeters: actualDistanceMeters,
+            actualDurationSeconds: actualDurationSeconds,
+            actualPaceSecPerKm: actualPaceSecPerKm
         ) else { return }
         AchievementStore.shared.record(workoutId: workout.id)
         achievementCount = AchievementStore.shared.count

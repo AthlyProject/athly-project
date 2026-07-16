@@ -128,9 +128,9 @@ voce reconhecer a tela caso o App Store Connect apareca parcialmente traduzido.
    - Marque `default` como Default Offering.
 
 7. Configure os Paywalls no RevenueCat:
-   - Crie um paywall para `default`.
-   - Crie um paywall para `founder` ou reutilize o mesmo layout com os produtos Founder.
-   - O app ja usa `RevenueCatUI.PaywallView`.
+   - O app usa paywall nativo em SwiftUI, entao o layout do Paywall Editor do RevenueCat nao e usado.
+   - Mesmo assim, as offerings `default` e `founder` precisam existir com os packages corretos.
+   - Os precos exibidos no app continuam vindo dos produtos da App Store via RevenueCat.
 
 8. Configure Webhook do RevenueCat para o backend:
    - RevenueCat: `Integrations > Webhooks > Add new configuration`.

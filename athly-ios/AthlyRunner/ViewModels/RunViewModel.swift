@@ -92,6 +92,7 @@ final class RunViewModel: ObservableObject {
 
         isSaving = true
         saveError = nil
+        lastSavedHealthKitUUID = nil
 
         // Save locally
         let session = RunSession(sportType: "running")
@@ -105,6 +106,9 @@ final class RunViewModel: ObservableObject {
         session.status = "completed"
         session.segmentRecords = result.segmentRecords
         session.pauseIntervals = result.pauseIntervals
+        session.athlyWorkoutId = pendingWorkout?.id
+        session.healthKitSyncStatus = healthKitService.isHealthDataAvailable ? .pending : .unavailable
+        session.healthKitSyncError = nil
 
         for location in result.locations {
             let point = RoutePoint(location: location)
@@ -123,25 +127,39 @@ final class RunViewModel: ObservableObject {
 
         runStore.add(session)
 
-        // Save to HealthKit (best-effort — failure does not block)
+        // Save to HealthKit (best-effort; local history remains the fallback source of truth).
         if healthKitService.isHealthDataAvailable {
             do {
                 try await healthKitService.requestWriteAuthorization()
                 let savedWorkout = try await healthKitService.saveWorkout(result: result)
                 if let uuid = savedWorkout?.uuid.uuidString {
                     lastSavedHealthKitUUID = uuid
+                    session.healthKitWorkoutUUID = uuid
+                    session.healthKitSyncStatus = .synced
+                    session.healthKitSyncError = nil
                     if let workout = pendingWorkout {
                         RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workout.id)
                     }
+                    runStore.update(session)
+                } else {
+                    session.healthKitSyncStatus = .failed
+                    session.healthKitSyncError = "O Apple Health não retornou o identificador da corrida."
+                    runStore.update(session)
+                    saveError = "Corrida salva no Athly, mas ainda não foi sincronizada com o Apple Health."
                 }
             } catch {
-                // HealthKit save failed silently; local save is still valid
+                session.healthKitSyncStatus = .failed
+                session.healthKitSyncError = error.localizedDescription
+                runStore.update(session)
+                saveError = "Corrida salva no Athly, mas não foi enviada ao Apple Health: \(error.localizedDescription)"
             }
+        } else {
+            session.healthKitSyncStatus = .unavailable
+            session.healthKitSyncError = HealthKitError.notAvailable.localizedDescription
+            runStore.update(session)
+            saveError = "Corrida salva no Athly. Apple Health indisponível neste dispositivo."
         }
 
-        // HealthKit-first: a corrida fica durável no Apple Health (salvo acima) e o histórico
-        // é lido de lá. O backend só guarda a camada de coaching (plano/metas/feedback) +
-        // o vínculo via appleHealthWorkoutUUID no completeWorkout — não persistimos a corrida crua.
         isSaving = false
         isSaved = true
 
@@ -155,6 +173,7 @@ final class RunViewModel: ObservableObject {
         lastRunResult = nil
         isSaved = false
         saveError = nil
+        lastSavedHealthKitUUID = nil
         targetAlert = nil
     }
 }

@@ -4,6 +4,7 @@ import MapKit
 struct RunSummaryView: View {
     @ObservedObject var viewModel: RunViewModel
     @EnvironmentObject private var runStore: RunStore
+    @EnvironmentObject private var planVM: TrainingPlanViewModel
 
     /// URL do .txt gerado pelo botão "I.A Report" (relatório para auditoria de pace/splits).
     @State private var reportURL: URL?
@@ -141,23 +142,18 @@ struct RunSummaryView: View {
                     workout: workout,
                     initialStep: .feedback,
                     onComplete: { _ in
-                        let workoutId = workout.id
                         let healthKitUUID = viewModel.lastSavedHealthKitUUID
+                        let result = viewModel.lastRunResult
                         Task {
-                            _ = try? await APIClient.shared.completeWorkout(
-                                workoutId: workoutId,
-                                appleHealthWorkoutUUID: healthKitUUID
-                            )
-                        }
-                        // Validação sem I.A.: treino de tentativa de objetivo que bateu a meta vira conquista.
-                        if let result = viewModel.lastRunResult,
-                           WorkoutObjectiveValidator.isObjectiveAchieved(
-                               workout: workout,
-                               actualDistanceMeters: result.distanceMeters,
-                               actualDurationSeconds: result.durationSeconds,
-                               actualPaceSecPerKm: result.averagePaceSecondsPerKm
-                           ) {
-                            AchievementStore.shared.record(workoutId: workout.id)
+                            if let result {
+                                await planVM.completeWorkoutWithRunResult(
+                                    workout,
+                                    result: result,
+                                    healthKitUUID: healthKitUUID
+                                )
+                            } else {
+                                await planVM.completeWorkout(workout)
+                            }
                         }
                         viewModel.pendingWorkout = nil
                         viewModel.showWorkoutFeedback = false

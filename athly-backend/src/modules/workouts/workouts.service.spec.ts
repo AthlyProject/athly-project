@@ -22,6 +22,9 @@ describe('WorkoutsService', () => {
     status: WorkoutStatus.done,
     intensity: 7,
     stravaActivityId: null,
+    appleHealthWorkoutUUID: null,
+    actualDistanceMeters: null,
+    actualDurationSeconds: null,
   };
 
   beforeEach(() => {
@@ -54,7 +57,7 @@ describe('WorkoutsService', () => {
       });
       expect(prisma.workout.findFirst).toHaveBeenCalledWith({
         where: { id: 'workout-1', userId: 'user-1' },
-        select: expect.not.objectContaining({
+        select: expect.objectContaining({
           actualDistanceMeters: true,
           actualDurationSeconds: true,
           isGoalAttempt: true,
@@ -67,6 +70,8 @@ describe('WorkoutsService', () => {
         status: WorkoutStatus.done,
         isGoalAttempt: false,
         appleHealthWorkoutUUID: null,
+        actualDistanceMeters: null,
+        actualDurationSeconds: null,
       });
     });
 
@@ -88,6 +93,34 @@ describe('WorkoutsService', () => {
           actualDistanceMeters: 1000,
           actualDurationSeconds: 300,
         },
+      });
+    });
+
+    it('persists actual run metrics without requiring a HealthKit UUID', async () => {
+      prisma.workout.updateMany.mockResolvedValue({ count: 1 });
+      prisma.workout.findFirst.mockResolvedValue({
+        ...workout,
+        actualDistanceMeters: 5000,
+        actualDurationSeconds: 1800,
+      });
+
+      const result = await service.completeWorkout('user-1', 'workout-1', {
+        actualDistanceMeters: 5000,
+        actualDurationSeconds: 1800,
+      });
+
+      expect(prisma.workout.updateMany).toHaveBeenCalledWith({
+        where: { id: 'workout-1', userId: 'user-1' },
+        data: {
+          status: 'done',
+          actualDistanceMeters: 5000,
+          actualDurationSeconds: 1800,
+        },
+      });
+      expect(result).toMatchObject({
+        actualDistanceMeters: 5000,
+        actualDurationSeconds: 1800,
+        appleHealthWorkoutUUID: null,
       });
     });
 

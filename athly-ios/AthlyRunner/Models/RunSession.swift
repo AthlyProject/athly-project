@@ -1,6 +1,13 @@
 import Foundation
 import CoreLocation
 
+enum HealthKitSyncStatus: String, Codable {
+    case pending
+    case synced
+    case failed
+    case unavailable
+}
+
 final class RunSession: Identifiable, Codable {
     let id: UUID
     var startDate: Date
@@ -21,6 +28,14 @@ final class RunSession: Identifiable, Codable {
     /// decodifica o array inteiro de uma vez — uma chave ausente lançaria e zeraria o histórico).
     /// Usado na releitura offline dos splits para descontar a pausa igual ao caminho ao vivo.
     var pauseIntervals: [SplitCalculator.PauseInterval]?
+    /// Workout prescrito que originou esta corrida, quando iniciada a partir do plano.
+    var athlyWorkoutId: String?
+    /// UUID do HKWorkout salvo no Apple Health, quando a sincronizacao HealthKit conclui.
+    var healthKitWorkoutUUID: String?
+    /// Estado da tentativa de gravar esta corrida no Apple Health.
+    var healthKitSyncStatus: HealthKitSyncStatus?
+    /// Ultimo erro visivel de sync HealthKit. Local-only; usado para diagnostico/retentativa.
+    var healthKitSyncError: String?
 
     // Sync with backend
     var backendId: String?
@@ -41,6 +56,10 @@ final class RunSession: Identifiable, Codable {
         self.splits = []
         self.segmentRecords = []
         self.pauseIntervals = []
+        self.athlyWorkoutId = nil
+        self.healthKitWorkoutUUID = nil
+        self.healthKitSyncStatus = nil
+        self.healthKitSyncError = nil
         self.backendId = nil
         self.synced = false
     }

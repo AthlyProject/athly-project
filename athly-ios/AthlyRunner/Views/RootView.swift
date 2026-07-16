@@ -12,7 +12,15 @@ struct RootView: View {
         ZStack {
             Group {
                 if authViewModel.isAuthenticated {
-                    MainTabView()
+                    // Gate do questionário de onboarding (mesmo fluxo do athly-frontend):
+                    // usuário autenticado sem assessment respondido cai no questionário.
+                    if authViewModel.assessmentCompleted == false {
+                        AssessmentView {
+                            authViewModel.markAssessmentCompleted()
+                        }
+                    } else {
+                        MainTabView()
+                    }
                 } else {
                     LoginView()
                 }
@@ -27,6 +35,7 @@ struct RootView: View {
         }
         .background(AthlyTheme.Color.backgroundDark.ignoresSafeArea())
         .animation(.easeInOut(duration: 0.35), value: authViewModel.isAuthenticated)
+        .animation(.easeInOut(duration: 0.35), value: authViewModel.assessmentCompleted)
         .animation(.easeInOut(duration: 0.3), value: showLaunchSplash)
         .task {
             guard showLaunchSplash else { return }

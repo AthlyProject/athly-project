@@ -64,6 +64,12 @@ export class WorkoutModel {
   @ApiPropertyOptional({ nullable: true })
   appleHealthWorkoutUUID?: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  actualDistanceMeters?: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  actualDurationSeconds?: number | null;
+
   @ApiPropertyOptional()
   isGoalAttempt?: boolean;
 }

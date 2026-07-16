@@ -79,15 +79,20 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        guard PermissionGate.shouldRequestHealthKitWrite else { return }
         let typesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HealthKitService.energyType,
             HealthKitService.distanceType,
             HKSeriesType.workoutRoute()
         ]
-        try await store.requestAuthorization(toShare: typesToShare, read: [])
-        PermissionGate.markHealthKitWriteRequested()
+        if PermissionGate.shouldRequestHealthKitWrite {
+            try await store.requestAuthorization(toShare: typesToShare, read: [])
+            PermissionGate.markHealthKitWriteRequested()
+        }
+
+        guard store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
+            throw HealthKitError.writeDenied
+        }
     }
 
     /// Salva uma corrida no Apple Health e retorna o HKWorkout gerado (ou nil se finishWorkout falhar em produzi-lo).
@@ -940,11 +945,14 @@ struct RunCoordinate: Sendable {
 
 enum HealthKitError: LocalizedError {
     case notAvailable
+    case writeDenied
 
     var errorDescription: String? {
         switch self {
         case .notAvailable:
             return "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador)."
+        case .writeDenied:
+            return "O Athly não tem permissão para salvar treinos no Apple Health. A corrida foi salva no histórico local."
         }
     }
 }

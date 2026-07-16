@@ -5,6 +5,7 @@ struct HealthKitRunsView: View {
     private let showsPlanTab: Bool
 
     @EnvironmentObject private var planVM: TrainingPlanViewModel
+    @EnvironmentObject private var runStore: RunStore
 
     @StateObject private var viewModel: HealthKitRunsViewModel = {
         #if targetEnvironment(simulator)
@@ -24,12 +25,43 @@ struct HealthKitRunsView: View {
 
     private enum HistoryTab: String, CaseIterable {
         case plan = "Plano"
-        case healthKit = "HealthKit"
+        case healthKit = "Corridas"
+    }
+
+    private enum RunHistoryEntry: Identifiable {
+        case health(HealthKitRunItem)
+        case local(RunSession)
+
+        var id: String {
+            switch self {
+            case .health(let run): return "health-\(run.id)"
+            case .local(let session): return "local-\(session.id.uuidString)"
+            }
+        }
+
+        var startDate: Date {
+            switch self {
+            case .health(let run): return run.startDate
+            case .local(let session): return session.startDate
+            }
+        }
+    }
+
+    private enum PrescribedRunSource {
+        case health(HealthKitRunItem)
+        case local(RunSession)
+
+        var startDate: Date {
+            switch self {
+            case .health(let run): return run.startDate
+            case .local(let session): return session.startDate
+            }
+        }
     }
 
     private struct PrescribedRun: Identifiable {
         let workout: WorkoutModel
-        let run: HealthKitRunItem
+        let source: PrescribedRunSource
 
         var id: String { workout.id }
     }
@@ -61,9 +93,9 @@ struct HealthKitRunsView: View {
             )
             .ignoresSafeArea()
 
-            if viewModel.isHealthUnavailable {
+            if viewModel.isHealthUnavailable && historyEntries.isEmpty {
                 healthUnavailableContent
-            } else if let message = viewModel.errorMessage {
+            } else if let message = viewModel.errorMessage, historyEntries.isEmpty {
                 errorContent(message: message)
             } else {
                 content
@@ -127,9 +159,13 @@ struct HealthKitRunsView: View {
 
     private var healthKitRunsContent: some View {
         Group {
-            if viewModel.isEmptyAfterLoad {
+            if historyEntries.isEmpty && viewModel.isInitialLoading {
+                ProgressView()
+                    .tint(AthlyTheme.Color.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if historyEntries.isEmpty && viewModel.isEmptyAfterLoad {
                 emptyContent
-            } else if !viewModel.runs.isEmpty {
+            } else if !historyEntries.isEmpty {
                 healthKitRunsList
             } else {
                 ProgressView()
@@ -156,15 +192,25 @@ struct HealthKitRunsView: View {
     private var healthKitRunsList: some View {
         ScrollView {
             LazyVStack(spacing: AthlyTheme.Spacing.sm) {
-                ForEach(viewModel.runs) { run in
-                    NavigationLink {
-                        HealthKitRunDetailView(item: run)
-                    } label: {
-                        HealthKitRunCard(item: run)
-                    }
-                    .buttonStyle(.plain)
-                    .onAppear {
-                        Task { await viewModel.loadMoreIfNeeded(currentItem: run) }
+                ForEach(historyEntries) { entry in
+                    switch entry {
+                    case .health(let run):
+                        NavigationLink {
+                            HealthKitRunDetailView(item: run)
+                        } label: {
+                            HealthKitRunCard(item: run)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            Task { await viewModel.loadMoreIfNeeded(currentItem: run) }
+                        }
+                    case .local(let session):
+                        NavigationLink {
+                            RunSessionDetailView(session: session)
+                        } label: {
+                            LocalRunCard(session: session)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
@@ -185,12 +231,22 @@ struct HealthKitRunsView: View {
         ScrollView {
             LazyVStack(spacing: AthlyTheme.Spacing.sm) {
                 ForEach(prescribedRuns) { item in
-                    NavigationLink {
-                        HealthKitRunDetailView(item: item.run, prescribedWorkout: item.workout)
-                    } label: {
-                        PrescribedRunCard(workout: item.workout, item: item.run)
+                    switch item.source {
+                    case .health(let run):
+                        NavigationLink {
+                            HealthKitRunDetailView(item: run, prescribedWorkout: item.workout)
+                        } label: {
+                            PrescribedRunCard(workout: item.workout, item: run)
+                        }
+                        .buttonStyle(.plain)
+                    case .local(let session):
+                        NavigationLink {
+                            RunSessionDetailView(session: session, prescribedWorkout: item.workout)
+                        } label: {
+                            PrescribedLocalRunCard(workout: item.workout, session: session)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
@@ -216,23 +272,75 @@ struct HealthKitRunsView: View {
         }
 
         return planVM.allWorkouts.compactMap { workout in
-            guard workout.status == .done || workout.status == .partial,
-                  let uuid = healthKitUUID(for: workout),
-                  let run = runsById[uuid] else {
+            guard workout.status == .done || workout.status == .partial else {
                 return nil
             }
-            return PrescribedRun(workout: workout, run: run)
+
+            if let uuid = healthKitUUID(for: workout), let run = runsById[uuid] {
+                return PrescribedRun(workout: workout, source: .health(run))
+            }
+
+            if let session = localSession(for: workout) {
+                if let uuid = session.healthKitWorkoutUUID, let run = runsById[uuid] {
+                    return PrescribedRun(workout: workout, source: .health(run))
+                }
+                return PrescribedRun(workout: workout, source: .local(session))
+            }
+
+            return nil
         }
-        .sorted { $0.run.startDate > $1.run.startDate }
+        .sorted { $0.source.startDate > $1.source.startDate }
+    }
+
+    private var historyEntries: [RunHistoryEntry] {
+        let healthRuns = viewModel.allKnownRuns
+        guard showsPlanTab else {
+            return healthRuns.map { .health($0) }
+        }
+
+        let localEntries = runStore.sortedSessions
+            .filter { $0.status == "completed" && $0.sportType == "running" }
+            .filter { !isDuplicateLocalSession($0, healthRuns: healthRuns) }
+            .map { RunHistoryEntry.local($0) }
+
+        return (healthRuns.map { .health($0) } + localEntries)
+            .sorted { $0.startDate > $1.startDate }
     }
 
     private var linkedHealthKitUUIDs: [String] {
-        planVM.allWorkouts.compactMap { healthKitUUID(for: $0) }
+        let workoutUUIDs = planVM.allWorkouts.compactMap { healthKitUUID(for: $0) }
+        let localUUIDs = runStore.sessions.compactMap(\.healthKitWorkoutUUID)
+        return Array(Set(workoutUUIDs + localUUIDs))
     }
 
     private func healthKitUUID(for workout: WorkoutModel) -> String? {
         workout.appleHealthWorkoutUUID
             ?? RunWorkoutLinkStore.shared.healthKitUUID(forAthlyWorkoutId: workout.id)
+    }
+
+    private func localSession(for workout: WorkoutModel) -> RunSession? {
+        runStore.sessions
+            .filter { $0.athlyWorkoutId == workout.id && $0.status == "completed" }
+            .sorted { $0.startDate > $1.startDate }
+            .first
+    }
+
+    private func isDuplicateLocalSession(_ session: RunSession, healthRuns: [HealthKitRunItem]) -> Bool {
+        if let uuid = session.healthKitWorkoutUUID,
+           healthRuns.contains(where: { $0.id == uuid }) {
+            return true
+        }
+        return healthRuns.contains { healthRunMatches(session: session, run: $0) }
+    }
+
+    private func healthRunMatches(session: RunSession, run: HealthKitRunItem) -> Bool {
+        let startDelta = abs(session.startDate.timeIntervalSince(run.startDate))
+        let distanceDelta = abs(session.distanceMeters - run.distanceMeters)
+        let durationDelta = abs(session.durationSeconds - run.durationSeconds)
+        let distanceTolerance = max(100, run.distanceMeters * 0.03)
+        return startDelta < 120
+            && distanceDelta <= distanceTolerance
+            && durationDelta < 180
     }
 
     private func loadData() async {
@@ -433,6 +541,121 @@ struct HealthKitRunCard: View {
     }
 }
 
+struct LocalRunCard: View {
+    let session: RunSession
+
+    private var dateTimeText: String {
+        if Calendar.current.isDateInToday(session.startDate) {
+            session.startDate.formatted(date: .omitted, time: .shortened)
+        } else {
+            session.startDate.formatted(date: .abbreviated, time: .shortened)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(dateTimeText)
+                        .font(AthlyTheme.Typography.body(13))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.run")
+                            .font(.caption)
+                            .foregroundStyle(AthlyTheme.Color.primary)
+                        Text("Corrida")
+                            .font(AthlyTheme.Typography.semibold(17))
+                            .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    }
+                }
+                Spacer()
+                syncBadge
+            }
+
+            HStack(alignment: .top, spacing: 0) {
+                mainStat(value: session.formattedDuration, label: "Duracao")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(session.formattedDistance) km", label: "Distancia")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(session.formattedPace)/km", label: "Pace")
+            }
+            .padding(.vertical, 4)
+
+            HStack(spacing: 16) {
+                Label(
+                    String(format: "%.0f kcal", session.caloriesBurned),
+                    systemImage: "flame"
+                )
+
+                if session.elevationGainMeters > 0 {
+                    Label(
+                        String(format: "%.0f m", session.elevationGainMeters),
+                        systemImage: "mountain.2"
+                    )
+                }
+            }
+            .font(AthlyTheme.Typography.body(12))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+    }
+
+    private var syncBadge: some View {
+        let text: String
+        let icon: String
+        let color: Color
+        switch session.healthKitSyncStatus {
+        case .synced:
+            text = "Apple Health"
+            icon = "checkmark.circle.fill"
+            color = AthlyTheme.Color.success
+        case .failed:
+            text = "Pendente"
+            icon = "exclamationmark.triangle.fill"
+            color = AthlyTheme.Color.warning
+        case .unavailable:
+            text = "Local"
+            icon = "iphone"
+            color = AthlyTheme.Color.textSecondary
+        case .pending:
+            text = "Sincronizando"
+            icon = "arrow.triangle.2.circlepath"
+            color = AthlyTheme.Color.primary
+        case nil:
+            text = "Athly"
+            icon = "iphone"
+            color = AthlyTheme.Color.textSecondary
+        }
+
+        return Label(text, systemImage: icon)
+            .font(AthlyTheme.Typography.body(11))
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(color.opacity(0.14))
+            .clipShape(Capsule())
+    }
+
+    private func mainStat(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(AthlyTheme.Typography.semibold(16))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(label)
+                .font(AthlyTheme.Typography.body(11))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 struct PrescribedRunCard: View {
     let workout: WorkoutModel
     let item: HealthKitRunItem
@@ -515,11 +738,114 @@ struct PrescribedRunCard: View {
     }
 }
 
+struct PrescribedLocalRunCard: View {
+    let workout: WorkoutModel
+    let session: RunSession
+
+    private var dateTimeText: String {
+        if Calendar.current.isDateInToday(session.startDate) {
+            session.startDate.formatted(date: .omitted, time: .shortened)
+        } else {
+            session.startDate.formatted(date: .abbreviated, time: .shortened)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: workout.sportType.sfSymbol)
+                    .font(.system(size: 16))
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                    .frame(width: 22)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(dateTimeText)
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                    Text(workout.title)
+                        .font(AthlyTheme.Typography.semibold(17))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        .lineLimit(2)
+                    if let description = workout.description, !description.isEmpty {
+                        Text(description)
+                            .font(AthlyTheme.Typography.body(12))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+
+            HStack(alignment: .top, spacing: 0) {
+                mainStat(value: session.formattedDuration, label: "Tempo")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(session.formattedDistance) km", label: "Distancia")
+                Rectangle()
+                    .fill(AthlyTheme.Color.glassBorder)
+                    .frame(width: 1, height: 44)
+                mainStat(value: "\(session.formattedPace)/km", label: "Pace")
+            }
+            .padding(.vertical, 4)
+
+            HStack(spacing: 14) {
+                Label("Prescrito", systemImage: "list.clipboard")
+                Label(syncText, systemImage: syncIcon)
+            }
+            .font(AthlyTheme.Typography.body(12))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
+    }
+
+    private var syncText: String {
+        switch session.healthKitSyncStatus {
+        case .synced: return "Apple Health"
+        case .failed: return "Pendente Apple Health"
+        case .unavailable: return "Local Athly"
+        case .pending: return "Sincronizando"
+        case nil: return "Athly"
+        }
+    }
+
+    private var syncIcon: String {
+        switch session.healthKitSyncStatus {
+        case .synced: return "checkmark.circle"
+        case .failed: return "exclamationmark.triangle"
+        case .unavailable: return "iphone"
+        case .pending: return "arrow.triangle.2.circlepath"
+        case nil: return "iphone"
+        }
+    }
+
+    private func mainStat(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(AthlyTheme.Typography.semibold(16))
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Text(label)
+                .font(AthlyTheme.Typography.body(11))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 struct HealthKitRunsView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationStack {
             HealthKitRunsView()
         }
         .environmentObject(TrainingPlanViewModel())
+        .environmentObject(RunStore())
     }
 }

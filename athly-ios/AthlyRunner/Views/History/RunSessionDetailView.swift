@@ -3,6 +3,18 @@ import MapKit
 
 struct RunSessionDetailView: View {
     let session: RunSession
+    let prescribedWorkout: WorkoutModel?
+
+    init(session: RunSession, prescribedWorkout: WorkoutModel? = nil) {
+        self.session = session
+        self.prescribedWorkout = prescribedWorkout
+    }
+
+    @EnvironmentObject private var runStore: RunStore
+    @State private var isRetryingHealthKit = false
+    @State private var syncMessage: String?
+
+    private let healthKitService = HealthKitService()
 
     var body: some View {
         ZStack {
@@ -27,6 +39,12 @@ struct RunSessionDetailView: View {
                     }
                     .padding(.top, 24)
 
+                    syncStatusBanner
+
+                    if let prescribedWorkout {
+                        WorkoutPrescriptionSection(workout: prescribedWorkout)
+                    }
+
                     // Route map
                     if !session.routePoints.isEmpty {
                         let coords = session.routePoints.map { $0.coordinate }
@@ -43,6 +61,25 @@ struct RunSessionDetailView: View {
                     // Splits
                     if !session.splits.isEmpty {
                         splitsSection
+                    }
+
+                    if canRetryHealthKitSync {
+                        Button {
+                            Task { await retryHealthKitSync() }
+                        } label: {
+                            HStack {
+                                if isRetryingHealthKit {
+                                    ProgressView()
+                                        .tint(AthlyTheme.Color.textPrimary)
+                                } else {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                }
+                                Text(isRetryingHealthKit ? "Sincronizando..." : "Tentar Apple Health")
+                            }
+                        }
+                        .buttonStyle(AthlySecondaryButtonStyle())
+                        .disabled(isRetryingHealthKit)
+                        .padding(.horizontal, 16)
                     }
 
                     Spacer(minLength: AthlyTheme.Spacing.lg)
@@ -68,6 +105,61 @@ struct RunSessionDetailView: View {
             statCard(icon: "number", value: "\(session.splits.count)", label: "Splits")
         }
         .padding(.horizontal, 16)
+    }
+
+    private var syncStatusBanner: some View {
+        let status = session.healthKitSyncStatus
+        let text: String
+        let icon: String
+        let color: Color
+
+        switch status {
+        case .synced:
+            text = "Sincronizada com Apple Health"
+            icon = "checkmark.circle.fill"
+            color = AthlyTheme.Color.success
+        case .failed:
+            text = session.healthKitSyncError ?? "Falha ao sincronizar com Apple Health"
+            icon = "exclamationmark.triangle.fill"
+            color = AthlyTheme.Color.warning
+        case .unavailable:
+            text = "Salva localmente no Athly. Apple Health indisponivel neste dispositivo."
+            icon = "iphone"
+            color = AthlyTheme.Color.textSecondary
+        case .pending:
+            text = "Sincronizacao com Apple Health pendente."
+            icon = "arrow.triangle.2.circlepath"
+            color = AthlyTheme.Color.primary
+        case nil:
+            text = "Corrida salva localmente no Athly."
+            icon = "iphone"
+            color = AthlyTheme.Color.textSecondary
+        }
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                Text(syncMessage ?? text)
+                    .font(AthlyTheme.Typography.body(13))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    .multilineTextAlignment(.leading)
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(AthlyTheme.Color.surfaceCard)
+        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                .stroke(color.opacity(0.35), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+    }
+
+    private var canRetryHealthKitSync: Bool {
+        session.healthKitSyncStatus != .synced
     }
 
     private func statCard(icon: String, value: String, label: String) -> some View {
@@ -152,5 +244,75 @@ struct RunSessionDetailView: View {
     private func formatPace(_ pace: Double) -> String {
         guard pace > 0, pace.isFinite, pace < 3600 else { return "--:--" }
         return String(format: "%d:%02d /km", Int(pace) / 60, Int(pace) % 60)
+    }
+
+    private func retryHealthKitSync() async {
+        guard !isRetryingHealthKit else { return }
+        isRetryingHealthKit = true
+        syncMessage = nil
+        defer { isRetryingHealthKit = false }
+
+        do {
+            try await healthKitService.requestWriteAuthorization()
+            let savedWorkout = try await healthKitService.saveWorkout(result: runResult)
+            guard let uuid = savedWorkout?.uuid.uuidString else {
+                session.healthKitSyncStatus = .failed
+                session.healthKitSyncError = "O Apple Health nao retornou o identificador da corrida."
+                runStore.update(session)
+                syncMessage = session.healthKitSyncError
+                return
+            }
+
+            session.healthKitWorkoutUUID = uuid
+            session.healthKitSyncStatus = .synced
+            session.healthKitSyncError = nil
+            runStore.update(session)
+
+            if let workoutId = session.athlyWorkoutId {
+                RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
+                _ = try? await APIClient.shared.completeWorkout(
+                    workoutId: workoutId,
+                    appleHealthWorkoutUUID: uuid,
+                    actualDistanceMeters: session.distanceMeters,
+                    actualDurationSeconds: session.durationSeconds
+                )
+            }
+
+            syncMessage = "Sincronizada com Apple Health."
+        } catch {
+            session.healthKitSyncStatus = .failed
+            session.healthKitSyncError = error.localizedDescription
+            runStore.update(session)
+            syncMessage = "Falha ao sincronizar: \(error.localizedDescription)"
+        }
+    }
+
+    private var runResult: RunResult {
+        let locations = session.routePoints.map { $0.toCLLocation() }
+        return RunResult(
+            startDate: session.startDate,
+            endDate: session.endDate ?? session.startDate,
+            distanceMeters: session.distanceMeters,
+            durationSeconds: session.durationSeconds,
+            averagePaceSecondsPerKm: session.averagePaceSecondsPerKm,
+            elevationGainMeters: session.elevationGainMeters,
+            caloriesBurned: session.caloriesBurned,
+            locations: locations,
+            splits: session.splits.map {
+                SplitData(
+                    kilometer: $0.kilometer,
+                    distanceMeters: splitDistanceMeters($0),
+                    durationSeconds: $0.durationSeconds,
+                    elevationDelta: $0.elevationDelta
+                )
+            },
+            segmentRecords: session.segmentRecords ?? [],
+            pauseIntervals: session.pauseIntervals ?? []
+        )
+    }
+
+    private func splitDistanceMeters(_ split: Split) -> Double {
+        guard split.paceSecondsPerKm > 0 else { return 0 }
+        return split.durationSeconds / split.paceSecondsPerKm * 1000.0
     }
 }

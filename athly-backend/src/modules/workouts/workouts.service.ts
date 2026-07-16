@@ -24,6 +24,8 @@ const workoutCompletionSelect = {
   intensity: true,
   stravaActivityId: true,
   appleHealthWorkoutUUID: true,
+  actualDistanceMeters: true,
+  actualDurationSeconds: true,
   isGoalAttempt: true,
 } satisfies Prisma.WorkoutSelect;
 
@@ -232,6 +234,8 @@ export class WorkoutsService {
     status: WorkoutModel['status'];
     intensity: number | null;
     isGoalAttempt?: boolean;
+    actualDistanceMeters?: number | null;
+    actualDurationSeconds?: number | null;
     stravaActivityId?: string | null;
     appleHealthWorkoutUUID?: string | null;
   }): WorkoutModel {
@@ -246,6 +250,8 @@ export class WorkoutsService {
       status: workout.status,
       intensity: workout.intensity ?? undefined,
       isGoalAttempt: workout.isGoalAttempt ?? false,
+      actualDistanceMeters: workout.actualDistanceMeters ?? null,
+      actualDurationSeconds: workout.actualDurationSeconds ?? null,
       stravaActivityId: workout.stravaActivityId ?? null,
       appleHealthWorkoutUUID: workout.appleHealthWorkoutUUID ?? null,
     };
