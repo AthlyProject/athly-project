@@ -276,6 +276,7 @@ export class GeminiService {
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
+    minTrainingDate?: string,
   ): Promise<PlannerExecution> {
     const prompt = buildAssessmentPrompt(
       weekDates,
@@ -285,6 +286,7 @@ export class GeminiService {
       goal,
       userProfile,
       analyzedSessions,
+      minTrainingDate,
     );
 
     return this.runWithStructureGate(prompt, undefined, this.plannerModelName());
@@ -503,6 +505,13 @@ export class GeminiService {
       }
       if (day.sportType !== 'other' && !available.has(isoDayKey(day.date))) {
         defects.push(`${day.date} schedules training outside available days`);
+      }
+      if (
+        guardrails.minTrainingDate &&
+        day.sportType !== 'other' &&
+        day.date < guardrails.minTrainingDate
+      ) {
+        defects.push(`${day.date} schedules training before ${guardrails.minTrainingDate}`);
       }
     }
 

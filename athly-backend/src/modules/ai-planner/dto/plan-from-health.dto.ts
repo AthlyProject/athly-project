@@ -200,7 +200,10 @@ export class PlanFromHealthDto {
   @Type(() => DetailedSessionDto)
   detailedSessions?: DetailedSessionDto[];
 
-  @ApiPropertyOptional({ description: 'Week start date (YYYY-MM-DD), defaults to next Monday' })
+  @ApiPropertyOptional({
+    description:
+      'Week start date (YYYY-MM-DD). Defaults to the current week from today onward; if no available training day remains, uses next Monday.',
+  })
   @IsOptional()
   @IsDateString()
   weekStartDate?: string;

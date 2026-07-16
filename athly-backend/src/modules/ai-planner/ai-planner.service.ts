@@ -73,6 +73,15 @@ type GenerationJob = {
   updatedAt: number;
 };
 
+type PlanningWindow = {
+  weekDates: string[];
+  weekStartDate: Date;
+  weekEndDate: Date;
+  availableDays: string[];
+  trainingDays: number;
+  minTrainingDate?: string;
+};
+
 @Injectable()
 export class AiPlannerService {
   private readonly logger = new Logger(AiPlannerService.name);
@@ -88,11 +97,6 @@ export class AiPlannerService {
   ) {}
 
   async planFromHealth(userId: string, input: PlanFromHealthDto) {
-    const startMonday = input.weekStartDate ? new Date(input.weekStartDate) : this.getNextMonday();
-    const weekDates = this.getWeekDates(startMonday);
-    const weekStartDate = new Date(weekDates[0]);
-    const weekEndDate = new Date(weekDates[6]);
-
     // Fetch active goal and assessment for context (before creating training plan)
     const [activeGoalRecord, assessmentRecord, userHealth] = await Promise.all([
       this.prisma.userGoal.findFirst({ where: { userId, active: true }, orderBy: { createdAt: 'desc' } }),
@@ -101,6 +105,18 @@ export class AiPlannerService {
     ]);
     const activeGoal = activeGoalRecord ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal) : null;
     const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
+    const baseAvailableDays = userHealth?.availableDays?.length
+      ? userHealth.availableDays
+      : DEFAULT_AVAILABLE_DAYS;
+    const planningWindow = this.resolvePlanningWindow(input.weekStartDate, baseAvailableDays);
+    const {
+      weekDates,
+      weekStartDate,
+      weekEndDate,
+      availableDays,
+      trainingDays,
+      minTrainingDate,
+    } = planningWindow;
 
     const trainingPlan = await this.resolveTrainingPlan(
       userId,
@@ -123,9 +139,6 @@ export class AiPlannerService {
     });
 
     await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
-
-    const availableDays = userHealth?.availableDays?.length ? userHealth.availableDays : DEFAULT_AVAILABLE_DAYS;
-    const trainingDays = availableDays.length;
 
     // Calculate effort zones from health runs. O pace médio de corrida inteira inclui
     // aquecimento/volta à calma e subestima o VDOT — por isso também entram como
@@ -176,7 +189,13 @@ export class AiPlannerService {
     // Cold start: sem corridas no Apple Health → plano de avaliação (mesmo prompt do
     // antigo fluxo sem histórico, agora sob o único endpoint plan-from-health).
     const isAssessment = input.runs.length === 0;
-    const aiInput = this.buildAiInputFromHealthRuns(historicalRuns, weekDates, trainingDays, availableDays);
+    const aiInput = this.buildAiInputFromHealthRuns(
+      historicalRuns,
+      weekDates,
+      trainingDays,
+      availableDays,
+      minTrainingDate,
+    );
 
     // Dated-goal periodization: derive the current week's phase/targets and lay out
     // (or extend) the future PLANNED skeleton up to the event. Also refresh the goal's
@@ -219,7 +238,12 @@ export class AiPlannerService {
       analyzedSessions,
       promptLongitudinal,
     );
-    const plannerGuardrails = this.buildPlannerGuardrails(aiInput, deterministicContext, promptLongitudinal);
+    const plannerGuardrails = this.buildPlannerGuardrails(
+      aiInput,
+      deterministicContext,
+      promptLongitudinal,
+      minTrainingDate,
+    );
 
     // Reserva o slot da semana ANTES da chamada lenta do Gemini. Com a unique constraint
     // (trainingPlanId, weekStartDate), um duplo-submit concorrente recebe ConflictException
@@ -239,6 +263,7 @@ export class AiPlannerService {
           activeGoal,
           userProfile,
           analyzedSessions,
+          minTrainingDate,
         )
       : this.geminiService.generatePlan(
           aiInput,
@@ -537,6 +562,7 @@ export class AiPlannerService {
     input: AiPlannerInput,
     deterministicContext: DeterministicPlannerContext,
     longitudinalWeeks?: LongitudinalWeek[],
+    minTrainingDate?: string,
   ): PlannerGuardrails {
     return {
       weekDates: input.weekDates,
@@ -545,6 +571,7 @@ export class AiPlannerService {
       goalAttemptAllowed: deterministicContext.goalAttempt?.feasible,
       analysisOverride: this.buildAnalysisOverride(input, longitudinalWeeks),
       defaultPaceSecPerKm: parsePace(input.avgPace) ?? 390,
+      minTrainingDate,
     };
   }
 
@@ -782,6 +809,7 @@ export class AiPlannerService {
     weekDates: string[],
     trainingDays: number,
     availableDays: string[],
+    minTrainingDate?: string,
   ): AiPlannerInput {
     // Descarta outliers (<0.5km OU <3min) das stats agregadas — fallback para runs original se zerar.
     const validRunsRaw = runs.filter((r) => r.distanceMeters >= 500 && r.durationSeconds >= 180);
@@ -831,6 +859,7 @@ export class AiPlannerService {
       weekDates,
       trainingDays,
       availableDays,
+      minTrainingDate,
     };
   }
 
@@ -1065,19 +1094,95 @@ export class AiPlannerService {
     });
   }
 
-  private getNextMonday(): Date {
-    const now = new Date();
+  private resolvePlanningWindow(
+    inputWeekStartDate: string | undefined,
+    baseAvailableDays: string[],
+    now = new Date(),
+  ): PlanningWindow {
+    const normalizedAvailableDays = this.normalizeAvailableDays(baseAvailableDays);
+
+    if (inputWeekStartDate) {
+      return this.buildPlanningWindow(new Date(inputWeekStartDate), normalizedAvailableDays);
+    }
+
+    const todayISO = this.toISODate(now);
+    const currentMonday = this.getCurrentMonday(now);
+    const currentWeekDates = this.getWeekDates(currentMonday);
+    const availableSet = new Set(normalizedAvailableDays);
+    const remainingAvailableDays = currentWeekDates
+      .filter((date) => date >= todayISO)
+      .map((date) => this.isoDayKey(date))
+      .filter((day) => availableSet.has(day));
+
+    if (remainingAvailableDays.length > 0) {
+      return this.buildPlanningWindow(currentMonday, remainingAvailableDays, todayISO);
+    }
+
+    return this.buildPlanningWindow(this.addDays(currentMonday, 7), normalizedAvailableDays);
+  }
+
+  private buildPlanningWindow(
+    monday: Date,
+    availableDays: string[],
+    minTrainingDate?: string,
+  ): PlanningWindow {
+    const weekDates = this.getWeekDates(monday);
+    return {
+      weekDates,
+      weekStartDate: new Date(weekDates[0]),
+      weekEndDate: new Date(weekDates[6]),
+      availableDays,
+      trainingDays: availableDays.length,
+      minTrainingDate,
+    };
+  }
+
+  private normalizeAvailableDays(days: string[]): string[] {
+    const validDays = new Set([
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ]);
+    const seen = new Set<string>();
+    const normalized = days
+      .map((day) => day.toLowerCase())
+      .filter((day) => {
+        if (!validDays.has(day) || seen.has(day)) return false;
+        seen.add(day);
+        return true;
+      });
+
+    return normalized.length > 0 ? normalized : DEFAULT_AVAILABLE_DAYS;
+  }
+
+  private getCurrentMonday(now: Date): Date {
     const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     const monday = new Date(now);
-    if (day === 0) {
-      // Sunday: week is over, advance to next Monday
-      monday.setDate(now.getDate() + 1);
-    } else {
-      // Mon–Sat: go back to Monday of the current week
-      monday.setDate(now.getDate() - (day - 1));
-    }
+    const diff = day === 0 ? -6 : 1 - day;
+    monday.setDate(now.getDate() + diff);
     monday.setHours(0, 0, 0, 0);
     return monday;
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const next = new Date(date);
+    next.setDate(date.getDate() + days);
+    return next;
+  }
+
+  private toISODate(date: Date): string {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    return startOfDay.toISOString().split('T')[0];
+  }
+
+  private isoDayKey(date: string): string {
+    const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+    return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][day];
   }
 
   private getWeekDates(monday: Date): string[] {

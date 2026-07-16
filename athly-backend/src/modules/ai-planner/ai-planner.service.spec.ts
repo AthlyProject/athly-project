@@ -14,6 +14,51 @@ const bestSubEfforts = (sessions: DetailedSessionDto[]): RunDataForZones[] =>
 
 const paceOf = (c: RunDataForZones): number => (c.durationSeconds / c.distanceMeters) * 1000;
 
+describe('AiPlannerService.resolvePlanningWindow — primeira semana sem treino retroativo', () => {
+  const resolve = (weekStartDate: string | undefined, availableDays: string[], now: string) =>
+    (planner as any).resolvePlanningWindow(weekStartDate, availableDays, new Date(now));
+
+  it('mantém a semana atual e permite treino só nos dias disponíveis restantes', () => {
+    const window = resolve(
+      undefined,
+      ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'],
+      '2026-07-16T12:00:00Z',
+    );
+
+    expect(window.weekDates[0]).toBe('2026-07-13');
+    expect(window.weekDates[6]).toBe('2026-07-19');
+    expect(window.availableDays).toEqual(['friday', 'saturday']);
+    expect(window.trainingDays).toBe(2);
+    expect(window.minTrainingDate).toBe('2026-07-16');
+  });
+
+  it('cai para a próxima segunda quando não existe dia disponível restante na semana atual', () => {
+    const window = resolve(
+      undefined,
+      ['monday', 'tuesday', 'wednesday'],
+      '2026-07-16T12:00:00Z',
+    );
+
+    expect(window.weekDates[0]).toBe('2026-07-20');
+    expect(window.weekDates[6]).toBe('2026-07-26');
+    expect(window.availableDays).toEqual(['monday', 'tuesday', 'wednesday']);
+    expect(window.minTrainingDate).toBeUndefined();
+  });
+
+  it('preserva a semana explícita enviada no payload', () => {
+    const window = resolve(
+      '2026-07-06',
+      ['monday', 'wednesday', 'friday'],
+      '2026-07-16T12:00:00Z',
+    );
+
+    expect(window.weekDates[0]).toBe('2026-07-06');
+    expect(window.weekDates[6]).toBe('2026-07-12');
+    expect(window.availableDays).toEqual(['monday', 'wednesday', 'friday']);
+    expect(window.minTrainingDate).toBeUndefined();
+  });
+});
+
 function seg(
   label: SegmentLabel,
   distanceKm: number,

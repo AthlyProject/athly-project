@@ -104,6 +104,26 @@ ${goalAttempt}
 </deterministic_guardrails>`;
 }
 
+function buildDateConstraintsSection(weekDates: string[], minTrainingDate?: string): string {
+  if (!minTrainingDate || minTrainingDate <= weekDates[0]) return '';
+  const pastDates = weekDates.filter((date) => date < minTrainingDate);
+  const pastDatesText = pastDates.length > 0 ? pastDates.join(', ') : 'nenhuma';
+
+  return `
+<date_constraints>
+Hoje no backend: ${minTrainingDate}.
+Datas anteriores a hoje nesta semana (${pastDatesText}) já passaram.
+Essas datas devem ser descanso obrigatório (sportType "other") e NÃO podem ser usadas como treinos executados, pulados, perdidos ou como justificativa para prescrever recuperação.
+Treinos podem começar apenas em ${minTrainingDate} ou depois, respeitando os dias de treino listados.
+</date_constraints>`;
+}
+
+function buildDateConstraintBullet(minTrainingDate?: string): string {
+  return minTrainingDate
+    ? `- Datas anteriores a ${minTrainingDate} devem ser descanso obrigatório (sportType "other"); não prescreva treino retroativo nem use esses dias como causa de recuperação.`
+    : '';
+}
+
 function secondsToPace(secondsPerKm?: number): string {
   if (!secondsPerKm || secondsPerKm <= 0) return 'N/A';
   const m = Math.floor(secondsPerKm / 60);
@@ -483,6 +503,7 @@ export function buildAssessmentPrompt(
   goal?: ParsedGoal | null,
   userProfile?: UserProfileContext | null,
   analyzedSessions?: AnalyzedSession[],
+  minTrainingDate?: string,
 ): string {
   const restDays = 7 - trainingDays;
   const daysList = formatAvailableDays(availableDays);
@@ -493,6 +514,8 @@ export function buildAssessmentPrompt(
   const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
     ? buildRecentSessionsDetailSection(analyzedSessions)
     : '';
+  const dateConstraintsSection = buildDateConstraintsSection(weekDates, minTrainingDate);
+  const dateConstraintBullet = buildDateConstraintBullet(minTrainingDate);
 
   const goalSummary = goal?.summary ?? 'começar a correr';
 
@@ -529,6 +552,8 @@ ${effortZones.formatted}
 
 ${detailedSessionsSection}
 
+${dateConstraintsSection}
+
 <assessment_workouts>
 Estes são os treinos de avaliação que você deve distribuir nos ${trainingDays} dias de treino:
 ${workoutTemplates}
@@ -548,6 +573,7 @@ ${SEGMENT_RECIPES}
 <constraints>
 - Gere EXATAMENTE 7 entradas no total: ${trainingDays} dias de treino e ${restDays} dias de descanso.
 - Treinos SOMENTE nos dias: ${daysList}. Todos os outros dias = descanso.
+${dateConstraintBullet}
 - Mantenha todas as distâncias conservadoras (1–6 km) já que não há dados de linha de base.
 - Use RPE (escala 1–10) para guia de esforço, pois não há histórico de frequência cardíaca.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
@@ -651,6 +677,7 @@ export function buildPlannerPrompt(
     weekDates,
     trainingDays,
     availableDays,
+    minTrainingDate,
   } = input;
   const restDays = 7 - trainingDays;
   const hrCtx = avgHR ? `${avgHR} bpm` : 'não disponível — prescreva esforço por RPE (escala 1–10)';
@@ -668,6 +695,8 @@ export function buildPlannerPrompt(
   );
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
   const deterministicSection = buildDeterministicContextSection(deterministicContext);
+  const dateConstraintsSection = buildDateConstraintsSection(weekDates, minTrainingDate);
+  const dateConstraintBullet = buildDateConstraintBullet(minTrainingDate);
   const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
     ? buildRecentSessionsDetailSection(analyzedSessions)
     : '';
@@ -708,6 +737,8 @@ Estatísticas resumidas (calculadas a partir de ${runSummaries.length} corridas 
 - Dias de treino do atleta: ${daysList} (${trainingDays} dias de treino, ${restDays} de descanso)
 </athlete_data>
 
+${dateConstraintsSection}
+
 <task>
 1. Analise o nível de condicionamento físico, tendência de pace e padrões de treino do atleta.
 2. Monte um plano equilibrado de 7 dias (${weekDates[0]} a ${weekDates[6]}) seguindo princípios de periodização e alinhado ao objetivo declarado.
@@ -732,6 +763,7 @@ ${SEGMENT_RECIPES}
 
 <constraints>
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Todos os outros dias = descanso obrigatório.
+${dateConstraintBullet}
 - Nunca ultrapasse o volume máximo calculado em <deterministic_guardrails>. Se necessário, use menos dias de treino do que a disponibilidade máxima.
 - Sessões de intervalos devem incluir warmup de pelo menos 10 min e cooldown de pelo menos 5 min.
 - Se dados de FC não estiverem disponíveis, use target.rpe (1–10) em vez de target.hrZone.

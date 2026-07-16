@@ -24,6 +24,7 @@ export interface AiPlannerInput {
   weekDates: string[];
   trainingDays: number;
   availableDays: string[];
+  minTrainingDate?: string;
 }
 
 export interface RunAnalysis {
@@ -77,6 +78,7 @@ export interface PlannerGuardrails {
   goalAttemptAllowed?: boolean;
   analysisOverride?: Omit<RunAnalysis, 'title' | 'fitnessInsights'>;
   defaultPaceSecPerKm?: number;
+  minTrainingDate?: string;
 }
 
 export interface PreviousWeekAnalysis {

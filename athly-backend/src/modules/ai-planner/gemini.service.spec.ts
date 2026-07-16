@@ -128,6 +128,13 @@ describe('GeminiService.assessPlanQuality', () => {
     );
   });
 
+  it('bloqueia treino antes da data mínima permitida', () => {
+    const p = plan(true) as any;
+    expect(assessQuality(p, { ...guardrails, minTrainingDate: '2026-07-08' }).join(' ')).toContain(
+      'before 2026-07-08',
+    );
+  });
+
   it('bloqueia volume planejado acima do teto calculado pelo backend', () => {
     const p = plan(true) as any;
     expect(assessQuality(p, { ...guardrails, weeklyVolumeMaxKm: 5 }).join(' ')).toContain(
