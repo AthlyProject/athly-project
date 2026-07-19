@@ -5,6 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthPayload } from './dto/auth-payload.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { AppleLoginDto } from './dto/apple-login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -27,5 +29,17 @@ export class AuthController {
   @ApiOkResponse({ schema: { type: 'object', properties: { accessToken: { type: 'string' }, refreshToken: { type: 'string' } } } })
   async refresh(@Body() input: RefreshTokenDto) {
     return this.authService.refreshSession(input.refreshToken);
+  }
+
+  @Post('google')
+  @ApiOkResponse({ type: AuthPayload })
+  async google(@Body() input: GoogleLoginDto): Promise<AuthPayload> {
+    return this.authService.loginWithGoogle(input.idToken);
+  }
+
+  @Post('apple')
+  @ApiOkResponse({ type: AuthPayload })
+  async apple(@Body() input: AppleLoginDto): Promise<AuthPayload> {
+    return this.authService.loginWithApple(input.identityToken, input.fullName);
   }
 }

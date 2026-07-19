@@ -2,6 +2,7 @@ import SwiftUI
 import RevenueCat
 import UIKit
 import UserNotifications
+import GoogleSignIn
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
@@ -32,7 +33,16 @@ struct AthlyRunnerApp: App {
     init() {
         OTelClient.start()
         configureRevenueCat()
+        configureGoogleSignIn()
         configureUIKitAppearance()
+    }
+
+    /// Configura o GoogleSignIn com o client ID do Info.plist (Config.xcconfig → GIDClientID).
+    /// Sem key válida, o botão do Google simplesmente não autentica (fail-safe).
+    private func configureGoogleSignIn() {
+        guard let clientID = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String,
+              !clientID.isEmpty else { return }
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
     }
 
     /// Configura o RevenueCat antes de qualquer uso do SDK. A key vem do Info.plist
@@ -56,6 +66,10 @@ struct AthlyRunnerApp: App {
                 .environmentObject(runStore)
                 .environmentObject(entitlementManager)
                 .preferredColorScheme(.dark)
+                .onOpenURL { url in
+                    // Callback OAuth do GoogleSignIn (URL scheme reverso do client ID).
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 

@@ -20,6 +20,9 @@ packages:
   opentelemetry-swift:
     url: https://github.com/open-telemetry/opentelemetry-swift
     from: "1.10.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.1.0"          # Login social com Google
 
 # Variáveis definidas nas configFiles (ex: User.xcconfig) ficam disponíveis como build settings.
 # DEV_API_URL é definido em Config/User.xcconfig (gitignored) para testes no device físico.
@@ -56,6 +59,11 @@ targets:
         REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
         OTEL_ENDPOINT: "$(OTEL_ENDPOINT)"
         OTEL_API_KEY: "$(OTEL_API_KEY)"
+        # Login com Google (GoogleSignIn lê GIDClientID; o URL scheme recebe o callback OAuth).
+        GIDClientID: "$(GOOGLE_IOS_CLIENT_ID)"
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - "$(GOOGLE_REVERSED_CLIENT_ID)"
         CFBundleDisplayName: Athly
         CFBundleDevelopmentRegion: pt-BR
         UIApplicationSceneManifest:
@@ -92,6 +100,8 @@ targets:
       path: AthlyRunner/AthlyRunner.entitlements
       properties:
         com.apple.developer.healthkit: true
+        com.apple.developer.applesignin:
+          - Default
     dependencies:
       - target: AthlyRunnerLiveActivity
         embed: true
@@ -109,6 +119,8 @@ targets:
         product: URLSessionInstrumentation
       - package: opentelemetry-swift
         product: ResourceExtension
+      - package: GoogleSignIn
+        product: GoogleSignIn
 
   AthlyRunnerLiveActivity:
     type: app-extension

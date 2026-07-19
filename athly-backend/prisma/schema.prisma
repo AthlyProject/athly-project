@@ -65,7 +65,11 @@ model User {
   name                 String
   username             String    @unique
   email                String    @unique
-  password             String
+  // Opcional: contas criadas via login social (Apple/Google) não têm senha.
+  password             String?
+  // Identificadores estáveis dos provedores sociais (Apple `sub`, Google `sub`).
+  appleUserId          String?   @unique @map("apple_user_id")
+  googleUserId         String?   @unique @map("google_user_id")
   role                 RoleEnum  @default(STANDARD)
   dateOfBirth          DateTime? @map("date_of_birth")
   weight               Float?

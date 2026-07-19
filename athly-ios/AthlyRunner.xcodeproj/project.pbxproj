@@ -57,6 +57,7 @@
 		81946A13DCF291F1AE5D7C79 /* WatermarkRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8BDC4376954F0A3874FDAD /* WatermarkRenderer.swift */; };
 		8563D9904DA5E813F86AF29D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BEC4388E2A9A0B3925B6714 /* RootView.swift */; };
 		8653B9FE04FF4BC8FBC2AFF1 /* RunWorkoutLinkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13A000D77CCAB6D7D0AEA4C7 /* RunWorkoutLinkStore.swift */; };
+		86F67D97161BFC7986E55088 /* ProfileCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EFC59D86D826C74824DDC8B /* ProfileCompletionView.swift */; };
 		872EE89FE37E79C3D1D455AF /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E55A3660DBE7A9713E988F8 /* APIModels.swift */; };
 		89541A62B716A2302CADF335 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43825FAB86DD6123B208E2F0 /* ProfileView.swift */; };
 		8C5D2B7ADEE808376B2647B5 /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4F37700F3E2C1413DE8816 /* RunSession.swift */; };
@@ -80,6 +81,7 @@
 		AEFC38342268DAD4F1F2882A /* CueOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CD3C77B8C52ECCB65A3F4F3 /* CueOrchestrator.swift */; };
 		B21595AF51F46B6B95FB097E /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 078DBE2B1E868ED8FA47B6E4 /* RevenueCatUI */; };
 		B48FE1B2450E624E06AD80C1 /* ElevationAccumulatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9A999F3359D97185DDABC9 /* ElevationAccumulatorTests.swift */; };
+		B67E69E42400F6D548018FF5 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DCB3332446D77562046D464C /* GoogleSignIn */; };
 		B714663FC77D15A9426513B6 /* CameraCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D432A5B4E78E04AEC7BC6FBD /* CameraCaptureService.swift */; };
 		B7208C0F3FABE5913F5B5838 /* AdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B0FA61ED4D12139AEDC976 /* AdminView.swift */; };
 		B7B65DB86E084DC73C1A3E56 /* AdminViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667BCF56BDAF0D42E655FC89 /* AdminViewModel.swift */; };
@@ -165,6 +167,7 @@
 		2A8B5BB692820A64AB70C5FC /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
 		2C4E36E26B0934C42F267557 /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
 		2E004D596074B2667BB02EB4 /* cue_set_complete.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = cue_set_complete.wav; sourceTree = "<group>"; };
+		2EFC59D86D826C74824DDC8B /* ProfileCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCompletionView.swift; sourceTree = "<group>"; };
 		31AC3D9BB758915547F4FF81 /* AthlyRunnerAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerAttributes.swift; sourceTree = "<group>"; };
 		3597F81A2DF608DD0A87BD42 /* RouteTraceShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteTraceShape.swift; sourceTree = "<group>"; };
 		37BB25707C443BA2B43E1C96 /* TrainingPlanCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingPlanCache.swift; sourceTree = "<group>"; };
@@ -223,23 +226,23 @@
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
 		A30CE8F013C38A2757E76DC5 /* PermissionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGate.swift; sourceTree = "<group>"; };
-		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A75164A623027A41C4C25C85 /* AthlyRunnerLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerLiveActivityView.swift; sourceTree = "<group>"; };
 		AA4BCF2E850BE62335CCF83C /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
 		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
 		AD0525F3123E832B91111CDB /* OTelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTelClient.swift; sourceTree = "<group>"; };
 		AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryMapView.swift; sourceTree = "<group>"; };
-		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B47FE14A1B57EC51BA14F484 /* WorkoutModelDateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutModelDateTests.swift; sourceTree = "<group>"; };
 		B92F9D576847F505274A2EE1 /* RunStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStartView.swift; sourceTree = "<group>"; };
 		BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsViewModel.swift; sourceTree = "<group>"; };
 		BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		C1DCF3E119FBF425902C4614 /* AthlyRunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AthlyRunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1DCF3E119FBF425902C4614 /* AthlyRunnerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AthlyRunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBAAA9A2AF9EC88986BC2748 /* AnalysisSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisSummaryCard.swift; sourceTree = "<group>"; };
 		CCC11FC7C664AF6DBDB67914 /* CalendarDayCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDayCellView.swift; sourceTree = "<group>"; };
 		CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunTrackingView.swift; sourceTree = "<group>"; };
 		CE8BDC4376954F0A3874FDAD /* WatermarkRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkRenderer.swift; sourceTree = "<group>"; };
-		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D17E5A2E54C4ED6BA4C203F9 /* StreakCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalculator.swift; sourceTree = "<group>"; };
 		D432A5B4E78E04AEC7BC6FBD /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureService.swift; sourceTree = "<group>"; };
 		D83E95AB1CF3059ACB41221C /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
@@ -267,6 +270,7 @@
 				38D0781901F72FC63C1035B9 /* OpenTelemetryProtocolExporterHTTP in Frameworks */,
 				09E7AF563A2725DBBB6D3163 /* URLSessionInstrumentation in Frameworks */,
 				F7ADBEA74E3F5BCF60D6B06D /* ResourceExtension in Frameworks */,
+				B67E69E42400F6D548018FF5 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,16 +318,8 @@
 				EAAA0291E0D684D4E4C7E204 /* cue_boundary.wav */,
 				96D960C1566BCBFDE2F14E41 /* cue_countdown.wav */,
 				2E004D596074B2667BB02EB4 /* cue_set_complete.wav */,
-				47837A1C9807C20F139AAFFD /* Fonts */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		47837A1C9807C20F139AAFFD /* Fonts */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Fonts;
 			sourceTree = "<group>";
 		};
 		4AD132246EA73E642FD577CB /* Dashboard */ = {
@@ -401,13 +397,6 @@
 				8C2DB83D6D46D218396ED0D8 /* SupportView.swift */,
 			);
 			path = Profile;
-			sourceTree = "<group>";
-		};
-		79C1AC0CFCAA36DE5210CC73 /* Paywall */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Paywall;
 			sourceTree = "<group>";
 		};
 		8F1D031D3472F47F5367AE03 /* Config */ = {
@@ -508,6 +497,7 @@
 			children = (
 				AA4BCF2E850BE62335CCF83C /* AssessmentView.swift */,
 				6FDDFE35FC18F83F6B46C710 /* LoginView.swift */,
+				2EFC59D86D826C74824DDC8B /* ProfileCompletionView.swift */,
 				21885B168F66B38BD6D0490A /* RegisterView.swift */,
 			);
 			path = Auth;
@@ -550,7 +540,6 @@
 				4AD132246EA73E642FD577CB /* Dashboard */,
 				4B02E208D8C8419C4A2AE63D /* HealthKit */,
 				B7A2EE72493B61F86ACD88E6 /* History */,
-				79C1AC0CFCAA36DE5210CC73 /* Paywall */,
 				15F60C89F3D2DB03CAC3FA49 /* Plan */,
 				758D4093FA9413279A54895A /* Profile */,
 				FF0E3DE48115EEF5ADB9ADFD /* Run */,
@@ -603,6 +592,7 @@
 				DFFD306993612933E53FC52A /* OpenTelemetryProtocolExporterHTTP */,
 				9F037E68CDA92DF88433C6F6 /* URLSessionInstrumentation */,
 				2AF52BA2C6FE6A573EC32BCE /* ResourceExtension */,
+				DCB3332446D77562046D464C /* GoogleSignIn */,
 			);
 			productName = AthlyRunner;
 			productReference = A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */;
@@ -640,6 +630,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					DB2561B82C567797BDCC4C4E = {
+						DevelopmentTeam = 8C9GB8F87Q;
 						ProvisioningStyle = Automatic;
 					};
 					F92BA06724E8DB6D602E67D8 = {
@@ -658,6 +649,7 @@
 			mainGroup = 9AE8184FA3903A9DAE0D2AC9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				B87FEE175AE835693569C2CC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				2CC049C47442AD506C86E8FE /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 				A278C61A97EC683F28E7ABB7 /* XCRemoteSwiftPackageReference "opentelemetry-swift" */,
 			);
@@ -757,6 +749,7 @@
 				002740618CA2C429DC730F34 /* PermissionGate.swift in Sources */,
 				17E5A6E7C1B23ED25D92155B /* PlanView.swift in Sources */,
 				F5723F3719BA4F240D018011 /* PrivacyPolicyView.swift in Sources */,
+				86F67D97161BFC7986E55088 /* ProfileCompletionView.swift in Sources */,
 				89541A62B716A2302CADF335 /* ProfileView.swift in Sources */,
 				4ECEE0B4E929B963FEC68A5B /* PurchaseManager.swift in Sources */,
 				7D7F6E472C1957BDB6430CC0 /* RegisterView.swift in Sources */,
@@ -1017,7 +1010,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1057,7 +1049,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = AthlyRunner/AthlyRunner.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = AthlyRunner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1129,6 +1120,14 @@
 				minimumVersion = 1.10.0;
 			};
 		};
+		B87FEE175AE835693569C2CC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1156,6 +1155,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A278C61A97EC683F28E7ABB7 /* XCRemoteSwiftPackageReference "opentelemetry-swift" */;
 			productName = URLSessionInstrumentation;
+		};
+		DCB3332446D77562046D464C /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B87FEE175AE835693569C2CC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 		DFFD306993612933E53FC52A /* OpenTelemetryProtocolExporterHTTP */ = {
 			isa = XCSwiftPackageProductDependency;

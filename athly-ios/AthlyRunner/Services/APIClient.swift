@@ -65,6 +65,20 @@ actor APIClient {
         return response
     }
 
+    func loginWithGoogle(idToken: String) async throws -> AuthResponse {
+        let body = GoogleLoginRequest(idToken: idToken)
+        let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
+        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        return response
+    }
+
+    func loginWithApple(identityToken: String, fullName: String?) async throws -> AuthResponse {
+        let body = AppleLoginRequest(identityToken: identityToken, fullName: fullName)
+        let response: AuthResponse = try await post("/auth/apple", body: body, authenticated: false)
+        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        return response
+    }
+
     func getUserProfile() async throws -> UserProfile {
         try await get("/users/me")
     }
@@ -435,6 +449,15 @@ struct AuthResponse: Decodable {
     let refreshToken: String
 }
 
+struct GoogleLoginRequest: Encodable {
+    let idToken: String
+}
+
+struct AppleLoginRequest: Encodable {
+    let identityToken: String
+    let fullName: String?
+}
+
 struct RefreshRequest: Encodable {
     let refreshToken: String
 }
@@ -523,6 +546,7 @@ struct UserProfile: Decodable {
     let name: String?
     let username: String?
     let email: String
+    let dateOfBirth: String?
     let weight: Double?
     let height: Double?
     let availableDays: [String]?
