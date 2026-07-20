@@ -173,7 +173,9 @@ const KNOWN_DISTANCES: Record<string, number> = {
 };
 
 /** "5k" → 5000, "10k" → 10000, "21k"/half → 21097.5, "42k"/full → 42195, "8km" → 8000. */
-export function parseTargetDistanceMeters(targetDistance: string | null | undefined): number | null {
+export function parseTargetDistanceMeters(
+  targetDistance: string | null | undefined,
+): number | null {
   if (!targetDistance) return null;
   const s = targetDistance.trim().toLowerCase();
   if (KNOWN_DISTANCES[s] != null) return KNOWN_DISTANCES[s];

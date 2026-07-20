@@ -72,10 +72,7 @@ export class AuthService {
     this.emailService
       .sendWelcomeEmail(user.email, user.name)
       .catch((err: Error) =>
-        console.error(
-          `[Auth] Failed to send welcome email to ${user.email}:`,
-          err.message,
-        ),
+        console.error(`[Auth] Failed to send welcome email to ${user.email}:`, err.message),
       );
 
     const accessToken = this.signAccessToken(user);
@@ -96,9 +93,7 @@ export class AuthService {
 
     // Conta criada via login social (Apple/Google) não tem senha.
     if (!user.password) {
-      throw new UnauthorizedException(
-        'Esta conta usa login social. Entre com Apple ou Google.',
-      );
+      throw new UnauthorizedException('Esta conta usa login social. Entre com Apple ou Google.');
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
@@ -202,6 +197,107 @@ export class AuthService {
     return this.issueSession(user);
   }
 
+  /** Vincula uma conta Apple ao usuário autenticado (a partir do identity token). */
+  async linkApple(userId: string, identityToken: string) {
+    const audience = this.config.get<string>('APPLE_CLIENT_ID');
+    if (!audience) {
+      throw new UnauthorizedException('Login com Apple não está configurado');
+    }
+
+    let sub: string | undefined;
+    try {
+      const payload = await appleSignin.verifyIdToken(identityToken, { audience });
+      sub = payload?.sub;
+    } catch {
+      throw new UnauthorizedException('Token da Apple inválido');
+    }
+    if (!sub) {
+      throw new UnauthorizedException('Token da Apple inválido');
+    }
+
+    const existing = await this.prisma.user.findFirst({
+      where: { appleUserId: sub },
+    });
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Esta conta Apple já está vinculada a outro usuário.');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { appleUserId: sub },
+    });
+    return this.usersService.toUserModel(updated);
+  }
+
+  /** Vincula uma conta Google ao usuário autenticado (a partir do id_token). */
+  async linkGoogle(userId: string, idToken: string) {
+    const audience = this.config.get<string>('GOOGLE_IOS_CLIENT_ID');
+    if (!audience) {
+      throw new UnauthorizedException('Login com Google não está configurado');
+    }
+
+    let sub: string | undefined;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({ idToken, audience });
+      sub = ticket.getPayload()?.sub;
+    } catch {
+      throw new UnauthorizedException('Token do Google inválido');
+    }
+    if (!sub) {
+      throw new UnauthorizedException('Token do Google inválido');
+    }
+
+    const existing = await this.prisma.user.findFirst({
+      where: { googleUserId: sub },
+    });
+    if (existing && existing.id !== userId) {
+      throw new ConflictException('Esta conta Google já está vinculada a outro usuário.');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { googleUserId: sub },
+    });
+    return this.usersService.toUserModel(updated);
+  }
+
+  /**
+   * Desvincula um provedor social. Bloqueado quando removeria a última credencial de acesso
+   * (conta sem senha e sem o outro provedor vinculado).
+   */
+  async unlinkApple(userId: string) {
+    const user = await this.requireUnlinkable(userId, 'google');
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { appleUserId: null },
+    });
+    return this.usersService.toUserModel(updated);
+  }
+
+  async unlinkGoogle(userId: string) {
+    const user = await this.requireUnlinkable(userId, 'apple');
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { googleUserId: null },
+    });
+    return this.usersService.toUserModel(updated);
+  }
+
+  /** Garante que sobra ao menos uma credencial (senha ou o outro provedor) após desvincular. */
+  private async requireUnlinkable(userId: string, otherProvider: SocialProvider): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const otherLinked = otherProvider === 'google' ? !!user.googleUserId : !!user.appleUserId;
+    if (!user.password && !otherLinked) {
+      throw new BadRequestException(
+        'Defina uma senha ou vincule outra conta antes de desvincular esta.',
+      );
+    }
+    return user;
+  }
+
   /**
    * Resolve o usuário de um login social, na ordem: (1) já vinculado pelo id do provedor;
    * (2) mesmo email → vincula o provedor à conta existente (link-by-email); (3) cria uma
@@ -231,9 +327,7 @@ export class AuthService {
 
     if (!identity.email) {
       // Sem email (Apple em re-autorizações) e sem conta vinculada: não há como criar/associar.
-      throw new UnauthorizedException(
-        'Não foi possível identificar a conta. Tente novamente.',
-      );
+      throw new UnauthorizedException('Não foi possível identificar a conta. Tente novamente.');
     }
 
     const username = await this.generateUniqueUsername(identity.email);
@@ -250,10 +344,7 @@ export class AuthService {
     this.emailService
       .sendWelcomeEmail(user.email, user.name)
       .catch((err: Error) =>
-        console.error(
-          `[Auth] Failed to send welcome email to ${user.email}:`,
-          err.message,
-        ),
+        console.error(`[Auth] Failed to send welcome email to ${user.email}:`, err.message),
       );
 
     return user;

@@ -42,7 +42,9 @@ describe('GoalsService.createGoal — cold start (sem treinos no Apple Health)',
   it('cria meta datada SEM tempo-alvo sem bloquear, com feasibility nula', async () => {
     const { service, prisma } = makeService(datedGoalNoTime, null);
 
-    const result = await service.createGoal('user-1', { goalText: 'Correr 10km no dia 20 de agosto' } as any);
+    const result = await service.createGoal('user-1', {
+      goalText: 'Correr 10km no dia 20 de agosto',
+    } as any);
 
     expect(result.id).toBe('goal-1');
     // Sem targetTime não há o que avaliar → feasibility não é persistida.
@@ -52,17 +54,26 @@ describe('GoalsService.createGoal — cold start (sem treinos no Apple Health)',
 
   it('meta datada COM tempo-alvo no cold start gera veredito lowConfidence, sem bloquear', async () => {
     const { service, prisma } = makeService(
-      { ...datedGoalNoTime, targetTime: '00:50:00', experienceLevel: 'beginner', summary: 'Correr 10km em menos de 50min' },
+      {
+        ...datedGoalNoTime,
+        targetTime: '00:50:00',
+        experienceLevel: 'beginner',
+        summary: 'Correr 10km em menos de 50min',
+      },
       null, // sem UserEffortZone → DEFAULT_VDOT
     );
 
-    const result = await service.createGoal('user-1', { goalText: '10km sub-50 em 20 de agosto' } as any);
+    const result = await service.createGoal('user-1', {
+      goalText: '10km sub-50 em 20 de agosto',
+    } as any);
 
     expect(result.id).toBe('goal-1');
     const created = prisma.userGoal.create.mock.calls[0][0].data;
     expect(created.feasibility).toBeDefined();
     expect(created.feasibility.lowConfidence).toBe(true);
-    expect(['ready', 'feasible', 'ambitious', 'unrealistic']).toContain(created.feasibility.verdict);
+    expect(['ready', 'feasible', 'ambitious', 'unrealistic']).toContain(
+      created.feasibility.verdict,
+    );
   });
 
   it('usa a UserEffortZone quando existe (lowConfidence=false)', async () => {

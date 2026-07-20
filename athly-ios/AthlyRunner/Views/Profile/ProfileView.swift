@@ -1,5 +1,6 @@
 import SwiftUI
 import RevenueCatUI
+import AuthenticationServices
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -19,6 +20,10 @@ struct ProfileView: View {
     @State private var weightError: String?
     @State private var remindersEnabled = true
     @State private var showCustomerCenter = false
+    @State private var isLinkingApple = false
+    @State private var appleLinkError: String?
+    @State private var isLinkingGoogle = false
+    @State private var googleLinkError: String?
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -197,6 +202,23 @@ struct ProfileView: View {
                     }
                     .listRowBackground(AthlyTheme.Color.surfaceDark)
 
+                    // Vínculo com contas sociais (para quem se cadastrou por email/senha)
+                    Section("Contas conectadas") {
+                        appleLinkContent
+                        if let appleLinkError {
+                            Text(appleLinkError)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.error)
+                        }
+                        googleLinkContent
+                        if let googleLinkError {
+                            Text(googleLinkError)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.error)
+                        }
+                    }
+                    .listRowBackground(AthlyTheme.Color.surfaceDark)
+
                     // Account
                     Section("Conta") {
                         Button("Sair", role: .destructive) {
@@ -318,6 +340,132 @@ struct ProfileView: View {
                 CustomerCenterView()
             }
         }
+    }
+
+    // MARK: - Apple Account Linking
+
+    @ViewBuilder
+    private var appleLinkContent: some View {
+        if userProfile?.appleLinked == true {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(AthlyTheme.Color.success)
+                    .frame(width: 28)
+                Text("Conta Apple vinculada")
+                    .font(AthlyTheme.Typography.body())
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Spacer()
+                if isLinkingApple {
+                    ProgressView()
+                        .tint(AthlyTheme.Color.primary)
+                        .scaleEffect(0.8)
+                }
+            }
+            // Só permite desvincular se sobrar outra credencial (senha ou o outro provedor).
+            if canUnlinkApple {
+                Button("Desvincular", role: .destructive) {
+                    Task { await unlinkApple() }
+                }
+                .foregroundStyle(AthlyTheme.Color.error)
+                .disabled(isLinkingApple)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: "applelogo")
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        .frame(width: 28)
+                    Text("Vincular conta Apple")
+                        .font(AthlyTheme.Typography.body())
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Spacer()
+                    if isLinkingApple {
+                        ProgressView()
+                            .tint(AthlyTheme.Color.primary)
+                            .scaleEffect(0.8)
+                    }
+                }
+
+                Text("Vincule para poder entrar com a Apple além do seu email e senha.")
+                    .font(AthlyTheme.Typography.body(13))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+
+                SignInWithAppleButton(.continue) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    switch result {
+                    case .success(let auth):
+                        guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
+                        Task { await linkApple(credential: credential) }
+                    case .failure(let error):
+                        if (error as? ASAuthorizationError)?.code != .canceled {
+                            Task { @MainActor in appleLinkError = error.localizedDescription }
+                        }
+                    }
+                }
+                .signInWithAppleButtonStyle(.white)
+                .frame(height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .disabled(isLinkingApple)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var googleLinkContent: some View {
+        if userProfile?.googleLinked == true {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(AthlyTheme.Color.success)
+                    .frame(width: 28)
+                Text("Conta Google vinculada")
+                    .font(AthlyTheme.Typography.body())
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Spacer()
+                if isLinkingGoogle {
+                    ProgressView()
+                        .tint(AthlyTheme.Color.primary)
+                        .scaleEffect(0.8)
+                }
+            }
+            if canUnlinkGoogle {
+                Button("Desvincular", role: .destructive) {
+                    Task { await unlinkGoogle() }
+                }
+                .foregroundStyle(AthlyTheme.Color.error)
+                .disabled(isLinkingGoogle)
+            }
+        } else {
+            Button {
+                Task { await linkGoogle() }
+            } label: {
+                HStack {
+                    Image(systemName: "g.circle.fill")
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                        .frame(width: 28)
+                    Text("Vincular conta Google")
+                        .font(AthlyTheme.Typography.body())
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Spacer()
+                    if isLinkingGoogle {
+                        ProgressView()
+                            .tint(AthlyTheme.Color.primary)
+                            .scaleEffect(0.8)
+                    }
+                }
+            }
+            .disabled(isLinkingGoogle)
+        }
+    }
+
+    // Só permite desvincular um provedor se sobrar outra forma de entrar (senha ou o outro provedor).
+    private var canUnlinkApple: Bool {
+        userProfile?.hasPassword == true || userProfile?.googleLinked == true
+    }
+
+    private var canUnlinkGoogle: Bool {
+        userProfile?.hasPassword == true || userProfile?.appleLinked == true
     }
 
     // MARK: - Day Toggle Button
@@ -452,6 +600,60 @@ struct ProfileView: View {
             deleteError = authViewModel.errorMessage ?? "Não foi possível excluir a conta. Tente novamente."
         }
         // Em caso de sucesso, authViewModel.isAuthenticated vira false e a RootView volta ao login.
+    }
+
+    private func linkApple(credential: ASAuthorizationAppleIDCredential) async {
+        guard let tokenData = credential.identityToken,
+              let identityToken = String(data: tokenData, encoding: .utf8) else {
+            appleLinkError = "Não foi possível obter as credenciais da Apple."
+            return
+        }
+        isLinkingApple = true
+        appleLinkError = nil
+        do {
+            userProfile = try await APIClient.shared.linkApple(identityToken: identityToken)
+        } catch {
+            appleLinkError = error.localizedDescription
+        }
+        isLinkingApple = false
+    }
+
+    private func unlinkApple() async {
+        isLinkingApple = true
+        appleLinkError = nil
+        do {
+            userProfile = try await APIClient.shared.unlinkApple()
+        } catch {
+            appleLinkError = error.localizedDescription
+        }
+        isLinkingApple = false
+    }
+
+    private func linkGoogle() async {
+        isLinkingGoogle = true
+        googleLinkError = nil
+        do {
+            // nil = usuário cancelou a folha do Google.
+            guard let idToken = try await authViewModel.acquireGoogleIdToken() else {
+                isLinkingGoogle = false
+                return
+            }
+            userProfile = try await APIClient.shared.linkGoogle(idToken: idToken)
+        } catch {
+            googleLinkError = error.localizedDescription
+        }
+        isLinkingGoogle = false
+    }
+
+    private func unlinkGoogle() async {
+        isLinkingGoogle = true
+        googleLinkError = nil
+        do {
+            userProfile = try await APIClient.shared.unlinkGoogle()
+        } catch {
+            googleLinkError = error.localizedDescription
+        }
+        isLinkingGoogle = false
     }
 
     // MARK: - Computed stats

@@ -34,4 +34,14 @@ export class UserModel {
 
   @ApiProperty()
   assessmentCompleted: boolean;
+
+  // Login social: quais provedores estão vinculados e se há senha (necessária p/ desvincular).
+  @ApiProperty()
+  appleLinked: boolean;
+
+  @ApiProperty()
+  googleLinked: boolean;
+
+  @ApiProperty()
+  hasPassword: boolean;
 }

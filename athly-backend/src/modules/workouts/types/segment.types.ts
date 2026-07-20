@@ -2,13 +2,7 @@ import { SportType } from '@prisma/client';
 
 export const SEGMENT_SCHEMA_VERSION = 1 as const;
 
-export type SegmentKind =
-  | 'warmup'
-  | 'work'
-  | 'recovery'
-  | 'cooldown'
-  | 'rest'
-  | 'set';
+export type SegmentKind = 'warmup' | 'work' | 'recovery' | 'cooldown' | 'rest' | 'set';
 
 export type EndBy = 'distanceM' | 'durationSec' | 'reps';
 
@@ -55,11 +49,7 @@ export interface StrengthTarget {
   restAfterSec?: number;
 }
 
-export type SegmentTarget =
-  | RunTarget
-  | CycleTarget
-  | SwimTarget
-  | StrengthTarget;
+export type SegmentTarget = RunTarget | CycleTarget | SwimTarget | StrengthTarget;
 
 export interface Segment {
   id: string;

@@ -45,6 +45,36 @@ actor APIClient {
         NotificationCenter.default.post(name: .athlySessionExpired, object: nil)
     }
 
+    /// Extrai a mensagem de erro do corpo padrão do NestJS: `{ "message": string | string[] }`.
+    private static func backendMessage(from data: Data) -> String? {
+        guard !data.isEmpty else { return nil }
+
+        struct BackendError: Decodable {
+            let message: Message?
+            enum Message: Decodable {
+                case single(String)
+                case multiple([String])
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    if let text = try? container.decode(String.self) {
+                        self = .single(text)
+                    } else {
+                        self = .multiple((try? container.decode([String].self)) ?? [])
+                    }
+                }
+                var text: String {
+                    switch self {
+                    case .single(let value): return value
+                    case .multiple(let values): return values.joined(separator: "\n")
+                    }
+                }
+            }
+        }
+
+        let text = (try? JSONDecoder().decode(BackendError.self, from: data))?.message?.text
+        return (text?.isEmpty == false) ? text : nil
+    }
+
     var isAuthenticated: Bool {
         accessToken != nil
     }
@@ -77,6 +107,28 @@ actor APIClient {
         let response: AuthResponse = try await post("/auth/apple", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
+    }
+
+    /// Vincula a conta Apple ao usuário autenticado. Retorna o perfil atualizado.
+    func linkApple(identityToken: String) async throws -> UserProfile {
+        let body = AppleLoginRequest(identityToken: identityToken, fullName: nil)
+        return try await post("/auth/apple/link", body: body)
+    }
+
+    /// Desvincula a conta Apple do usuário autenticado. Retorna o perfil atualizado.
+    func unlinkApple() async throws -> UserProfile {
+        try await delete("/auth/apple/link")
+    }
+
+    /// Vincula a conta Google ao usuário autenticado. Retorna o perfil atualizado.
+    func linkGoogle(idToken: String) async throws -> UserProfile {
+        let body = GoogleLoginRequest(idToken: idToken)
+        return try await post("/auth/google/link", body: body)
+    }
+
+    /// Desvincula a conta Google do usuário autenticado. Retorna o perfil atualizado.
+    func unlinkGoogle() async throws -> UserProfile {
+        try await delete("/auth/google/link")
     }
 
     func getUserProfile() async throws -> UserProfile {
@@ -340,6 +392,12 @@ actor APIClient {
                 throw error
             }
         case 401:
+            // Requisições não autenticadas (login/registro/apple/google) não têm Authorization:
+            // não tentam refresh nem sinalizam "sessão expirada" — mostram o motivo real do backend
+            // (ex.: "Token da Apple inválido", "Login com Apple não está configurado").
+            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+            }
             if !isRefreshing {
                 isRefreshing = true
                 defer { isRefreshing = false }
@@ -392,6 +450,9 @@ actor APIClient {
         case 404:
             return nil
         case 401:
+            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+            }
             if !isRefreshing {
                 isRefreshing = true
                 defer { isRefreshing = false }
@@ -551,6 +612,9 @@ struct UserProfile: Decodable {
     let height: Double?
     let availableDays: [String]?
     let assessmentCompleted: Bool?
+    let appleLinked: Bool?
+    let googleLinked: Bool?
+    let hasPassword: Bool?
 }
 
 // MARK: - Errors

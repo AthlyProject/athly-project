@@ -13,7 +13,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         rejectUnauthorized: false,
       },
     });
-    
+
     super({
       adapter: new PrismaPg(pool),
     });

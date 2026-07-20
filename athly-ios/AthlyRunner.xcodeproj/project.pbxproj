@@ -226,23 +226,23 @@
 		A0D70C702152900AE2BB882B /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		A1FD217AB0DE86A175983B8C /* RoutePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutePoint.swift; sourceTree = "<group>"; };
 		A30CE8F013C38A2757E76DC5 /* PermissionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGate.swift; sourceTree = "<group>"; };
-		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A33CB4A0623C0A1D52A54A9C /* AthlyRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AthlyRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A75164A623027A41C4C25C85 /* AthlyRunnerLiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyRunnerLiveActivityView.swift; sourceTree = "<group>"; };
 		AA4BCF2E850BE62335CCF83C /* AssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssessmentView.swift; sourceTree = "<group>"; };
 		AB1309884231CEF8B58DE93E /* MockHealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthKitService.swift; sourceTree = "<group>"; };
 		AD0525F3123E832B91111CDB /* OTelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTelClient.swift; sourceTree = "<group>"; };
 		AE58923A63892C3FBFCFC1A2 /* SummaryMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryMapView.swift; sourceTree = "<group>"; };
-		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0011CD3154AEA3253E5CC1F /* AthlyRunnerLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AthlyRunnerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B47FE14A1B57EC51BA14F484 /* WorkoutModelDateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutModelDateTests.swift; sourceTree = "<group>"; };
 		B92F9D576847F505274A2EE1 /* RunStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStartView.swift; sourceTree = "<group>"; };
 		BA116E5FB557ED6572A772E3 /* HealthKitRunsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunsViewModel.swift; sourceTree = "<group>"; };
 		BD4CCCBFE6DD82D999EE5D13 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
-		C1DCF3E119FBF425902C4614 /* AthlyRunnerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AthlyRunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1DCF3E119FBF425902C4614 /* AthlyRunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AthlyRunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBAAA9A2AF9EC88986BC2748 /* AnalysisSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisSummaryCard.swift; sourceTree = "<group>"; };
 		CCC11FC7C664AF6DBDB67914 /* CalendarDayCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDayCellView.swift; sourceTree = "<group>"; };
 		CD6A04FB7B07B69601D4AE33 /* RunTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunTrackingView.swift; sourceTree = "<group>"; };
 		CE8BDC4376954F0A3874FDAD /* WatermarkRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkRenderer.swift; sourceTree = "<group>"; };
-		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CF169284D333AC4A17044374 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D17E5A2E54C4ED6BA4C203F9 /* StreakCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCalculator.swift; sourceTree = "<group>"; };
 		D432A5B4E78E04AEC7BC6FBD /* CameraCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureService.swift; sourceTree = "<group>"; };
 		D83E95AB1CF3059ACB41221C /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
@@ -1016,6 +1016,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTEL_API_KEY = "Authorization=Basic MTcwMDQ3MDpnbGNfZXlKdklqb2lNVGd5TVRNek1TSXNJbTRpT2lKaGRHaHNlU0lzSW1zaU9pSmtSRGxKTWxWT05EQTJZM1JWYUdreU1HZFpNVFpvT0dVaUxDSnRJanA3SW5JaU9pSndjbTlrTFdWMUxYZGxjM1F0TWlKOWZRPT0=";
+				OTEL_ENDPOINT = "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;
@@ -1055,6 +1057,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTEL_API_KEY = "Authorization=Basic MTcwMDQ3MDpnbGNfZXlKdklqb2lNVGd5TVRNek1TSXNJbTRpT2lKaGRHaHNlU0lzSW1zaU9pSmtSRGxKTWxWT05EQTJZM1JWYUdreU1HZFpNVFpvT0dVaUxDSnRJanA3SW5JaU9pSndjbTlrTFdWMUxYZGxjM1F0TWlKOWZRPT0=";
+				OTEL_ENDPOINT = "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(ATHLY_BUNDLE_ID)";
 				SDKROOT = iphoneos;
 				SWIFT_STRICT_CONCURRENCY = complete;

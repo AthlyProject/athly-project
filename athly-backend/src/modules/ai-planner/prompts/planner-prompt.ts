@@ -55,9 +55,8 @@ function formatAvailableDays(availableDays: string[]): string {
 
 function buildPreviousWeekSection(analysis: PreviousWeekAnalysis): string {
   const completionPct = Math.round(analysis.completionRate * 100);
-  const skippedList = analysis.skippedWorkouts.length > 0
-    ? analysis.skippedWorkouts.join(', ')
-    : 'nenhum';
+  const skippedList =
+    analysis.skippedWorkouts.length > 0 ? analysis.skippedWorkouts.join(', ') : 'nenhum';
 
   return `
 <previous_week_review>
@@ -79,7 +78,9 @@ Considere estes dados ao planejar a próxima semana:
 </previous_week_review>`;
 }
 
-function buildDeterministicContextSection(context: DeterministicPlannerContext | null | undefined): string {
+function buildDeterministicContextSection(
+  context: DeterministicPlannerContext | null | undefined,
+): string {
   if (!context) return '';
 
   const goalAttempt = context.goalAttempt
@@ -221,7 +222,9 @@ function buildGoalSection(goal: ParsedGoal): string {
     lines.push(`- Nível inferido: ${levelMap[goal.experienceLevel] ?? goal.experienceLevel}`);
   }
   if (!goal.eventDate && goal.targetDistance && goal.targetTime) {
-    lines.push(`- Sem data programada: avalie se o atleta tem condicionamento para tentar nesta semana (ver <goal_attempt_logic>).`);
+    lines.push(
+      `- Sem data programada: avalie se o atleta tem condicionamento para tentar nesta semana (ver <goal_attempt_logic>).`,
+    );
   }
   return `<user_goal>\n${lines.join('\n')}\n</user_goal>`;
 }
@@ -338,10 +341,14 @@ function buildUserProfileSection(profile: UserProfileContext): string {
     lines.push(`- Qualidade do sono: ${profile.sleepQuality}/10`);
   }
   if (profile.hasChronicPain) {
-    lines.push(`- Dor crônica: sim${profile.chronicPainDescription ? ` (${profile.chronicPainDescription})` : ''}`);
+    lines.push(
+      `- Dor crônica: sim${profile.chronicPainDescription ? ` (${profile.chronicPainDescription})` : ''}`,
+    );
   }
   if (profile.canRun3km) {
-    lines.push(`- Consegue correr 3km sem parar: ${profile.canRun3km === 'yes' ? 'sim' : 'ainda não'}`);
+    lines.push(
+      `- Consegue correr 3km sem parar: ${profile.canRun3km === 'yes' ? 'sim' : 'ainda não'}`,
+    );
   }
   if (profile.runningExperience) {
     const expMap: Record<string, string> = {
@@ -350,7 +357,9 @@ function buildUserProfileSection(profile: UserProfileContext): string {
       '1-3y': '1 a 3 anos',
       '>3y': 'mais de 3 anos',
     };
-    lines.push(`- Experiência de corrida: ${expMap[profile.runningExperience] ?? profile.runningExperience}`);
+    lines.push(
+      `- Experiência de corrida: ${expMap[profile.runningExperience] ?? profile.runningExperience}`,
+    );
   }
   if (profile.motivations?.length) {
     lines.push(`- Motivações: ${profile.motivations.join(', ')}`);
@@ -360,7 +369,9 @@ function buildUserProfileSection(profile: UserProfileContext): string {
     for (const flag of profile.parqFlags) {
       lines.push(`  ⚠️ ${flag}`);
     }
-    lines.push(`Prescreva treinos CONSERVADORES e inclua advertências de segurança nas instruções.`);
+    lines.push(
+      `Prescreva treinos CONSERVADORES e inclua advertências de segurança nas instruções.`,
+    );
   }
 
   if (lines.length === 0) return '';
@@ -511,9 +522,10 @@ export function buildAssessmentPrompt(
 
   const goalSection = goal ? buildGoalSection(goal) : '';
   const profileSection = userProfile ? buildUserProfileSection(userProfile) : '';
-  const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
-    ? buildRecentSessionsDetailSection(analyzedSessions)
-    : '';
+  const detailedSessionsSection =
+    analyzedSessions && analyzedSessions.length > 0
+      ? buildRecentSessionsDetailSection(analyzedSessions)
+      : '';
   const dateConstraintsSection = buildDateConstraintsSection(weekDates, minTrainingDate);
   const dateConstraintBullet = buildDateConstraintBullet(minTrainingDate);
 
@@ -697,13 +709,17 @@ export function buildPlannerPrompt(
   const deterministicSection = buildDeterministicContextSection(deterministicContext);
   const dateConstraintsSection = buildDateConstraintsSection(weekDates, minTrainingDate);
   const dateConstraintBullet = buildDateConstraintBullet(minTrainingDate);
-  const detailedSessionsSection = analyzedSessions && analyzedSessions.length > 0
-    ? buildRecentSessionsDetailSection(analyzedSessions)
+  const detailedSessionsSection =
+    analyzedSessions && analyzedSessions.length > 0
+      ? buildRecentSessionsDetailSection(analyzedSessions)
+      : '';
+  const longitudinalSection =
+    longitudinalWeeks && longitudinalWeeks.length > 0
+      ? buildLongitudinalTrendSection(longitudinalWeeks)
+      : '';
+  const laudoNoteSection = contextNote
+    ? `\n<plano_anterior>\n${contextNote}\n</plano_anterior>`
     : '';
-  const longitudinalSection = longitudinalWeeks && longitudinalWeeks.length > 0
-    ? buildLongitudinalTrendSection(longitudinalWeeks)
-    : '';
-  const laudoNoteSection = contextNote ? `\n<plano_anterior>\n${contextNote}\n</plano_anterior>` : '';
 
   const goalSummary = goal?.summary ?? 'evoluir como corredor';
 

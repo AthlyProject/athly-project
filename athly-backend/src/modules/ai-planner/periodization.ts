@@ -122,7 +122,9 @@ export function buildMacrocycle(input: MacrocycleInput): PlannedWeek[] {
     return 'peak';
   };
 
-  const maxFactor = experienceLevel ? MAX_VOLUME_FACTOR[experienceLevel] : DEFAULT_MAX_VOLUME_FACTOR;
+  const maxFactor = experienceLevel
+    ? MAX_VOLUME_FACTOR[experienceLevel]
+    : DEFAULT_MAX_VOLUME_FACTOR;
   const maxVolume = currentWeeklyVolumeKm * maxFactor;
   const raceKm = targetDistanceMeters / 1000;
   // Para provas curtas (5k/10k) os longões de base podem passar da distância de prova;
@@ -160,9 +162,7 @@ export function buildMacrocycle(input: MacrocycleInput): PlannedWeek[] {
     }
 
     const longRunKm =
-      phase === 'race'
-        ? raceKm
-        : Math.min(longRunCap, targetVolumeKm * longRunFraction(phase));
+      phase === 'race' ? raceKm : Math.min(longRunCap, targetVolumeKm * longRunFraction(phase));
 
     weeks.push({
       weekIndex: index,

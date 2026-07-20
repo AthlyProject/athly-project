@@ -15,7 +15,11 @@ import type { EffortZoneData, RunDataForZones, FormattedZones } from './types/ef
 export class EffortZoneService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOrCalculateForUser(userId: string, runs?: RunDataForZones[], dataSource?: 'apple_health'): Promise<FormattedZones> {
+  async getOrCalculateForUser(
+    userId: string,
+    runs?: RunDataForZones[],
+    dataSource?: 'apple_health',
+  ): Promise<FormattedZones> {
     // Com corridas novas, recalcula SEMPRE: o cálculo é matemática pura (custa
     // microssegundos) e zonas em cache viram pace prescrito defasado — a geração
     // de domingo podia reutilizar zonas da semana retrasada se caísse minutos antes
@@ -55,7 +59,10 @@ export class EffortZoneService {
     return this.formatForPrompt(saved);
   }
 
-  calculateFromRuns(runs: RunDataForZones[], dataSource: 'apple_health' | 'assessment'): EffortZoneData {
+  calculateFromRuns(
+    runs: RunDataForZones[],
+    dataSource: 'apple_health' | 'assessment',
+  ): EffortZoneData {
     const bestEffort = findBestEffort(runs);
 
     let vdot: number;
@@ -78,15 +85,15 @@ export class EffortZoneService {
     const paceZones = derivePaceZones(vdot);
 
     // Calculate HR zones if HR data available
-    const hrRuns = runs.filter(r => r.averageHeartRate && r.averageHeartRate > 0);
-    const maxHrRuns = runs.filter(r => r.maxHeartRate && r.maxHeartRate > 0);
+    const hrRuns = runs.filter((r) => r.averageHeartRate && r.averageHeartRate > 0);
+    const maxHrRuns = runs.filter((r) => r.maxHeartRate && r.maxHeartRate > 0);
 
     let hrZones: ReturnType<typeof deriveHrZones> | null = null;
     let maxHeartRate: number | null = null;
     let restHeartRate: number | null = null;
 
     if (maxHrRuns.length > 0 && hrRuns.length > 0) {
-      maxHeartRate = Math.max(...maxHrRuns.map(r => r.maxHeartRate!));
+      maxHeartRate = Math.max(...maxHrRuns.map((r) => r.maxHeartRate!));
       const avgHR = hrRuns.reduce((sum, r) => sum + r.averageHeartRate!, 0) / hrRuns.length;
       restHeartRate = Math.round(avgHR * 0.45);
       restHeartRate = Math.max(40, Math.min(80, restHeartRate));

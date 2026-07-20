@@ -47,14 +47,22 @@ describe('parsers', () => {
 
 describe('assessFeasibility — bandas de veredito', () => {
   it('ready quando o atleta já tem o VDOT exigido', () => {
-    const f = assessFeasibility({ ...base, currentVdot: REQUIRED_5K_SUB25 + 2, weeksAvailable: 10 });
+    const f = assessFeasibility({
+      ...base,
+      currentVdot: REQUIRED_5K_SUB25 + 2,
+      weeksAvailable: 10,
+    });
     expect(f.verdict).toBe('ready');
     expect(f.suggestion.realisticTimeSec).toBeNull();
     expect(f.suggestion.suggestedDate).toBeNull();
   });
 
   it('feasible quando o gap fecha dentro da janela', () => {
-    const f = assessFeasibility({ ...base, currentVdot: REQUIRED_5K_SUB25 - 3, weeksAvailable: 40 });
+    const f = assessFeasibility({
+      ...base,
+      currentVdot: REQUIRED_5K_SUB25 - 3,
+      weeksAvailable: 40,
+    });
     expect(f.verdict).toBe('feasible');
   });
 
@@ -64,7 +72,11 @@ describe('assessFeasibility — bandas de veredito', () => {
   });
 
   it('unrealistic quando o gap é grande para a janela, com alternativa sugerida', () => {
-    const f = assessFeasibility({ ...base, currentVdot: REQUIRED_5K_SUB25 - 10, weeksAvailable: 2 });
+    const f = assessFeasibility({
+      ...base,
+      currentVdot: REQUIRED_5K_SUB25 - 10,
+      weeksAvailable: 2,
+    });
     expect(f.verdict).toBe('unrealistic');
     // Tempo realista até a data é MAIS LENTO que a meta (25:00 = 1500s).
     expect(f.suggestion.realisticTimeSec).not.toBeNull();
@@ -108,7 +120,12 @@ describe('assessGoalFeasibility — wrapper sobre o ParsedGoal', () => {
 
   it('computa feasibility para meta datada', () => {
     const f = assessGoalFeasibility({
-      goal: { targetDistance: '5k', targetTime: '25:00', eventDate: '2026-12-31', experienceLevel: 'intermediate' },
+      goal: {
+        targetDistance: '5k',
+        targetTime: '25:00',
+        eventDate: '2026-12-31',
+        experienceLevel: 'intermediate',
+      },
       currentVdot: REQUIRED_5K_SUB25 - 3,
       asOfISO: '2026-06-24',
     });

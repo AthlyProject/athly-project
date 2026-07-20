@@ -4,13 +4,17 @@ import { IsNumber, IsOptional, IsString, Length, Min, ValidateNested } from 'cla
 import { DetailedSessionDto } from '../../ai-planner/dto/plan-from-health.dto';
 
 export class CompleteWorkoutDto {
-  @ApiPropertyOptional({ description: 'UUID of the HKWorkout that executed this prescribed workout' })
+  @ApiPropertyOptional({
+    description: 'UUID of the HKWorkout that executed this prescribed workout',
+  })
   @IsOptional()
   @IsString()
   @Length(1, 64)
   appleHealthWorkoutUUID?: string;
 
-  @ApiPropertyOptional({ description: 'Actual distance covered in meters (from the linked HK session)' })
+  @ApiPropertyOptional({
+    description: 'Actual distance covered in meters (from the linked HK session)',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -24,7 +28,8 @@ export class CompleteWorkoutDto {
 
   @ApiPropertyOptional({
     type: () => DetailedSessionDto,
-    description: 'Detailed execution reconstructed from the linked HKWorkout and Athly prescription',
+    description:
+      'Detailed execution reconstructed from the linked HKWorkout and Athly prescription',
   })
   @IsOptional()
   @ValidateNested()

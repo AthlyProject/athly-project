@@ -13,17 +13,11 @@ const VALID_END_BY: ReadonlySet<string> = new Set(['distanceM', 'durationSec', '
 
 const MAX_DEPTH = 2;
 
-export type ValidationResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+export type ValidationResult = { ok: true } | { ok: false; reason: string };
 
 const reasonAt = (path: string, msg: string): string => `${path}: ${msg}`;
 
-const validateNode = (
-  node: unknown,
-  path: string,
-  depth: number,
-): ValidationResult => {
+const validateNode = (node: unknown, path: string, depth: number): ValidationResult => {
   if (!node || typeof node !== 'object') {
     return { ok: false, reason: reasonAt(path, 'segment must be an object') };
   }

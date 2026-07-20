@@ -3,7 +3,7 @@ export interface EffortZoneData {
   maxHeartRate: number | null;
   restHeartRate: number | null;
   dataSource: 'apple_health' | 'assessment';
-  easyPaceMin: number;      // seconds per km
+  easyPaceMin: number; // seconds per km
   easyPaceMax: number;
   marathonPaceMin: number;
   marathonPaceMax: number;
@@ -18,11 +18,11 @@ export interface EffortZoneData {
 }
 
 export interface HrZones {
-  zone1: { min: number; max: number };  // Easy
-  zone2: { min: number; max: number };  // Marathon
-  zone3: { min: number; max: number };  // Threshold
-  zone4: { min: number; max: number };  // Interval
-  zone5: { min: number; max: number };  // Repetition
+  zone1: { min: number; max: number }; // Easy
+  zone2: { min: number; max: number }; // Marathon
+  zone3: { min: number; max: number }; // Threshold
+  zone4: { min: number; max: number }; // Interval
+  zone5: { min: number; max: number }; // Repetition
 }
 
 export interface CalculationMetadata {

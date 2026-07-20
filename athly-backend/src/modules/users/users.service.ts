@@ -87,6 +87,9 @@ export class UsersService {
       goals: user.goals ?? [],
       availableDays: user.availableDays ?? [],
       assessmentCompleted: user.assessmentCompleted,
+      appleLinked: !!user.appleUserId,
+      googleLinked: !!user.googleUserId,
+      hasPassword: !!user.password,
     };
   }
 }

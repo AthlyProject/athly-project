@@ -67,17 +67,20 @@ export class WorkoutExecutionAnalyzerService {
 
     const uuids = mergedSessions.map((s) => s.appleHealthWorkoutUUID);
 
-    const linkedByWorkoutId = new Map<string, Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]>();
-    const linkedByUuid = new Map<string, Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]>();
+    const linkedByWorkoutId = new Map<
+      string,
+      Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]
+    >();
+    const linkedByUuid = new Map<
+      string,
+      Awaited<ReturnType<PrismaService['workout']['findMany']>>[number]
+    >();
 
     if (workoutIds.length > 0 || uuids.length > 0) {
       const workouts = await this.prisma.workout.findMany({
         where: {
           userId,
-          OR: [
-            { id: { in: workoutIds } },
-            { appleHealthWorkoutUUID: { in: uuids } },
-          ],
+          OR: [{ id: { in: workoutIds } }, { appleHealthWorkoutUUID: { in: uuids } }],
         },
         include: { feedback: { orderBy: { createdAt: 'desc' }, take: 1 } },
       });
@@ -158,14 +161,20 @@ export class WorkoutExecutionAnalyzerService {
     sessions.forEach(add);
 
     for (const workout of persistedWorkouts) {
-      const persisted = this.extractPersistedExecutionDetails((workout as any).executionDetails, workout.id);
+      const persisted = this.extractPersistedExecutionDetails(
+        (workout as any).executionDetails,
+        workout.id,
+      );
       if (persisted) add(persisted);
     }
 
     return merged;
   }
 
-  private extractPersistedExecutionDetails(raw: unknown, workoutId: string): DetailedSessionDto | null {
+  private extractPersistedExecutionDetails(
+    raw: unknown,
+    workoutId: string,
+  ): DetailedSessionDto | null {
     if (!raw || typeof raw !== 'object') return null;
     const value = raw as Partial<DetailedSessionDto>;
     if (
@@ -200,9 +209,7 @@ export class WorkoutExecutionAnalyzerService {
     const dayKey = session.startDate.split('T')[0];
     const sameDay = byDay.get(dayKey);
     if (sameDay && sameDay.length > 0) {
-      return (
-        sameDay.find((w) => !w.appleHealthWorkoutUUID) ?? sameDay[0]
-      );
+      return sameDay.find((w) => !w.appleHealthWorkoutUUID) ?? sameDay[0];
     }
     return null;
   }
@@ -224,14 +231,18 @@ export class WorkoutExecutionAnalyzerService {
     const targetPaceRange = fromTree?.targetPaceRange ?? this.parsePaceRange(mainBlock?.targetPace);
     const repStructure =
       fromTree?.expectedRepCount && fromTree.expectedRepCount > 0
-        ? { expectedRepCount: fromTree.expectedRepCount, expectedRepDistanceKm: fromTree.expectedRepDistanceKm }
+        ? {
+            expectedRepCount: fromTree.expectedRepCount,
+            expectedRepDistanceKm: fromTree.expectedRepDistanceKm,
+          }
         : this.parseRepStructure(mainDescription);
     const expectedMainDurationMin =
       fromTree?.expectedMainDurationMin ??
       this.blockDurationMin(mainBlock) ??
       this.parseDurationPrescription(mainDescription);
     const totalDistanceKm =
-      fromTree?.totalDistanceKm ?? (legacyDistanceKm > 0 ? Number(legacyDistanceKm.toFixed(2)) : undefined);
+      fromTree?.totalDistanceKm ??
+      (legacyDistanceKm > 0 ? Number(legacyDistanceKm.toFixed(2)) : undefined);
 
     return {
       id: workout.id,
@@ -260,7 +271,8 @@ export class WorkoutExecutionAnalyzerService {
 
   private blockDurationMin(block: any): number | undefined {
     if (typeof block?.duration === 'number' && block.duration > 0) return block.duration;
-    if (typeof block?.durationMinutes === 'number' && block.durationMinutes > 0) return block.durationMinutes;
+    if (typeof block?.durationMinutes === 'number' && block.durationMinutes > 0)
+      return block.durationMinutes;
     return undefined;
   }
 
@@ -300,8 +312,10 @@ export class WorkoutExecutionAnalyzerService {
     const collectPace = (seg: any) => {
       const t = seg?.target;
       if (t && typeof t === 'object') {
-        if (typeof t.paceSecPerKmMin === 'number' && t.paceSecPerKmMin > 0) paceHints.push(t.paceSecPerKmMin);
-        if (typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0) paceHints.push(t.paceSecPerKmMax);
+        if (typeof t.paceSecPerKmMin === 'number' && t.paceSecPerKmMin > 0)
+          paceHints.push(t.paceSecPerKmMin);
+        if (typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0)
+          paceHints.push(t.paceSecPerKmMax);
       }
     };
 
@@ -309,7 +323,8 @@ export class WorkoutExecutionAnalyzerService {
 
     const accumulateMain = (seg: any, mult: number) => {
       const end = endOf(seg);
-      if (end.by === 'durationSec' && typeof end.value === 'number') mainDurationSec += end.value * mult;
+      if (end.by === 'durationSec' && typeof end.value === 'number')
+        mainDurationSec += end.value * mult;
       if (end.by === 'distanceM' && typeof end.value === 'number') {
         totalDistanceM += end.value * mult;
         mainDistanceMNoPace += end.value * mult;
@@ -334,7 +349,8 @@ export class WorkoutExecutionAnalyzerService {
       } else if (seg.kind === 'rest') {
         continue;
       } else if (seg.kind === 'set' && Array.isArray(seg.children)) {
-        const reps = typeof seg.repetitions === 'number' && seg.repetitions >= 1 ? seg.repetitions : 1;
+        const reps =
+          typeof seg.repetitions === 'number' && seg.repetitions >= 1 ? seg.repetitions : 1;
         for (const child of seg.children) {
           if (!child || typeof child !== 'object') continue;
           accumulateMain(child, reps);
@@ -342,7 +358,11 @@ export class WorkoutExecutionAnalyzerService {
             collectPace(child);
             repCount += reps;
             const childEnd = endOf(child);
-            if (repDistanceKm === undefined && childEnd.by === 'distanceM' && typeof childEnd.value === 'number') {
+            if (
+              repDistanceKm === undefined &&
+              childEnd.by === 'distanceM' &&
+              typeof childEnd.value === 'number'
+            ) {
               repDistanceKm = childEnd.value / 1000;
             }
           }
@@ -369,7 +389,10 @@ export class WorkoutExecutionAnalyzerService {
     if (paceHints.length > 0) {
       const lo = Math.min(...paceHints);
       const hi = Math.max(...paceHints);
-      targetPaceRange = lo === hi ? { minSecPerKm: lo - 10, maxSecPerKm: hi + 10 } : { minSecPerKm: lo, maxSecPerKm: hi };
+      targetPaceRange =
+        lo === hi
+          ? { minSecPerKm: lo - 10, maxSecPerKm: hi + 10 }
+          : { minSecPerKm: lo, maxSecPerKm: hi };
     }
 
     // Converte os trechos por distância usando o meio da faixa de pace, quando existir.
@@ -406,19 +429,21 @@ export class WorkoutExecutionAnalyzerService {
     const recoveries = session.segments.filter((s) => s.label === SegmentLabel.rec);
 
     if (reps.length === 0) {
-      const isIntervalPrescription = !!(prescribed?.expectedRepCount && prescribed.expectedRepCount > 0);
+      const isIntervalPrescription = !!(
+        prescribed?.expectedRepCount && prescribed.expectedRepCount > 0
+      );
       if (isIntervalPrescription) {
         if (isLowGranularity) {
           observations.push(
-            `O treino previa ${prescribed!.expectedRepCount} tiros, mas esta corrida chegou com granularidade baixa — não dá para verificar a execução dos tiros com segurança.`,
+            `O treino previa ${prescribed.expectedRepCount} tiros, mas esta corrida chegou com granularidade baixa — não dá para verificar a execução dos tiros com segurança.`,
           );
         } else if (session.splitsSource === 'route') {
           observations.push(
-            `O treino previa ${prescribed!.expectedRepCount} tiros, mas a corrida chegou apenas com splits por km (sem laps de treino) — não é possível verificar os tiros individualmente; NÃO conclua que o atleta deixou de executá-los.`,
+            `O treino previa ${prescribed.expectedRepCount} tiros, mas a corrida chegou apenas com splits por km (sem laps de treino) — não é possível verificar os tiros individualmente; NÃO conclua que o atleta deixou de executá-los.`,
           );
         } else {
           observations.push(
-            `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed!.expectedRepCount} repetições.`,
+            `Nenhum tiro detectado na corrida, embora o treino previsse ${prescribed.expectedRepCount} repetições.`,
           );
         }
       }
@@ -487,7 +512,9 @@ export class WorkoutExecutionAnalyzerService {
             );
           } else if (delta > 5) {
             pacingStrategy = 'fade';
-            observations.push('Pacing degradou na segunda metade do bloco principal (+5s/km ou mais).');
+            observations.push(
+              'Pacing degradou na segunda metade do bloco principal (+5s/km ou mais).',
+            );
           } else if (delta < -5) {
             pacingStrategy = 'negative';
           } else {
@@ -524,7 +551,8 @@ export class WorkoutExecutionAnalyzerService {
     const repPaces = reps
       .map((r) => r.avgPaceSecondsPerKm)
       .filter((p): p is number => typeof p === 'number' && p > 0);
-    const meanPaceSec = repPaces.length > 0 ? repPaces.reduce((s, p) => s + p, 0) / repPaces.length : 0;
+    const meanPaceSec =
+      repPaces.length > 0 ? repPaces.reduce((s, p) => s + p, 0) / repPaces.length : 0;
 
     let fastestIdx = -1;
     let slowestIdx = -1;
@@ -589,7 +617,9 @@ export class WorkoutExecutionAnalyzerService {
     } else if (pacingStrategy === 'negative') {
       observations.push('Negative split: atleta acelerou na segunda metade dos tiros.');
     } else if (pacingStrategy === 'erratic') {
-      observations.push('Variação grande entre tiros (>25s/km entre o mais rápido e o mais lento).');
+      observations.push(
+        'Variação grande entre tiros (>25s/km entre o mais rápido e o mais lento).',
+      );
     }
     if (avgHrRecoveryBpm && avgHrRecoveryBpm < 15) {
       observations.push(`Recuperação cardíaca baixa entre tiros (~${avgHrRecoveryBpm}bpm).`);
@@ -614,7 +644,9 @@ export class WorkoutExecutionAnalyzerService {
           ? `${formatPace(fastest)} (rep${fastestIdx + 1})`
           : undefined,
       slowestRep:
-        slowestIdx >= 0 && slowest > 0 ? `${formatPace(slowest)} (rep${slowestIdx + 1})` : undefined,
+        slowestIdx >= 0 && slowest > 0
+          ? `${formatPace(slowest)} (rep${slowestIdx + 1})`
+          : undefined,
       pacingStrategy,
       paceVarianceSeconds: variance !== undefined ? Math.round(variance) : undefined,
       targetAdherence,
@@ -773,7 +805,9 @@ export class WorkoutExecutionAnalyzerService {
     expectedRepCount?: number;
     expectedRepDistanceKm?: number;
   } {
-    const match = description.match(/(\d+)\s*(?:x|×|repet(?:i[çc][õo]es)?)\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*(m|km)/i);
+    const match = description.match(
+      /(\d+)\s*(?:x|×|repet(?:i[çc][õo]es)?)\s*(?:de\s*)?(\d+(?:[.,]\d+)?)\s*(m|km)/i,
+    );
     if (!match) return {};
     const count = parseInt(match[1], 10);
     const distNum = parseFloat(match[2].replace(',', '.'));

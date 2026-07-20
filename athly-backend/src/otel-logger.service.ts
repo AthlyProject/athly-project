@@ -57,8 +57,6 @@ export class OTelLoggerService implements LoggerService {
     });
 
     // Mirror to stdout for local dev readability (same structure)
-    process.stdout.write(
-      JSON.stringify({ time: new Date().toISOString(), level, ...body }) + '\n',
-    );
+    process.stdout.write(JSON.stringify({ time: new Date().toISOString(), level, ...body }) + '\n');
   }
 }

@@ -157,6 +157,23 @@ final class AuthViewModel: ObservableObject {
         needsProfileCompletion = false
     }
 
+    /// Apresenta o GoogleSignIn e devolve o idToken — usado para *vincular* a conta Google sem
+    /// trocar a sessão atual. Retorna `nil` se o usuário cancelar.
+    func acquireGoogleIdToken() async throws -> String? {
+        guard let presenting = Self.topViewController() else {
+            throw AuthError.missingProviderToken
+        }
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenting)
+            guard let idToken = result.user.idToken?.tokenString else {
+                throw AuthError.missingProviderToken
+            }
+            return idToken
+        } catch let error as GIDSignInError where error.code == .canceled {
+            return nil
+        }
+    }
+
     func logout() {
         clearLocalSession()
     }

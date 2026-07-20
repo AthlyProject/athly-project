@@ -55,7 +55,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @IsIn(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], { each: true })
+  @IsIn(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], {
+    each: true,
+  })
   availableDays?: string[];
 
   @ApiPropertyOptional()
