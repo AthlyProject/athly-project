@@ -542,54 +542,30 @@ struct CompleteWorkoutRequest: Encodable {
     }
 }
 
-// MARK: - Assessment payload (espelha SubmitAssessmentDto do backend / athly-frontend)
-
-struct AssessmentGoals: Encodable, Sendable {
-    var practicesRegularly: String = ""
-    var targetDistance: String = ""
-    var motivations: [String] = []
-}
-
-struct AssessmentActivityHistory: Encodable, Sendable {
-    var currentActivities: [String] = []
-    var trainingPreparedBy: String = ""
-    var canRun3km: String = ""
-    var runningExperience: String = ""
-}
-
-struct AssessmentTrainingPlanning: Encodable, Sendable {
-    var availableDays: [String] = []
-    var startDate: String = ""
-    var hasTargetDate: String = ""
-    var targetDate: String?
-}
-
-struct AssessmentPerformanceHealth: Encodable, Sendable {
-    var referenceDistance: String = "5k"
-    var bestTime: String = ""
-    var sleepQuality: Int?
-    var hasChronicPain: String = ""
-    var chronicPainDescription: String?
-}
-
-struct AssessmentParq: Encodable, Sendable {
-    var heartCondition: Bool?
-    var chestPainDuringActivity: Bool?
-    var chestPainLastMonth: Bool?
-    var dizzinessOrLossOfConsciousness: Bool?
-    var boneJointProblem: Bool?
-    var takingBloodPressureMeds: Bool?
-    var otherReasonToAvoidExercise: Bool?
-}
+// MARK: - Assessment payload v2 (espelha SubmitAssessmentDto do backend)
 
 struct AssessmentSubmissionRequest: Encodable, Sendable {
-    var goals = AssessmentGoals()
-    var activityHistory = AssessmentActivityHistory()
-    var trainingPlanning = AssessmentTrainingPlanning()
-    var performanceHealth = AssessmentPerformanceHealth()
-    var parq = AssessmentParq()
+    // P1 — Informações
     var gender: String?
-    var termsAccepted: Bool = false
+    var weight: Double?
+    var height: Double?
+    var restingHeartRate: Int?
+    var maxHeartRate: Int?
+    // P2 — Motivação
+    var motivations: [String] = []
+    // P3 — Frequência
+    var runningFrequency: String?
+    // P4 — Nível
+    var fitnessLevel: String?
+    // P5 — Pace (seconds/km, e.g. 345 = 5:45/km)
+    var comfortPaceSeconds: Int?
+    // P6 — Objetivos
+    var objective: String?
+    var objectiveDistance: String?
+    var objectiveType: String?
+    var targetTime: String?
+    // Required by backend
+    var termsAccepted: Bool = true
 }
 
 struct EntitlementResponse: Decodable, Sendable {
