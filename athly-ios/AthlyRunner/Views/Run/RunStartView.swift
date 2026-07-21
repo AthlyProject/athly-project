@@ -199,12 +199,12 @@ struct RunStartView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(AthlyTheme.Gradient.neon)
+                            .fill(AthlyTheme.Gradient.brand)
                             .frame(width: 130, height: 130)
                             .shadow(color: AthlyTheme.Color.primary.opacity(0.6), radius: 24, y: 8)
 
                         Circle()
-                            .stroke(AthlyTheme.Color.primaryNeon.opacity(0.3), lineWidth: 2)
+                            .stroke(AthlyTheme.Color.primary.opacity(0.3), lineWidth: 2)
                             .frame(width: 148, height: 148)
 
                         Text("INICIAR")

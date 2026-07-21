@@ -58,7 +58,7 @@ struct RunMapView: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = UIColor(AthlyTheme.Color.secondaryNeon)
+                renderer.strokeColor = UIColor(AthlyTheme.Color.secondary)
                 renderer.lineWidth = 4
                 return renderer
             }

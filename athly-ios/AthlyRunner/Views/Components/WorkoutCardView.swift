@@ -27,7 +27,7 @@ struct WorkoutCardView: View {
                         Text("Próximo treino")
                             .font(AthlyTheme.Typography.label())
                             .textCase(.uppercase)
-                            .foregroundStyle(AthlyTheme.Color.primaryNeon)
+                            .foregroundStyle(AthlyTheme.Color.primary)
                     }
                 }
             }

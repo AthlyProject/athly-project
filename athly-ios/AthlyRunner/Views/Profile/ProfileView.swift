@@ -501,7 +501,7 @@ struct ProfileView: View {
                             lineWidth: 1
                         )
                 )
-                .shadow(color: isSelected ? AthlyTheme.Color.primaryNeon.opacity(0.35) : .clear, radius: 6, y: 2)
+                .shadow(color: isSelected ? AthlyTheme.Color.primary.opacity(0.35) : .clear, radius: 6, y: 2)
         }
         .buttonStyle(.plain)
     }

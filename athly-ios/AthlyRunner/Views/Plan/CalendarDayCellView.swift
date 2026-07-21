@@ -18,7 +18,7 @@ struct CalendarDayCellView: View {
                 }
                 if isToday {
                     Circle()
-                        .stroke(AthlyTheme.Color.primaryNeon, lineWidth: 2)
+                        .stroke(AthlyTheme.Color.primary, lineWidth: 2)
                         .frame(width: 30, height: 30)
                 }
                 Text("\(day)")
@@ -27,7 +27,7 @@ struct CalendarDayCellView: View {
                         isSelected
                             ? AthlyTheme.Color.primary
                             : (isToday
-                                ? AthlyTheme.Color.primaryNeon
+                                ? AthlyTheme.Color.primary
                                 : (isInMonth ? AthlyTheme.Color.textPrimary : AthlyTheme.Color.textTertiary))
                     )
             }
