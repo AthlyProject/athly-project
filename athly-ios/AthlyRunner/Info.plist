@@ -64,10 +64,15 @@
 	<string>$(REVENUECAT_API_KEY)</string>
 	<key>UIAppFonts</key>
 	<array>
+		<string>SpaceGrotesk-Light.ttf</string>
 		<string>SpaceGrotesk-Regular.ttf</string>
 		<string>SpaceGrotesk-Medium.ttf</string>
 		<string>SpaceGrotesk-SemiBold.ttf</string>
 		<string>SpaceGrotesk-Bold.ttf</string>
+		<string>JetBrainsMono-Regular.ttf</string>
+		<string>JetBrainsMono-Medium.ttf</string>
+		<string>JetBrainsMono-SemiBold.ttf</string>
+		<string>JetBrainsMono-Bold.ttf</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
