@@ -73,17 +73,15 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
-    func register(email: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async {
+    func register(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.register(email: email, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
+            let response = try await APIClient.shared.register(email: email, password: password)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
-            UserMetrics.weightKg = weight
-            self.userName = name
-            // Usuário recém-criado sempre precisa responder o questionário de onboarding.
             assessmentCompleted = false
+            needsProfileCompletion = true
             isAuthenticated = true
             postAuthChanged(true)
         } catch {

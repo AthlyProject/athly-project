@@ -38,25 +38,19 @@ export class AuthService {
   ) {}
 
   async register(input: RegisterUserDto) {
-    if (input.password !== input.confirmPassword) {
-      throw new BadRequestException('As senhas não coincidem');
-    }
-
     const existingUser = await this.usersService.findByEmail(input.email);
     if (existingUser) {
       throw new ConflictException('Email já cadastrado');
     }
 
     const hashedPassword = await bcrypt.hash(input.password, 10);
+    const name = input.email.split('@')[0];
 
     const user = await this.prisma.user.create({
       data: {
         email: input.email,
-        name: input.name,
+        name,
         password: hashedPassword,
-        dateOfBirth: new Date(input.dateOfBirth),
-        weight: input.weight,
-        height: input.height,
       },
     });
 

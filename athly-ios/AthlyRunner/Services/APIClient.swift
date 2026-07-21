@@ -88,8 +88,8 @@ actor APIClient {
         return response
     }
 
-    func register(email: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async throws -> AuthResponse {
-        let body = RegisterRequest(email: email, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
+    func register(email: String, password: String) async throws -> AuthResponse {
+        let body = RegisterRequest(email: email, password: password)
         let response: AuthResponse = try await post("/auth/register", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
@@ -496,12 +496,7 @@ struct LoginRequest: Encodable {
 
 struct RegisterRequest: Encodable {
     let email: String
-    let name: String
     let password: String
-    let confirmPassword: String
-    let dateOfBirth: String
-    let weight: Double
-    let height: Double
 }
 
 struct AuthResponse: Decodable {
@@ -582,6 +577,7 @@ struct UserProfile: Decodable {
     let name: String?
     let username: String?
     let email: String
+    let gender: String?
     let dateOfBirth: String?
     let weight: Double?
     let height: Double?

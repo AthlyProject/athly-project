@@ -487,22 +487,22 @@ struct UpdateProfileRequest: Encodable, Sendable {
     let height: Double?
     let dateOfBirth: String?
     let availableDays: [String]?
+    let gender: String?
 
-    // Init com defaults para preservar os call sites existentes (name/weight/availableDays).
-    // Optionals nil são omitidos do JSON (Encodable usa encodeIfPresent), então o backend só
-    // atualiza os campos enviados.
     init(
         name: String? = nil,
         weight: Double? = nil,
         height: Double? = nil,
         dateOfBirth: String? = nil,
-        availableDays: [String]? = nil
+        availableDays: [String]? = nil,
+        gender: String? = nil
     ) {
         self.name = name
         self.weight = weight
         self.height = height
         self.dateOfBirth = dateOfBirth
         self.availableDays = availableDays
+        self.gender = gender
     }
 }
 

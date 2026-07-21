@@ -11,6 +11,9 @@ export class UserModel {
   @ApiPropertyOptional()
   username?: string;
 
+  @ApiPropertyOptional()
+  gender?: string;
+
   @ApiProperty()
   email: string;
 

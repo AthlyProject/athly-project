@@ -4,27 +4,11 @@ struct RegisterView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) var dismiss
 
-    @State private var name = ""
     @State private var email = ""
     @State private var password = ""
-    @State private var confirmPassword = ""
-    @State private var dateOfBirth = Date()
-    @State private var weightText = ""
-    @State private var heightText = ""
-
-    private var passwordsMatch: Bool {
-        !password.isEmpty && password == confirmPassword
-    }
 
     private var isFormValid: Bool {
-        !name.isEmpty && !email.isEmpty && passwordsMatch
-        && !weightText.isEmpty && !heightText.isEmpty
-    }
-
-    private var dateOfBirthString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: dateOfBirth)
+        !email.isEmpty && !password.isEmpty
     }
 
     var body: some View {
@@ -47,10 +31,6 @@ struct RegisterView: View {
                         .padding(.top, AthlyTheme.Spacing.lg)
 
                         VStack(spacing: 12) {
-                            TextField("Nome completo", text: $name)
-                                .textFieldStyle(AthlyTextFieldStyle())
-                                .textContentType(.name)
-
                             TextField("Email", text: $email)
                                 .textFieldStyle(AthlyTextFieldStyle())
                                 .textContentType(.emailAddress)
@@ -61,30 +41,6 @@ struct RegisterView: View {
                                 .textFieldStyle(AthlyTextFieldStyle())
                                 .textContentType(.newPassword)
 
-                            SecureField("Confirmar senha", text: $confirmPassword)
-                                .textFieldStyle(AthlyTextFieldStyle())
-                                .textContentType(.newPassword)
-
-                            if !confirmPassword.isEmpty && !passwordsMatch {
-                                Text("As senhas não coincidem")
-                                    .font(AthlyTheme.Typography.body(12))
-                                    .foregroundStyle(AthlyTheme.Color.error)
-                            }
-
-                            DatePicker("Data de nascimento", selection: $dateOfBirth, displayedComponents: .date)
-                                .datePickerStyle(.compact)
-                                .foregroundStyle(AthlyTheme.Color.textPrimary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-
-                            TextField("Peso (kg)", text: $weightText)
-                                .textFieldStyle(AthlyTextFieldStyle())
-                                .keyboardType(.decimalPad)
-
-                            TextField("Altura (cm)", text: $heightText)
-                                .textFieldStyle(AthlyTextFieldStyle())
-                                .keyboardType(.decimalPad)
-
                             if let error = authViewModel.errorMessage {
                                 Text(error)
                                     .font(AthlyTheme.Typography.body(12))
@@ -94,26 +50,13 @@ struct RegisterView: View {
 
                             Button {
                                 Task {
-                                    let weight = Double(weightText) ?? 0
-                                    let height = Double(heightText) ?? 0
-                                    await authViewModel.register(
-                                        email: email,
-                                        name: name,
-                                        password: password,
-                                        confirmPassword: confirmPassword,
-                                        dateOfBirth: dateOfBirthString,
-                                        weight: weight,
-                                        height: height
-                                    )
-                                    if authViewModel.isAuthenticated {
-                                        dismiss()
-                                    }
+                                    await authViewModel.register(email: email, password: password)
+                                    if authViewModel.isAuthenticated { dismiss() }
                                 }
                             } label: {
                                 Group {
                                     if authViewModel.isLoading {
-                                        ProgressView()
-                                            .tint(.white)
+                                        ProgressView().tint(.white)
                                     } else {
                                         Text("Registrar")
                                     }

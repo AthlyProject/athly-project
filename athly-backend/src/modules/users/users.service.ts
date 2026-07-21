@@ -49,6 +49,7 @@ export class UsersService {
     if (data.height !== undefined) updateData.height = data.height;
     if (data.goals !== undefined) updateData.goals = data.goals;
     if (data.availableDays !== undefined) updateData.availableDays = data.availableDays;
+    if (data.gender !== undefined) updateData.gender = data.gender;
     if (password !== undefined) {
       updateData.password = (await bcrypt.hash(password, 10)) as string;
     }
@@ -84,6 +85,7 @@ export class UsersService {
       height: user.height ?? undefined,
       goals: user.goals ?? [],
       availableDays: user.availableDays ?? [],
+      gender: user.gender ?? undefined,
       assessmentCompleted: user.assessmentCompleted,
       appleLinked: !!user.appleUserId,
       googleLinked: !!user.googleUserId,
