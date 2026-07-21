@@ -18,15 +18,6 @@ export class RegisterUserDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty({ message: 'Username é obrigatório' })
-  @MinLength(3, { message: 'Username deve ter no mínimo 3 caracteres' })
-  @Matches(/^[a-zA-Z0-9_-]+$/, {
-    message: 'Username deve conter apenas letras, números, _ e -',
-  })
-  userName: string;
-
-  @ApiProperty()
-  @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
   @MinLength(2, { message: 'Nome deve ter no mínimo 2 caracteres' })
   name: string;

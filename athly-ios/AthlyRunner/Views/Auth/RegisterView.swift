@@ -5,7 +5,6 @@ struct RegisterView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var name = ""
-    @State private var userName = ""
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -18,7 +17,7 @@ struct RegisterView: View {
     }
 
     private var isFormValid: Bool {
-        !name.isEmpty && !userName.isEmpty && !email.isEmpty && passwordsMatch
+        !name.isEmpty && !email.isEmpty && passwordsMatch
         && !weightText.isEmpty && !heightText.isEmpty
     }
 
@@ -51,11 +50,6 @@ struct RegisterView: View {
                             TextField("Nome completo", text: $name)
                                 .textFieldStyle(AthlyTextFieldStyle())
                                 .textContentType(.name)
-
-                            TextField("Username", text: $userName)
-                                .textFieldStyle(AthlyTextFieldStyle())
-                                .textContentType(.username)
-                                .autocapitalization(.none)
 
                             TextField("Email", text: $email)
                                 .textFieldStyle(AthlyTextFieldStyle())
@@ -104,7 +98,6 @@ struct RegisterView: View {
                                     let height = Double(heightText) ?? 0
                                     await authViewModel.register(
                                         email: email,
-                                        userName: userName,
                                         name: name,
                                         password: password,
                                         confirmPassword: confirmPassword,

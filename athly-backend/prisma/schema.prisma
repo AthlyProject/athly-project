@@ -63,7 +63,7 @@ enum WeeklyGoalStatus {
 model User {
   id                   String    @id @default(uuid())
   name                 String
-  username             String    @unique
+  username             String?   @unique
   email                String    @unique
   // Opcional: contas criadas via login social (Apple/Google) não têm senha.
   password             String?

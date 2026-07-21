@@ -8,8 +8,8 @@ export class UserModel {
   @ApiProperty()
   name: string;
 
-  @ApiProperty()
-  username: string;
+  @ApiPropertyOptional()
+  username?: string;
 
   @ApiProperty()
   email: string;

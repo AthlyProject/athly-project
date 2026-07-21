@@ -73,15 +73,15 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
-    func register(email: String, userName: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async {
+    func register(email: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.register(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
+            let response = try await APIClient.shared.register(email: email, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             UserMetrics.weightKg = weight
-            self.userName = userName
+            self.userName = name
             // Usuário recém-criado sempre precisa responder o questionário de onboarding.
             assessmentCompleted = false
             isAuthenticated = true
@@ -178,12 +178,9 @@ final class AuthViewModel: ObservableObject {
         clearLocalSession()
     }
 
-    /// Carrega o username de registro do perfil (`GET /users/me`) para a saudação do Dashboard.
-    /// Usa `name` como fallback caso o backend não devolva `username`. Falha silenciosa: a
-    /// saudação cai em "Atleta" quando vazio.
     func refreshUserName() async {
         guard let profile = try? await APIClient.shared.getUserProfile() else { return }
-        self.userName = profile.username ?? profile.name ?? ""
+        self.userName = profile.name ?? ""
         // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
         self.assessmentCompleted = profile.assessmentCompleted ?? true
         // Gate de completar perfil: contas sociais nascem sem data de nascimento/peso/altura.

@@ -23,13 +23,11 @@ export class UsersService {
     }
 
     const name = email.split('@')[0] || 'Usuário';
-    const username = email.split('@')[0] || 'user';
     const hashedPassword = (await bcrypt.hash(password, 10)) as string;
 
     return this.prisma.user.create({
       data: {
         email,
-        username,
         name,
         password: hashedPassword,
       },
@@ -78,7 +76,7 @@ export class UsersService {
     return {
       id: user.id,
       name: user.name,
-      username: user.username,
+      username: user.username ?? undefined,
       email: user.email,
       role: user.role,
       dateOfBirth: user.dateOfBirth ?? undefined,

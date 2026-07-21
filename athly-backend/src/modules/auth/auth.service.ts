@@ -47,19 +47,11 @@ export class AuthService {
       throw new ConflictException('Email já cadastrado');
     }
 
-    const existingUsername = await this.prisma.user.findUnique({
-      where: { username: input.userName },
-    });
-    if (existingUsername) {
-      throw new ConflictException('Username já está em uso');
-    }
-
     const hashedPassword = await bcrypt.hash(input.password, 10);
 
     const user = await this.prisma.user.create({
       data: {
         email: input.email,
-        username: input.userName,
         name: input.name,
         password: hashedPassword,
         dateOfBirth: new Date(input.dateOfBirth),
