@@ -96,7 +96,8 @@ const summaryBlock = (
   if (allHints.length > 0) {
     const lo = Math.min(...allHints);
     const hi = Math.max(...allHints);
-    block.targetPace = lo === hi ? `${formatPace(lo)}/km` : `${formatPace(lo)}-${formatPace(hi)}/km`;
+    block.targetPace =
+      lo === hi ? `${formatPace(lo)}/km` : `${formatPace(lo)}-${formatPace(hi)}/km`;
   }
   const proseParts = [...acc.prose];
   if (fallbackProse) proseParts.push(fallbackProse);

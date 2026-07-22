@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+import UIKit
+import AuthenticationServices
+import GoogleSignIn
 
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -11,6 +14,9 @@ final class AuthViewModel: ObservableObject {
     /// Gate do questionário de onboarding (mesmo fluxo do athly-frontend).
     /// nil = ainda não sabemos (perfil não carregado) → não bloqueia; false = precisa responder.
     @Published private(set) var assessmentCompleted: Bool? = nil
+    /// Gate de completar perfil: contas criadas via login social não têm data de nascimento/peso/altura.
+    /// `true` → mostra a etapa de completar perfil antes do questionário.
+    @Published private(set) var needsProfileCompletion = false
 
     private let tokenKey = "athly_access_token"
     private let refreshKey = "athly_refresh_token"
@@ -67,17 +73,15 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
-    func register(email: String, userName: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async {
+    func register(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.register(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
+            let response = try await APIClient.shared.register(email: email, password: password)
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
-            UserMetrics.weightKg = weight
-            self.userName = userName
-            // Usuário recém-criado sempre precisa responder o questionário de onboarding.
             assessmentCompleted = false
+            needsProfileCompletion = true
             isAuthenticated = true
             postAuthChanged(true)
         } catch {
@@ -87,18 +91,99 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
+    // MARK: - Login social
+
+    /// Fluxo do Google: abre a folha do GoogleSignIn, troca o id_token no backend e entra.
+    func signInWithGoogle() async {
+        errorMessage = nil
+        guard let presenting = Self.topViewController() else {
+            errorMessage = "Não foi possível abrir o login do Google."
+            return
+        }
+
+        isLoading = true
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenting)
+            guard let idToken = result.user.idToken?.tokenString else {
+                throw AuthError.missingProviderToken
+            }
+            let response = try await APIClient.shared.loginWithGoogle(idToken: idToken)
+            await completeSocialSignIn(response)
+        } catch let error as GIDSignInError where error.code == .canceled {
+            // Usuário cancelou — não é erro.
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    /// Fluxo da Apple: recebe a credential do `SignInWithAppleButton`, troca o identity token no
+    /// backend e entra. O nome só vem na primeira autorização; repassamos quando disponível.
+    func signInWithApple(credential: ASAuthorizationAppleIDCredential) async {
+        errorMessage = nil
+        isLoading = true
+        do {
+            guard let tokenData = credential.identityToken,
+                  let identityToken = String(data: tokenData, encoding: .utf8) else {
+                throw AuthError.missingProviderToken
+            }
+            let fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            let response = try await APIClient.shared.loginWithApple(
+                identityToken: identityToken,
+                fullName: fullName.isEmpty ? nil : fullName
+            )
+            await completeSocialSignIn(response)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    /// Passo comum aos dois provedores: salva tokens, entra e carrega o perfil (que define os gates
+    /// de completar perfil e de questionário).
+    private func completeSocialSignIn(_ response: AuthResponse) async {
+        saveTokens(access: response.accessToken, refresh: response.refreshToken)
+        isAuthenticated = true
+        postAuthChanged(true)
+        await refreshUserName()
+    }
+
+    /// Chamado pela `ProfileCompletionView` após o PUT /users/profile com sucesso.
+    func markProfileCompleted() {
+        needsProfileCompletion = false
+    }
+
+    /// Apresenta o GoogleSignIn e devolve o idToken — usado para *vincular* a conta Google sem
+    /// trocar a sessão atual. Retorna `nil` se o usuário cancelar.
+    func acquireGoogleIdToken() async throws -> String? {
+        guard let presenting = Self.topViewController() else {
+            throw AuthError.missingProviderToken
+        }
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenting)
+            guard let idToken = result.user.idToken?.tokenString else {
+                throw AuthError.missingProviderToken
+            }
+            return idToken
+        } catch let error as GIDSignInError where error.code == .canceled {
+            return nil
+        }
+    }
+
     func logout() {
         clearLocalSession()
     }
 
-    /// Carrega o username de registro do perfil (`GET /users/me`) para a saudação do Dashboard.
-    /// Usa `name` como fallback caso o backend não devolva `username`. Falha silenciosa: a
-    /// saudação cai em "Atleta" quando vazio.
     func refreshUserName() async {
         guard let profile = try? await APIClient.shared.getUserProfile() else { return }
-        self.userName = profile.username ?? profile.name ?? ""
+        self.userName = profile.name ?? ""
         // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
         self.assessmentCompleted = profile.assessmentCompleted ?? true
+        // Gate de completar perfil: contas sociais nascem sem data de nascimento/peso/altura.
+        self.needsProfileCompletion =
+            profile.dateOfBirth == nil || profile.weight == nil || profile.height == nil
     }
 
     /// Chamado pela AssessmentView após o POST /assessment com sucesso.
@@ -129,6 +214,7 @@ final class AuthViewModel: ObservableObject {
         }
         isAuthenticated = false
         assessmentCompleted = nil
+        needsProfileCompletion = false
         postAuthChanged(false)
     }
 
@@ -172,5 +258,29 @@ final class AuthViewModel: ObservableObject {
         KeychainHelper.save(refresh, for: refreshKey)
         defaults.removeObject(forKey: tokenKey)
         defaults.removeObject(forKey: refreshKey)
+    }
+
+    /// View controller ativo para apresentar a folha do GoogleSignIn.
+    private static func topViewController() -> UIViewController? {
+        let windowScene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        let window = windowScene?.windows.first { $0.isKeyWindow } ?? windowScene?.windows.first
+        var top = window?.rootViewController
+        while let presented = top?.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+}
+
+enum AuthError: LocalizedError {
+    case missingProviderToken
+
+    var errorDescription: String? {
+        switch self {
+        case .missingProviderToken:
+            return "Não foi possível obter as credenciais do provedor. Tente novamente."
+        }
     }
 }

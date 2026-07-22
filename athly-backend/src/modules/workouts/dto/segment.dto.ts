@@ -18,21 +18,9 @@ import {
   ValidationArguments,
 } from 'class-validator';
 import { SportType } from '@prisma/client';
-import type {
-  EndBy,
-  Segment,
-  SegmentKind,
-  SegmentTarget,
-} from '../types/segment.types';
+import type { EndBy, Segment, SegmentKind, SegmentTarget } from '../types/segment.types';
 
-const SEGMENT_KINDS: SegmentKind[] = [
-  'warmup',
-  'work',
-  'recovery',
-  'cooldown',
-  'rest',
-  'set',
-];
+const SEGMENT_KINDS: SegmentKind[] = ['warmup', 'work', 'recovery', 'cooldown', 'rest', 'set'];
 
 const END_BY_VALUES: EndBy[] = ['distanceM', 'durationSec', 'reps'];
 
@@ -58,30 +46,57 @@ export class EndConditionDto {
 }
 
 export class RunTargetDto {
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   paceSecPerKmMin?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   paceSecPerKmMax?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) @Max(5)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
   hrZone?: 1 | 2 | 3 | 4 | 5;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) @Max(10)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
   rpe?: number;
 }
 
 export class CycleTargetDto {
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   powerWattsMin?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   powerWattsMax?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   cadenceRpm?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) @Max(5)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
   hrZone?: 1 | 2 | 3 | 4 | 5;
 }
 
@@ -96,27 +111,46 @@ export class SwimTargetDto {
   @IsIn([25, 50])
   poolLengthM?: 25 | 50;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   targetSecPer100m?: number;
 }
 
 export class StrengthTargetDto {
-  @ApiProperty() @IsString()
+  @ApiProperty()
+  @IsString()
   exercise!: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   reps?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   loadKg?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsNumber() @Min(0) @Max(150)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(150)
   loadPctOf1RM?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsString()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   tempoSec?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   restAfterSec?: number;
 }
 
@@ -126,9 +160,7 @@ export class SegmentTreeConsistency implements ValidatorConstraintInterface {
 
   validate(segments: unknown): boolean {
     if (!Array.isArray(segments)) return false;
-    return segments.every((s) =>
-      this.validateNode(s as Segment, 0, []),
-    );
+    return segments.every((s) => this.validateNode(s as Segment, 0, []));
   }
 
   private validateNode(node: Segment, depth: number, errors: string[]): boolean {
@@ -161,10 +193,14 @@ export class SegmentDto implements Segment {
   @IsIn(SEGMENT_KINDS)
   kind!: SegmentKind;
 
-  @ApiPropertyOptional() @IsOptional() @IsString()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   label?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   cue?: string;
 
   @ApiPropertyOptional({ type: () => EndConditionDto })
@@ -173,7 +209,10 @@ export class SegmentDto implements Segment {
   @Type(() => EndConditionDto)
   end?: EndConditionDto;
 
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
   repetitions?: number;
 
   @ApiPropertyOptional()
@@ -188,7 +227,9 @@ export class SegmentDto implements Segment {
   @Type(() => SegmentDto)
   children?: SegmentDto[];
 
-  @ApiPropertyOptional() @IsOptional() @IsString()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
 

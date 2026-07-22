@@ -210,7 +210,8 @@ export class WeeklyGoalsService {
       weekEndDate: weeklyGoal.weekEndDate,
       status: weeklyGoal.status,
       metrics: (weeklyGoal.metrics as Record<string, unknown> | undefined) ?? undefined,
-      previousWeekAnalysis: (weeklyGoal.previousWeekAnalysis as Record<string, unknown> | undefined) ?? undefined,
+      previousWeekAnalysis:
+        (weeklyGoal.previousWeekAnalysis as Record<string, unknown> | undefined) ?? undefined,
       createdAt: weeklyGoal.createdAt,
       updatedAt: weeklyGoal.updatedAt,
     };

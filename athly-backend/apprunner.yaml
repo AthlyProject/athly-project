@@ -39,3 +39,7 @@ run:
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:PAYWALL_ENABLED::"
     - name: REVENUECAT_WEBHOOK_AUTH
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:REVENUECAT_WEBHOOK_AUTH::"
+    - name: APPLE_CLIENT_ID
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:APPLE_CLIENT_ID::"
+    - name: GOOGLE_IOS_CLIENT_ID
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GOOGLE_IOS_CLIENT_ID::"

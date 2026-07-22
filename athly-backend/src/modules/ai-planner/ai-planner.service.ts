@@ -8,7 +8,7 @@ import {
   WorkoutStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { GeminiService, type PlannerExecution } from './gemini.service';
+import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { AssessmentService } from '../assessment/assessment.service';
 import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
@@ -34,10 +34,7 @@ import {
   parseTargetDistanceMeters,
   parseTargetTimeSeconds,
 } from './goal-feasibility';
-import {
-  computeLongitudinalWeeks,
-  computePreviousWeekAnalysis,
-} from './weekly-metrics.util';
+import { computeLongitudinalWeeks, computePreviousWeekAnalysis } from './weekly-metrics.util';
 import { TrainingReportService } from '../training-report/training-report.service';
 import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
 import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
@@ -99,24 +96,23 @@ export class AiPlannerService {
   async planFromHealth(userId: string, input: PlanFromHealthDto) {
     // Fetch active goal and assessment for context (before creating training plan)
     const [activeGoalRecord, assessmentRecord, userHealth] = await Promise.all([
-      this.prisma.userGoal.findFirst({ where: { userId, active: true }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.userGoal.findFirst({
+        where: { userId, active: true },
+        orderBy: { createdAt: 'desc' },
+      }),
       this.assessmentService.findByUser(userId),
       this.prisma.user.findUnique({ where: { id: userId }, select: { availableDays: true } }),
     ]);
-    const activeGoal = activeGoalRecord ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal) : null;
+    const activeGoal = activeGoalRecord
+      ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal)
+      : null;
     const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
     const baseAvailableDays = userHealth?.availableDays?.length
       ? userHealth.availableDays
       : DEFAULT_AVAILABLE_DAYS;
     const planningWindow = this.resolvePlanningWindow(input.weekStartDate, baseAvailableDays);
-    const {
-      weekDates,
-      weekStartDate,
-      weekEndDate,
-      availableDays,
-      trainingDays,
-      minTrainingDate,
-    } = planningWindow;
+    const { weekDates, weekStartDate, weekEndDate, availableDays, trainingDays, minTrainingDate } =
+      planningWindow;
 
     const trainingPlan = await this.resolveTrainingPlan(
       userId,
@@ -153,7 +149,11 @@ export class AiPlannerService {
       })),
       ...this.bestSubEffortsFromSessions(input.detailedSessions ?? []),
     ];
-    const effortZones = await this.effortZoneService.getOrCalculateForUser(userId, runsForZones, 'apple_health');
+    const effortZones = await this.effortZoneService.getOrCalculateForUser(
+      userId,
+      runsForZones,
+      'apple_health',
+    );
 
     const detailedSessionsForMetrics = input.detailedSessions ?? [];
 
@@ -184,7 +184,11 @@ export class AiPlannerService {
     // Longitudinal trend only makes sense mid-plan (requires prior WeeklyGoal metrics).
     const longitudinalWeeks = isFirstGeneration
       ? undefined
-      : await this.buildLongitudinalTrend(trainingPlan.id, weekStartDate, detailedSessionsForMetrics);
+      : await this.buildLongitudinalTrend(
+          trainingPlan.id,
+          weekStartDate,
+          detailedSessionsForMetrics,
+        );
 
     // Cold start: sem corridas no Apple Health → plano de avaliação (mesmo prompt do
     // antigo fluxo sem histórico, agora sob o único endpoint plan-from-health).
@@ -200,7 +204,8 @@ export class AiPlannerService {
     // Dated-goal periodization: derive the current week's phase/targets and lay out
     // (or extend) the future PLANNED skeleton up to the event. Also refresh the goal's
     // feasibility snapshot with the freshest VDOT.
-    const currentWeeklyVolumeKm = aiInput.avgDistKm > 0 ? aiInput.avgDistKm * trainingDays : trainingDays * 4;
+    const currentWeeklyVolumeKm =
+      aiInput.avgDistKm > 0 ? aiInput.avgDistKm * trainingDays : trainingDays * 4;
     const plannedWeek = await this.resolveCurrentPlannedWeek({
       trainingPlanId: trainingPlan.id,
       startDateISO: trainingPlan.startDate,
@@ -210,7 +215,12 @@ export class AiPlannerService {
       currentWeeklyVolumeKm,
       preReadMetrics: plannedCurrentRow?.metrics ?? null,
     });
-    await this.refreshGoalFeasibility(activeGoalRecord?.id, activeGoal, effortZones.vdotScore, weekDates[0]);
+    await this.refreshGoalFeasibility(
+      activeGoalRecord?.id,
+      activeGoal,
+      effortZones.vdotScore,
+      weekDates[0],
+    );
 
     // Continuidade entre planos: um plano novo não tem semanas próprias (cold start).
     // Se houver um laudo do plano anterior, usamos seu contexto APENAS no prompt —
@@ -219,10 +229,16 @@ export class AiPlannerService {
     let promptLongitudinal = longitudinalWeeks;
     let laudoContextNote: string | undefined;
     let laudoConsumed = false;
-    if (!isAssessment && !previousWeekAnalysis && (!longitudinalWeeks || longitudinalWeeks.length === 0)) {
+    if (
+      !isAssessment &&
+      !previousWeekAnalysis &&
+      (!longitudinalWeeks || longitudinalWeeks.length === 0)
+    ) {
       const report = await this.trainingReportService.getForUser(userId);
       if (report) {
-        promptLongitudinal = report.longitudinalWeeks?.length ? report.longitudinalWeeks : undefined;
+        promptLongitudinal = report.longitudinalWeeks?.length
+          ? report.longitudinalWeeks
+          : undefined;
         promptPreviousWeek = report.previousWeekAnalysis ?? null;
         laudoContextNote = report.objective
           ? `Contexto do plano ANTERIOR (laudo, recém-encerrado): o atleta vinha treinando para "${report.objective}". As semanas e a "semana anterior" abaixo são desse período — use como linha de base de aderência/volume/tendência ao planejar o novo ciclo.`
@@ -254,30 +270,31 @@ export class AiPlannerService {
       weekEndDate,
     );
 
-    const plannerResult = await (isAssessment
-      ? this.geminiService.generateAssessmentPlan(
-          weekDates,
-          trainingDays,
-          availableDays,
-          effortZones,
-          activeGoal,
-          userProfile,
-          analyzedSessions,
-          minTrainingDate,
-        )
-      : this.geminiService.generatePlan(
-          aiInput,
-          effortZones,
-          promptPreviousWeek,
-          activeGoal,
-          userProfile,
-          analyzedSessions,
-          promptLongitudinal,
-          plannedWeek,
-          laudoContextNote,
-          plannerGuardrails,
-          deterministicContext,
-        )
+    const plannerResult = await (
+      isAssessment
+        ? this.geminiService.generateAssessmentPlan(
+            weekDates,
+            trainingDays,
+            availableDays,
+            effortZones,
+            activeGoal,
+            userProfile,
+            analyzedSessions,
+            minTrainingDate,
+          )
+        : this.geminiService.generatePlan(
+            aiInput,
+            effortZones,
+            promptPreviousWeek,
+            activeGoal,
+            userProfile,
+            analyzedSessions,
+            promptLongitudinal,
+            plannedWeek,
+            laudoContextNote,
+            plannerGuardrails,
+            deterministicContext,
+          )
     ).catch(async (err) => {
       // Gemini falhou ou reprovou no gate de estrutura → libera o slot reservado.
       await this.releaseReservation(reservedWeeklyGoal.id);
@@ -286,84 +303,84 @@ export class AiPlannerService {
 
     const { weeklyGoal, workouts } = await this.prisma
       .$transaction(async (tx) => {
-      // Atualiza o placeholder reservado (não cria nova weekly_goal) — a reserva já garantiu unicidade.
-      const weeklyGoal = await tx.weeklyGoal.update({
-        where: { id: reservedWeeklyGoal.id },
-        data: {
-          status: WeeklyGoalStatus.GENERATED,
-          metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
-          previousWeekAnalysis: previousWeekAnalysis
-            ? (previousWeekAnalysis as unknown as Prisma.InputJsonValue)
-            : undefined,
-        },
-      });
+        // Atualiza o placeholder reservado (não cria nova weekly_goal) — a reserva já garantiu unicidade.
+        const weeklyGoal = await tx.weeklyGoal.update({
+          where: { id: reservedWeeklyGoal.id },
+          data: {
+            status: WeeklyGoalStatus.GENERATED,
+            metrics: plannerResult.parsed.analysis as unknown as Prisma.InputJsonValue,
+            previousWeekAnalysis: previousWeekAnalysis
+              ? (previousWeekAnalysis as unknown as Prisma.InputJsonValue)
+              : undefined,
+          },
+        });
 
-      const workouts = await Promise.all(
-        plannerResult.parsed.weekPlan.map((day) =>
-          tx.workout.create({
-            data: {
-              trainingPlanId: trainingPlan.id,
-              weeklyGoalId: weeklyGoal.id,
-              userId,
-              dateScheduled: new Date(day.date),
-              sportType: day.sportType,
-              title: day.title,
-              description: day.description,
-              blocks: this.deriveBlocksForPersistence(day) as unknown as Prisma.InputJsonValue,
-              segments: {
-                schemaVersion: SEGMENT_SCHEMA_VERSION,
-                sport: day.sportType,
-                segments: day.segments ?? [],
-              } as unknown as Prisma.InputJsonValue,
-              status: WorkoutStatus.scheduled,
-              intensity: day.intensity,
-              isGoalAttempt: day.isGoalAttempt ?? false,
-            },
-          }),
-        ),
-      );
-
-      // Persist AI reasoning
-      await Promise.all(
-        plannerResult.parsed.weekPlan.map(async (day, idx) => {
-          if (day.reasoning && day.sportType !== 'other') {
-            await tx.aiReasoning.create({
+        const workouts = await Promise.all(
+          plannerResult.parsed.weekPlan.map((day) =>
+            tx.workout.create({
               data: {
-                workoutId: workouts[idx].id,
+                trainingPlanId: trainingPlan.id,
                 weeklyGoalId: weeklyGoal.id,
-                justification: day.reasoning,
-                dataPointsUsed: {
-                  avgPace: plannerResult.parsed.analysis.avgPace,
-                  totalDistanceKm: plannerResult.parsed.analysis.totalDistanceKm,
-                  vdotScore: effortZones.vdotScore,
-                  trend: plannerResult.parsed.analysis.trend,
+                userId,
+                dateScheduled: new Date(day.date),
+                sportType: day.sportType,
+                title: day.title,
+                description: day.description,
+                blocks: this.deriveBlocksForPersistence(day) as unknown as Prisma.InputJsonValue,
+                segments: {
+                  schemaVersion: SEGMENT_SCHEMA_VERSION,
+                  sport: day.sportType,
+                  segments: day.segments ?? [],
                 } as unknown as Prisma.InputJsonValue,
-                promptVersion: PROMPT_VERSION,
-                modelUsed: plannerResult.modelUsed,
+                status: WorkoutStatus.scheduled,
+                intensity: day.intensity,
+                isGoalAttempt: day.isGoalAttempt ?? false,
               },
-            });
-          } else if (day.sportType !== 'other' && !day.reasoning) {
-            this.logger.warn(`Workout "${day.title}" on ${day.date} missing AI reasoning`);
-          }
-        }),
-      );
+            }),
+          ),
+        );
 
-      await tx.aiPlannerPromptLog.create({
-        data: {
-          weeklyGoalId: weeklyGoal.id,
-          generationType: isAssessment ? 'assessment' : 'planner',
-          promptVersion: PROMPT_VERSION,
-          modelUsed: plannerResult.modelUsed,
-          promptText: plannerResult.prompt,
-          rawResponse: plannerResult.rawResponse,
-          parsedResponse: {
-            ...plannerResult.parsed,
-            aiUsage: plannerResult.usage,
-          } as unknown as Prisma.InputJsonValue,
-        },
-      });
+        // Persist AI reasoning
+        await Promise.all(
+          plannerResult.parsed.weekPlan.map(async (day, idx) => {
+            if (day.reasoning && day.sportType !== 'other') {
+              await tx.aiReasoning.create({
+                data: {
+                  workoutId: workouts[idx].id,
+                  weeklyGoalId: weeklyGoal.id,
+                  justification: day.reasoning,
+                  dataPointsUsed: {
+                    avgPace: plannerResult.parsed.analysis.avgPace,
+                    totalDistanceKm: plannerResult.parsed.analysis.totalDistanceKm,
+                    vdotScore: effortZones.vdotScore,
+                    trend: plannerResult.parsed.analysis.trend,
+                  } as unknown as Prisma.InputJsonValue,
+                  promptVersion: PROMPT_VERSION,
+                  modelUsed: plannerResult.modelUsed,
+                },
+              });
+            } else if (day.sportType !== 'other' && !day.reasoning) {
+              this.logger.warn(`Workout "${day.title}" on ${day.date} missing AI reasoning`);
+            }
+          }),
+        );
 
-      return { weeklyGoal, workouts };
+        await tx.aiPlannerPromptLog.create({
+          data: {
+            weeklyGoalId: weeklyGoal.id,
+            generationType: isAssessment ? 'assessment' : 'planner',
+            promptVersion: PROMPT_VERSION,
+            modelUsed: plannerResult.modelUsed,
+            promptText: plannerResult.prompt,
+            rawResponse: plannerResult.rawResponse,
+            parsedResponse: {
+              ...plannerResult.parsed,
+              aiUsage: plannerResult.usage,
+            } as unknown as Prisma.InputJsonValue,
+          },
+        });
+
+        return { weeklyGoal, workouts };
       })
       .catch(async (err) => {
         // Falha ao persistir após reservar → libera o slot para nova tentativa.
@@ -540,9 +557,8 @@ export class AiPlannerService {
     analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
     longitudinalWeeks?: LongitudinalWeek[],
   ): DeterministicPlannerContext {
-    const fallbackBaseline = input.avgDistKm > 0
-      ? input.avgDistKm * Math.max(1, input.trainingDays)
-      : input.totalDistKm;
+    const fallbackBaseline =
+      input.avgDistKm > 0 ? input.avgDistKm * Math.max(1, input.trainingDays) : input.totalDistKm;
     const weeklyVolumeBaselineKm = round2(
       previousWeek?.totalDistanceKm && previousWeek.totalDistanceKm > 0
         ? previousWeek.totalDistanceKm
@@ -554,7 +570,12 @@ export class AiPlannerService {
       weeklyVolumeBaselineKm,
       weeklyVolumeMaxKm,
       volumeConfidence: previousWeek?.volumeConfidence ?? 'high',
-      goalAttempt: this.assessUndatedGoalAttempt(goal, previousWeek, analyzedSessions, longitudinalWeeks),
+      goalAttempt: this.assessUndatedGoalAttempt(
+        goal,
+        previousWeek,
+        analyzedSessions,
+        longitudinalWeeks,
+      ),
     };
   }
 
@@ -583,8 +604,7 @@ export class AiPlannerService {
       .map((r) => r.date)
       .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
       .sort();
-    const period =
-      dates.length > 0 ? `${dates[0]} — ${dates[dates.length - 1]}` : 'Sem dados';
+    const period = dates.length > 0 ? `${dates[0]} — ${dates[dates.length - 1]}` : 'Sem dados';
 
     return {
       runsAnalyzed: input.runSummaries.length,
@@ -624,17 +644,23 @@ export class AiPlannerService {
 
     const targetPaceSec = targetTimeSec / (targetDistanceMeters / 1000);
     const targetPace = `${this.formatPaceFromSecondsPerKm(targetPaceSec)}/km`;
-    const recentSpecificPaceSec = this.bestSimilarContinuousPace(analyzedSessions, targetDistanceMeters);
+    const recentSpecificPaceSec = this.bestSimilarContinuousPace(
+      analyzedSessions,
+      targetDistanceMeters,
+    );
     const adherence = previousWeek?.completionRate ?? 1;
     const adherencePct = Math.round(adherence * 100);
     const fatigue = previousWeek?.avgFatigue ?? null;
-    const hasOverreach = (fatigue !== null && fatigue > 7) || this.hasSustainedOverreach(longitudinalWeeks);
+    const hasOverreach =
+      (fatigue !== null && fatigue > 7) || this.hasSustainedOverreach(longitudinalWeeks);
 
-    const paceReady = recentSpecificPaceSec !== null && recentSpecificPaceSec <= targetPaceSec * 1.03;
+    const paceReady =
+      recentSpecificPaceSec !== null && recentSpecificPaceSec <= targetPaceSec * 1.03;
     const feasible = paceReady && adherence >= 0.7 && !hasOverreach;
-    const recentPace = recentSpecificPaceSec !== null
-      ? `${this.formatPaceFromSecondsPerKm(recentSpecificPaceSec)}/km`
-      : undefined;
+    const recentPace =
+      recentSpecificPaceSec !== null
+        ? `${this.formatPaceFromSecondsPerKm(recentSpecificPaceSec)}/km`
+        : undefined;
 
     let reason: string;
     if (feasible) {
@@ -818,7 +844,8 @@ export class AiPlannerService {
     const totalDistM = validRuns.reduce((sum, r) => sum + r.distanceMeters, 0);
     const totalDistKm = totalDistM / 1000;
     const avgDistKm = validRuns.length > 0 ? totalDistKm / validRuns.length : 0;
-    const maxDistKm = validRuns.length > 0 ? Math.max(...validRuns.map((r) => r.distanceMeters / 1000)) : 0;
+    const maxDistKm =
+      validRuns.length > 0 ? Math.max(...validRuns.map((r) => r.distanceMeters / 1000)) : 0;
 
     const runSummaries: RunSummary[] = validRuns.map((r, i) => {
       const distanceKm = parseFloat((r.distanceMeters / 1000).toFixed(2));
@@ -900,7 +927,7 @@ export class AiPlannerService {
       if (needsGoalUpdate || needsTargetUpdate) {
         const data: Prisma.TrainingPlanUpdateInput = {};
         if (needsGoalUpdate) {
-          data.userGoal = { connect: { id: activeGoalId! } };
+          data.userGoal = { connect: { id: activeGoalId } };
           data.objective = goalSummary ?? existing.objective;
         }
         if (needsTargetUpdate) data.targetDate = targetDate;
@@ -982,9 +1009,7 @@ export class AiPlannerService {
 
   /** Libera (deleta) um placeholder reservado quando a geração/persistência falha. */
   private async releaseReservation(weeklyGoalId: string) {
-    await this.prisma.weeklyGoal
-      .delete({ where: { id: weeklyGoalId } })
-      .catch(() => undefined);
+    await this.prisma.weeklyGoal.delete({ where: { id: weeklyGoalId } }).catch(() => undefined);
   }
 
   /**

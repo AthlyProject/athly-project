@@ -9,6 +9,8 @@ struct DashboardView: View {
 
     private var recentRuns: [RunSession] { runStore.sortedSessions }
 
+    private static let weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -285,31 +287,35 @@ struct DashboardView: View {
     // MARK: - Activity Bars
 
     private var activityBarsCard: some View {
-        let days = (0..<7).map { offset in
-            Calendar.current.date(byAdding: .day, value: -offset, to: Date())!
-        }.reversed()
+        let cal = Calendar.current
+        let today = Date()
+        let weekStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        let days = (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: weekStart) }
+        let weekKm = recentRuns.filter {
+            cal.isDate($0.startDate, equalTo: weekStart, toGranularity: .weekOfYear)
+        }.reduce(0.0) { $0 + $1.distanceKm }
 
         return VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Últimos 7 dias")
+                Text("Esta semana")
                     .font(AthlyTheme.Typography.semibold(17))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
                 Spacer()
-                let totalKm = recentRuns.prefix(7).reduce(0.0) { $0 + $1.distanceKm }
-                if totalKm > 0 {
-                    Text(String(format: "%.1f km", totalKm))
+                if weekKm > 0 {
+                    Text(String(format: "%.1f km", weekKm))
                         .font(AthlyTheme.Typography.body(13))
                         .foregroundStyle(AthlyTheme.Color.secondary)
                 }
             }
 
             HStack(alignment: .bottom, spacing: 6) {
-                ForEach(Array(days.enumerated()), id: \.offset) { _, day in
+                ForEach(Array(days.enumerated()), id: \.offset) { idx, day in
                     let dayRuns = recentRuns.filter {
-                        Calendar.current.isDate($0.startDate, inSameDayAs: day)
+                        cal.isDate($0.startDate, inSameDayAs: day)
                     }
                     let km = dayRuns.reduce(0) { $0 + $1.distanceKm }
-                    let isToday = Calendar.current.isDateInToday(day)
+                    let isToday = cal.isDateInToday(day)
+                    let isFuture = day > today
 
                     VStack(spacing: 4) {
                         if km > 0 {
@@ -320,7 +326,7 @@ struct DashboardView: View {
                                 .shadow(color: AthlyTheme.Color.primary.opacity(0.5), radius: 4)
                         } else {
                             RoundedRectangle(cornerRadius: 5)
-                                .fill(AthlyTheme.Color.surfaceDark)
+                                .fill(AthlyTheme.Color.surfaceDark.opacity(isFuture ? 0.45 : 1))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 5)
                                         .stroke(AthlyTheme.Color.glassBorder, lineWidth: 1)
@@ -328,9 +334,13 @@ struct DashboardView: View {
                                 .frame(height: 10)
                         }
 
-                        Text(day.formatted(.dateTime.weekday(.narrow)))
+                        Text(Self.weekdayLabels[idx])
                             .font(AthlyTheme.Typography.body(11))
-                            .foregroundStyle(isToday ? AthlyTheme.Color.primary : AthlyTheme.Color.textTertiary)
+                            .foregroundStyle(
+                                isToday ? AthlyTheme.Color.primary
+                                : isFuture ? AthlyTheme.Color.textTertiary.opacity(0.45)
+                                : AthlyTheme.Color.textTertiary
+                            )
                             .fontWeight(isToday ? .bold : .regular)
                     }
                     .frame(maxWidth: .infinity)

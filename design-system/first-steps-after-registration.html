@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athly — Onboarding Flow v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #060810;
+      --bg-alt:       #0B0F1C;
+      --surface:      #0F1624;
+      --card:         #141E30;
+      --card-2:       #1A2540;
+
+      --primary:      #0EA5E9;
+      --primary-soft: rgba(14,165,233,0.10);
+      --primary-b:    rgba(14,165,233,0.22);
+      --primary-glow: rgba(14,165,233,0.18);
+
+      --violet:       #7C3AED;
+      --violet-soft:  rgba(124,58,237,0.10);
+      --violet-b:     rgba(124,58,237,0.20);
+
+      --pink:         #EC4899;
+      --pink-soft:    rgba(236,72,153,0.10);
+
+      --text-1:  #EEF2FF;
+      --text-2:  #94A3B8;
+      --text-3:  #4B5563;
+
+      --border:     rgba(255,255,255,0.06);
+      --border-mid: rgba(255,255,255,0.10);
+
+      --success: #10B981;
+      --warn:    #F59E0B;
+      --danger:  #EF4444;
+
+      --grad: linear-gradient(135deg,#0EA5E9,#7C3AED);
+      --grad-soft: linear-gradient(135deg,rgba(14,165,233,0.07),rgba(124,58,237,0.04));
+
+      --font: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+      --r-sm: 10px;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-xl: 28px;
+      --r-pill: 9999px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: var(--font);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Page layout ── */
+    .page-header {
+      padding: 48px 48px 0;
+      margin-bottom: 40px;
+    }
+
+    .page-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -.025em;
+      margin-bottom: 8px;
+    }
+
+    .page-sub {
+      font-size: 15px;
+      color: var(--text-2);
+    }
+
+    /* ── Screens rail ── */
+    .screens-rail {
+      display: flex;
+      gap: 36px;
+      overflow-x: auto;
+      padding: 0 48px 56px;
+      scrollbar-width: none;
+    }
+    .screens-rail::-webkit-scrollbar { display: none; }
+
+    .phone-wrap {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .phone-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--text-3);
+    }
+
+    /* ── iPhone shell ── */
+    .iphone {
+      width: 316px;
+      height: 682px;
+      background: #1C1C22;
+      border-radius: 50px;
+      border: 8px solid #2A2A32;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .iphone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 42px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .dynamic-island {
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      height: 26px;
+      background: #000;
+      border-radius: 13px;
+      z-index: 50;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 48px;
+      padding: 13px 18px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .status-time {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-1);
+    }
+
+    /* ── Onboarding top bar ── */
+    .ob-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px 0;
+      flex-shrink: 0;
+    }
+
+    .ob-back {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--card);
+      border-radius: 9px;
+      color: var(--text-2);
+      font-size: 14px;
+    }
+
+    .ob-step {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      letter-spacing: .04em;
+    }
+
+    .ob-skip {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* ── Progress bar ── */
+    .ob-progress {
+      display: flex;
+      gap: 4px;
+      padding: 10px 16px 0;
+      flex-shrink: 0;
+    }
+
+    .ob-progress-seg {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-mid);
+    }
+
+    .ob-progress-seg.done {
+      background: rgba(14,165,233,0.45);
+    }
+
+    .ob-progress-seg.active {
+      background: var(--primary);
+    }
+
+    /* ── Onboarding head ── */
+    .ob-head {
+      padding: 18px 16px 10px;
+      flex-shrink: 0;
+    }
+
+    .ob-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--text-1);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .ob-sub {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.4;
+    }
+
+    /* ── Onboarding body ── */
+    .ob-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 16px 0;
+      scrollbar-width: none;
+    }
+    .ob-body::-webkit-scrollbar { display: none; }
+
+    /* ── Onboarding footer ── */
+    .ob-foot {
+      padding: 10px 16px 16px;
+      flex-shrink: 0;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 46px;
+      background: var(--grad);
+      border: none;
+      border-radius: var(--r-md);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* ── Gender pills ── */
+    .gender-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .gender-pill {
+      flex: 1;
+      height: 42px;
+      border-radius: var(--r-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid var(--border-mid);
+      background: var(--card);
+      color: var(--text-2);
+    }
+
+    .gender-pill.active {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    /* ── Form fields ── */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .field-item {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      padding: 9px 12px;
+    }
+
+    .field-item.active-field {
+      border-color: var(--primary-b);
+      background: var(--surface);
+    }
+
+    .field-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--text-3);
+      margin-bottom: 2px;
+    }
+
+    .field-label .optional-tag {
+      font-size: 8px;
+      font-weight: 500;
+      color: var(--text-3);
+      text-transform: none;
+      letter-spacing: 0;
+      opacity: 0.7;
+    }
+
+    .field-value {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-1);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .field-unit {
+      font-family: var(--font);
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .field-placeholder {
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    .field-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0 10px;
+    }
+
+    /* ── Divider label ── */
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+
+    /* ── Option cards ── */
+    .option-card {
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      padding: 11px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 7px;
+      cursor: pointer;
+    }
+
+    .option-card.selected {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+    }
+
+    .option-card.selected-violet {
+      border-color: var(--violet-b);
+      background: var(--violet-soft);
+    }
+
+    .option-indicator {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border-mid);
+      flex-shrink: 0;
+    }
+
+    .option-indicator.checked {
+      border-color: var(--primary);
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .option-indicator.checked::after {
+      content: '✓';
+      font-size: 9px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .option-indicator.radio {
+      border-radius: 50%;
+    }
+
+    .option-indicator.radio.checked {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .option-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .option-text { flex: 1; }
+
+    .option-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .option-card.selected .option-title { color: var(--primary); }
+    .option-card.selected-violet .option-title { color: var(--violet); }
+
+    .option-desc {
+      font-size: 10px;
+      color: var(--text-2);
+      margin-top: 1px;
+    }
+
+    .option-emoji {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Level cards ── */
+    .level-card {
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .level-card.selected {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+    }
+
+    .level-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .level-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+      flex: 1;
+    }
+
+    .level-card.selected .level-name { color: var(--primary); }
+
+    .level-desc {
+      font-size: 10px;
+      color: var(--text-2);
+    }
+
+    /* ── Pace dial ── */
+    .pace-display {
+      background: var(--card);
+      border: 1px solid var(--primary-b);
+      border-radius: var(--r-xl);
+      margin: 8px 0 14px;
+      padding: 24px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+
+    .pace-label-top {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--primary);
+    }
+
+    .pace-value {
+      font-family: var(--mono);
+      font-size: 52px;
+      font-weight: 600;
+      letter-spacing: -.02em;
+      color: var(--text-1);
+      line-height: 1;
+    }
+
+    .pace-per-km {
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .pace-kmh {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text-3);
+    }
+
+    .pace-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .pace-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--card-2);
+      border: 1px solid var(--border-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: var(--text-1);
+      cursor: pointer;
+    }
+
+    .pace-btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .pace-hint {
+      font-size: 10px;
+      color: var(--text-3);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .pace-feel-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .pace-feel-chip {
+      flex: 1;
+      height: 32px;
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      border: 1px solid var(--border-mid);
+      background: var(--card);
+      color: var(--text-3);
+    }
+
+    .pace-feel-chip.active {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    /* ── Objectives tree ── */
+    .obj-card {
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      margin-bottom: 7px;
+      overflow: hidden;
+    }
+
+    .obj-card.expanded {
+      border-color: var(--primary-b);
+    }
+
+    .obj-card-head {
+      padding: 11px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .obj-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .obj-text { flex: 1; }
+
+    .obj-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    .obj-card.expanded .obj-title { color: var(--primary); }
+
+    .obj-subtitle {
+      font-size: 10px;
+      color: var(--text-2);
+    }
+
+    .obj-chevron {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    .obj-card.expanded .obj-chevron { color: var(--primary); transform: rotate(90deg); }
+
+    .obj-body {
+      padding: 0 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .obj-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 8px;
+    }
+
+    .obj-sub-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+
+    .dist-pills {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .dist-pill {
+      padding: 5px 10px;
+      border-radius: var(--r-pill);
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border-mid);
+      background: var(--card-2);
+      color: var(--text-2);
+    }
+
+    .dist-pill.selected {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .obj-sub-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+    }
+
+    .obj-sub-option.selected {
+      border-color: var(--primary-b);
+      background: rgba(14,165,233,0.06);
+    }
+
+    .obj-sub-radio {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--border-mid);
+      flex-shrink: 0;
+    }
+
+    .obj-sub-radio.checked {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .obj-sub-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      flex: 1;
+    }
+
+    .obj-sub-option.selected .obj-sub-title { color: var(--text-1); }
+
+    .time-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--primary-b);
+      border-radius: var(--r-sm);
+      margin-top: 2px;
+    }
+
+    .time-input-val {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary);
+      flex: 1;
+    }
+
+    .time-input-lbl {
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    /* ── Motivation multi-select ── */
+    .motiv-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .motiv-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      padding: 10px 12px;
+    }
+
+    .motiv-chip.selected {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+    }
+
+    .motiv-icon-wrap {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .motiv-chip.selected .motiv-icon-wrap {
+      background: var(--primary-soft);
+    }
+
+    .motiv-text {
+      flex: 1;
+    }
+
+    .motiv-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+    }
+
+    .motiv-chip.selected .motiv-title { color: var(--primary); }
+
+    .motiv-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border-mid);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .motiv-chip.selected .motiv-check {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .motiv-chip.selected .motiv-check::after {
+      content: '✓';
+      font-size: 9px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* ── Frequency cards ── */
+    .freq-card {
+      background: var(--card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--r-md);
+      padding: 14px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .freq-card.selected {
+      border-color: var(--primary-b);
+      background: var(--primary-soft);
+    }
+
+    .freq-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .freq-text { flex: 1; }
+
+    .freq-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+
+    .freq-card.selected .freq-title { color: var(--primary); }
+
+    .freq-desc {
+      font-size: 11px;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .freq-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border-mid);
+      flex-shrink: 0;
+    }
+
+    .freq-card.selected .freq-radio {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    /* ── Info card ── */
+    .info-notice {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 8px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .info-notice-icon { font-size: 11px; color: var(--primary); margin-top: 1px; }
+    .info-notice-text { font-size: 10px; color: var(--text-3); line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div class="page-eyebrow">Athly Runner · Onboarding Flow v2</div>
+    <div class="page-title">Configuração Inicial</div>
+    <div class="page-sub">6 telas de coleta pós-registro — dados do corredor &amp; objetivos</div>
+  </div>
+
+  <div class="screens-rail">
+
+    <!-- ═══════════════════════════════════════════════════════
+         P1 — INFORMAÇÕES IMPORTANTES
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <span>●●●</span>
+              <span>WiFi</span>
+              <span>🔋</span>
+            </div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">1 de 6</span>
+            <span class="ob-skip">Pular</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg active"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Informações<br>Importantes</div>
+            <div class="ob-sub">Usamos esses dados para personalizar seu treino com IA</div>
+          </div>
+
+          <div class="ob-body">
+            <!-- Gênero -->
+            <div class="section-label">Gênero</div>
+            <div class="gender-row">
+              <div class="gender-pill active">♂ Masculino</div>
+              <div class="gender-pill">♀ Feminino</div>
+              <div class="gender-pill" style="font-size:11px;">⊕ Outro</div>
+            </div>
+
+            <div class="field-divider"></div>
+
+            <!-- Peso e Altura -->
+            <div class="section-label">Corpo <span style="font-size:9px;color:var(--text-3);font-weight:400;text-transform:none;">(opcional)</span></div>
+            <div class="field-row" style="margin-bottom:8px;">
+              <div class="field-item">
+                <div class="field-label">Peso <span class="optional-tag">(opcional)</span></div>
+                <div class="field-value">75 <span class="field-unit">kg</span></div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Altura <span class="optional-tag">(opcional)</span></div>
+                <div class="field-value">178 <span class="field-unit">cm</span></div>
+              </div>
+            </div>
+
+            <div class="field-divider"></div>
+
+            <!-- Frequência cardíaca -->
+            <div class="section-label">Frequência Cardíaca</div>
+            <div class="field-row" style="margin-bottom:6px;">
+              <div class="field-item">
+                <div class="field-label">FC em Repouso</div>
+                <div class="field-value">62 <span class="field-unit">bpm</span></div>
+              </div>
+              <div class="field-item active-field">
+                <div class="field-label">FC Máxima</div>
+                <div class="field-value" style="color:var(--danger);">192 <span class="field-unit">bpm</span></div>
+              </div>
+            </div>
+
+            <div class="info-notice">
+              <span class="info-notice-icon">ℹ</span>
+              <span class="info-notice-text">FC máxima estimada: 220 − sua idade. Ajuste se fizer testes específicos.</span>
+            </div>
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P1 · Informações</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         P2 — MOTIVAÇÃO PARA CORRER
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">2 de 6</span>
+            <span class="ob-skip">Pular</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg active"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Motivação<br>para Correr</div>
+            <div class="ob-sub">Escolha todas que fazem sentido pra você</div>
+          </div>
+
+          <div class="ob-body">
+            <div class="motiv-grid">
+
+              <div class="motiv-chip selected">
+                <div class="motiv-icon-wrap">🔥</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Queimar gordura</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+              <div class="motiv-chip">
+                <div class="motiv-icon-wrap">😊</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Sentir-me bem</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+              <div class="motiv-chip">
+                <div class="motiv-icon-wrap">🚶</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Voltar a me movimentar</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+              <div class="motiv-chip selected">
+                <div class="motiv-icon-wrap">🧘</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Reduzir o stress</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+              <div class="motiv-chip">
+                <div class="motiv-icon-wrap">📊</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Otimizar meus treinos</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+              <div class="motiv-chip">
+                <div class="motiv-icon-wrap">⚡</div>
+                <div class="motiv-text">
+                  <div class="motiv-title">Melhores tempos</div>
+                </div>
+                <div class="motiv-check"></div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P2 · Motivação</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         P3 — QUANTO VOCÊ CORRE?
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">3 de 6</span>
+            <span class="ob-skip">Pular</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg active"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Quanto<br>você corre?</div>
+            <div class="ob-sub">Com que frequência você vai para a rua correr?</div>
+          </div>
+
+          <div class="ob-body" style="padding-top:14px;">
+
+            <div class="freq-card">
+              <div class="freq-icon">🛋️</div>
+              <div class="freq-text">
+                <div class="freq-title">Dificilmente</div>
+                <div class="freq-desc">Menos de uma vez por semana</div>
+              </div>
+              <div class="freq-radio"></div>
+            </div>
+
+            <div class="freq-card selected">
+              <div class="freq-icon">🏃</div>
+              <div class="freq-text">
+                <div class="freq-title">Regularmente</div>
+                <div class="freq-desc">1 a 3 vezes por semana</div>
+              </div>
+              <div class="freq-radio" style="border-color:var(--primary);background:var(--primary);"></div>
+            </div>
+
+            <div class="freq-card">
+              <div class="freq-icon">🏅</div>
+              <div class="freq-text">
+                <div class="freq-title">Há anos</div>
+                <div class="freq-desc">Corrida é parte da minha rotina</div>
+              </div>
+              <div class="freq-radio"></div>
+            </div>
+
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P3 · Frequência</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         P4 — SEU NÍVEL
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">4 de 6</span>
+            <span class="ob-skip">Pular</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg active"></div>
+            <div class="ob-progress-seg"></div>
+            <div class="ob-progress-seg"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Seu nível<br>no momento</div>
+            <div class="ob-sub">Seja honesto — vamos ajustar seus treinos</div>
+          </div>
+
+          <div class="ob-body" style="padding-top:10px;">
+
+            <div class="level-card">
+              <div class="level-dot" style="background:#94A3B8;"></div>
+              <div class="level-name">Começando</div>
+              <div class="level-desc">Nunca corri de forma consistente</div>
+            </div>
+
+            <div class="level-card">
+              <div class="level-dot" style="background:#10B981;"></div>
+              <div class="level-name">Iniciante</div>
+              <div class="level-desc">Consigo correr até 5 km</div>
+            </div>
+
+            <div class="level-card selected">
+              <div class="level-dot" style="background:#0EA5E9;"></div>
+              <div class="level-name" style="color:var(--primary);">Hobby</div>
+              <div class="level-desc">Corro 10 km sem problema</div>
+            </div>
+
+            <div class="level-card">
+              <div class="level-dot" style="background:#7C3AED;"></div>
+              <div class="level-name">Intermediário</div>
+              <div class="level-desc">Participo de provas com preparação</div>
+            </div>
+
+            <div class="level-card">
+              <div class="level-dot" style="background:#EC4899;"></div>
+              <div class="level-name">Avançado</div>
+              <div class="level-desc">Treino estruturado, meia-maratona+</div>
+            </div>
+
+            <div class="level-card">
+              <div class="level-dot" style="background:#F59E0B;"></div>
+              <div class="level-name">Pro</div>
+              <div class="level-desc">Corrida é meu esporte principal</div>
+            </div>
+
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P4 · Nível</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         P5 — PACE CONFORTÁVEL
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">5 de 6</span>
+            <span class="ob-skip">Pular</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg active"></div>
+            <div class="ob-progress-seg"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Seu pace<br>confortável</div>
+            <div class="ob-sub">Ritmo em que você corre sentindo-se bem — sem forçar</div>
+          </div>
+
+          <div class="ob-body">
+
+            <div class="pace-display">
+              <div class="pace-label-top">PACE CONFORTÁVEL</div>
+              <div class="pace-value">5:45</div>
+              <div class="pace-per-km">min / km</div>
+              <div class="pace-kmh">≈ 10.4 km/h</div>
+
+              <div class="pace-controls">
+                <div class="pace-btn">−</div>
+                <div style="width:16px;"></div>
+                <div class="pace-btn primary">+</div>
+              </div>
+            </div>
+
+            <div class="pace-hint">Toque + ou − para ajustar em 5 segundos</div>
+
+            <div class="section-label" style="margin-top:14px;">Como esse ritmo parece?</div>
+            <div class="pace-feel-row">
+              <div class="pace-feel-chip">😓 Pesado</div>
+              <div class="pace-feel-chip active">😊 Confortável</div>
+              <div class="pace-feel-chip">😴 Fácil demais</div>
+            </div>
+
+            <div class="info-notice" style="margin-top:12px;">
+              <span class="info-notice-icon">✦</span>
+              <span class="info-notice-text">A IA vai usar esse pace como zona base para calcular suas zonas de treino.</span>
+            </div>
+
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary">Continuar →</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P5 · Pace</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         P6 — OBJETIVOS
+    ═══════════════════════════════════════════════════════ -->
+    <div class="phone-wrap">
+      <div class="iphone">
+        <div class="iphone-screen">
+          <div class="dynamic-island"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+          </div>
+
+          <div class="ob-topbar">
+            <div class="ob-back">‹</div>
+            <span class="ob-step">6 de 6</span>
+            <span style="font-size:12px;color:var(--text-3);">Final</span>
+          </div>
+
+          <div class="ob-progress">
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg done"></div>
+            <div class="ob-progress-seg active"></div>
+          </div>
+
+          <div class="ob-head">
+            <div class="ob-title">Seus<br>Objetivos</div>
+            <div class="ob-sub">O que você quer alcançar correndo?</div>
+          </div>
+
+          <div class="ob-body">
+
+            <!-- Evento público -->
+            <div class="obj-card" style="margin-bottom:7px;">
+              <div class="obj-card-head">
+                <div class="obj-icon" style="background:rgba(236,72,153,0.12);">🏁</div>
+                <div class="obj-text">
+                  <div class="obj-title" style="color:var(--text-1);">Correr em um evento público</div>
+                  <div class="obj-subtitle">Provas, corridas de rua, maratonas</div>
+                </div>
+                <span class="obj-chevron">›</span>
+              </div>
+            </div>
+
+            <!-- Objetivo pessoal — EXPANDED -->
+            <div class="obj-card expanded" style="margin-bottom:7px;">
+              <div class="obj-card-head">
+                <div class="obj-icon" style="background:var(--primary-soft);">🎯</div>
+                <div class="obj-text">
+                  <div class="obj-title">Objetivo pessoal</div>
+                  <div class="obj-subtitle">Definido por mim mesmo</div>
+                </div>
+                <span class="obj-chevron" style="color:var(--primary);transform:rotate(90deg);">›</span>
+              </div>
+
+              <div class="obj-body">
+                <div class="obj-divider"></div>
+
+                <!-- Sub-option: Definir distância — SELECTED -->
+                <div class="obj-sub-option selected">
+                  <div class="obj-sub-radio checked"></div>
+                  <div class="obj-sub-title">Definir uma distância</div>
+                </div>
+
+                <!-- Distance pills -->
+                <div class="dist-pills">
+                  <div class="dist-pill">5K</div>
+                  <div class="dist-pill selected">10K</div>
+                  <div class="dist-pill">HM</div>
+                  <div class="dist-pill">Meia</div>
+                  <div class="dist-pill">42K</div>
+                  <div class="dist-pill">Ultra</div>
+                </div>
+
+                <!-- Workload or Target time -->
+                <div class="obj-sub-label">Tipo de objetivo</div>
+                <div class="obj-sub-option" style="margin-bottom:6px;">
+                  <div class="obj-sub-radio"></div>
+                  <div class="obj-sub-title">Workload adaptado pela IA</div>
+                </div>
+
+                <div class="obj-sub-option selected">
+                  <div class="obj-sub-radio checked"></div>
+                  <div class="obj-sub-title">Tempo alvo</div>
+                </div>
+
+                <!-- Time input -->
+                <div class="time-input-row">
+                  <span class="time-input-lbl">Meta</span>
+                  <span class="time-input-val">47:30</span>
+                  <span class="time-input-lbl">min:seg</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Melhorar fitness -->
+            <div class="obj-card" style="margin-bottom:4px;">
+              <div class="obj-card-head">
+                <div class="obj-icon" style="background:rgba(16,185,129,0.10);">📈</div>
+                <div class="obj-text">
+                  <div class="obj-title" style="color:var(--text-1);">Melhorar fitness e endurance</div>
+                  <div class="obj-subtitle">Evoluir sem meta específica</div>
+                </div>
+                <span class="obj-chevron">›</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="ob-foot">
+            <div class="btn-primary" style="background:var(--grad);">Começar com a Athly ✦</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-label">P6 · Objetivos</div>
+    </div>
+
+  </div><!-- /screens-rail -->
+
+</body>
+</html>

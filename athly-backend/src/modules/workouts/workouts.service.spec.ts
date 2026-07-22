@@ -127,11 +127,15 @@ describe('WorkoutsService', () => {
     it('throws not found when no user-owned workout is updated', async () => {
       prisma.workout.updateMany.mockResolvedValue({ count: 0 });
 
-      await expect(service.completeWorkout('user-1', 'missing')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.completeWorkout('user-1', 'missing')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('does not expose raw Prisma errors to clients', async () => {
-      prisma.workout.updateMany.mockRejectedValue(new Error('The column `(not available)` does not exist'));
+      prisma.workout.updateMany.mockRejectedValue(
+        new Error('The column `(not available)` does not exist'),
+      );
 
       try {
         await service.completeWorkout('user-1', 'workout-1');

@@ -129,11 +129,7 @@ function selectTrustedActualKm(
   return actualKm;
 }
 
-function isSuspiciousActual(
-  workout: WorkoutLike,
-  actualKm: number,
-  prescribedKm: number,
-): boolean {
+function isSuspiciousActual(workout: WorkoutLike, actualKm: number, prescribedKm: number): boolean {
   const completed = workout.feedback.some((f) => f.completed === true);
   const tooSmallAbsolute = actualKm < 0.5;
   const tooSmallVsPlan = prescribedKm > 0 && actualKm < prescribedKm * 0.3;
@@ -155,7 +151,9 @@ function prescribedVolumeKm(blocks: unknown): number {
 }
 
 function normalizeSessions(sessions: DetailedSessionLike[]): DetailedSessionLike[] {
-  return sessions.filter((s) => s.distanceMeters >= 500 && !Number.isNaN(new Date(s.startDate).getTime()));
+  return sessions.filter(
+    (s) => s.distanceMeters >= 500 && !Number.isNaN(new Date(s.startDate).getTime()),
+  );
 }
 
 function bestMatchingSessionKm(
@@ -166,7 +164,8 @@ function bestMatchingSessionKm(
 
   const sameWorkout = sessions.filter((s) => workout.id && s.athlyWorkoutId === workout.id);
   const sameUuid = sessions.filter(
-    (s) => workout.appleHealthWorkoutUUID && s.appleHealthWorkoutUUID === workout.appleHealthWorkoutUUID,
+    (s) =>
+      workout.appleHealthWorkoutUUID && s.appleHealthWorkoutUUID === workout.appleHealthWorkoutUUID,
   );
   const sameDay = sessions.filter((s) => dateKey(s.startDate) === dateKey(workout.dateScheduled));
   const candidates = [...sameWorkout, ...sameUuid, ...sameDay];
@@ -234,11 +233,15 @@ export function computePreviousWeekAnalysis(
   const allFeedback = trainingWorkouts.flatMap((w) => w.feedback);
   const avgEffort =
     allFeedback.length > 0
-      ? parseFloat((allFeedback.reduce((sum, f) => sum + f.effort, 0) / allFeedback.length).toFixed(1))
+      ? parseFloat(
+          (allFeedback.reduce((sum, f) => sum + f.effort, 0) / allFeedback.length).toFixed(1),
+        )
       : null;
   const avgFatigue =
     allFeedback.length > 0
-      ? parseFloat((allFeedback.reduce((sum, f) => sum + f.fatigue, 0) / allFeedback.length).toFixed(1))
+      ? parseFloat(
+          (allFeedback.reduce((sum, f) => sum + f.fatigue, 0) / allFeedback.length).toFixed(1),
+        )
       : null;
 
   const totalDistanceKm = executedVolumeKm(previousGoal.workouts, options);

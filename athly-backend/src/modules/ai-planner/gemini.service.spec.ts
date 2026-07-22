@@ -145,7 +145,10 @@ describe('GeminiService.assessPlanQuality', () => {
 
 describe('GeminiService.runWithStructureGate', () => {
   it('regenera quando vem degenerado e aceita a tentativa boa', async () => {
-    const generateJson = mockJsonReturning([JSON.stringify(plan(false)), JSON.stringify(plan(true))]);
+    const generateJson = mockJsonReturning([
+      JSON.stringify(plan(false)),
+      JSON.stringify(plan(true)),
+    ]);
     (gemini as any).generateJson = generateJson;
 
     const res = await (gemini as any).runWithStructureGate(

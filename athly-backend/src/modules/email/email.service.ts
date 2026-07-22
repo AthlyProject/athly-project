@@ -12,10 +12,7 @@ export class EmailService {
     this.ses = new SESClient({
       region: this.config.get<string>('AWS_REGION', 'eu-central-1'),
     });
-    this.senderEmail = this.config.get<string>(
-      'SES_SENDER_EMAIL',
-      'noreply@athlyproject.app',
-    );
+    this.senderEmail = this.config.get<string>('SES_SENDER_EMAIL', 'noreply@athlyproject.app');
   }
 
   async sendWelcomeEmail(to: string, userName: string): Promise<void> {
@@ -41,9 +38,7 @@ export class EmailService {
       await this.ses.send(command);
       this.logger.log(`Welcome email sent to ${to}`);
     } catch (error) {
-      this.logger.error(
-        `Failed to send welcome email to ${to}: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to send welcome email to ${to}: ${(error as Error).message}`);
       // Don't throw — email failure should not block registration
     }
   }

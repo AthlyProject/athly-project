@@ -26,10 +26,7 @@ export class AiPlannerController {
 
   @Post('plan-from-health/async')
   @HttpCode(202)
-  startPlanFromHealthGeneration(
-    @CurrentUser() user: UserModel,
-    @Body() input: PlanFromHealthDto,
-  ) {
+  startPlanFromHealthGeneration(@CurrentUser() user: UserModel, @Body() input: PlanFromHealthDto) {
     return this.aiPlannerService.startPlanFromHealthGeneration(user.id, input);
   }
 

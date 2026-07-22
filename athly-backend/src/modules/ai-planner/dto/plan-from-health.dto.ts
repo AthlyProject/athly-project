@@ -60,7 +60,9 @@ export class SegmentDto {
   @Min(0)
   peakHR?: number;
 
-  @ApiPropertyOptional({ description: 'HR at end of segment (useful for recovery deltas between reps)' })
+  @ApiPropertyOptional({
+    description: 'HR at end of segment (useful for recovery deltas between reps)',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

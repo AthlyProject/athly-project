@@ -11,5 +11,12 @@ DEV_API_URL =
 // RevenueCat SDK key (pública — pode ir no binário). App Store key do app iOS no RevenueCat.
 REVENUECAT_API_KEY = appl_GoaAgGdMCiQKCbhahvSfRpwIBoV
 
+// Login com Google (SDK GoogleSignIn). Valores do OAuth client do tipo "iOS" no Google Cloud.
+// GOOGLE_IOS_CLIENT_ID:      1234567890-abc.apps.googleusercontent.com
+// GOOGLE_REVERSED_CLIENT_ID: o mesmo invertido -> com.googleusercontent.apps.1234567890-abc
+// Substitua pelos valores reais (podem ir no binário — não são segredos).
+GOOGLE_IOS_CLIENT_ID = REPLACE_WITH_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.REPLACE_WITH_GOOGLE_IOS_CLIENT_ID
+
 #include "OTel.xcconfig"
 #include? "User.xcconfig"

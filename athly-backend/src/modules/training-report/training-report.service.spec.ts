@@ -17,7 +17,11 @@ function wk(over: Record<string, any> = {}) {
 const goalsNewestFirst = [
   {
     createdAt: new Date('2026-06-01T00:00:00Z'),
-    metrics: { avgPace: '5:30', fitnessInsights: 'Boa progressão de base.', trend: 'improving (volume)' },
+    metrics: {
+      avgPace: '5:30',
+      fitnessInsights: 'Boa progressão de base.',
+      trend: 'improving (volume)',
+    },
     workouts: [wk(), wk(), wk()],
   },
   {
@@ -79,7 +83,9 @@ describe('TrainingReportService.captureFromPlan', () => {
   it('lida com plano sem userGoal vinculado (feasibility null)', async () => {
     const prisma = makePrisma({
       trainingPlan: {
-        findUnique: jest.fn().mockResolvedValue({ objective: 'Correr 10km', targetDate: null, userGoalId: null }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ objective: 'Correr 10km', targetDate: null, userGoalId: null }),
       },
     });
     const service = new TrainingReportService(prisma as any);

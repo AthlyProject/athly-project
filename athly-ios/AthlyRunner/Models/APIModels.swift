@@ -484,7 +484,26 @@ struct GoalFeasibility: Codable, Sendable {
 struct UpdateProfileRequest: Encodable, Sendable {
     let name: String?
     let weight: Double?
+    let height: Double?
+    let dateOfBirth: String?
     let availableDays: [String]?
+    let gender: String?
+
+    init(
+        name: String? = nil,
+        weight: Double? = nil,
+        height: Double? = nil,
+        dateOfBirth: String? = nil,
+        availableDays: [String]? = nil,
+        gender: String? = nil
+    ) {
+        self.name = name
+        self.weight = weight
+        self.height = height
+        self.dateOfBirth = dateOfBirth
+        self.availableDays = availableDays
+        self.gender = gender
+    }
 }
 
 // MARK: - Workout Feedback

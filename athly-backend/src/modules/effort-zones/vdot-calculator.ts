@@ -13,10 +13,13 @@ export function calculateVdot(distanceMeters: number, durationSeconds: number): 
   const velocityMetersPerMin = distanceMeters / durationMinutes;
 
   // Oxygen cost of running at this velocity
-  const vo2 = -4.60 + 0.182258 * velocityMetersPerMin + 0.000104 * Math.pow(velocityMetersPerMin, 2);
+  const vo2 = -4.6 + 0.182258 * velocityMetersPerMin + 0.000104 * Math.pow(velocityMetersPerMin, 2);
 
   // Percent of VO2max sustained for this duration
-  const pctVo2max = 0.8 + 0.1894393 * Math.exp(-0.012778 * durationMinutes) + 0.2989558 * Math.exp(-0.1932605 * durationMinutes);
+  const pctVo2max =
+    0.8 +
+    0.1894393 * Math.exp(-0.012778 * durationMinutes) +
+    0.2989558 * Math.exp(-0.1932605 * durationMinutes);
 
   // VDOT = VO2 / %VO2max
   return vo2 / pctVo2max;
@@ -60,11 +63,11 @@ export function velocityAtVo2(vo2: number): number {
   // 0.000104*v^2 + 0.182258*v + (-4.60 - vo2) = 0
   const a = 0.000104;
   const b = 0.182258;
-  const c = -4.60 - vo2;
+  const c = -4.6 - vo2;
   const discriminant = b * b - 4 * a * c;
   if (discriminant < 0) return 0;
   // Take the positive root
-  return (-b + Math.sqrt(discriminant)) / (2 * a);  // meters per minute
+  return (-b + Math.sqrt(discriminant)) / (2 * a); // meters per minute
 }
 
 /**
@@ -72,7 +75,7 @@ export function velocityAtVo2(vo2: number): number {
  */
 function velocityToPace(velocityMPerMin: number): number {
   if (velocityMPerMin <= 0) return 0;
-  return (1000 / velocityMPerMin) * 60;  // seconds per km
+  return (1000 / velocityMPerMin) * 60; // seconds per km
 }
 
 /**
@@ -111,8 +114,8 @@ export function derivePaceZones(vdot: number): PaceZones {
 
   return {
     // Easy: 59-74% VO2max (slower = max seconds, faster = min seconds)
-    easyPaceMin: paceAt(0.74),    // faster end
-    easyPaceMax: paceAt(0.59),    // slower end
+    easyPaceMin: paceAt(0.74), // faster end
+    easyPaceMax: paceAt(0.59), // slower end
     // Marathon: 75-84%
     marathonPaceMin: paceAt(0.84),
     marathonPaceMax: paceAt(0.75),
@@ -120,10 +123,10 @@ export function derivePaceZones(vdot: number): PaceZones {
     thresholdPaceMin: paceAt(0.88),
     thresholdPaceMax: paceAt(0.83),
     // Interval: 95-100%
-    intervalPaceMin: paceAt(1.00),
+    intervalPaceMin: paceAt(1.0),
     intervalPaceMax: paceAt(0.95),
     // Repetition: 105-110%
-    repetitionPaceMin: paceAt(1.10),
+    repetitionPaceMin: paceAt(1.1),
     repetitionPaceMax: paceAt(1.05),
   };
 }
@@ -149,7 +152,7 @@ export function deriveHrZones(maxHR: number, restHR: number): HrZoneRanges {
     zone2: { min: at(0.74), max: at(0.84) },
     zone3: { min: at(0.84), max: at(0.88) },
     zone4: { min: at(0.88), max: at(0.95) },
-    zone5: { min: at(0.95), max: at(1.00) },
+    zone5: { min: at(0.95), max: at(1.0) },
   };
 }
 
@@ -157,8 +160,10 @@ export function deriveHrZones(maxHR: number, restHR: number): HrZoneRanges {
  * Find the best effort from a list of runs.
  * Best effort = fastest pace at distance >= 1.5km
  */
-export function findBestEffort(runs: Array<{ distanceMeters: number; durationSeconds: number }>): { distanceMeters: number; durationSeconds: number } | null {
-  const eligible = runs.filter(r => r.distanceMeters >= 1500 && r.durationSeconds > 0);
+export function findBestEffort(
+  runs: Array<{ distanceMeters: number; durationSeconds: number }>,
+): { distanceMeters: number; durationSeconds: number } | null {
+  const eligible = runs.filter((r) => r.distanceMeters >= 1500 && r.durationSeconds > 0);
   if (eligible.length === 0) return null;
 
   // Melhor esforço = o que produz o VDOT mais alto, NÃO o pace bruto mais rápido.

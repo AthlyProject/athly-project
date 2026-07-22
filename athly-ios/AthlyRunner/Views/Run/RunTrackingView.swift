@@ -182,9 +182,9 @@ struct RunTrackingView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(AthlyTheme.Gradient.neon)
+                            .fill(AthlyTheme.Gradient.brand)
                             .frame(width: 80, height: 80)
-                            .shadow(color: AthlyTheme.Color.primaryNeon.opacity(0.4), radius: 12, y: 6)
+                            .shadow(color: AthlyTheme.Color.primary.opacity(0.4), radius: 12, y: 6)
 
                         Image(systemName: "play.fill")
                             .font(.title)

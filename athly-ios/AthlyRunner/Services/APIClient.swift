@@ -45,6 +45,36 @@ actor APIClient {
         NotificationCenter.default.post(name: .athlySessionExpired, object: nil)
     }
 
+    /// Extrai a mensagem de erro do corpo padrão do NestJS: `{ "message": string | string[] }`.
+    private static func backendMessage(from data: Data) -> String? {
+        guard !data.isEmpty else { return nil }
+
+        struct BackendError: Decodable {
+            let message: Message?
+            enum Message: Decodable {
+                case single(String)
+                case multiple([String])
+                init(from decoder: Decoder) throws {
+                    let container = try decoder.singleValueContainer()
+                    if let text = try? container.decode(String.self) {
+                        self = .single(text)
+                    } else {
+                        self = .multiple((try? container.decode([String].self)) ?? [])
+                    }
+                }
+                var text: String {
+                    switch self {
+                    case .single(let value): return value
+                    case .multiple(let values): return values.joined(separator: "\n")
+                    }
+                }
+            }
+        }
+
+        let text = (try? JSONDecoder().decode(BackendError.self, from: data))?.message?.text
+        return (text?.isEmpty == false) ? text : nil
+    }
+
     var isAuthenticated: Bool {
         accessToken != nil
     }
@@ -58,11 +88,47 @@ actor APIClient {
         return response
     }
 
-    func register(email: String, userName: String, name: String, password: String, confirmPassword: String, dateOfBirth: String, weight: Double, height: Double) async throws -> AuthResponse {
-        let body = RegisterRequest(email: email, userName: userName, name: name, password: password, confirmPassword: confirmPassword, dateOfBirth: dateOfBirth, weight: weight, height: height)
+    func register(email: String, password: String) async throws -> AuthResponse {
+        let body = RegisterRequest(email: email, password: password)
         let response: AuthResponse = try await post("/auth/register", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
+    }
+
+    func loginWithGoogle(idToken: String) async throws -> AuthResponse {
+        let body = GoogleLoginRequest(idToken: idToken)
+        let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
+        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        return response
+    }
+
+    func loginWithApple(identityToken: String, fullName: String?) async throws -> AuthResponse {
+        let body = AppleLoginRequest(identityToken: identityToken, fullName: fullName)
+        let response: AuthResponse = try await post("/auth/apple", body: body, authenticated: false)
+        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        return response
+    }
+
+    /// Vincula a conta Apple ao usuário autenticado. Retorna o perfil atualizado.
+    func linkApple(identityToken: String) async throws -> UserProfile {
+        let body = AppleLoginRequest(identityToken: identityToken, fullName: nil)
+        return try await post("/auth/apple/link", body: body)
+    }
+
+    /// Desvincula a conta Apple do usuário autenticado. Retorna o perfil atualizado.
+    func unlinkApple() async throws -> UserProfile {
+        try await delete("/auth/apple/link")
+    }
+
+    /// Vincula a conta Google ao usuário autenticado. Retorna o perfil atualizado.
+    func linkGoogle(idToken: String) async throws -> UserProfile {
+        let body = GoogleLoginRequest(idToken: idToken)
+        return try await post("/auth/google/link", body: body)
+    }
+
+    /// Desvincula a conta Google do usuário autenticado. Retorna o perfil atualizado.
+    func unlinkGoogle() async throws -> UserProfile {
+        try await delete("/auth/google/link")
     }
 
     func getUserProfile() async throws -> UserProfile {
@@ -326,6 +392,12 @@ actor APIClient {
                 throw error
             }
         case 401:
+            // Requisições não autenticadas (login/registro/apple/google) não têm Authorization:
+            // não tentam refresh nem sinalizam "sessão expirada" — mostram o motivo real do backend
+            // (ex.: "Token da Apple inválido", "Login com Apple não está configurado").
+            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+            }
             if !isRefreshing {
                 isRefreshing = true
                 defer { isRefreshing = false }
@@ -378,6 +450,9 @@ actor APIClient {
         case 404:
             return nil
         case 401:
+            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+            }
             if !isRefreshing {
                 isRefreshing = true
                 defer { isRefreshing = false }
@@ -421,18 +496,21 @@ struct LoginRequest: Encodable {
 
 struct RegisterRequest: Encodable {
     let email: String
-    let userName: String
-    let name: String
     let password: String
-    let confirmPassword: String
-    let dateOfBirth: String
-    let weight: Double
-    let height: Double
 }
 
 struct AuthResponse: Decodable {
     let accessToken: String
     let refreshToken: String
+}
+
+struct GoogleLoginRequest: Encodable {
+    let idToken: String
+}
+
+struct AppleLoginRequest: Encodable {
+    let identityToken: String
+    let fullName: String?
 }
 
 struct RefreshRequest: Encodable {
@@ -458,54 +536,30 @@ struct CompleteWorkoutRequest: Encodable {
     }
 }
 
-// MARK: - Assessment payload (espelha SubmitAssessmentDto do backend / athly-frontend)
-
-struct AssessmentGoals: Encodable, Sendable {
-    var practicesRegularly: String = ""
-    var targetDistance: String = ""
-    var motivations: [String] = []
-}
-
-struct AssessmentActivityHistory: Encodable, Sendable {
-    var currentActivities: [String] = []
-    var trainingPreparedBy: String = ""
-    var canRun3km: String = ""
-    var runningExperience: String = ""
-}
-
-struct AssessmentTrainingPlanning: Encodable, Sendable {
-    var availableDays: [String] = []
-    var startDate: String = ""
-    var hasTargetDate: String = ""
-    var targetDate: String?
-}
-
-struct AssessmentPerformanceHealth: Encodable, Sendable {
-    var referenceDistance: String = "5k"
-    var bestTime: String = ""
-    var sleepQuality: Int?
-    var hasChronicPain: String = ""
-    var chronicPainDescription: String?
-}
-
-struct AssessmentParq: Encodable, Sendable {
-    var heartCondition: Bool?
-    var chestPainDuringActivity: Bool?
-    var chestPainLastMonth: Bool?
-    var dizzinessOrLossOfConsciousness: Bool?
-    var boneJointProblem: Bool?
-    var takingBloodPressureMeds: Bool?
-    var otherReasonToAvoidExercise: Bool?
-}
+// MARK: - Assessment payload v2 (espelha SubmitAssessmentDto do backend)
 
 struct AssessmentSubmissionRequest: Encodable, Sendable {
-    var goals = AssessmentGoals()
-    var activityHistory = AssessmentActivityHistory()
-    var trainingPlanning = AssessmentTrainingPlanning()
-    var performanceHealth = AssessmentPerformanceHealth()
-    var parq = AssessmentParq()
+    // P1 — Informações
     var gender: String?
-    var termsAccepted: Bool = false
+    var weight: Double?
+    var height: Double?
+    var restingHeartRate: Int?
+    var maxHeartRate: Int?
+    // P2 — Motivação
+    var motivations: [String] = []
+    // P3 — Frequência
+    var runningFrequency: String?
+    // P4 — Nível
+    var fitnessLevel: String?
+    // P5 — Pace (seconds/km, e.g. 345 = 5:45/km)
+    var comfortPaceSeconds: Int?
+    // P6 — Objetivos
+    var objective: String?
+    var objectiveDistance: String?
+    var objectiveType: String?
+    var targetTime: String?
+    // Required by backend
+    var termsAccepted: Bool = true
 }
 
 struct EntitlementResponse: Decodable, Sendable {
@@ -523,10 +577,15 @@ struct UserProfile: Decodable {
     let name: String?
     let username: String?
     let email: String
+    let gender: String?
+    let dateOfBirth: String?
     let weight: Double?
     let height: Double?
     let availableDays: [String]?
     let assessmentCompleted: Bool?
+    let appleLinked: Bool?
+    let googleLinked: Bool?
+    let hasPassword: Bool?
 }
 
 // MARK: - Errors

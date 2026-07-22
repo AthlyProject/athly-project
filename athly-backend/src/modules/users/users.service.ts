@@ -23,13 +23,11 @@ export class UsersService {
     }
 
     const name = email.split('@')[0] || 'Usuário';
-    const username = email.split('@')[0] || 'user';
     const hashedPassword = (await bcrypt.hash(password, 10)) as string;
 
     return this.prisma.user.create({
       data: {
         email,
-        username,
         name,
         password: hashedPassword,
       },
@@ -51,6 +49,7 @@ export class UsersService {
     if (data.height !== undefined) updateData.height = data.height;
     if (data.goals !== undefined) updateData.goals = data.goals;
     if (data.availableDays !== undefined) updateData.availableDays = data.availableDays;
+    if (data.gender !== undefined) updateData.gender = data.gender;
     if (password !== undefined) {
       updateData.password = (await bcrypt.hash(password, 10)) as string;
     }
@@ -78,7 +77,7 @@ export class UsersService {
     return {
       id: user.id,
       name: user.name,
-      username: user.username,
+      username: user.username ?? undefined,
       email: user.email,
       role: user.role,
       dateOfBirth: user.dateOfBirth ?? undefined,
@@ -86,7 +85,11 @@ export class UsersService {
       height: user.height ?? undefined,
       goals: user.goals ?? [],
       availableDays: user.availableDays ?? [],
+      gender: user.gender ?? undefined,
       assessmentCompleted: user.assessmentCompleted,
+      appleLinked: !!user.appleUserId,
+      googleLinked: !!user.googleUserId,
+      hasPassword: !!user.password,
     };
   }
 }

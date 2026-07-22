@@ -8,7 +8,14 @@ import { buildMacrocycle } from './periodization';
 
 // bestSubEffortsFromSessions/bestContinuousWindow são matemática pura e não tocam o Prisma —
 // o service é construído com stubs. As privadas são exercitadas via cast, como em outros specs.
-const planner = new AiPlannerService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
+const planner = new AiPlannerService(
+  {} as any,
+  {} as any,
+  {} as any,
+  {} as any,
+  {} as any,
+  {} as any,
+);
 const bestSubEfforts = (sessions: DetailedSessionDto[]): RunDataForZones[] =>
   (planner as any).bestSubEffortsFromSessions(sessions);
 
@@ -33,11 +40,7 @@ describe('AiPlannerService.resolvePlanningWindow — primeira semana sem treino 
   });
 
   it('cai para a próxima segunda quando não existe dia disponível restante na semana atual', () => {
-    const window = resolve(
-      undefined,
-      ['monday', 'tuesday', 'wednesday'],
-      '2026-07-16T12:00:00Z',
-    );
+    const window = resolve(undefined, ['monday', 'tuesday', 'wednesday'], '2026-07-16T12:00:00Z');
 
     expect(window.weekDates[0]).toBe('2026-07-20');
     expect(window.weekDates[6]).toBe('2026-07-26');
@@ -46,11 +49,7 @@ describe('AiPlannerService.resolvePlanningWindow — primeira semana sem treino 
   });
 
   it('preserva a semana explícita enviada no payload', () => {
-    const window = resolve(
-      '2026-07-06',
-      ['monday', 'wednesday', 'friday'],
-      '2026-07-16T12:00:00Z',
-    );
+    const window = resolve('2026-07-06', ['monday', 'wednesday', 'friday'], '2026-07-16T12:00:00Z');
 
     expect(window.weekDates[0]).toBe('2026-07-06');
     expect(window.weekDates[6]).toBe('2026-07-12');
@@ -261,9 +260,9 @@ describe('AiPlannerService.startPlanFromHealthGeneration', () => {
 
     const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
 
-    expect(() =>
-      svc.getPlanFromHealthGenerationStatus('user-2', started.generationId),
-    ).toThrow(NotFoundException);
+    expect(() => svc.getPlanFromHealthGenerationStatus('user-2', started.generationId)).toThrow(
+      NotFoundException,
+    );
   });
 });
 

@@ -24,8 +24,6 @@ services:
       - /app/node_modules
     env_file:
       - ./athly-backend/.env
-    environment:
-      - NODE_OPTIONS=--require ./dist/src/otel-init.js
     depends_on:
       - db
       - otel-collector

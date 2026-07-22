@@ -1,9 +1,11 @@
-import { Injectable, InternalServerErrorException, BadGatewayException, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
-  GoogleGenAI,
-  type GenerateContentResponse,
-} from '@google/genai';
+  Injectable,
+  InternalServerErrorException,
+  BadGatewayException,
+  Logger,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import type {
   AiPlannerInput,
   PlannerGuardrails,
@@ -22,7 +24,10 @@ import {
 import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
 import type { AnalyzedSession } from './workout-execution-analyzer.service';
 import type { PlannedWeek } from './periodization';
-import { validateSegmentTree, isStructurallyCompleteRun } from '../workouts/utils/validate-segments';
+import {
+  validateSegmentTree,
+  isStructurallyCompleteRun,
+} from '../workouts/utils/validate-segments';
 
 export interface PlannerExecution {
   prompt: string;
@@ -168,7 +173,15 @@ export const plannerResponseSchema = {
           isGoalAttempt: { type: 'boolean' },
           segments: { type: 'array', items: segmentSchema },
         },
-        required: ['date', 'dayOfWeek', 'title', 'description', 'sportType', 'intensity', 'segments'],
+        required: [
+          'date',
+          'dayOfWeek',
+          'title',
+          'description',
+          'sportType',
+          'intensity',
+          'segments',
+        ],
       },
     },
   },
@@ -236,7 +249,9 @@ export class GeminiService {
   }
 
   private goalParserModelName(): string {
-    return this.configService.get<string>('GEMINI_GOAL_PARSER_MODEL') || this.defaultGoalParserModelName;
+    return (
+      this.configService.get<string>('GEMINI_GOAL_PARSER_MODEL') || this.defaultGoalParserModelName
+    );
   }
 
   async generatePlan(
@@ -311,7 +326,9 @@ export class GeminiService {
     try {
       parsed = JSON.parse(responseText) as ParsedGoal;
     } catch {
-      throw new BadGatewayException('Gemini AI returned an invalid JSON response for goal parsing.');
+      throw new BadGatewayException(
+        'Gemini AI returned an invalid JSON response for goal parsing.',
+      );
     }
 
     if (typeof parsed.isRunningRelated !== 'boolean' || !parsed.summary) {
@@ -495,7 +512,8 @@ export class GeminiService {
       if (!dates.includes(expected)) defects.push(`weekPlan is missing date ${expected}`);
     }
     for (const date of dates) {
-      if (!expectedDates.has(date)) defects.push(`weekPlan contains date outside target week: ${date}`);
+      if (!expectedDates.has(date))
+        defects.push(`weekPlan contains date outside target week: ${date}`);
     }
 
     const available = new Set(guardrails.availableDays.map((d) => d.toLowerCase()));
@@ -695,7 +713,8 @@ NUNCA retorne um dia de corrida com um único segmento. Siga <segment_schema> e 
   }
 
   private formatUsageLog(label: string, usage: AiPlannerUsage): string {
-    const cost = usage.estimatedCostUsd === null ? 'unknown' : `$${usage.estimatedCostUsd.toFixed(6)}`;
+    const cost =
+      usage.estimatedCostUsd === null ? 'unknown' : `$${usage.estimatedCostUsd.toFixed(6)}`;
     return `Gemini ${label} usage: model=${usage.model}, attempts=${usage.attempts}, inputTokens=${usage.inputTokens}, outputTokens=${usage.outputTokens}, thinkingTokens=${usage.thinkingTokens}, totalTokens=${usage.totalTokens}, estimatedCostUsd=${cost}, tokenSource=${usage.tokenSource}`;
   }
 }
@@ -708,13 +727,18 @@ function isoDayKey(date: string): string {
 function targetMidPace(target: unknown): number | null {
   if (!target || typeof target !== 'object') return null;
   const t = target as { paceSecPerKmMin?: number; paceSecPerKmMax?: number };
-  const min = typeof t.paceSecPerKmMin === 'number' && t.paceSecPerKmMin > 0 ? t.paceSecPerKmMin : null;
-  const max = typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0 ? t.paceSecPerKmMax : null;
+  const min =
+    typeof t.paceSecPerKmMin === 'number' && t.paceSecPerKmMin > 0 ? t.paceSecPerKmMin : null;
+  const max =
+    typeof t.paceSecPerKmMax === 'number' && t.paceSecPerKmMax > 0 ? t.paceSecPerKmMax : null;
   if (min !== null && max !== null) return (min + max) / 2;
   return min ?? max;
 }
 
-function pricingForModel(modelName: string, inputTokens = 0): { input: number; output: number } | null {
+function pricingForModel(
+  modelName: string,
+  inputTokens = 0,
+): { input: number; output: number } | null {
   const normalized = modelName.replace(/^models\//, '').toLowerCase();
   if (normalized === 'gemini-3.1-pro-preview' && inputTokens > 200_000) {
     return { input: 4, output: 18 };

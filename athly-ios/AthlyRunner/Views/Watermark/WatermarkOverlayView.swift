@@ -47,7 +47,7 @@ struct WatermarkOverlayView: View {
             Spacer(minLength: 0)
             VStack(spacing: 0) {
                 Rectangle()
-                    .fill(AthlyTheme.Gradient.neon)
+                    .fill(AthlyTheme.Gradient.brand)
                     .frame(height: 2 * scale)
 
                 HStack(alignment: .center, spacing: 10 * scale) {
@@ -174,7 +174,7 @@ struct WatermarkOverlayView: View {
                     HStack(alignment: .lastTextBaseline, spacing: 6 * scale) {
                         Text(data.formattedDistance)
                             .font(.custom("SpaceGrotesk-Bold", size: 76 * scale))
-                            .foregroundStyle(AthlyTheme.Gradient.neon)
+                            .foregroundStyle(AthlyTheme.Gradient.brand)
                         Text("KM")
                             .font(.custom("SpaceGrotesk-Bold", size: 22 * scale))
                             .foregroundStyle(.white)
@@ -224,9 +224,9 @@ struct WatermarkOverlayView: View {
             HStack(alignment: .center, spacing: 14 * scale) {
                 RouteTraceShape(coordinates: data.routeCoordinates)
                     .stroke(style: StrokeStyle(lineWidth: 2.5 * scale, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(AthlyTheme.Gradient.neon)
+                    .foregroundStyle(AthlyTheme.Gradient.brand)
                     .frame(width: 96 * scale, height: 64 * scale)
-                    .shadow(color: AthlyTheme.Color.primaryNeon.opacity(0.6), radius: 4 * scale)
+                    .shadow(color: AthlyTheme.Color.primary.opacity(0.6), radius: 4 * scale)
 
                 VStack(alignment: .leading, spacing: 3 * scale) {
                     HStack(alignment: .lastTextBaseline, spacing: 5 * scale) {
