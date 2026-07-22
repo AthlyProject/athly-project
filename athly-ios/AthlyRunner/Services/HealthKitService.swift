@@ -28,6 +28,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
     private static let zeppDiagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "ZeppWorkout")
+    private static let writeLogger = Logger(subsystem: "com.athly.healthkit.write", category: "WorkoutSave")
 
     // Metadata dos HKWorkoutEvents(.segment) gravados pelo app — lidos de volta pelo
     // WorkoutDetailFetcher para reconstruir a estrutura executada com valores reais.
@@ -74,24 +75,57 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     /// Solicita permissão de escrita para salvar corridas no Apple Health.
-    /// No-op após a primeira solicitação por instalação (guard via PermissionGate).
+    /// A rota é opcional: não deve bloquear a criação do HKWorkout principal.
     func requestWriteAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        let typesToShare: Set<HKSampleType> = [
+        let essentialTypesToShare: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HealthKitService.energyType,
-            HealthKitService.distanceType,
-            HKSeriesType.workoutRoute()
+            HealthKitService.distanceType
         ]
         if PermissionGate.shouldRequestHealthKitWrite {
-            try await store.requestAuthorization(toShare: typesToShare, read: [])
+            try await store.requestAuthorization(toShare: essentialTypesToShare, read: [])
             PermissionGate.markHealthKitWriteRequested()
         }
 
+        if PermissionGate.shouldRequestHealthKitRouteWrite {
+            do {
+                try await store.requestAuthorization(toShare: [HKSeriesType.workoutRoute()], read: [])
+                PermissionGate.markHealthKitRouteWriteRequested()
+            } catch {
+                Self.writeLogger.warning("HealthKit route write authorization failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+
+        logWriteAuthorizationStatus(context: "requestWriteAuthorization")
+
         guard store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
             throw HealthKitError.writeDenied
+        }
+    }
+
+    private func isSharingAuthorized(_ type: HKObjectType) -> Bool {
+        store.authorizationStatus(for: type) == .sharingAuthorized
+    }
+
+    private func logWriteAuthorizationStatus(context: String) {
+        Self.writeLogger.notice(
+            "[\(context, privacy: .public)] workout=\(self.authorizationStatusLabel(for: HKObjectType.workoutType()), privacy: .public) distance=\(self.authorizationStatusLabel(for: Self.distanceType), privacy: .public) energy=\(self.authorizationStatusLabel(for: Self.energyType), privacy: .public) route=\(self.authorizationStatusLabel(for: HKSeriesType.workoutRoute()), privacy: .public)"
+        )
+    }
+
+    private func authorizationStatusLabel(for type: HKObjectType) -> String {
+        switch store.authorizationStatus(for: type) {
+        case .notDetermined:
+            return "notDetermined"
+        case .sharingDenied:
+            return "sharingDenied"
+        case .sharingAuthorized:
+            return "sharingAuthorized"
+        @unknown default:
+            return "unknown"
         }
     }
 
@@ -114,39 +148,43 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
         var samples: [HKSample] = []
 
-        if result.caloriesBurned > 0 {
+        if result.caloriesBurned > 0 && isSharingAuthorized(HealthKitService.energyType) {
             samples.append(HKQuantitySample(
                 type: HealthKitService.energyType,
                 quantity: HKQuantity(unit: .kilocalorie(), doubleValue: result.caloriesBurned),
                 start: result.startDate,
                 end: result.endDate
             ))
+        } else if result.caloriesBurned > 0 {
+            Self.writeLogger.warning("Skipping activeEnergyBurned sample because HealthKit sharing is not authorized.")
         }
 
-        if result.distanceMeters > 0 {
+        if result.distanceMeters > 0 && isSharingAuthorized(HealthKitService.distanceType) {
             samples.append(HKQuantitySample(
                 type: HealthKitService.distanceType,
                 quantity: HKQuantity(unit: .meter(), doubleValue: result.distanceMeters),
                 start: result.startDate,
                 end: result.endDate
             ))
+        } else if result.distanceMeters > 0 {
+            Self.writeLogger.warning("Skipping distanceWalkingRunning sample because HealthKit sharing is not authorized.")
         }
 
-        if !samples.isEmpty {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                builder.add(samples) { _, error in
-                    if let error { cont.resume(throwing: error) } else { cont.resume() }
-                }
+        for sample in samples {
+            do {
+                try await addSample(sample, to: builder)
+            } catch {
+                Self.writeLogger.error("Failed to add HealthKit workout sample: \(error.localizedDescription, privacy: .public)")
             }
         }
 
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-            builder.addMetadata([
+        do {
+            try await addMetadata([
                 "activeDurationSeconds": result.durationSeconds,
                 "averagePaceSecondsPerKm": result.averagePaceSecondsPerKm
-            ]) { _, error in
-                if let error { cont.resume(throwing: error) } else { cont.resume() }
-            }
+            ], to: builder)
+        } catch {
+            Self.writeLogger.error("Failed to add HealthKit workout metadata: \(error.localizedDescription, privacy: .public)")
         }
 
         // Fronteiras reais dos segmentos executados (treino estruturado). Sem esses
@@ -186,11 +224,15 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
         let workoutEvents = segmentEvents + pauseEvents
         if !workoutEvents.isEmpty {
-            try? await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                builder.addWorkoutEvents(workoutEvents) { _, error in
-                    if let error { cont.resume(throwing: error) } else { cont.resume() }
-                }
+            do {
+                try await addWorkoutEvents(workoutEvents, to: builder)
+            } catch {
+                Self.writeLogger.error("Failed to add HealthKit workout events: \(error.localizedDescription, privacy: .public)")
             }
+        }
+
+        if !result.locations.isEmpty {
+            await addRoute(result.locations, to: builder)
         }
 
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
@@ -209,30 +251,52 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             }
         }
 
-        // Anexa a rota GPS (best-effort) para o Histórico mostrar mapa + splits.
-        if let workout, !result.locations.isEmpty {
-            await saveRoute(result.locations, to: workout)
-        }
-
         return workout
     }
 
-    /// Anexa a rota GPS (CLLocations) ao HKWorkout já salvo. Best-effort: falha não invalida a corrida.
-    private func saveRoute(_ locations: [CLLocation], to workout: HKWorkout) async {
-        let routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: .local())
+    private func addSample(_ sample: HKSample, to builder: HKWorkoutBuilder) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.add([sample]) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
+    }
+
+    private func addMetadata(_ metadata: [String: Any], to builder: HKWorkoutBuilder) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.addMetadata(metadata) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
+    }
+
+    private func addWorkoutEvents(_ events: [HKWorkoutEvent], to builder: HKWorkoutBuilder) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            builder.addWorkoutEvents(events) { _, error in
+                if let error { cont.resume(throwing: error) } else { cont.resume() }
+            }
+        }
+    }
+
+    /// Anexa rota GPS ao builder do workout. Best-effort: falha não invalida a corrida.
+    private func addRoute(_ locations: [CLLocation], to builder: HKWorkoutBuilder) async {
+        guard isSharingAuthorized(HKSeriesType.workoutRoute()) else {
+            Self.writeLogger.warning("Skipping workout route because HealthKit route sharing is not authorized.")
+            return
+        }
+        guard let routeBuilder = builder.seriesBuilder(for: HKSeriesType.workoutRoute()) as? HKWorkoutRouteBuilder else {
+            Self.writeLogger.warning("HealthKit did not return HKWorkoutRouteBuilder from workout builder.")
+            return
+        }
+
         do {
             try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
                 routeBuilder.insertRouteData(locations) { _, error in
                     if let error { cont.resume(throwing: error) } else { cont.resume() }
                 }
             }
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                routeBuilder.finishRoute(with: workout, metadata: nil) { _, error in
-                    if let error { cont.resume(throwing: error) } else { cont.resume() }
-                }
-            }
         } catch {
-            // Ignora: a corrida já está salva; só a rota não foi anexada.
+            Self.writeLogger.error("Failed to add HealthKit workout route data: \(error.localizedDescription, privacy: .public)")
         }
     }
 
