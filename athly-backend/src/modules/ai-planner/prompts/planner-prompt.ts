@@ -101,6 +101,7 @@ Estes números foram calculados pelo backend e são a fonte da verdade. NÃO rec
 - Volume máximo planejado desta semana: ${context.weeklyVolumeMaxKm.toFixed(2)} km
 - Confiança do volume-base: ${context.volumeConfidence}
 - Os dias listados como "dias de treino" são disponibilidade máxima; use menos dias se necessário para respeitar volume, recuperação e periodização.
+- MÍNIMO DE SESSÕES: se houver 2+ dias disponíveis e o volume máximo for >= 4 km, distribua o volume em pelo menos 2 sessões (ex.: 1 treino de qualidade + 1 corrida fácil/regenerativa curta). Concentrar tudo em 1 única sessão semanal prejudica aderência e base aeróbica.
 ${goalAttempt}
 </deterministic_guardrails>`;
 }
@@ -781,7 +782,7 @@ ${SEGMENT_RECIPES}
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Todos os outros dias = descanso obrigatório.
 ${dateConstraintBullet}
 - Nunca ultrapasse o volume máximo calculado em <deterministic_guardrails>. Se necessário, use menos dias de treino do que a disponibilidade máxima.
-- Sessões de intervalos devem incluir warmup de pelo menos 10 min e cooldown de pelo menos 5 min.
+- Sessões de intervalos devem incluir warmup de pelo menos 8 min (480s) ou 1 km, e cooldown de pelo menos 5 min ou 500 m — mesmos mínimos dos segmentos warmup/cooldown.
 - Se dados de FC não estiverem disponíveis, use target.rpe (1–10) em vez de target.hrZone.
 - weekPlan deve conter EXATAMENTE 7 entradas, uma por dia de ${weekDates[0]} a ${weekDates[6]}.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.

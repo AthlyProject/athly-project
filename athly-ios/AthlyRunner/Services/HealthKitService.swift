@@ -312,11 +312,13 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     }
 
     /// Busca uma corrida específica pelo UUID do HKWorkout.
+    /// Usa o mesmo critério da listagem (`isRunningWorkoutCandidate`) para que treinos
+    /// aceitos na lista (ex.: Zepp/Amazfit gravados como `.other`) também resolvam por UUID.
     func fetchRunningWorkout(uuid workoutUUID: String) async throws -> HealthKitRunItem? {
         guard isHealthDataAvailable,
               let uuid = UUID(uuidString: workoutUUID),
               let workout = await fetchWorkout(uuid: uuid),
-              workout.workoutActivityType == .running else {
+              isRunningWorkoutCandidate(workout) else {
             return nil
         }
         return map(workout)

@@ -38,6 +38,10 @@ export type WeeklyGoalLike = {
   createdAt: Date;
   metrics: unknown;
   workouts: WorkoutLike[];
+  // Janela da semana (presente nas goals vindas do Prisma). Necessária para somar
+  // corridas avulsas (fora do plano) ao volume executado da semana.
+  weekStartDate?: Date;
+  weekEndDate?: Date;
 };
 
 /**
@@ -179,6 +183,42 @@ function dateKey(date: string | Date): string {
 }
 
 /**
+ * Volume de corridas avulsas da semana: sessões do Apple Health (ex.: Amazfit/Zepp,
+ * Nike) dentro da janela da goal que NÃO correspondem a nenhum treino prescrito
+ * concluído. Sem isso, corridas feitas fora do plano escreviam no HealthKit e
+ * apareciam no detalhe das sessões, mas eram ignoradas no volume executado — a
+ * base de progressão subestimava o atleta.
+ * Exclui sessões casadas com treinos 'done' (por id, UUID ou mesmo dia) porque
+ * essas já entram via executedVolumeKm (correção de distância).
+ */
+export function unplannedSessionsKm(
+  goal: WeeklyGoalLike,
+  options: ExecutedVolumeOptions = {},
+): number {
+  if (!goal.weekStartDate || !goal.weekEndDate) return 0;
+  const startKey = dateKey(goal.weekStartDate);
+  const endKey = dateKey(goal.weekEndDate);
+  const doneWorkouts = goal.workouts.filter((w) => w.status === 'done');
+
+  return normalizeSessions(options.detailedSessions ?? [])
+    .filter((s) => {
+      const day = dateKey(s.startDate);
+      return day >= startKey && day <= endKey;
+    })
+    .filter(
+      (s) =>
+        !doneWorkouts.some(
+          (w) =>
+            (w.id && s.athlyWorkoutId === w.id) ||
+            (w.appleHealthWorkoutUUID &&
+              s.appleHealthWorkoutUUID === w.appleHealthWorkoutUUID) ||
+            dateKey(s.startDate) === dateKey(w.dateScheduled),
+        ),
+    )
+    .reduce((sum, s) => sum + s.distanceMeters / 1000, 0);
+}
+
+/**
  * Builds the longitudinal trend rows from weekly goals ordered newest-first.
  * Returns them oldest-first so the AI reads chronological progression naturally.
  */
@@ -192,7 +232,7 @@ export function computeLongitudinalWeeks(
     const doneWorkouts = workouts.filter((w) => w.status === 'done');
     const completionRate =
       workouts.length > 0 ? parseFloat((doneWorkouts.length / workouts.length).toFixed(2)) : 0;
-    const totalKm = executedVolumeKm(goal.workouts, options);
+    const totalKm = executedVolumeKm(goal.workouts, options) + unplannedSessionsKm(goal, options);
     const metrics = (goal.metrics ?? {}) as { avgPace?: string };
     const allFeedback = workouts.flatMap((w) => w.feedback);
     const avgEffort =
@@ -244,10 +284,13 @@ export function computePreviousWeekAnalysis(
         )
       : null;
 
-  const totalDistanceKm = executedVolumeKm(previousGoal.workouts, options);
+  const totalDistanceKm =
+    executedVolumeKm(previousGoal.workouts, options) + unplannedSessionsKm(previousGoal, options);
 
   const baselineGoal = goalsNewestFirst[1];
-  const baselineKm = baselineGoal ? executedVolumeKm(baselineGoal.workouts, options) : 0;
+  const baselineKm = baselineGoal
+    ? executedVolumeKm(baselineGoal.workouts, options) + unplannedSessionsKm(baselineGoal, options)
+    : 0;
   let volumeChange = 'sem dados anteriores';
   if (baselineKm > 0 && totalDistanceKm > 0) {
     const pctChange = ((totalDistanceKm - baselineKm) / baselineKm) * 100;

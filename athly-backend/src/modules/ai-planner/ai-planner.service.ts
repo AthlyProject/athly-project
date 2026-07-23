@@ -559,17 +559,46 @@ export class AiPlannerService {
   ): DeterministicPlannerContext {
     const fallbackBaseline =
       input.avgDistKm > 0 ? input.avgDistKm * Math.max(1, input.trainingDays) : input.totalDistKm;
-    const weeklyVolumeBaselineKm = round2(
+    const prevWeekKm =
       previousWeek?.totalDistanceKm && previousWeek.totalDistanceKm > 0
         ? previousWeek.totalDistanceKm
-        : fallbackBaseline,
-    );
+        : null;
+
+    // Uma única semana ruim não pode colapsar a base: sem este piso, um atleta vindo de
+    // 16/9/9 km que completou só 4.55 km na última semana recebia teto de ~5 km e um plano
+    // degenerado (1 sessão em 4 dias disponíveis). Piso = 70% da média das últimas 3-4
+    // semanas com volume registrado.
+    const trailingWeeks = (longitudinalWeeks ?? []).filter((w) => w.totalKm > 0).slice(-4);
+    const trailingAvgKm =
+      trailingWeeks.length >= 2
+        ? trailingWeeks.reduce((sum, w) => sum + w.totalKm, 0) / trailingWeeks.length
+        : null;
+
+    let baselineKm = prevWeekKm ?? fallbackBaseline;
+    let baselineRaisedByTrailingFloor = false;
+    if (trailingAvgKm !== null && baselineKm < trailingAvgKm * 0.7) {
+      baselineKm = trailingAvgKm * 0.7;
+      baselineRaisedByTrailingFloor = true;
+    }
+
+    const weeklyVolumeBaselineKm = round2(baselineKm);
     const weeklyVolumeMaxKm = round2(Math.max(weeklyVolumeBaselineKm, 0) * 1.1);
+
+    // Base reconstruída pelo piso móvel — ou medida numa semana com <2 sessões
+    // completadas — não merece confiança 'high' (que autoriza progressão agressiva).
+    let volumeConfidence = previousWeek?.volumeConfidence ?? 'high';
+    const completedWorkouts = previousWeek?.completedWorkouts ?? null;
+    if (
+      volumeConfidence === 'high' &&
+      (baselineRaisedByTrailingFloor || (completedWorkouts !== null && completedWorkouts < 2))
+    ) {
+      volumeConfidence = 'low';
+    }
 
     return {
       weeklyVolumeBaselineKm,
       weeklyVolumeMaxKm,
-      volumeConfidence: previousWeek?.volumeConfidence ?? 'high',
+      volumeConfidence,
       goalAttempt: this.assessUndatedGoalAttempt(
         goal,
         previousWeek,
