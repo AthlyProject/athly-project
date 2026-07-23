@@ -26,6 +26,16 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     private static let energyType = HKQuantityType(.activeEnergyBurned)
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
+    /// Todos os tipos são pedidos juntos porque o HealthKit exige `workoutType()` no mesmo
+    /// pedido de `workoutRoute()`. O usuário ainda pode autorizar cada categoria separadamente.
+    static var writeAuthorizationTypes: Set<HKSampleType> {
+        [
+            HKObjectType.workoutType(),
+            HKSeriesType.workoutRoute(),
+            energyType,
+            distanceType
+        ]
+    }
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
     private static let zeppDiagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "ZeppWorkout")
     private static let writeLogger = Logger(subsystem: "com.athly.healthkit.write", category: "WorkoutSave")
@@ -80,23 +90,9 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        let essentialTypesToShare: Set<HKSampleType> = [
-            HKObjectType.workoutType(),
-            HealthKitService.energyType,
-            HealthKitService.distanceType
-        ]
         if PermissionGate.shouldRequestHealthKitWrite {
-            try await store.requestAuthorization(toShare: essentialTypesToShare, read: [])
+            try await store.requestAuthorization(toShare: Self.writeAuthorizationTypes, read: [])
             PermissionGate.markHealthKitWriteRequested()
-        }
-
-        if PermissionGate.shouldRequestHealthKitRouteWrite {
-            do {
-                try await store.requestAuthorization(toShare: [HKSeriesType.workoutRoute()], read: [])
-                PermissionGate.markHealthKitRouteWriteRequested()
-            } catch {
-                Self.writeLogger.warning("HealthKit route write authorization failed: \(error.localizedDescription, privacy: .public)")
-            }
         }
 
         logWriteAuthorizationStatus(context: "requestWriteAuthorization")
@@ -1018,7 +1014,7 @@ enum HealthKitError: LocalizedError {
         case .notAvailable:
             return "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador)."
         case .writeDenied:
-            return "O Athly não tem permissão para salvar treinos no Apple Health. A corrida foi salva no histórico local."
+            return "A permissão para salvar Treinos está desativada. Abra Saúde > Resumo > sua foto > Apps > Athly e ative Treinos. A corrida continua salva no Athly."
         }
     }
 }

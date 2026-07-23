@@ -1,7 +1,15 @@
 import XCTest
+import HealthKit
 @testable import AthlyRunner
 
 final class WorkoutModelDateTests: XCTestCase {
+
+    func testWriteAuthorizationRequestsWorkoutAndRouteTogether() {
+        let types = HealthKitService.writeAuthorizationTypes
+
+        XCTAssertTrue(types.contains(HKObjectType.workoutType()))
+        XCTAssertTrue(types.contains(HKSeriesType.workoutRoute()))
+    }
 
     func testDateOnlyWorkoutMatchesReferenceDay() {
         let workout = makeWorkout(date: "2026-06-30")
