@@ -8,37 +8,29 @@ struct AssessmentView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
-    // MARK: - P1: Informações Importantes
-    @State private var gender = ""
-    @State private var weightText = ""
-    @State private var heightText = ""
-    @State private var restingHRText = ""
-    @State private var maxHRText = ""
-
-    // MARK: - P2: Motivação
+    // MARK: - P1: Motivação
     @State private var motivations: [String] = []
 
-    // MARK: - P3: Frequência
+    // MARK: - P2: Frequência
     @State private var runningFrequency = ""
 
-    // MARK: - P4: Nível
+    // MARK: - P3: Nível
     @State private var fitnessLevel = ""
 
-    // MARK: - P5: Pace (seconds/km)
+    // MARK: - P4: Pace (seconds/km)
     @State private var paceSeconds = 345  // default 5:45/km
 
-    // MARK: - P6: Objetivos
+    // MARK: - P5: Objetivos
     @State private var expandedObjective: String? = nil
     @State private var objective = ""
     @State private var objectiveDistance = ""
     @State private var objectiveType = ""
     @State private var targetTimeText = ""
 
-    private let totalSteps = 6
+    private let totalSteps = 5
     private var isLastStep: Bool { step == totalSteps - 1 }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
-        ("Informações\nImportantes",    "Usamos esses dados para personalizar seu treino com IA"),
         ("Motivação\npara Correr",      "Escolha todas que fazem sentido pra você"),
         ("Quanto\nvocê corre?",         "Com que frequência você vai para a rua correr?"),
         ("Seu nível\nno momento",       "Seja honesto — vamos ajustar seus treinos"),
@@ -166,11 +158,10 @@ struct AssessmentView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
-        case 0: step1
-        case 1: step2
-        case 2: step3
-        case 3: step4
-        case 4: step5
+        case 0: step2
+        case 1: step3
+        case 2: step4
+        case 3: step5
         default: step6
         }
     }
@@ -210,11 +201,11 @@ struct AssessmentView: View {
         errorMessage = nil
 
         let request = AssessmentSubmissionRequest(
-            gender: gender.isEmpty ? nil : gender,
-            weight: Double(weightText),
-            height: Double(heightText),
-            restingHeartRate: Int(restingHRText),
-            maxHeartRate: Int(maxHRText),
+            gender: nil,
+            weight: nil,
+            height: nil,
+            restingHeartRate: nil,
+            maxHeartRate: nil,
             motivations: motivations,
             runningFrequency: runningFrequency.isEmpty ? nil : runningFrequency,
             fitnessLevel: fitnessLevel.isEmpty ? nil : fitnessLevel,
@@ -283,93 +274,7 @@ private extension AssessmentView {
     }
 }
 
-// MARK: - P1: Informações Importantes
-
-private extension AssessmentView {
-    var step1: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            obSectionLabel("Gênero").padding(.bottom, 8)
-            genderRow.padding(.bottom, 10)
-            obDivider
-
-            obSectionLabel("Corpo", optional: true).padding(.bottom, 8)
-            HStack(spacing: 8) {
-                p1NumericField(label: "Peso", unit: "kg", text: $weightText)
-                p1NumericField(label: "Altura", unit: "cm", text: $heightText)
-            }
-            .padding(.bottom, 10)
-            obDivider
-
-            obSectionLabel("Frequência Cardíaca").padding(.bottom, 8)
-            HStack(spacing: 8) {
-                p1NumericField(label: "FC em Repouso", unit: "bpm", text: $restingHRText)
-                p1NumericField(label: "FC Máxima", unit: "bpm", text: $maxHRText, accent: true)
-            }
-            .padding(.bottom, 8)
-
-            obInfoNotice("FC máxima estimada: 220 − sua idade. Ajuste se fizer testes de esforço específicos.")
-        }
-    }
-
-    var genderRow: some View {
-        HStack(spacing: 8) {
-            genderPill("♂ Masculino", value: "male")
-            genderPill("♀ Feminino",  value: "female")
-            genderPill("⊕ Outro",     value: "other")
-        }
-    }
-
-    func genderPill(_ label: String, value: String) -> some View {
-        let sel = gender == value
-        return Button { gender = value } label: {
-            Text(label)
-                .font(AthlyTheme.Typography.semibold(13))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 42)
-                .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                        .stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    func p1NumericField(label: String, unit: String, text: Binding<String>, accent: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(AthlyTheme.Typography.label())
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-                .kerning(1)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                TextField("—", text: text)
-                    .keyboardType(.decimalPad)
-                    .font(AthlyTheme.Typography.mono(15))
-                    .foregroundStyle(accent ? AthlyTheme.Color.error : AthlyTheme.Color.textPrimary)
-                Text(unit)
-                    .font(AthlyTheme.Typography.body(10))
-                    .foregroundStyle(AthlyTheme.Color.textTertiary)
-            }
-        }
-        .padding(.vertical, 9)
-        .padding(.horizontal, 12)
-        .background(AthlyTheme.Color.surfaceCard)
-        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                .stroke(accent ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-        )
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - P2: Motivação para Correr
+// MARK: - P1: Motivação para Correr
 
 private extension AssessmentView {
     struct MotivationItem {
