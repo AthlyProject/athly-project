@@ -181,9 +181,9 @@ final class AuthViewModel: ObservableObject {
         self.userName = profile.name ?? ""
         // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
         self.assessmentCompleted = profile.assessmentCompleted ?? true
-        // Gate de completar perfil: contas sociais nascem sem data de nascimento/peso/altura.
+        // Gate de completar perfil: contas sociais nascem sem peso/altura.
         self.needsProfileCompletion =
-            profile.dateOfBirth == nil || profile.weight == nil || profile.height == nil
+            profile.weight == nil || profile.height == nil
     }
 
     /// Chamado pela AssessmentView após o POST /assessment com sucesso.
