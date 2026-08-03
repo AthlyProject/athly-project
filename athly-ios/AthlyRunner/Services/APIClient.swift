@@ -178,7 +178,7 @@ actor APIClient {
         actualDurationSeconds: Double? = nil,
         executionDetails: DetailedSessionPayload? = nil
     ) async throws -> WorkoutModel {
-        if appleHealthWorkoutUUID != nil || actualDistanceMeters != nil || actualDurationSeconds != nil {
+        if appleHealthWorkoutUUID != nil || actualDistanceMeters != nil || actualDurationSeconds != nil || executionDetails != nil {
             return try await patchWithBody(
                 "/workouts/\(workoutId)/complete",
                 body: CompleteWorkoutRequest(

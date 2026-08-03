@@ -5,6 +5,7 @@ struct RunSummaryView: View {
     @ObservedObject var viewModel: RunViewModel
     @EnvironmentObject private var runStore: RunStore
     @EnvironmentObject private var planVM: TrainingPlanViewModel
+    @Environment(\.scenePhase) private var scenePhase
 
     /// URL do .txt gerado pelo botão "I.A Report" (relatório para auditoria de pace/splits).
     @State private var reportURL: URL?
@@ -52,7 +53,11 @@ struct RunSummaryView: View {
                         // não diluído no split de km. Só aparece em treino estruturado.
                         let blocks = RunExecutedSegmentsSection.displayableSegments(result.segmentRecords)
                         if !blocks.isEmpty {
-                            RunExecutedSegmentsSection(segments: blocks)
+                            RunExecutedSegmentsSection(
+                                segments: blocks,
+                                origin: .athlyTracker,
+                                confidence: .exact
+                            )
                         }
 
                         // Splits
@@ -73,14 +78,33 @@ struct RunSummaryView: View {
                             }
                             .padding(.vertical, 8)
                         } else if let error = viewModel.saveError {
-                            HStack(spacing: 6) {
-                                Image(systemName: "wifi.slash")
-                                    .font(.system(size: 14))
-                                Text(error)
-                                    .font(AthlyTheme.Typography.body(13))
+                            VStack(spacing: 10) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "heart.slash")
+                                        .font(.system(size: 14))
+                                    Text(error)
+                                        .font(AthlyTheme.Typography.body(13))
+                                }
+                                .foregroundStyle(AthlyTheme.Color.warning)
+                                .multilineTextAlignment(.center)
+
+                                if viewModel.healthKitWriteDenied {
+                                    Button("Abrir Ajustes") {
+                                        openAppSettings()
+                                    }
+                                    .buttonStyle(AthlySecondaryButtonStyle())
+                                }
+
+                                if viewModel.canRetryHealthKitSync {
+                                    Button {
+                                        Task { await viewModel.retryHealthKitSync(runStore: runStore) }
+                                    } label: {
+                                        Label("Tentar novamente", systemImage: "arrow.triangle.2.circlepath")
+                                    }
+                                    .buttonStyle(AthlySecondaryButtonStyle())
+                                    .disabled(viewModel.isSaving)
+                                }
                             }
-                            .foregroundStyle(AthlyTheme.Color.warning)
-                            .multilineTextAlignment(.center)
                         }
 
                         if let reportURL {
@@ -131,6 +155,11 @@ struct RunSummaryView: View {
                 reportURL = RunReportGenerator.fileURL(for: result)
             }
         }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                viewModel.refreshHealthKitWriteAuthorization()
+            }
+        }
         .fullScreenCover(isPresented: $showCamera) {
             if let result = viewModel.lastRunResult {
                 CameraWatermarkView(data: WatermarkData(from: result))
@@ -144,19 +173,18 @@ struct RunSummaryView: View {
                     onComplete: { _ in
                         let healthKitUUID = viewModel.lastSavedHealthKitUUID
                         let result = viewModel.lastRunResult
-                        Task {
-                            if let result {
-                                await planVM.completeWorkoutWithRunResult(
-                                    workout,
-                                    result: result,
-                                    healthKitUUID: healthKitUUID
-                                )
-                            } else {
-                                await planVM.completeWorkout(workout)
-                            }
+                        if let result {
+                            await planVM.completeWorkoutWithRunResult(
+                                workout,
+                                result: result,
+                                healthKitUUID: healthKitUUID
+                            )
+                        } else {
+                            await planVM.completeWorkout(workout)
                         }
                         viewModel.pendingWorkout = nil
                         viewModel.showWorkoutFeedback = false
+                        return planVM.errorMessage == nil
                     },
                     onDismiss: {
                         viewModel.pendingWorkout = nil
@@ -171,6 +199,11 @@ struct RunSummaryView: View {
         let coords = locations.map { $0.coordinate }
         return SummaryMapView(coordinates: coords)
             .allowsHitTesting(false)
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 
@@ -301,9 +334,35 @@ struct RunSplitsSection: View {
 
 struct RunExecutedSegmentsSection: View {
     let segments: [SegmentRecord]
+    let origin: WorkoutSegmentationOrigin?
+    let confidence: WorkoutSegmentationConfidence?
+
+    init(
+        segments: [SegmentRecord],
+        origin: WorkoutSegmentationOrigin? = nil,
+        confidence: WorkoutSegmentationConfidence? = nil
+    ) {
+        self.segments = segments
+        self.origin = origin
+        self.confidence = confidence
+    }
 
     var body: some View {
         RunSummaryListSection(title: "Blocos executados") {
+            if let origin {
+                HStack(spacing: 8) {
+                    sourceBadge(origin.displayName, highlighted: origin == .prescribedRoute)
+                    if let confidenceLabel = confidence?.displayName {
+                        sourceBadge(confidenceLabel, highlighted: confidence == .exact)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+
+                RunSummaryDivider()
+            }
+
             ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
                 segmentRow(segment)
 
@@ -314,10 +373,25 @@ struct RunExecutedSegmentsSection: View {
         }
     }
 
-    static func displayableSegments(_ records: [SegmentRecord]) -> [SegmentRecord] {
+    private func sourceBadge(_ text: String, highlighted: Bool) -> some View {
+        Text(text)
+            .font(AthlyTheme.Typography.medium(10))
+            .foregroundStyle(highlighted ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill((highlighted ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary).opacity(0.12))
+            )
+    }
+
+    static func displayableSegments(
+        _ records: [SegmentRecord],
+        origin: WorkoutSegmentationOrigin? = nil
+    ) -> [SegmentRecord] {
         records.filter {
             $0.kind != .rest
-                && $0.kind != .unknown
+                && ($0.kind != .unknown || origin == .thirdPartyLaps)
                 && ($0.distanceMeters > 5 || $0.durationSeconds > 3)
         }
     }
@@ -355,6 +429,25 @@ struct RunExecutedSegmentsSection: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+struct WorkoutSegmentationNotice: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(AthlyTheme.Color.warning)
+            Text(message)
+                .font(AthlyTheme.Typography.body(12))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .athlyCard()
+        .padding(.horizontal, 16)
     }
 }
 

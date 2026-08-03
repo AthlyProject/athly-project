@@ -20,6 +20,23 @@ struct RoutePoint: Identifiable, Codable {
         self.horizontalAccuracy = location.horizontalAccuracy
     }
 
+    init(
+        latitude: Double,
+        longitude: Double,
+        altitude: Double,
+        timestamp: Date,
+        speed: Double = 0,
+        horizontalAccuracy: Double = -1
+    ) {
+        self.id = UUID()
+        self.latitude = latitude
+        self.longitude = longitude
+        self.altitude = altitude
+        self.timestamp = timestamp
+        self.speed = max(0, speed)
+        self.horizontalAccuracy = horizontalAccuracy
+    }
+
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }

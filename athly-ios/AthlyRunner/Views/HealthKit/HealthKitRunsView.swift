@@ -16,6 +16,7 @@ struct HealthKitRunsView: View {
     }()
 
     @State private var selectedTab: HistoryTab
+    @State private var workoutToRepair: WorkoutModel?
 
     init(title: String = "Corridas do Apple Health", showsPlanTab: Bool = true) {
         self.title = title
@@ -50,11 +51,13 @@ struct HealthKitRunsView: View {
     private enum PrescribedRunSource {
         case health(HealthKitRunItem)
         case local(RunSession)
+        case missing(Date)
 
         var startDate: Date {
             switch self {
             case .health(let run): return run.startDate
             case .local(let session): return session.startDate
+            case .missing(let date): return date
             }
         }
     }
@@ -133,6 +136,24 @@ struct HealthKitRunsView: View {
             #endif
         }
         .task { await loadData() }
+        .sheet(item: $workoutToRepair) { workout in
+            WorkoutCompletionSheet(
+                workout: workout,
+                onComplete: { selection in
+                    let succeeded = await planVM.completeWorkoutSelection(
+                        workout,
+                        selection: selection,
+                        runStore: runStore
+                    )
+                    if succeeded {
+                        workoutToRepair = nil
+                        await loadData()
+                    }
+                    return succeeded
+                },
+                onDismiss: { workoutToRepair = nil }
+            )
+        }
     }
 
     private var content: some View {
@@ -246,6 +267,15 @@ struct HealthKitRunsView: View {
                             PrescribedLocalRunCard(workout: item.workout, session: session)
                         }
                         .buttonStyle(.plain)
+                    case .missing:
+                        NavigationLink {
+                            WorkoutDetailView(workout: item.workout, onComplete: {
+                                workoutToRepair = item.workout
+                            })
+                        } label: {
+                            MissingPrescribedRunCard(workout: item.workout)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -272,22 +302,20 @@ struct HealthKitRunsView: View {
         }
 
         return planVM.allWorkouts.compactMap { workout in
-            guard workout.status == .done || workout.status == .partial else {
+            guard workout.sportType == .running,
+                  workout.status == .done || workout.status == .partial else {
                 return nil
+            }
+
+            if let session = localSession(for: workout) {
+                return PrescribedRun(workout: workout, source: .local(session))
             }
 
             if let uuid = healthKitUUID(for: workout), let run = runsById[uuid] {
                 return PrescribedRun(workout: workout, source: .health(run))
             }
 
-            if let session = localSession(for: workout) {
-                if let uuid = session.healthKitWorkoutUUID, let run = runsById[uuid] {
-                    return PrescribedRun(workout: workout, source: .health(run))
-                }
-                return PrescribedRun(workout: workout, source: .local(session))
-            }
-
-            return nil
+            return PrescribedRun(workout: workout, source: .missing(workout.parsedDate))
         }
         .sorted { $0.source.startDate > $1.source.startDate }
     }
@@ -610,6 +638,10 @@ struct LocalRunCard: View {
         let icon: String
         let color: Color
         switch session.healthKitSyncStatus {
+        case .notRequested:
+            text = "Somente Athly"
+            icon = "heart.slash"
+            color = AthlyTheme.Color.textSecondary
         case .synced:
             text = "Apple Health"
             icon = "checkmark.circle.fill"
@@ -807,6 +839,7 @@ struct PrescribedLocalRunCard: View {
 
     private var syncText: String {
         switch session.healthKitSyncStatus {
+        case .notRequested: return "Somente Athly"
         case .synced: return "Apple Health"
         case .failed: return "Pendente Apple Health"
         case .unavailable: return "Local Athly"
@@ -817,6 +850,7 @@ struct PrescribedLocalRunCard: View {
 
     private var syncIcon: String {
         switch session.healthKitSyncStatus {
+        case .notRequested: return "heart.slash"
         case .synced: return "checkmark.circle"
         case .failed: return "exclamationmark.triangle"
         case .unavailable: return "iphone"
@@ -837,6 +871,42 @@ struct PrescribedLocalRunCard: View {
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+struct MissingPrescribedRunCard: View {
+    let workout: WorkoutModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: workout.sportType.sfSymbol)
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(workout.parsedDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                    Text(workout.title)
+                        .font(AthlyTheme.Typography.semibold(17))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
+
+            Label("Concluído sem dados de execução", systemImage: "exclamationmark.circle")
+                .font(AthlyTheme.Typography.body(13))
+                .foregroundStyle(AthlyTheme.Color.warning)
+
+            Label("Adicionar FIT, TCX, GPX ou corrida do Apple Health", systemImage: "doc.badge.plus")
+                .font(AthlyTheme.Typography.semibold(13))
+                .foregroundStyle(AthlyTheme.Color.primary)
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
     }
 }
 

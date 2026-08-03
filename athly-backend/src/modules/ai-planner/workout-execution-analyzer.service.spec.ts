@@ -72,6 +72,26 @@ function tempoSession(): DetailedSessionDto {
 }
 
 describe('WorkoutExecutionAnalyzerService — percepção de pace', () => {
+  it('aceita execução importada sem UUID do Apple Health', () => {
+    const persisted = (service as any).extractPersistedExecutionDetails(
+      {
+        startDate: '2026-07-29T10:00:00.000Z',
+        distanceMeters: 5000,
+        durationSeconds: 1800,
+        averagePaceSecondsPerKm: 360,
+        segments: [],
+        splitsSource: 'route',
+      },
+      'workout-importado',
+    );
+
+    expect(persisted).toMatchObject({
+      athlyWorkoutId: 'workout-importado',
+      distanceMeters: 5000,
+    });
+    expect(persisted.appleHealthWorkoutUUID).toBeUndefined();
+  });
+
   it('extrai a faixa de pace real (min–max) da árvore de segments', () => {
     const prescribed = (service as any).summarizePrescribed(workoutWith(tempoRunTree));
     expect(prescribed.targetPaceRange).toEqual({ minSecPerKm: 330, maxSecPerKm: 345 });

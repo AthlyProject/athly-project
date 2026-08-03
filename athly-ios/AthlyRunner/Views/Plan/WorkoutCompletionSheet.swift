@@ -1,10 +1,11 @@
 import SwiftUI
 import os
+import UniformTypeIdentifiers
 
 struct WorkoutCompletionSheet: View {
     let workout: WorkoutModel
     var initialStep: Step = .healthKit
-    let onComplete: (HealthKitRunItem?) -> Void
+    let onComplete: (WorkoutCompletionSelection) async -> Bool
     let onDismiss: () -> Void
 
     // MARK: - Step machine
@@ -15,9 +16,14 @@ struct WorkoutCompletionSheet: View {
     }
 
     @State private var step: Step
-    @State private var selectedRun: HealthKitRunItem? = nil
+    @State private var selection: WorkoutCompletionSelection = .none
 
-    init(workout: WorkoutModel, initialStep: Step = .healthKit, onComplete: @escaping (HealthKitRunItem?) -> Void, onDismiss: @escaping () -> Void) {
+    init(
+        workout: WorkoutModel,
+        initialStep: Step = .healthKit,
+        onComplete: @escaping (WorkoutCompletionSelection) async -> Bool,
+        onDismiss: @escaping () -> Void
+    ) {
         self.workout = workout
         self.initialStep = initialStep
         self.onComplete = onComplete
@@ -36,6 +42,16 @@ struct WorkoutCompletionSheet: View {
     @State private var fatigue: Int = 5
     @State private var isSubmitting = false
     @State private var submitError: String?
+    @State private var isCompleting = false
+
+    // File import
+    @State private var isShowingFileImporter = false
+    @State private var isImportingFile = false
+    @State private var importedCandidates: [ImportedWorkout] = []
+    @State private var selectedImportedWorkout: ImportedWorkout?
+    @State private var saveImportedToHealthKit = true
+    @State private var importError: String?
+    @State private var showOutsideDateConfirmation = false
 
     private let calendar = Calendar.current
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
@@ -71,6 +87,21 @@ struct WorkoutCompletionSheet: View {
             }
         }
         .task { await loadCandidateRuns() }
+        .fileImporter(
+            isPresented: $isShowingFileImporter,
+            allowedContentTypes: supportedImportTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            handleFileImport(result)
+        }
+        .alert("A data não coincide com o treino", isPresented: $showOutsideDateConfirmation) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Usar mesmo assim") { selectImportedForCompletion() }
+        } message: {
+            if let imported = selectedImportedWorkout {
+                Text("A atividade é de \(imported.startDate.formatted(date: .abbreviated, time: .shortened)), fora da janela planejada. Confirme que é a corrida correta.")
+            }
+        }
     }
 
     // MARK: - Loading
@@ -118,12 +149,14 @@ struct WorkoutCompletionSheet: View {
                     noRunsView
                 }
 
+                importSection
+
                 Divider()
                     .background(AthlyTheme.Color.borderDark)
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
 
                 Button {
-                    selectedRun = nil
+                    selection = .none
                     step = .feedback
                 } label: {
                     HStack {
@@ -201,13 +234,20 @@ struct WorkoutCompletionSheet: View {
                     }
 
                     Button {
-                        onComplete(selectedRun)
+                        Task { await finishCompletion() }
                     } label: {
-                        Text("Pular por agora")
-                            .font(AthlyTheme.Typography.body(15))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        Group {
+                            if isCompleting {
+                                ProgressView().tint(AthlyTheme.Color.textSecondary)
+                            } else {
+                                Text("Pular por agora")
+                            }
+                        }
+                        .font(AthlyTheme.Typography.body(15))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
                     }
                     .buttonStyle(.plain)
+                    .disabled(isCompleting)
                 }
                 .padding(.horizontal, AthlyTheme.Spacing.sm)
                 .padding(.top, 4)
@@ -355,10 +395,21 @@ struct WorkoutCompletionSheet: View {
         do {
             try await APIClient.shared.submitWorkoutFeedback(workoutId: workout.id, feedback: feedback)
             isSubmitting = false
-            onComplete(selectedRun)
+            await finishCompletion()
         } catch {
             isSubmitting = false
             submitError = "Não foi possível enviar o feedback. Tente novamente ou use \"Pular por agora\"."
+        }
+    }
+
+    private func finishCompletion() async {
+        guard !isCompleting else { return }
+        isCompleting = true
+        submitError = nil
+        let completedSuccessfully = await onComplete(selection)
+        isCompleting = false
+        if !completedSuccessfully {
+            submitError = "A corrida foi preservada no Athly, mas não foi possível atualizar o treino agora. Tente novamente."
         }
     }
 
@@ -390,7 +441,7 @@ struct WorkoutCompletionSheet: View {
 
     private func healthRunCard(_ run: HealthKitRunItem) -> some View {
         Button {
-            selectedRun = run
+            selection = .healthKit(run)
             step = .feedback
         } label: {
             VStack(spacing: 0) {
@@ -461,6 +512,206 @@ struct WorkoutCompletionSheet: View {
         Rectangle()
             .fill(AthlyTheme.Color.borderDark)
             .frame(width: 1, height: 32)
+    }
+
+    // MARK: - File import
+
+    private var importSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                isShowingFileImporter = true
+            } label: {
+                HStack {
+                    if isImportingFile {
+                        ProgressView().tint(AthlyTheme.Color.primary)
+                    } else {
+                        Image(systemName: "doc.badge.plus")
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isImportingFile ? "Lendo atividade…" : "Importar FIT, TCX ou GPX")
+                            .font(AthlyTheme.Typography.semibold(15))
+                        Text("Use o arquivo exportado pelo Zepp ou outro relógio")
+                            .font(AthlyTheme.Typography.body(12))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .padding(14)
+                .background(AthlyTheme.Color.surfaceDark)
+                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                        .stroke(AthlyTheme.Color.primary.opacity(0.35), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isImportingFile)
+
+            if let importError {
+                Text(importError)
+                    .font(AthlyTheme.Typography.body(13))
+                    .foregroundStyle(AthlyTheme.Color.error)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if importedCandidates.count > 1 && selectedImportedWorkout == nil {
+                Text("O arquivo contém mais de uma atividade. Escolha a corrida:")
+                    .font(AthlyTheme.Typography.semibold(14))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                ForEach(importedCandidates) { imported in
+                    Button {
+                        selectedImportedWorkout = imported
+                    } label: {
+                        importedActivityRow(imported)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if let imported = selectedImportedWorkout {
+                importedPreview(imported)
+            }
+        }
+        .padding(.horizontal, AthlyTheme.Spacing.sm)
+    }
+
+    private func importedActivityRow(_ imported: ImportedWorkout) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(imported.activityName ?? "Corrida")
+                    .font(AthlyTheme.Typography.semibold(14))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Text(imported.startDate.formatted(date: .abbreviated, time: .shortened))
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+            }
+            Spacer()
+            Text(String(format: "%.2f km", imported.distanceMeters / 1_000))
+                .font(AthlyTheme.Typography.semibold(14))
+                .foregroundStyle(AthlyTheme.Color.primary)
+            Image(systemName: "chevron.right")
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .padding(12)
+        .background(AthlyTheme.Color.surfaceCard)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func importedPreview(_ imported: ImportedWorkout) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Prévia \(imported.format.displayName)", systemImage: "doc.text.magnifyingglass")
+                    .font(AthlyTheme.Typography.semibold(15))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Spacer()
+                Button("Trocar") {
+                    selectedImportedWorkout = nil
+                    importedCandidates = []
+                    isShowingFileImporter = true
+                }
+                .font(AthlyTheme.Typography.body(12))
+            }
+
+            if imported.hasRoute {
+                SummaryMapView(coordinates: imported.route.map(\.coordinate))
+                    .allowsHitTesting(false)
+                    .frame(height: 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
+            HStack(spacing: 0) {
+                metricCell(value: String(format: "%.2f", imported.distanceMeters / 1_000), label: "km")
+                metricDivider
+                metricCell(value: formatDuration(imported.activeDurationSeconds), label: "tempo")
+                metricDivider
+                metricCell(value: formatPace(imported.averagePaceSecondsPerKm), label: "pace/km")
+            }
+
+            HStack(spacing: 14) {
+                Label("\(imported.route.count) pontos", systemImage: "map")
+                Label("\(imported.heartRateSamples.count) FC", systemImage: "heart")
+                Label("\(imported.laps.count) laps", systemImage: "flag.checkered")
+            }
+            .font(AthlyTheme.Typography.body(11))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
+
+            ForEach(imported.warnings, id: \.self) { warning in
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.warning)
+            }
+
+            Toggle(isOn: $saveImportedToHealthKit) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Salvar também no Apple Health")
+                        .font(AthlyTheme.Typography.semibold(14))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Text("O Athly evita duplicar uma corrida equivalente")
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+            }
+            .tint(AthlyTheme.Color.primary)
+
+            Button("Usar esta atividade") {
+                if isOutsideWorkoutWindow(imported.startDate) {
+                    showOutsideDateConfirmation = true
+                } else {
+                    selectImportedForCompletion()
+                }
+            }
+            .buttonStyle(AthlyGradientButtonStyle())
+        }
+        .padding(14)
+        .background(AthlyTheme.Color.surfaceCard)
+        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                .stroke(AthlyTheme.Color.primary.opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    private var supportedImportTypes: [UTType] {
+        ["fit", "tcx", "gpx"].compactMap { UTType(filenameExtension: $0) }
+    }
+
+    private func handleFileImport(_ result: Result<[URL], Error>) {
+        importError = nil
+        guard case .success(let urls) = result, let url = urls.first else {
+            if case .failure(let error) = result { importError = error.localizedDescription }
+            return
+        }
+        isImportingFile = true
+        Task {
+            defer { isImportingFile = false }
+            do {
+                let activities = try await Task.detached(priority: .userInitiated) {
+                    try WorkoutImportService().importActivities(from: url)
+                }.value
+                importedCandidates = activities
+                selectedImportedWorkout = activities.count == 1 ? activities[0] : nil
+                saveImportedToHealthKit = true
+            } catch {
+                importError = error.localizedDescription
+                importedCandidates = []
+                selectedImportedWorkout = nil
+            }
+        }
+    }
+
+    private func selectImportedForCompletion() {
+        guard let imported = selectedImportedWorkout else { return }
+        selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
+        step = .feedback
+    }
+
+    private func isOutsideWorkoutWindow(_ date: Date) -> Bool {
+        let start = calendar.startOfDay(for: workout.parsedDate)
+        guard let end = calendar.date(byAdding: .day, value: 3, to: start) else { return true }
+        return date < start || date >= end
     }
 
     // MARK: - Empty / Error states
@@ -600,6 +851,19 @@ struct WorkoutCompletionSheet: View {
         let df = DateFormatter()
         df.dateFormat = "HH:mm"
         return df.string(from: date)
+    }
+
+    private func formatDuration(_ seconds: Double) -> String {
+        let total = Int(seconds)
+        if total >= 3_600 {
+            return String(format: "%d:%02d:%02d", total / 3_600, (total % 3_600) / 60, total % 60)
+        }
+        return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    private func formatPace(_ seconds: Double) -> String {
+        guard seconds > 0, seconds.isFinite else { return "--:--" }
+        return String(format: "%d:%02d", Int(seconds) / 60, Int(seconds) % 60)
     }
 
     /// Mostra "+1 dia" / "+2 dias" quando a corrida não é do mesmo dia do treino prescrito.

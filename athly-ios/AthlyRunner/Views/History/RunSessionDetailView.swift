@@ -11,8 +11,10 @@ struct RunSessionDetailView: View {
     }
 
     @EnvironmentObject private var runStore: RunStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isRetryingHealthKit = false
     @State private var syncMessage: String?
+    @State private var healthKitWriteDenied = false
 
     private let healthKitService = HealthKitService()
 
@@ -58,27 +60,52 @@ struct RunSessionDetailView: View {
                     // Stats grid
                     statsGrid
 
+                    let executedSegments = RunExecutedSegmentsSection.displayableSegments(
+                        session.segmentRecords ?? [],
+                        origin: session.workoutSegmentation?.origin
+                    )
+                    if !executedSegments.isEmpty {
+                        RunExecutedSegmentsSection(
+                            segments: executedSegments,
+                            origin: session.workoutSegmentation?.origin ?? .athlyTracker,
+                            confidence: session.workoutSegmentation?.confidence ?? .exact
+                        )
+                    }
+
+                    if let reason = session.workoutSegmentation?.fallbackReason {
+                        WorkoutSegmentationNotice(message: reason)
+                    }
+
                     // Splits
                     if !session.splits.isEmpty {
                         splitsSection
                     }
 
                     if canRetryHealthKitSync {
-                        Button {
-                            Task { await retryHealthKitSync() }
-                        } label: {
-                            HStack {
-                                if isRetryingHealthKit {
-                                    ProgressView()
-                                        .tint(AthlyTheme.Color.textPrimary)
-                                } else {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
+                        VStack(spacing: 10) {
+                            if healthKitWriteDenied {
+                                Button("Abrir Ajustes") {
+                                    openAppSettings()
                                 }
-                                Text(isRetryingHealthKit ? "Sincronizando..." : "Tentar Apple Health")
+                                .buttonStyle(AthlySecondaryButtonStyle())
                             }
+
+                            Button {
+                                Task { await retryHealthKitSync() }
+                            } label: {
+                                HStack {
+                                    if isRetryingHealthKit {
+                                        ProgressView()
+                                            .tint(AthlyTheme.Color.textPrimary)
+                                    } else {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                    }
+                                    Text(isRetryingHealthKit ? "Sincronizando..." : "Tentar Apple Health")
+                                }
+                            }
+                            .buttonStyle(AthlySecondaryButtonStyle())
+                            .disabled(isRetryingHealthKit)
                         }
-                        .buttonStyle(AthlySecondaryButtonStyle())
-                        .disabled(isRetryingHealthKit)
                         .padding(.horizontal, 16)
                     }
 
@@ -90,6 +117,19 @@ struct RunSessionDetailView: View {
         }
         .navigationTitle("Detalhes")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if canRetryHealthKitSync,
+               healthKitService.writeAuthorizationSnapshot().workout == .sharingDenied {
+                healthKitWriteDenied = true
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active, healthKitWriteDenied else { return }
+            if healthKitService.writeAuthorizationSnapshot().canWriteWorkout {
+                healthKitWriteDenied = false
+                syncMessage = "Permissão atualizada. Toque em Tentar Apple Health."
+            }
+        }
     }
 
     private var statsGrid: some View {
@@ -103,6 +143,15 @@ struct RunSessionDetailView: View {
             statCard(icon: "mountain.2", value: String(format: "%.0f m", session.elevationGainMeters), label: "Elevacao")
             statCard(icon: "flame", value: String(format: "%.0f kcal", session.caloriesBurned), label: "Calorias")
             statCard(icon: "number", value: "\(session.splits.count)", label: "Splits")
+            if let samples = session.importedHeartRateSamples, !samples.isEmpty {
+                let average = samples.map(\.beatsPerMinute).reduce(0, +) / Double(samples.count)
+                let maximum = samples.map(\.beatsPerMinute).max() ?? 0
+                statCard(icon: "heart", value: String(format: "%.0f bpm", average), label: "FC media")
+                statCard(icon: "heart.fill", value: String(format: "%.0f bpm", maximum), label: "FC maxima")
+            }
+            if let laps = session.importedLaps, !laps.isEmpty {
+                statCard(icon: "flag.checkered", value: "\(laps.count)", label: "Laps do relogio")
+            }
         }
         .padding(.horizontal, 16)
     }
@@ -114,6 +163,10 @@ struct RunSessionDetailView: View {
         let color: Color
 
         switch status {
+        case .notRequested:
+            text = "Salva somente no Athly. Voce pode enviar ao Apple Health quando quiser."
+            icon = "heart.slash"
+            color = AthlyTheme.Color.textSecondary
         case .synced:
             text = "Sincronizada com Apple Health"
             icon = "checkmark.circle.fill"
@@ -253,23 +306,14 @@ struct RunSessionDetailView: View {
         defer { isRetryingHealthKit = false }
 
         do {
-            try await healthKitService.requestWriteAuthorization()
-            let savedWorkout = try await healthKitService.saveWorkout(result: runResult)
-            guard let uuid = savedWorkout?.uuid.uuidString else {
-                session.healthKitSyncStatus = .failed
-                session.healthKitSyncError = "O Apple Health nao retornou o identificador da corrida."
-                runStore.update(session)
-                syncMessage = session.healthKitSyncError
-                return
-            }
-
-            session.healthKitWorkoutUUID = uuid
-            session.healthKitSyncStatus = .synced
-            session.healthKitSyncError = nil
-            runStore.update(session)
+            let uuid = try await healthKitService.syncWorkout(
+                result: runResult,
+                session: session,
+                runStore: runStore
+            )
+            healthKitWriteDenied = false
 
             if let workoutId = session.athlyWorkoutId {
-                RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
                 _ = try? await APIClient.shared.completeWorkout(
                     workoutId: workoutId,
                     appleHealthWorkoutUUID: uuid,
@@ -280,11 +324,17 @@ struct RunSessionDetailView: View {
 
             syncMessage = "Sincronizada com Apple Health."
         } catch {
-            session.healthKitSyncStatus = .failed
-            session.healthKitSyncError = error.localizedDescription
-            runStore.update(session)
+            if let healthKitError = error as? HealthKitError,
+               case .writeDenied = healthKitError {
+                healthKitWriteDenied = true
+            }
             syncMessage = "Falha ao sincronizar: \(error.localizedDescription)"
         }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
     private var runResult: RunResult {
@@ -307,7 +357,12 @@ struct RunSessionDetailView: View {
                 )
             },
             segmentRecords: session.segmentRecords ?? [],
-            pauseIntervals: session.pauseIntervals ?? []
+            pauseIntervals: session.pauseIntervals ?? [],
+            heartRateSamples: session.importedHeartRateSamples ?? [],
+            laps: session.importedLaps ?? [],
+            isIndoor: session.isIndoor ?? false,
+            importFingerprint: session.importFingerprint,
+            importFormat: session.importFormat
         )
     }
 

@@ -9,6 +9,30 @@ final class WorkoutModelDateTests: XCTestCase {
 
         XCTAssertTrue(types.contains(HKObjectType.workoutType()))
         XCTAssertTrue(types.contains(HKSeriesType.workoutRoute()))
+        XCTAssertTrue(types.contains(HKQuantityType(.distanceWalkingRunning)))
+        XCTAssertTrue(types.contains(HKQuantityType(.activeEnergyBurned)))
+        XCTAssertTrue(types.contains(HKQuantityType(.heartRate)))
+    }
+
+    func testWorkoutWritePermissionIsRequiredButSupplementalTypesAreOptional() {
+        let supplementalTypesDenied = HealthKitWriteAuthorizationSnapshot(
+            workout: .sharingAuthorized,
+            route: .sharingDenied,
+            distance: .sharingDenied,
+            energy: .sharingDenied
+        )
+        let workoutDenied = HealthKitWriteAuthorizationSnapshot(
+            workout: .sharingDenied,
+            route: .sharingAuthorized,
+            distance: .sharingAuthorized,
+            energy: .sharingAuthorized
+        )
+
+        XCTAssertTrue(supplementalTypesDenied.canWriteWorkout)
+        XCTAssertFalse(supplementalTypesDenied.canWriteRoute)
+        XCTAssertFalse(supplementalTypesDenied.canWriteDistance)
+        XCTAssertFalse(supplementalTypesDenied.canWriteEnergy)
+        XCTAssertFalse(workoutDenied.canWriteWorkout)
     }
 
     func testDateOnlyWorkoutMatchesReferenceDay() {
@@ -297,7 +321,9 @@ private final class FakeHealthKitRunningWorkoutsProvider: HealthKitRunningWorkou
 
     func requestReadAuthorization() async throws {}
 
-    func requestWriteAuthorization() async throws {}
+    func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot {
+        .fullyAuthorized
+    }
 
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem] {
         try await fetchRunningWorkoutsPage(limit: limit, beforeEndDate: nil)

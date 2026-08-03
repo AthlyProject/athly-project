@@ -1,11 +1,16 @@
 import Foundation
 import SwiftUI
+import OSLog
 #if !targetEnvironment(simulator)
 import HealthKit
 #endif
 
 @MainActor
 final class TrainingPlanViewModel: ObservableObject {
+    private static let segmentationLogger = Logger(
+        subsystem: "com.athly.runner",
+        category: "WorkoutSegmentation"
+    )
     @Published var trainingPlanResponse: TrainingPlanResponse?
     @Published var weeks: [Week] = []
     @Published var todayWorkout: WorkoutModel?
@@ -405,6 +410,17 @@ final class TrainingPlanViewModel: ObservableObject {
         do {
             if let healthKitUUID {
                 RunWorkoutLinkStore.shared.link(healthKitUUID: healthKitUUID, athlyWorkoutId: workout.id)
+                if !result.segmentRecords.isEmpty {
+                    RunWorkoutLinkStore.shared.storeSegmentation(
+                        WorkoutSegmentationResult(
+                            segments: result.segmentRecords,
+                            origin: .athlyTracker,
+                            confidence: .exact,
+                            fallbackReason: nil
+                        ),
+                        for: healthKitUUID
+                    )
+                }
             }
 
             let updated = try await APIClient.shared.completeWorkout(
@@ -433,14 +449,17 @@ final class TrainingPlanViewModel: ObservableObject {
     func completeWorkoutWithHealthData(_ workout: WorkoutModel, healthRun: HealthKitRunItem) async {
         do {
             RunWorkoutLinkStore.shared.link(healthKitUUID: healthRun.id, athlyWorkoutId: workout.id)
-            let executionDetails = await buildExecutionDetails(for: workout, healthRun: healthRun)
+            let executionDetail = await buildExecutionDetail(for: workout, healthRun: healthRun)
+            if let segmentation = executionDetail?.segmentation {
+                RunWorkoutLinkStore.shared.storeSegmentation(segmentation, for: healthRun.id)
+            }
 
             let updated = try await APIClient.shared.completeWorkout(
                 workoutId: workout.id,
                 appleHealthWorkoutUUID: healthRun.id,
                 actualDistanceMeters: healthRun.distanceMeters,
                 actualDurationSeconds: healthRun.durationSeconds,
-                executionDetails: executionDetails
+                executionDetails: executionDetail?.payload
             )
             replaceWorkout(updated)
             recordAchievementIfEarned(
@@ -458,21 +477,141 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
-    private func buildExecutionDetails(for workout: WorkoutModel, healthRun: HealthKitRunItem) async -> DetailedSessionPayload? {
+    /// Persists a normalized file import first, then performs HealthKit and backend syncs
+    /// independently. A denied Health permission never discards the imported run.
+    func completeWorkoutWithImportedData(
+        _ workout: WorkoutModel,
+        imported: ImportedWorkout,
+        saveToHealthKit: Bool,
+        runStore: RunStore
+    ) async -> Bool {
+        errorMessage = nil
+        let reconstructed = WorkoutSegmentationEngine.reconstruct(
+            prescription: workout.segments,
+            startDate: imported.startDate,
+            endDate: imported.endDate,
+            route: imported.route,
+            pauses: imported.pauseIntervals
+        )
+        let candidateSegmentation = reconstructed.hasSegments
+            ? reconstructed
+            : WorkoutSegmentationEngine.fromThirdPartyLaps(
+                imported.laps,
+                fallbackReason: reconstructed.fallbackReason
+            ) ?? reconstructed
+        let session = runStore.upsert(
+            imported: imported,
+            athlyWorkoutId: workout.id,
+            segmentation: candidateSegmentation
+        )
+        let segmentation = session.workoutSegmentation ?? candidateSegmentation
+        var healthKitUUID = session.healthKitWorkoutUUID
+
+        if saveToHealthKit {
+            do {
+                var result = imported.runResult
+                result.segmentRecords = segmentation.segments
+                healthKitUUID = try await HealthKitService().syncWorkout(
+                    result: result,
+                    session: session,
+                    runStore: runStore
+                )
+            } catch {
+                // Local persistence is the source of truth for the import. The session keeps
+                // the HealthKit error and exposes a separate retry action in history.
+            }
+        } else {
+            session.healthKitSyncStatus = .notRequested
+            session.healthKitSyncError = nil
+            runStore.update(session)
+        }
+
+        if let healthKitUUID {
+            RunWorkoutLinkStore.shared.link(healthKitUUID: healthKitUUID, athlyWorkoutId: workout.id)
+            RunWorkoutLinkStore.shared.storeSegmentation(segmentation, for: healthKitUUID)
+        }
+
+        let details = ImportedWorkoutExecutionBuilder.build(
+            workout: imported,
+            athlyWorkoutId: workout.id,
+            healthKitUUID: healthKitUUID,
+            segmentation: segmentation
+        )
+
+        do {
+            let updated = try await APIClient.shared.completeWorkout(
+                workoutId: workout.id,
+                appleHealthWorkoutUUID: healthKitUUID,
+                actualDistanceMeters: imported.distanceMeters,
+                actualDurationSeconds: imported.activeDurationSeconds,
+                executionDetails: details
+            )
+            replaceWorkout(updated)
+            recordAchievementIfEarned(
+                workout: workout,
+                actualDistanceMeters: imported.distanceMeters,
+                actualDurationSeconds: imported.activeDurationSeconds,
+                actualPaceSecPerKm: imported.averagePaceSecondsPerKm
+            )
+            return true
+        } catch is CancellationError {
+            return false
+        } catch let error as URLError where error.code == .cancelled {
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func completeWorkoutSelection(
+        _ workout: WorkoutModel,
+        selection: WorkoutCompletionSelection,
+        runStore: RunStore
+    ) async -> Bool {
+        errorMessage = nil
+        switch selection {
+        case .none:
+            await completeWorkout(workout)
+        case .healthKit(let run):
+            await completeWorkoutWithHealthData(workout, healthRun: run)
+        case .imported(let imported, let saveToHealthKit):
+            return await completeWorkoutWithImportedData(
+                workout,
+                imported: imported,
+                saveToHealthKit: saveToHealthKit,
+                runStore: runStore
+            )
+        }
+        return errorMessage == nil
+    }
+
+    private func buildExecutionDetail(for workout: WorkoutModel, healthRun: HealthKitRunItem) async -> WorkoutExecutionDetail? {
         #if targetEnvironment(simulator)
+        Self.segmentationLogger.notice("Reconstrução HealthKit indisponível no simulador")
         return nil
         #else
         let service = HealthKitService()
-        guard service.isHealthDataAvailable else { return nil }
-        guard let rawWorkout = try? await service.fetchRawWorkout(uuid: healthRun.id) else {
+        guard service.isHealthDataAvailable else {
+            Self.segmentationLogger.error("HealthKit indisponível ao reconstruir uuid=\(healthRun.id, privacy: .public)")
             return nil
         }
-        let fetcher = WorkoutDetailFetcher()
-        return try? await fetcher.buildDetailedSession(
-            for: rawWorkout,
-            athlyWorkoutId: workout.id,
-            prescribedWorkout: workout
-        )
+        do {
+            guard let rawWorkout = try await service.fetchRawWorkout(uuid: healthRun.id) else {
+                Self.segmentationLogger.error("HKWorkout não encontrado uuid=\(healthRun.id, privacy: .public)")
+                return nil
+            }
+            return try await WorkoutDetailFetcher().buildExecutionDetail(
+                for: rawWorkout,
+                athlyWorkoutId: workout.id,
+                prescribedWorkout: workout
+            )
+        } catch {
+            Self.segmentationLogger.error(
+                "Falha ao reconstruir uuid=\(healthRun.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            return nil
+        }
         #endif
     }
 

@@ -24,10 +24,23 @@ final class RunWorkoutLinkStore: @unchecked Sendable {
 
     func link(healthKitUUID: String, athlyWorkoutId: String) {
         queue.sync {
+            let existingSegmentation = cache[healthKitUUID].flatMap { existing in
+                existing.athlyWorkoutId == athlyWorkoutId ? existing.workoutSegmentation : nil
+            }
             cache[healthKitUUID] = RunWorkoutLink(
                 healthKitUUID: healthKitUUID,
-                athlyWorkoutId: athlyWorkoutId
+                athlyWorkoutId: athlyWorkoutId,
+                workoutSegmentation: existingSegmentation
             )
+            persistLocked()
+        }
+    }
+
+    func storeSegmentation(_ result: WorkoutSegmentationResult, for healthKitUUID: String) {
+        queue.sync {
+            guard var link = cache[healthKitUUID] else { return }
+            link.workoutSegmentation = result
+            cache[healthKitUUID] = link
             persistLocked()
         }
     }

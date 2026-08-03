@@ -6,10 +6,17 @@ struct RunWorkoutLink: Codable, Equatable, Sendable {
     let healthKitUUID: String
     var athlyWorkoutId: String
     var linkedAt: Date
+    var workoutSegmentation: WorkoutSegmentationResult?
 
-    init(healthKitUUID: String, athlyWorkoutId: String, linkedAt: Date = Date()) {
+    init(
+        healthKitUUID: String,
+        athlyWorkoutId: String,
+        linkedAt: Date = Date(),
+        workoutSegmentation: WorkoutSegmentationResult? = nil
+    ) {
         self.healthKitUUID = healthKitUUID
         self.athlyWorkoutId = athlyWorkoutId
         self.linkedAt = linkedAt
+        self.workoutSegmentation = workoutSegmentation
     }
 }

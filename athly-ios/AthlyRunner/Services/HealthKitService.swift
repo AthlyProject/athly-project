@@ -10,7 +10,7 @@ import os
 protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     var isHealthDataAvailable: Bool { get }
     func requestReadAuthorization() async throws
-    func requestWriteAuthorization() async throws
+    func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
     func fetchRunningWorkoutsPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem]
     func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem?
@@ -26,6 +26,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     private static let energyType = HKQuantityType(.activeEnergyBurned)
     private static let distanceType = HKQuantityType(.distanceWalkingRunning)
+    private static let heartRateType = HKQuantityType(.heartRate)
     /// Todos os tipos são pedidos juntos porque o HealthKit exige `workoutType()` no mesmo
     /// pedido de `workoutRoute()`. O usuário ainda pode autorizar cada categoria separadamente.
     static var writeAuthorizationTypes: Set<HKSampleType> {
@@ -33,7 +34,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
             energyType,
-            distanceType
+            distanceType,
+            heartRateType
         ]
     }
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
@@ -49,6 +51,11 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
     static let segmentDistanceMetadataKey = "athlyDistanceMeters"
     static let segmentDurationMetadataKey = "athlyDurationSeconds"
     static let segmentSkippedMetadataKey = "athlySegmentSkipped"
+    static let importFingerprintMetadataKey = "athlyImportFingerprint"
+    static let importFormatMetadataKey = "athlyImportFormat"
+    static let lapIndexMetadataKey = "athlyLapIndex"
+    static let lapDistanceMetadataKey = "athlyLapDistanceMeters"
+    static let lapDurationMetadataKey = "athlyLapDurationSeconds"
 
     private struct HeartRateSummary {
         let linkedCount: Int
@@ -84,21 +91,51 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         try await store.requestAuthorization(toShare: [], read: typesToRead)
     }
 
-    /// Solicita permissão de escrita para salvar corridas no Apple Health.
-    /// A rota é opcional: não deve bloquear a criação do HKWorkout principal.
-    func requestWriteAuthorization() async throws {
+    /// Estado atual de escrita. O HealthKit permite consultar escrita por tipo,
+    /// ao contrário da leitura, cujo estado é deliberadamente privado.
+    func writeAuthorizationSnapshot() -> HealthKitWriteAuthorizationSnapshot {
+        HealthKitWriteAuthorizationSnapshot(
+            workout: store.authorizationStatus(for: HKObjectType.workoutType()),
+            route: store.authorizationStatus(for: HKSeriesType.workoutRoute()),
+            distance: store.authorizationStatus(for: Self.distanceType),
+            energy: store.authorizationStatus(for: Self.energyType),
+            heartRate: store.authorizationStatus(for: Self.heartRateType)
+        )
+    }
+
+    /// Solicita permissão de escrita com base no estado do próprio HealthKit.
+    /// Não usamos uma flag local: ela registra apenas que um sheet já apareceu e fica
+    /// dessincronizada quando o usuário muda as permissões fora do app.
+    /// A rota e as métricas são opcionais; somente o workout principal é obrigatório.
+    @discardableResult
+    func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        if PermissionGate.shouldRequestHealthKitWrite {
+
+        let requestStatus = try await writeAuthorizationRequestStatus()
+        if requestStatus == .shouldRequest || requestStatus == .unknown {
             try await store.requestAuthorization(toShare: Self.writeAuthorizationTypes, read: [])
-            PermissionGate.markHealthKitWriteRequested()
         }
 
-        logWriteAuthorizationStatus(context: "requestWriteAuthorization")
+        let snapshot = writeAuthorizationSnapshot()
+        logWriteAuthorizationStatus(context: "requestWriteAuthorization", snapshot: snapshot)
 
-        guard store.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
+        guard snapshot.canWriteWorkout else {
             throw HealthKitError.writeDenied
+        }
+        return snapshot
+    }
+
+    private func writeAuthorizationRequestStatus() async throws -> HKAuthorizationRequestStatus {
+        try await withCheckedThrowingContinuation { continuation in
+            store.getRequestStatusForAuthorization(toShare: Self.writeAuthorizationTypes, read: []) { status, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: status)
+                }
+            }
         }
     }
 
@@ -106,14 +143,14 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         store.authorizationStatus(for: type) == .sharingAuthorized
     }
 
-    private func logWriteAuthorizationStatus(context: String) {
+    private func logWriteAuthorizationStatus(context: String, snapshot: HealthKitWriteAuthorizationSnapshot) {
         Self.writeLogger.notice(
-            "[\(context, privacy: .public)] workout=\(self.authorizationStatusLabel(for: HKObjectType.workoutType()), privacy: .public) distance=\(self.authorizationStatusLabel(for: Self.distanceType), privacy: .public) energy=\(self.authorizationStatusLabel(for: Self.energyType), privacy: .public) route=\(self.authorizationStatusLabel(for: HKSeriesType.workoutRoute()), privacy: .public)"
+            "[\(context, privacy: .public)] workout=\(self.authorizationStatusLabel(snapshot.workout), privacy: .public) distance=\(self.authorizationStatusLabel(snapshot.distance), privacy: .public) energy=\(self.authorizationStatusLabel(snapshot.energy), privacy: .public) route=\(self.authorizationStatusLabel(snapshot.route), privacy: .public) heartRate=\(self.authorizationStatusLabel(snapshot.heartRate), privacy: .public)"
         )
     }
 
-    private func authorizationStatusLabel(for type: HKObjectType) -> String {
-        switch store.authorizationStatus(for: type) {
+    private func authorizationStatusLabel(_ status: HKAuthorizationStatus) -> String {
+        switch status {
         case .notDetermined:
             return "notDetermined"
         case .sharingDenied:
@@ -132,7 +169,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
         let config = HKWorkoutConfiguration()
         config.activityType = .running
-        config.locationType = .outdoor
+        config.locationType = result.isIndoor ? .indoor : .outdoor
 
         let builder = HKWorkoutBuilder(healthStore: store, configuration: config, device: .local())
 
@@ -166,6 +203,23 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             Self.writeLogger.warning("Skipping distanceWalkingRunning sample because HealthKit sharing is not authorized.")
         }
 
+        if !result.heartRateSamples.isEmpty && isSharingAuthorized(Self.heartRateType) {
+            let unit = HKUnit.count().unitDivided(by: .minute())
+            samples.append(contentsOf: result.heartRateSamples.compactMap { sample in
+                guard sample.beatsPerMinute > 0,
+                      sample.timestamp >= result.startDate,
+                      sample.timestamp <= result.endDate else { return nil }
+                return HKQuantitySample(
+                    type: Self.heartRateType,
+                    quantity: HKQuantity(unit: unit, doubleValue: sample.beatsPerMinute),
+                    start: sample.timestamp,
+                    end: sample.timestamp
+                )
+            })
+        } else if !result.heartRateSamples.isEmpty {
+            Self.writeLogger.warning("Skipping heart-rate samples because HealthKit sharing is not authorized.")
+        }
+
         for sample in samples {
             do {
                 try await addSample(sample, to: builder)
@@ -175,10 +229,18 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
 
         do {
-            try await addMetadata([
+            var metadata: [String: Any] = [
                 "activeDurationSeconds": result.durationSeconds,
-                "averagePaceSecondsPerKm": result.averagePaceSecondsPerKm
-            ], to: builder)
+                "averagePaceSecondsPerKm": result.averagePaceSecondsPerKm,
+                HKMetadataKeyIndoorWorkout: result.isIndoor
+            ]
+            if let fingerprint = result.importFingerprint {
+                metadata[Self.importFingerprintMetadataKey] = fingerprint
+            }
+            if let format = result.importFormat {
+                metadata[Self.importFormatMetadataKey] = format.rawValue
+            }
+            try await addMetadata(metadata, to: builder)
         } catch {
             Self.writeLogger.error("Failed to add HealthKit workout metadata: \(error.localizedDescription, privacy: .public)")
         }
@@ -218,7 +280,20 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             ]
         }
 
-        let workoutEvents = segmentEvents + pauseEvents
+        let lapEvents: [HKWorkoutEvent] = result.laps.compactMap { lap in
+            guard lap.endDate > lap.startDate else { return nil }
+            return HKWorkoutEvent(
+                type: .lap,
+                dateInterval: DateInterval(start: lap.startDate, end: lap.endDate),
+                metadata: [
+                    Self.lapIndexMetadataKey: lap.index,
+                    Self.lapDistanceMetadataKey: lap.distanceMeters,
+                    Self.lapDurationMetadataKey: lap.durationSeconds
+                ]
+            )
+        }
+
+        let workoutEvents = segmentEvents + pauseEvents + lapEvents
         if !workoutEvents.isEmpty {
             do {
                 try await addWorkoutEvents(workoutEvents, to: builder)
@@ -385,6 +460,39 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         ).first
     }
 
+    /// Best-effort duplicate lookup used before importing a historical file. HealthKit objects
+    /// owned by Zepp/another app are reused, never modified.
+    func findEquivalentWorkout(for result: RunResult) async -> HKWorkout? {
+        guard isHealthDataAvailable else { return nil }
+        let start = result.startDate.addingTimeInterval(-180)
+        let end = result.endDate.addingTimeInterval(180)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let workouts = (try? await queryWorkouts(
+            sampleType: HKObjectType.workoutType(),
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: nil
+        )) ?? []
+
+        if let fingerprint = result.importFingerprint,
+           let exact = workouts.first(where: {
+               ($0.metadata?[Self.importFingerprintMetadataKey] as? String) == fingerprint
+           }) {
+            return exact
+        }
+
+        return workouts.first { workout in
+            guard isRunningWorkoutCandidate(workout) else { return false }
+            let distance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+            let activeDuration = (workout.metadata?["activeDurationSeconds"] as? Double) ?? workout.duration
+            let startDelta = abs(workout.startDate.timeIntervalSince(result.startDate))
+            let durationDelta = abs(activeDuration - result.durationSeconds)
+            let distanceDelta = abs(distance - result.distanceMeters)
+            let distanceTolerance = max(100, result.distanceMeters * 0.03)
+            return startDelta < 120 && durationDelta < 180 && distanceDelta <= distanceTolerance
+        }
+    }
+
     /// Diagnóstico: executa query estrita (somente .running) e query ampla (todos os workout types)
     /// na janela fornecida, logando resultado detalhado para identificar por que um workout do Nike
     /// Run Club (ou de outro app) pode estar ausente da listagem normal.
@@ -394,8 +502,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             return
         }
 
-        let authStatus = store.authorizationStatus(for: HKObjectType.workoutType())
-        Self.diagLogger.debug("[\(contextLabel)] authorizationStatus(workoutType) = \(authStatus.rawValue) (0=notDetermined 1=sharingDenied 2=sharingAuthorized)")
+        let writeStatus = store.authorizationStatus(for: HKObjectType.workoutType())
+        Self.diagLogger.debug("[\(contextLabel)] writeAuthorizationStatus(workoutType) = \(writeStatus.rawValue) (somente escrita; 0=notDetermined 1=sharingDenied 2=sharingAuthorized)")
 
         let df = ISO8601DateFormatter()
         Self.diagLogger.debug("[\(contextLabel)] janela: \(df.string(from: windowStart)) → \(df.string(from: windowEnd))")
@@ -980,6 +1088,64 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             store.execute(query)
         }
     }
+
+    /// Fluxo único de gravação/retry para evitar divergência entre o resumo da corrida
+    /// e o botão de sincronização do histórico. Se já houver UUID, retorna o vínculo
+    /// existente em vez de criar um HKWorkout duplicado.
+    @MainActor
+    func syncWorkout(result: RunResult, session: RunSession, runStore: RunStore) async throws -> String {
+        if let existingUUID = session.healthKitWorkoutUUID, !existingUUID.isEmpty {
+            return existingUUID
+        }
+
+        session.healthKitSyncStatus = .pending
+        session.healthKitSyncError = nil
+        runStore.update(session)
+
+        do {
+            try? await requestReadAuthorization()
+            if let equivalent = await findEquivalentWorkout(for: result) {
+                let uuid = equivalent.uuid.uuidString
+                let linkedWorkoutId = RunWorkoutLinkStore.shared.athlyWorkoutId(for: uuid)
+                if linkedWorkoutId == nil || linkedWorkoutId == session.athlyWorkoutId {
+                    session.healthKitWorkoutUUID = uuid
+                    session.healthKitSyncStatus = .synced
+                    session.healthKitSyncError = nil
+                    runStore.update(session)
+                    if let workoutId = session.athlyWorkoutId {
+                        RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
+                    }
+                    return uuid
+                }
+            }
+
+            _ = try await requestWriteAuthorization()
+            guard let workout = try await saveWorkout(result: result) else {
+                throw HealthKitError.workoutNotReturned
+            }
+
+            let uuid = workout.uuid.uuidString
+            session.healthKitWorkoutUUID = uuid
+            session.healthKitSyncStatus = .synced
+            session.healthKitSyncError = nil
+            runStore.update(session)
+
+            if let workoutId = session.athlyWorkoutId {
+                RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
+            }
+            return uuid
+        } catch {
+            if let healthKitError = error as? HealthKitError,
+               case .notAvailable = healthKitError {
+                session.healthKitSyncStatus = .unavailable
+            } else {
+                session.healthKitSyncStatus = .failed
+            }
+            session.healthKitSyncError = error.localizedDescription
+            runStore.update(session)
+            throw error
+        }
+    }
 }
 
 /// Buffer thread-safe para acumular os locations entregues em lotes pelo `HKWorkoutRouteQuery`.
@@ -1008,13 +1174,16 @@ struct RunCoordinate: Sendable {
 enum HealthKitError: LocalizedError {
     case notAvailable
     case writeDenied
+    case workoutNotReturned
 
     var errorDescription: String? {
         switch self {
         case .notAvailable:
             return "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador)."
         case .writeDenied:
-            return "A permissão para salvar Treinos está desativada. Abra Saúde > Resumo > sua foto > Apps > Athly e ative Treinos. A corrida continua salva no Athly."
+            return "A escrita de Treinos está desativada para o Athly. Abra os Ajustes, entre em Saúde e permita que o Athly grave Treinos."
+        case .workoutNotReturned:
+            return "O Apple Health não retornou o identificador da corrida."
         }
     }
 }

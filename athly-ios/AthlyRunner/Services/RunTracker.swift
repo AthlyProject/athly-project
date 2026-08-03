@@ -554,6 +554,13 @@ struct RunResult {
     var segmentRecords: [SegmentRecord] = []
     /// Janelas de pausa explícita — descontadas no cálculo offline de splits e gravadas no Health.
     var pauseIntervals: [SplitCalculator.PauseInterval] = []
+    /// Samples available when this result originated from an imported activity file.
+    var heartRateSamples: [ActivityHeartRateSample] = []
+    /// Device/file laps, distinct from Athly's calculated kilometer splits.
+    var laps: [ActivityLap] = []
+    var isIndoor: Bool = false
+    var importFingerprint: String? = nil
+    var importFormat: WorkoutImportFormat? = nil
 }
 
 /// Um segmento do treino estruturado como foi de fato executado. Persiste no

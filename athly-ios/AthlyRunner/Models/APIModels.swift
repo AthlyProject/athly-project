@@ -393,7 +393,7 @@ struct SegmentPayload: Encodable, Sendable {
 /// Mirrors backend `DetailedSessionDto`. Segmentation happens on the client to keep prompt lean.
 struct DetailedSessionPayload: Encodable, Sendable {
     let startDate: String
-    let appleHealthWorkoutUUID: String
+    let appleHealthWorkoutUUID: String?
     let athlyWorkoutId: String?
     let distanceMeters: Double
     let durationSeconds: Double

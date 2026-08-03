@@ -1,6 +1,12 @@
 import Foundation
 import HealthKit
 import CoreLocation
+import OSLog
+
+struct WorkoutExecutionDetail: Sendable {
+    let payload: DetailedSessionPayload
+    let segmentation: WorkoutSegmentationResult
+}
 
 /// Builds a `DetailedSessionPayload` from an `HKWorkout` by pulling per-segment/per-lap events
 /// and slicing heart-rate samples by time. When the workout has no explicit events, falls
@@ -11,6 +17,7 @@ import CoreLocation
 final class WorkoutDetailFetcher: @unchecked Sendable {
 
     private let store: HKHealthStore
+    private static let logger = Logger(subsystem: "com.athly.runner", category: "WorkoutSegmentation")
 
     init(store: HKHealthStore = HKHealthStore()) {
         self.store = store
@@ -23,6 +30,20 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         athlyWorkoutId: String?,
         prescribedWorkout: WorkoutModel? = nil
     ) async throws -> DetailedSessionPayload? {
+        try await buildExecutionDetail(
+            for: workout,
+            athlyWorkoutId: athlyWorkoutId,
+            prescribedWorkout: prescribedWorkout
+        )?.payload
+    }
+
+    /// Variante rica usada na conclusão e no histórico. Além do payload do backend,
+    /// devolve exatamente os mesmos blocos que devem ser persistidos e exibidos na UI.
+    func buildExecutionDetail(
+        for workout: HKWorkout,
+        athlyWorkoutId: String?,
+        prescribedWorkout: WorkoutModel? = nil
+    ) async throws -> WorkoutExecutionDetail? {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
@@ -41,15 +62,44 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         // vinculada cortada na rota HealthKit > laps de terceiros com rota (distância real
         // interpolada) > GPS real (km splits) > splits sintéticos.
         var splitsSource: SplitsSource = .events
-        var rawSegments = segmentsFromAthlyEvents(workout: workout)
-        if rawSegments == nil,
-           let prescribedWorkout,
-           let prescribed = await segmentsFromPrescription(workout: workout, prescribedWorkout: prescribedWorkout) {
-            rawSegments = prescribed.segments
-            splitsSource = prescribed.lowConfidence ? .prescribedLowConfidence : .prescribed
+        var segmentation = WorkoutSegmentationResult.unavailable(
+            "A atividade não contém eventos de bloco nem uma reconstrução utilizável."
+        )
+        let exactRecords = HealthKitService.segmentRecords(from: workout)
+        var rawSegments: [RawSegment]? = exactRecords.isEmpty ? nil : makeRawSegments(from: exactRecords)
+        if !exactRecords.isEmpty {
+            segmentation = WorkoutSegmentationResult(
+                segments: exactRecords,
+                origin: .athlyTracker,
+                confidence: .exact,
+                fallbackReason: nil
+            )
+        }
+
+        if rawSegments == nil, let prescribedWorkout {
+            let locations = (try? await fetchAllLocations(for: workout)) ?? []
+            let reconstructed = WorkoutSegmentationEngine.reconstruct(
+                prescription: prescribedWorkout.segments,
+                startDate: workout.startDate,
+                endDate: workout.endDate,
+                route: locations,
+                pauses: HealthKitService.pauseIntervals(from: workout)
+            )
+            segmentation = reconstructed
+            if reconstructed.hasSegments {
+                rawSegments = makeRawSegments(from: reconstructed.segments)
+                splitsSource = reconstructed.confidence == .low ? .prescribedLowConfidence : .prescribed
+            }
         }
         if rawSegments == nil {
             rawSegments = await segmentsFromThirdPartyEvents(workout: workout)
+            if let rawSegments {
+                segmentation = segmentationFromThirdParty(
+                    rawSegments,
+                    fallbackReason: segmentation.fallbackReason
+                )
+                splitsSource = .events
+            }
         }
         if rawSegments == nil {
             if let real = try? await realKmSplitsFromRoute(workout: workout) {
@@ -87,7 +137,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             )
         }
 
-        return DetailedSessionPayload(
+        let payload = DetailedSessionPayload(
             startDate: iso.string(from: workout.startDate),
             appleHealthWorkoutUUID: workout.uuid.uuidString,
             athlyWorkoutId: athlyWorkoutId,
@@ -101,6 +151,10 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             segments: segments,
             splitsSource: splitsSource.rawValue
         )
+        Self.logger.info(
+            "uuid=\(workout.uuid.uuidString, privacy: .public) source=\(splitsSource.rawValue, privacy: .public) origin=\(segmentation.origin.rawValue, privacy: .public) confidence=\(segmentation.confidence.rawValue, privacy: .public) blocks=\(segmentation.segments.count) reason=\(segmentation.fallbackReason ?? "-", privacy: .public)"
+        )
+        return WorkoutExecutionDetail(payload: payload, segmentation: segmentation)
     }
 
     enum SplitsSource: String {
@@ -123,253 +177,71 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         var durationSeconds: Double? = nil
     }
 
-    private struct PrescribedSegmentation {
-        let segments: [RawSegment]
-        let lowConfidence: Bool
-    }
-
-    /// Segmentos gravados pelo próprio app: HKWorkoutEvents(.segment) com metadata exata
-    /// (kind, distância e duração ativa reais por segmento). Caminho de maior fidelidade —
-    /// preserva a estrutura prescrita exatamente como foi executada.
-    private func segmentsFromAthlyEvents(workout: HKWorkout) -> [RawSegment]? {
-        let events = (workout.workoutEvents ?? []).filter {
-            $0.type == .segment && $0.metadata?[HealthKitService.segmentKindMetadataKey] is String
-        }
-        guard !events.isEmpty else { return nil }
-
-        let sorted = events.sorted(by: { $0.dateInterval.start < $1.dateInterval.start })
-
-        // Works soltos (sem set): 1 = bloco contínuo (tempo run); 2+ = tiros de estrutura
-        // heterogênea (pirâmide) — rotular como tempo faria o backend procurar reps e
-        // concluir que o atleta não fez os tiros.
-        let standaloneWorkCount = sorted.filter {
-            ($0.metadata?[HealthKitService.segmentKindMetadataKey] as? String) == "work"
-                && $0.metadata?[HealthKitService.segmentIndexMetadataKey] == nil
-        }.count
-
-        var repCounter = 0
-        var recCounter = 0
-        var segments: [RawSegment] = []
-        for event in sorted {
-            guard let kindRaw = event.metadata?[HealthKitService.segmentKindMetadataKey] as? String else { continue }
-            let distance = (event.metadata?[HealthKitService.segmentDistanceMetadataKey] as? Double) ?? 0
-            let duration = event.metadata?[HealthKitService.segmentDurationMetadataKey] as? Double
-            let setIndex = event.metadata?[HealthKitService.segmentIndexMetadataKey] as? Int
-
-            let label: SegmentLabel
-            var idx: Int? = nil
-            switch kindRaw {
-            case "warmup":
-                label = .warmup
-            case "cooldown":
-                label = .cooldown
-            case "recovery":
-                recCounter += 1
-                label = .rec
-                idx = setIndex ?? recCounter
-            case "work":
-                if setIndex != nil || standaloneWorkCount >= 2 {
-                    repCounter += 1
-                    label = .rep
-                    idx = setIndex ?? repCounter
-                } else {
-                    label = .tempo
-                }
-            case "rest":
-                continue
-            default:
-                label = .easy
-            }
-
-            segments.append(RawSegment(
-                label: label,
-                index: idx,
-                start: event.dateInterval.start,
-                end: event.dateInterval.end,
-                distanceMeters: distance,
-                durationSeconds: duration
-            ))
-        }
-        return segments.isEmpty ? nil : segments
-    }
-
-    /// Reconstrói a execução de uma corrida externa usando a árvore prescrita pelo Athly como régua.
-    /// Cortes por distância exigem rota GPS; sem isso, retornamos nil para cair em análise de baixa
-    /// granularidade e evitar inventar tiros a partir do pace médio da sessão.
-    private func segmentsFromPrescription(
-        workout: HKWorkout,
-        prescribedWorkout: WorkoutModel
-    ) async -> PrescribedSegmentation? {
-        guard let plannedSegments = prescribedWorkout.segments else { return nil }
-
-        let steps = plannedSegments
-            .flatten()
-            .filter { $0.kind != .rest && $0.kind != .unknown }
-        guard !steps.isEmpty else { return nil }
-
-        let locations = (try? await fetchAllLocations(for: workout)) ?? []
-        let hasRoute = locations.count >= 2
-        let requiresDistanceCuts = steps.contains { $0.end.by == .distanceM }
-        guard hasRoute || !requiresDistanceCuts else {
-            return nil
-        }
-
-        let pauses = HealthKitService.pauseIntervals(from: workout)
-        let standaloneWorkCount = steps.filter { $0.kind == .work && $0.setIndex == nil }.count
-        var cursor = workout.startDate
-        var segments: [RawSegment] = []
-        var lowConfidence = !hasRoute
-        var repCounter = 0
-        var recCounter = 0
-
-        for step in steps {
-            guard cursor < workout.endDate else { break }
-
-            let labelInfo = prescribedLabel(
-                for: step,
-                standaloneWorkCount: standaloneWorkCount,
-                repCounter: &repCounter,
-                recCounter: &recCounter
+    private func makeRawSegments(from records: [SegmentRecord]) -> [RawSegment] {
+        records.enumerated().map { position, record in
+            let identity = WorkoutSegmentationEngine.backendIdentity(
+                for: record,
+                at: position,
+                in: records
             )
-
-            let raw: RawSegment?
-            switch step.end.by {
-            case .durationSec:
-                raw = prescribedDurationSegment(
-                    step: step,
-                    label: labelInfo.label,
-                    index: labelInfo.index,
-                    cursor: cursor,
-                    workoutEnd: workout.endDate,
-                    locations: locations,
-                    pauses: pauses,
-                    hasRoute: hasRoute
-                )
-                if !hasRoute { lowConfidence = true }
-            case .distanceM:
-                guard hasRoute,
-                      let segment = prescribedDistanceSegment(
-                        step: step,
-                        label: labelInfo.label,
-                        index: labelInfo.index,
-                        cursor: cursor,
-                        locations: locations,
-                        pauses: pauses
-                      ) else {
-                    return nil
-                }
-                if segment.distanceMeters < step.end.value * 0.8 {
-                    lowConfidence = true
-                }
-                raw = segment
-            case .reps:
-                lowConfidence = true
-                raw = nil
-            }
-
-            guard let raw else { continue }
-            segments.append(raw)
-            cursor = min(raw.end, workout.endDate)
-        }
-
-        guard !segments.isEmpty else { return nil }
-        return PrescribedSegmentation(segments: segments, lowConfidence: lowConfidence)
-    }
-
-    private func prescribedDurationSegment(
-        step: ActiveSegment,
-        label: SegmentLabel,
-        index: Int?,
-        cursor: Date,
-        workoutEnd: Date,
-        locations: [CLLocation],
-        pauses: [SplitCalculator.PauseInterval],
-        hasRoute: Bool
-    ) -> RawSegment? {
-        let target = step.end.value
-        guard target > 0 else { return nil }
-
-        if hasRoute,
-           let boundary = SplitCalculator.boundary(
-            afterMovingTimeSeconds: target,
-            from: cursor,
-            locations: locations,
-            pauses: pauses
-           ) {
             return RawSegment(
-                label: label,
-                index: index,
-                start: cursor,
-                end: min(boundary.date, workoutEnd),
-                distanceMeters: boundary.distanceMeters,
-                durationSeconds: boundary.durationSeconds
+                label: identity.label,
+                index: identity.index,
+                start: record.startDate,
+                end: record.endDate,
+                distanceMeters: record.distanceMeters,
+                durationSeconds: record.durationSeconds
             )
         }
-
-        let end = min(cursor.addingTimeInterval(target), workoutEnd)
-        guard end > cursor else { return nil }
-        return RawSegment(
-            label: label,
-            index: index,
-            start: cursor,
-            end: end,
-            distanceMeters: 0,
-            durationSeconds: end.timeIntervalSince(cursor)
-        )
     }
 
-    private func prescribedDistanceSegment(
-        step: ActiveSegment,
-        label: SegmentLabel,
-        index: Int?,
-        cursor: Date,
-        locations: [CLLocation],
-        pauses: [SplitCalculator.PauseInterval]
-    ) -> RawSegment? {
-        let target = step.end.value
-        guard target > 0,
-              let boundary = SplitCalculator.boundary(
-                afterDistanceMeters: target,
-                from: cursor,
-                locations: locations,
-                pauses: pauses
-              ) else {
-            return nil
-        }
-        guard boundary.date > cursor else { return nil }
-        return RawSegment(
-            label: label,
-            index: index,
-            start: cursor,
-            end: boundary.date,
-            distanceMeters: boundary.distanceMeters,
-            durationSeconds: boundary.durationSeconds
-        )
-    }
-
-    private func prescribedLabel(
-        for step: ActiveSegment,
-        standaloneWorkCount: Int,
-        repCounter: inout Int,
-        recCounter: inout Int
-    ) -> (label: SegmentLabel, index: Int?) {
-        switch step.kind {
-        case .warmup:
-            return (.warmup, nil)
-        case .cooldown:
-            return (.cooldown, nil)
-        case .recovery:
-            recCounter += 1
-            return (.rec, step.setIndex ?? recCounter)
-        case .work:
-            if step.setIndex != nil || standaloneWorkCount >= 2 {
-                repCounter += 1
-                return (.rep, step.setIndex ?? repCounter)
+    private func segmentationFromThirdParty(
+        _ segments: [RawSegment],
+        fallbackReason: String?
+    ) -> WorkoutSegmentationResult {
+        let records = segments.map { segment in
+            let kind: SegmentKind
+            let label: String
+            switch segment.label {
+            case .warmup:
+                kind = .warmup
+                label = "Aquecimento"
+            case .cooldown:
+                kind = .cooldown
+                label = "Desaceleramento"
+            case .rep:
+                kind = .work
+                label = segment.index.map { "Tiro \($0)" } ?? "Tiro"
+            case .rec:
+                kind = .recovery
+                label = segment.index.map { "Recuperação \($0)" } ?? "Recuperação"
+            case .tempo:
+                kind = .work
+                label = "Ritmo"
+            case .easy:
+                kind = .unknown
+                label = segment.index.map { "Lap \($0)" } ?? "Lap"
             }
-            return (.tempo, nil)
-        case .rest, .set, .unknown:
-            return (.easy, nil)
+            return SegmentRecord(
+                kind: kind,
+                setIndex: segment.index,
+                setTotal: nil,
+                label: label,
+                startDate: segment.start,
+                endDate: segment.end,
+                distanceMeters: segment.distanceMeters,
+                durationSeconds: segment.durationSeconds ?? segment.end.timeIntervalSince(segment.start),
+                skipped: false
+            )
         }
+        return WorkoutSegmentationResult(
+            segments: records,
+            origin: .thirdPartyLaps,
+            confidence: .high,
+            fallbackReason: fallbackReason.map {
+                "\($0) Exibindo os laps reais gravados pelo dispositivo."
+            }
+        )
     }
 
     /// Laps de terceiros (`.segment`/`.lap` sem metadata do app). A distância de cada trecho

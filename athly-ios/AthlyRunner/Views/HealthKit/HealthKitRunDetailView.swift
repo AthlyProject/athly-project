@@ -22,6 +22,9 @@ struct HealthKitRunDetailView: View {
     @State private var coordinates: [CLLocationCoordinate2D] = []
     @State private var splitRows: [SplitRow] = []
     @State private var segmentRecords: [SegmentRecord] = []
+    @State private var segmentationOrigin: WorkoutSegmentationOrigin?
+    @State private var segmentationConfidence: WorkoutSegmentationConfidence?
+    @State private var segmentationReason: String?
     @State private var avgHR: Double?
     @State private var reportURL: URL?
     @State private var isLoadingDetail = true
@@ -64,9 +67,20 @@ struct HealthKitRunDetailView: View {
 
                     RunStatsGrid(stats: .healthRun(item: item, splitCount: splitRows.count, avgHR: avgHR))
 
-                    let executedSegments = RunExecutedSegmentsSection.displayableSegments(segmentRecords)
+                    let executedSegments = RunExecutedSegmentsSection.displayableSegments(
+                        segmentRecords,
+                        origin: segmentationOrigin
+                    )
                     if !executedSegments.isEmpty {
-                        RunExecutedSegmentsSection(segments: executedSegments)
+                        RunExecutedSegmentsSection(
+                            segments: executedSegments,
+                            origin: segmentationOrigin,
+                            confidence: segmentationConfidence
+                        )
+                    }
+
+                    if let segmentationReason {
+                        WorkoutSegmentationNotice(message: segmentationReason)
                     }
 
                     if !splitRows.isEmpty {
@@ -125,6 +139,9 @@ struct HealthKitRunDetailView: View {
             coordinates = locations.map { $0.coordinate }
             splitRows = kmSplits.map { SplitRow(km: $0.kilometer, pace: $0.paceSecondsPerKm) }
             segmentRecords = session.segmentRecords ?? []
+            if let localSegmentation = session.workoutSegmentation, localSegmentation.hasSegments {
+                apply(localSegmentation)
+            }
 
             let result = RunResult(
                 startDate: session.startDate,
@@ -163,7 +180,57 @@ struct HealthKitRunDetailView: View {
             avgHR = detail.avgHR
         }
 
+        await resolveWorkoutSegmentation()
+
         isLoadingDetail = false
+    }
+
+    private func resolveWorkoutSegmentation() async {
+        guard let prescribedWorkout else { return }
+
+        if let link = RunWorkoutLinkStore.shared.fetchLink(for: item.id),
+           link.athlyWorkoutId == prescribedWorkout.id,
+           let cached = link.workoutSegmentation {
+            apply(cached)
+            return
+        }
+
+        if !segmentRecords.isEmpty {
+            let exact = WorkoutSegmentationResult(
+                segments: segmentRecords,
+                origin: .athlyTracker,
+                confidence: .exact,
+                fallbackReason: nil
+            )
+            apply(exact)
+            RunWorkoutLinkStore.shared.storeSegmentation(exact, for: item.id)
+            return
+        }
+
+        do {
+            guard let rawWorkout = try await healthKitService.fetchRawWorkout(uuid: item.id),
+                  let detail = try await WorkoutDetailFetcher().buildExecutionDetail(
+                    for: rawWorkout,
+                    athlyWorkoutId: prescribedWorkout.id,
+                    prescribedWorkout: prescribedWorkout
+                  ) else {
+                apply(.unavailable("Não foi possível abrir os dados brutos desta corrida para reconstruir os blocos."))
+                return
+            }
+            apply(detail.segmentation)
+            RunWorkoutLinkStore.shared.storeSegmentation(detail.segmentation, for: item.id)
+        } catch {
+            apply(.unavailable("Não foi possível reconstruir os blocos desta corrida: \(error.localizedDescription)"))
+        }
+    }
+
+    private func apply(_ result: WorkoutSegmentationResult) {
+        if result.hasSegments {
+            segmentRecords = result.segments
+        }
+        segmentationOrigin = result.origin == .unavailable ? nil : result.origin
+        segmentationConfidence = result.confidence == .unavailable ? nil : result.confidence
+        segmentationReason = result.fallbackReason
     }
 
     /// Casa a corrida do histórico com um RunSession local (Athly) por proximidade de horário (±120s).

@@ -10,6 +10,7 @@ final class RunViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var isSaved = false
     @Published var saveError: String?
+    @Published private(set) var healthKitWriteDenied = false
     @Published var showWorkoutFeedback = false
     @Published var targetAlert: RunTargetAlert?
 
@@ -29,6 +30,7 @@ final class RunViewModel: ObservableObject {
     private let locationManager: LocationManager
     private let healthKitService = HealthKitService()
     private var trackerCancellable: AnyCancellable?
+    private var lastSavedSession: RunSession?
 
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
@@ -81,8 +83,10 @@ final class RunViewModel: ObservableObject {
         lastRunResult = nil
         isSaved = false
         saveError = nil
+        healthKitWriteDenied = false
         pendingWorkout = nil
         lastSavedHealthKitUUID = nil
+        lastSavedSession = nil
         showWorkoutFeedback = false
         targetAlert = nil
     }
@@ -92,6 +96,7 @@ final class RunViewModel: ObservableObject {
 
         isSaving = true
         saveError = nil
+        healthKitWriteDenied = false
         lastSavedHealthKitUUID = nil
 
         // Save locally
@@ -105,6 +110,14 @@ final class RunViewModel: ObservableObject {
         session.caloriesBurned = result.caloriesBurned
         session.status = "completed"
         session.segmentRecords = result.segmentRecords
+        if !result.segmentRecords.isEmpty {
+            session.workoutSegmentation = WorkoutSegmentationResult(
+                segments: result.segmentRecords,
+                origin: .athlyTracker,
+                confidence: .exact,
+                fallbackReason: nil
+            )
+        }
         session.pauseIntervals = result.pauseIntervals
         session.athlyWorkoutId = pendingWorkout?.id
         session.healthKitSyncStatus = healthKitService.isHealthDataAvailable ? .pending : .unavailable
@@ -126,32 +139,18 @@ final class RunViewModel: ObservableObject {
         }
 
         runStore.add(session)
+        lastSavedSession = session
 
         // Save to HealthKit (best-effort; local history remains the fallback source of truth).
         if healthKitService.isHealthDataAvailable {
             do {
-                try await healthKitService.requestWriteAuthorization()
-                let savedWorkout = try await healthKitService.saveWorkout(result: result)
-                if let uuid = savedWorkout?.uuid.uuidString {
-                    lastSavedHealthKitUUID = uuid
-                    session.healthKitWorkoutUUID = uuid
-                    session.healthKitSyncStatus = .synced
-                    session.healthKitSyncError = nil
-                    if let workout = pendingWorkout {
-                        RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workout.id)
-                    }
-                    runStore.update(session)
-                } else {
-                    session.healthKitSyncStatus = .failed
-                    session.healthKitSyncError = "O Apple Health não retornou o identificador da corrida."
-                    runStore.update(session)
-                    saveError = "Corrida salva no Athly, mas ainda não foi sincronizada com o Apple Health."
-                }
+                lastSavedHealthKitUUID = try await healthKitService.syncWorkout(
+                    result: result,
+                    session: session,
+                    runStore: runStore
+                )
             } catch {
-                session.healthKitSyncStatus = .failed
-                session.healthKitSyncError = error.localizedDescription
-                runStore.update(session)
-                saveError = "Corrida salva no Athly, mas não foi enviada ao Apple Health: \(error.localizedDescription)"
+                handleHealthKitSyncError(error)
             }
         } else {
             session.healthKitSyncStatus = .unavailable
@@ -168,12 +167,62 @@ final class RunViewModel: ObservableObject {
         }
     }
 
+    var canRetryHealthKitSync: Bool {
+        guard let session = lastSavedSession else { return false }
+        return healthKitService.isHealthDataAvailable
+            && session.healthKitWorkoutUUID == nil
+            && session.healthKitSyncStatus != .synced
+    }
+
+    func retryHealthKitSync(runStore: RunStore) async {
+        guard !isSaving,
+              let result = lastRunResult,
+              let session = lastSavedSession,
+              session.healthKitWorkoutUUID == nil else {
+            return
+        }
+
+        isSaving = true
+        saveError = nil
+        healthKitWriteDenied = false
+        defer { isSaving = false }
+
+        do {
+            lastSavedHealthKitUUID = try await healthKitService.syncWorkout(
+                result: result,
+                session: session,
+                runStore: runStore
+            )
+        } catch {
+            handleHealthKitSyncError(error)
+        }
+    }
+
+    /// Reavalia o status ao voltar dos Ajustes sem criar um workout automaticamente.
+    func refreshHealthKitWriteAuthorization() {
+        guard healthKitWriteDenied else { return }
+        let snapshot = healthKitService.writeAuthorizationSnapshot()
+        guard snapshot.canWriteWorkout else { return }
+        healthKitWriteDenied = false
+        saveError = "Permissão atualizada. Toque em Tentar novamente para enviar ao Apple Health."
+    }
+
+    private func handleHealthKitSyncError(_ error: Error) {
+        if let healthKitError = error as? HealthKitError,
+           case .writeDenied = healthKitError {
+            healthKitWriteDenied = true
+        }
+        saveError = "Corrida salva no Athly. \(error.localizedDescription)"
+    }
+
     func dismissSummary() {
         showSummary = false
         lastRunResult = nil
         isSaved = false
         saveError = nil
+        healthKitWriteDenied = false
         lastSavedHealthKitUUID = nil
+        lastSavedSession = nil
         targetAlert = nil
     }
 }

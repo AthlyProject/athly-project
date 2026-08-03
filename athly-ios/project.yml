@@ -14,6 +14,9 @@ configFiles:
   Release: Config/Config.xcconfig
 
 packages:
+  FITSwiftSDK:
+    url: https://github.com/garmin/fit-swift-sdk.git
+    exactVersion: "21.205.0"
   RevenueCat:
     url: https://github.com/RevenueCat/purchases-ios-spm.git
     from: "5.0.0"          # 5.x: SDK + RevenueCatUI (Paywalls v2 + Customer Center)
@@ -90,10 +93,15 @@ targets:
           - audio
           - location
         UIAppFonts:
+          - SpaceGrotesk-Light.ttf
           - SpaceGrotesk-Regular.ttf
           - SpaceGrotesk-Medium.ttf
           - SpaceGrotesk-SemiBold.ttf
           - SpaceGrotesk-Bold.ttf
+          - JetBrainsMono-Regular.ttf
+          - JetBrainsMono-Medium.ttf
+          - JetBrainsMono-SemiBold.ttf
+          - JetBrainsMono-Bold.ttf
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: false
     entitlements:
@@ -105,6 +113,8 @@ targets:
     dependencies:
       - target: AthlyRunnerLiveActivity
         embed: true
+      - package: FITSwiftSDK
+        product: FITSwiftSDK
       - package: RevenueCat
         product: RevenueCat
       - package: RevenueCat
@@ -155,6 +165,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.athly.runner.tests
     dependencies:
       - target: AthlyRunner
+      - package: FITSwiftSDK
+        product: FITSwiftSDK
 
 schemes:
   AthlyRunner:

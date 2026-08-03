@@ -65,7 +65,9 @@ export class WorkoutExecutionAnalyzerService {
       .map((s) => s.athlyWorkoutId)
       .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
-    const uuids = mergedSessions.map((s) => s.appleHealthWorkoutUUID);
+    const uuids = mergedSessions
+      .map((s) => s.appleHealthWorkoutUUID)
+      .filter((uuid): uuid is string => typeof uuid === 'string' && uuid.length > 0);
 
     const linkedByWorkoutId = new Map<
       string,
@@ -179,7 +181,6 @@ export class WorkoutExecutionAnalyzerService {
     const value = raw as Partial<DetailedSessionDto>;
     if (
       typeof value.startDate !== 'string' ||
-      typeof value.appleHealthWorkoutUUID !== 'string' ||
       typeof value.distanceMeters !== 'number' ||
       typeof value.durationSeconds !== 'number' ||
       !Array.isArray(value.segments)
@@ -203,8 +204,10 @@ export class WorkoutExecutionAnalyzerService {
       const w = byWorkoutId.get(session.athlyWorkoutId);
       if (w) return w;
     }
-    const viaUuid = byUuid.get(session.appleHealthWorkoutUUID);
-    if (viaUuid) return viaUuid;
+    if (session.appleHealthWorkoutUUID) {
+      const viaUuid = byUuid.get(session.appleHealthWorkoutUUID);
+      if (viaUuid) return viaUuid;
+    }
 
     const dayKey = session.startDate.split('T')[0];
     const sameDay = byDay.get(dayKey);

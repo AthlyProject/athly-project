@@ -56,6 +56,20 @@ struct WorkoutDetailView: View {
                         .padding(.top, 8)
                     }
                 }
+                if workout.sportType == .running,
+                   (workout.status == .done || workout.status == .partial),
+                   let onComplete {
+                    Button {
+                        onComplete()
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.badge.plus")
+                            Text("Adicionar dados da corrida")
+                        }
+                    }
+                    .buttonStyle(AthlySecondaryButtonStyle())
+                    .padding(.top, 8)
+                }
             }
             .padding(AthlyTheme.Spacing.sm)
         }

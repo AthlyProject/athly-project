@@ -3,6 +3,7 @@ import SwiftUI
 struct PlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var entitlementManager: EntitlementManager
+    @EnvironmentObject var runStore: RunStore
 
     /// Inicia a corrida de um treino (passado pelo MainTabView: seta pendingWorkout + troca p/ aba Run).
     var onStartWorkout: ((WorkoutModel) -> Void)? = nil
@@ -73,15 +74,16 @@ struct PlanView: View {
             .sheet(item: $workoutToComplete) { workout in
                 WorkoutCompletionSheet(
                     workout: workout,
-                    onComplete: { healthRun in
-                        workoutToComplete = nil
-                        Task {
-                            if let run = healthRun {
-                                await planVM.completeWorkoutWithHealthData(workout, healthRun: run)
-                            } else {
-                                await planVM.completeWorkout(workout)
-                            }
+                    onComplete: { selection in
+                        let succeeded = await planVM.completeWorkoutSelection(
+                            workout,
+                            selection: selection,
+                            runStore: runStore
+                        )
+                        if succeeded {
+                            workoutToComplete = nil
                         }
+                        return succeeded
                     },
                     onDismiss: { workoutToComplete = nil }
                 )

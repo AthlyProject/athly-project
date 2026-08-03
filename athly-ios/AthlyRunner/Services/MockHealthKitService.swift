@@ -10,8 +10,8 @@ final class MockHealthKitService: HealthKitRunningWorkoutsProviding, Sendable {
         // No mock não há autorização real.
     }
 
-    func requestWriteAuthorization() async throws {
-        // No mock não há autorização real.
+    func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot {
+        .fullyAuthorized
     }
 
     func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async {

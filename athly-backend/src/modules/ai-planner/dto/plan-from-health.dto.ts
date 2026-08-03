@@ -78,9 +78,10 @@ export class DetailedSessionDto {
   @IsDateString()
   startDate: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  appleHealthWorkoutUUID: string;
+  appleHealthWorkoutUUID?: string;
 
   @ApiPropertyOptional({
     description:
