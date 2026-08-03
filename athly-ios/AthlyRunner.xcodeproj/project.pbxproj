@@ -60,6 +60,7 @@
 		77436C363DE402F3721AE62D /* FloatingTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1343FE6C664C7F873DA497 /* FloatingTabBar.swift */; };
 		7D7F6E472C1957BDB6430CC0 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21885B168F66B38BD6D0490A /* RegisterView.swift */; };
 		7DDF780541F6F9791EE17382 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FDDFE35FC18F83F6B46C710 /* LoginView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* AuthWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* AuthWelcomeView.swift */; };
 		80CC250B6D5583D7BC5B7EBB /* UserMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97E870BF13FE10A3DE61957E /* UserMetrics.swift */; };
 		81946A13DCF291F1AE5D7C79 /* WatermarkRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8BDC4376954F0A3874FDAD /* WatermarkRenderer.swift */; };
 		842598323D9AC745AACCB348 /* JetBrainsMono-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E19916F2C3B76A126C2D9464 /* JetBrainsMono-SemiBold.ttf */; };
@@ -232,6 +233,7 @@
 		6B40DFFE15481C9F5A6BB1CC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		6E55A3660DBE7A9713E988F8 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		6FDDFE35FC18F83F6B46C710 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* AuthWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthWelcomeView.swift; sourceTree = "<group>"; };
 		73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunItem.swift; sourceTree = "<group>"; };
 		76040706569D260F613A6C4A /* SportBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportBadgeView.swift; sourceTree = "<group>"; };
 		771F104A20AD0B32E98D4010 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -603,6 +605,7 @@
 			isa = PBXGroup;
 			children = (
 				AA4BCF2E850BE62335CCF83C /* AssessmentView.swift */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* AuthWelcomeView.swift */,
 				6FDDFE35FC18F83F6B46C710 /* LoginView.swift */,
 				2EFC59D86D826C74824DDC8B /* ProfileCompletionView.swift */,
 				21885B168F66B38BD6D0490A /* RegisterView.swift */,
@@ -846,6 +849,7 @@
 				B7B65DB86E084DC73C1A3E56 /* AdminViewModel.swift in Sources */,
 				E41779D400C5E24ECA4A374E /* AnalysisSummaryCard.swift in Sources */,
 				E67EC256062E4F7945CACC9C /* AssessmentView.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* AuthWelcomeView.swift in Sources */,
 				CF71D303566B3AC07A96F1F9 /* AthlyPaywallView.swift in Sources */,
 				5FCA646AB66D33A5F21C96FD /* AthlyRunnerApp.swift in Sources */,
 				D28D261CEC4D158217B3B4C5 /* AthlyRunnerAttributes.swift in Sources */,

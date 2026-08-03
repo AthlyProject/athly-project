@@ -26,7 +26,7 @@ struct RootView: View {
                         MainTabView()
                     }
                 } else {
-                    LoginView()
+                    AuthWelcomeView()
                 }
             }
             .opacity(showLaunchSplash ? 0 : 1)
