@@ -70,13 +70,22 @@ struct RegisterView: View {
                     // Email
                     authField(label: "Email") {
                         HStack {
-                            TextField("gabriel@exemplo.com", text: $email)
-                                .font(AthlyTheme.Typography.body(13))
-                                .foregroundStyle(AthlyTheme.Color.textPrimary)
-                                .textContentType(.emailAddress)
-                                .keyboardType(.emailAddress)
-                                .autocapitalization(.none)
-                                .autocorrectionDisabled()
+                            ZStack(alignment: .leading) {
+                                if email.isEmpty {
+                                    Text("email@exemplo.com")
+                                        .font(AthlyTheme.Typography.body(13))
+                                        .foregroundStyle(Color(.placeholderText))
+                                        .allowsHitTesting(false)
+
+                                }
+                                TextField("", text: $email)
+                                    .font(AthlyTheme.Typography.body(13))
+                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                    .textContentType(.emailAddress)
+                                    .keyboardType(.emailAddress)
+                                    .autocapitalization(.none)
+                                    .autocorrectionDisabled()
+                            }
                             Image(systemName: "envelope")
                                 .font(.system(size: 14))
                                 .foregroundStyle(AthlyTheme.Color.textTertiary)

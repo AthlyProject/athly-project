@@ -6,6 +6,7 @@ struct DashboardView: View {
     @EnvironmentObject var runStore: RunStore
     @Binding var selectedTab: AppTab
     @Binding var pendingWorkout: WorkoutModel?
+    var onOpenPlanCalendar: (() -> Void)? = nil
 
     private var recentRuns: [RunSession] { runStore.sortedSessions }
 
@@ -143,7 +144,21 @@ struct DashboardView: View {
         planVM.todayWorkout ?? planVM.thisWeekNext
     }
 
+    @ViewBuilder
     private var weeklyProgressCard: some View {
+        if planVM.thisWeekTotal == 0 {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .plan }
+            } label: {
+                weeklyProgressCardInner
+            }
+            .buttonStyle(.plain)
+        } else {
+            weeklyProgressCardInner
+        }
+    }
+
+    private var weeklyProgressCardInner: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -295,7 +310,10 @@ struct DashboardView: View {
             cal.isDate($0.startDate, equalTo: weekStart, toGranularity: .weekOfYear)
         }.reduce(0.0) { $0 + $1.distanceKm }
 
-        return VStack(alignment: .leading, spacing: 14) {
+        return Button {
+            onOpenPlanCalendar?()
+        } label: {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Esta semana")
                     .font(AthlyTheme.Typography.semibold(17))
@@ -349,5 +367,7 @@ struct DashboardView: View {
         }
         .padding(AthlyTheme.Spacing.sm)
         .athlyCard()
+        }
+        .buttonStyle(.plain)
     }
 }

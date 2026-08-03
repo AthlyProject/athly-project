@@ -8,7 +8,7 @@ struct PlanView: View {
     /// Inicia a corrida de um treino (passado pelo MainTabView: seta pendingWorkout + troca p/ aba Run).
     var onStartWorkout: ((WorkoutModel) -> Void)? = nil
 
-    @State private var viewMode: ViewMode = .list
+    @Binding var viewMode: ViewMode
     @State private var calendarMonth: Date = Date()
     @State private var showCreatePlan = false
     @State private var showAnalysisDetails = false
