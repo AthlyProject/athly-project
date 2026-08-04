@@ -8,6 +8,8 @@ struct DashboardView: View {
     @Binding var pendingWorkout: WorkoutModel?
     var onOpenPlanCalendar: (() -> Void)? = nil
 
+    @State private var workoutToComplete: WorkoutModel?
+
     private var recentRuns: [RunSession] { runStore.sortedSessions }
 
     private static let weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
@@ -68,6 +70,21 @@ struct DashboardView: View {
             }
             .navigationTitle("Athly")
             .task { await planVM.loadData() }
+            .sheet(item: $workoutToComplete) { workout in
+                WorkoutCompletionSheet(
+                    workout: workout,
+                    onComplete: { selection in
+                        let succeeded = await planVM.completeWorkoutSelection(
+                            workout,
+                            selection: selection,
+                            runStore: runStore
+                        )
+                        if succeeded { workoutToComplete = nil }
+                        return succeeded
+                    },
+                    onDismiss: { workoutToComplete = nil }
+                )
+            }
             .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
                 Button("OK") { planVM.errorMessage = nil }
             } message: {
@@ -219,7 +236,17 @@ struct DashboardView: View {
                     Text(workout.isToday ? "TREINO DE HOJE" : "PRÓXIMO TREINO")
                         .font(AthlyTheme.Typography.label())
                         .foregroundStyle(AthlyTheme.Color.textTertiary)
-                    highlightedWorkoutRow(workout)
+                    NavigationLink {
+                        WorkoutDetailView(
+                            workout: workout,
+                            onComplete: { workoutToComplete = workout },
+                            onStart: { startWorkout($0) }
+                        )
+                        .environmentObject(planVM)
+                    } label: {
+                        highlightedWorkoutRow(workout)
+                    }
+                    .buttonStyle(.plain)
 
                     if workout.isToday && workout.status == .scheduled {
                         Button("Iniciar treino agora") {
@@ -262,10 +289,6 @@ struct DashboardView: View {
             }
 
             HStack(spacing: 12) {
-                Label(workout.parsedDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
-                    .font(AthlyTheme.Typography.body(12))
-                    .foregroundStyle(AthlyTheme.Color.textTertiary)
-
                 if let intensity = workout.intensity {
                     Label("Intensidade \(Int(intensity))", systemImage: "bolt.fill")
                         .font(AthlyTheme.Typography.body(12))
