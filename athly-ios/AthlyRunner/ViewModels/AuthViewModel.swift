@@ -231,11 +231,23 @@ final class AuthViewModel: ObservableObject {
         }
         Task {
             await APIClient.shared.setTokens(access: access, refresh: refresh)
-            isAuthenticated = true
-            postAuthChanged(true)
+            do {
+                let profile = try await APIClient.shared.getUserProfile()
+                isAuthenticated = true
+                postAuthChanged(true)
+                userName = profile.name ?? ""
+                assessmentCompleted = profile.assessmentCompleted ?? true
+                needsProfileCompletion = profile.weight == nil || profile.height == nil
+            } catch APIError.unauthorized {
+                // Token expired and refresh also failed — wipe local session so
+                // RootView shows AuthWelcomeView as soon as the splash dismisses.
+                clearLocalSession()
+            } catch {
+                // Network error: assume still authenticated (offline mode).
+                isAuthenticated = true
+                postAuthChanged(true)
+            }
             hasFinishedInitialSessionRestore = true
-            // Não bloqueia o gate de restauração de sessão; a saudação atualiza reativamente.
-            await refreshUserName()
         }
     }
 
