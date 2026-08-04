@@ -357,6 +357,9 @@ struct DashboardView: View {
                     let km = dayRuns.reduce(0) { $0 + $1.distanceKm }
                     let isToday = cal.isDateInToday(day)
                     let isFuture = day > today
+                    let hasCompletedWorkout = planVM.allWorkouts.contains {
+                        $0.status == .done && cal.isDate($0.parsedDate, inSameDayAs: day)
+                    }
 
                     VStack(spacing: 4) {
                         if km > 0 {
@@ -365,6 +368,11 @@ struct DashboardView: View {
                                 .frame(height: max(10, CGFloat(km) * 10))
                                 .frame(maxHeight: 60)
                                 .shadow(color: AthlyTheme.Color.primary.opacity(0.5), radius: 4)
+                        } else if hasCompletedWorkout {
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(AthlyTheme.Color.success)
+                                .frame(height: 10)
+                                .shadow(color: AthlyTheme.Color.success.opacity(0.5), radius: 4)
                         } else {
                             RoundedRectangle(cornerRadius: 5)
                                 .fill(AthlyTheme.Color.surfaceDark.opacity(isFuture ? 0.45 : 1))
