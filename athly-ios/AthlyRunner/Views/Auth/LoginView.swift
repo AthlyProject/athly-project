@@ -56,21 +56,13 @@ struct LoginView: View {
                     // Email
                     authField(label: "Email") {
                         HStack {
-                            ZStack(alignment: .leading) {
-                                if email.isEmpty {
-                                    Text("email@exemplo.com")
-                                        .font(AthlyTheme.Typography.body(13))
-                                        .foregroundStyle(Color(.placeholderText))
-                                        .allowsHitTesting(false)
-                                }
-                                TextField("", text: $email)
-                                    .font(AthlyTheme.Typography.body(13))
-                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .autocapitalization(.none)
-                                    .autocorrectionDisabled()
-                            }
+                            TextField("", text: $email)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
                             Image(systemName: "envelope")
                                 .font(.system(size: 14))
                                 .foregroundStyle(AthlyTheme.Color.textTertiary)
@@ -83,9 +75,9 @@ struct LoginView: View {
                         HStack {
                             Group {
                                 if showPassword {
-                                    TextField("••••••••", text: $password)
+                                    TextField("", text: $password)
                                 } else {
-                                    SecureField("••••••••", text: $password)
+                                    SecureField("", text: $password)
                                 }
                             }
                             .font(AthlyTheme.Typography.body(13))

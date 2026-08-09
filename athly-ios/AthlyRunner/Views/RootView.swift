@@ -13,15 +13,9 @@ struct RootView: View {
             Group {
                 if authViewModel.isAuthenticated {
                     // Contas sociais nascem sem data de nascimento/peso/altura: completa o perfil
-                    // antes do questionário de onboarding.
+                    // antes de entrar no app.
                     if authViewModel.needsProfileCompletion {
                         ProfileCompletionView()
-                    } else if authViewModel.assessmentCompleted == false {
-                        // Gate do questionário de onboarding (mesmo fluxo do athly-frontend):
-                        // usuário autenticado sem assessment respondido cai no questionário.
-                        AssessmentView {
-                            authViewModel.markAssessmentCompleted()
-                        }
                     } else {
                         MainTabView()
                     }
@@ -40,7 +34,6 @@ struct RootView: View {
         .background(AthlyTheme.Color.backgroundDark.ignoresSafeArea())
         .animation(.easeInOut(duration: 0.35), value: authViewModel.isAuthenticated)
         .animation(.easeInOut(duration: 0.35), value: authViewModel.needsProfileCompletion)
-        .animation(.easeInOut(duration: 0.35), value: authViewModel.assessmentCompleted)
         .animation(.easeInOut(duration: 0.3), value: showLaunchSplash)
         .task {
             guard showLaunchSplash else { return }

@@ -4,6 +4,7 @@ struct PlanView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var entitlementManager: EntitlementManager
     @EnvironmentObject var runStore: RunStore
+    @EnvironmentObject var authVM: AuthViewModel
 
     /// Inicia a corrida de um treino (passado pelo MainTabView: seta pendingWorkout + troca p/ aba Run).
     var onStartWorkout: ((WorkoutModel) -> Void)? = nil
@@ -11,6 +12,7 @@ struct PlanView: View {
     @Binding var viewMode: ViewMode
     @State private var calendarMonth: Date = Date()
     @State private var showCreatePlan = false
+    @State private var showAssessment = false
     @State private var showAnalysisDetails = false
     @State private var workoutToComplete: WorkoutModel?
     @State private var selectedCalendarDate: Date? = nil
@@ -60,6 +62,12 @@ struct PlanView: View {
             }
             .navigationTitle("Plano")
             .task { await planVM.loadData() }
+            .fullScreenCover(isPresented: $showAssessment) {
+                AssessmentView {
+                    authVM.markAssessmentCompleted()
+                    showAssessment = false
+                }
+            }
             .sheet(isPresented: $showCreatePlan) {
                 CreatePlanView()
                     .environmentObject(planVM)
@@ -458,6 +466,16 @@ struct PlanView: View {
             }
             .buttonStyle(AthlyGradientButtonStyle())
             .padding(.top, 4)
+
+            Button {
+                showAssessment = true
+            } label: {
+                HStack {
+                    Image(systemName: "checklist")
+                    Text("Responder questionário")
+                }
+            }
+            .buttonStyle(AthlySecondaryButtonStyle())
 
             Text("ou")
                 .font(AthlyTheme.Typography.body(13))

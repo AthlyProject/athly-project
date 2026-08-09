@@ -14,16 +14,6 @@ struct RegisterView: View {
         !email.isEmpty && password.count >= 8 && termsAccepted
     }
 
-    private var passwordStrength: Int {
-        guard !password.isEmpty else { return 0 }
-        var score = 0
-        if password.count >= 8  { score += 1 }
-        if password.count >= 12 { score += 1 }
-        if password.range(of: "[A-Z]",      options: .regularExpression) != nil { score += 1 }
-        if password.range(of: "[0-9!@#$%]", options: .regularExpression) != nil { score += 1 }
-        return score
-    }
-
     var body: some View {
         ZStack {
             AthlyTheme.Color.backgroundDark.ignoresSafeArea()
@@ -70,22 +60,13 @@ struct RegisterView: View {
                     // Email
                     authField(label: "Email") {
                         HStack {
-                            ZStack(alignment: .leading) {
-                                if email.isEmpty {
-                                    Text("email@exemplo.com")
-                                        .font(AthlyTheme.Typography.body(13))
-                                        .foregroundStyle(Color(.placeholderText))
-                                        .allowsHitTesting(false)
-
-                                }
-                                TextField("", text: $email)
-                                    .font(AthlyTheme.Typography.body(13))
-                                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .autocapitalization(.none)
-                                    .autocorrectionDisabled()
-                            }
+                            TextField("", text: $email)
+                                .font(AthlyTheme.Typography.body(13))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled()
                             Image(systemName: "envelope")
                                 .font(.system(size: 14))
                                 .foregroundStyle(AthlyTheme.Color.textTertiary)
@@ -185,9 +166,9 @@ struct RegisterView: View {
             HStack {
                 Group {
                     if showPassword {
-                        TextField("Mínimo 8 caracteres", text: $password)
+                        TextField("", text: $password)
                     } else {
-                        SecureField("Mínimo 8 caracteres", text: $password)
+                        SecureField("", text: $password)
                     }
                 }
                 .font(AthlyTheme.Typography.body(13))
@@ -210,35 +191,11 @@ struct RegisterView: View {
                     .stroke(AthlyTheme.Color.borderMid, lineWidth: 1)
             )
 
-            if !password.isEmpty {
-                HStack(spacing: 3) {
-                    ForEach(0..<4, id: \.self) { i in
-                        Capsule()
-                            .fill(i < passwordStrength ? strengthColor : AthlyTheme.Color.borderMid)
-                            .frame(height: 3)
-                    }
-                }
-
-                Text(strengthLabel)
+            if !password.isEmpty && password.count < 8 {
+                Text("A senha deve ter pelo menos 8 caracteres")
                     .font(AthlyTheme.Typography.body(10))
-                    .foregroundStyle(strengthColor)
+                    .foregroundStyle(AthlyTheme.Color.error)
             }
-        }
-    }
-
-    private var strengthColor: Color {
-        switch passwordStrength {
-        case 1:    return AthlyTheme.Color.error
-        case 2:    return AthlyTheme.Color.warning
-        default:   return AthlyTheme.Color.success
-        }
-    }
-
-    private var strengthLabel: String {
-        switch passwordStrength {
-        case 1:    return "Senha fraca"
-        case 2:    return "Senha média"
-        default:   return "Senha forte ✓"
         }
     }
 
