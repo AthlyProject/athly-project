@@ -5,10 +5,17 @@ struct ProfileCompletionView: View {
 
     @State private var name         = ""
     @State private var gender       = ""
+    @State private var birthDate    = Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date()
     @State private var weightKg     = 70
     @State private var heightCm     = 175
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+
+    private static let birthDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 
     private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -29,6 +36,7 @@ struct ProfileCompletionView: View {
                     VStack(spacing: 9) {
                         nameField
                         genderSection
+                        birthDateSection
                         stepperSection(
                             label: "Peso",
                             value: weightKg,
@@ -155,6 +163,32 @@ struct ProfileCompletionView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Birth Date
+
+    private var birthDateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionLabel("Data de nascimento")
+            DatePicker(
+                "",
+                selection: $birthDate,
+                in: Calendar.current.date(byAdding: .year, value: -100, to: Date())!...Calendar.current.date(byAdding: .year, value: -5, to: Date())!,
+                displayedComponents: .date
+            )
+            .labelsHidden()
+            .datePickerStyle(.compact)
+            .tint(AthlyTheme.Color.primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 13)
+            .background(AthlyTheme.Color.surfaceCard)
+            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                    .stroke(AthlyTheme.Color.borderMid, lineWidth: 1)
+            )
+        }
+    }
+
     // MARK: - Stepper
 
     private func stepperSection(
@@ -250,7 +284,7 @@ struct ProfileCompletionView: View {
                 name: name.trimmingCharacters(in: .whitespaces),
                 weight: Double(weightKg),
                 height: Double(heightCm),
-                dateOfBirth: nil,
+                dateOfBirth: Self.birthDateFormatter.string(from: birthDate),
                 gender: gender.isEmpty ? nil : gender
             )
             let profile = try await APIClient.shared.updateProfile(request)
