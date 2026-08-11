@@ -489,7 +489,129 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             let durationDelta = abs(activeDuration - result.durationSeconds)
             let distanceDelta = abs(distance - result.distanceMeters)
             let distanceTolerance = max(100, result.distanceMeters * 0.03)
-            return startDelta < 120 && durationDelta < 180 && distanceDelta <= distanceTolerance
+            return startDelta <= 120 && durationDelta <= 180 && distanceDelta <= distanceTolerance
+        }
+    }
+
+    /// Busca o UUID de uma corrida equivalente sem criar ou modificar objetos no HealthKit.
+    /// Usado pelo importador para preferir o registro Garmin/Zepp que já existe.
+    func findEquivalentWorkoutUUID(for imported: ImportedWorkout) async -> String? {
+        await findEquivalentWorkout(for: imported.runResult)?.uuid.uuidString
+    }
+
+    /// Anexa a rota de um arquivo normalizado a um workout já salvo. A operação preserva o
+    /// HKWorkout e seus totais; apenas um novo HKWorkoutRoute, de autoria do Athly, é criado.
+    ///
+    /// HealthKit não oferece transação de edição de HKWorkout. Por isso validamos identidade
+    /// antes de qualquer escrita e recusamos adicionar uma segunda rota.
+    @discardableResult
+    func attachImportedRoute(_ imported: ImportedWorkout, toWorkoutUUID workoutUUID: String) async throws -> String {
+        guard imported.hasRoute else { throw HealthKitError.importedRouteMissing }
+        try await requestReadAuthorization()
+        let authorization = try await requestWriteAuthorization()
+        guard authorization.route == .sharingAuthorized else { throw HealthKitError.routeWriteDenied }
+        guard let workout = try await fetchRawWorkout(uuid: workoutUUID) else {
+            throw HealthKitError.workoutNotFound
+        }
+
+        let healthDistance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
+        let healthDuration = (workout.metadata?["activeDurationSeconds"] as? Double) ?? workout.duration
+        let match = ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: workout.startDate,
+            healthDurationSeconds: healthDuration,
+            healthDistanceMeters: healthDistance
+        )
+        guard match.isMatch else {
+            throw HealthKitError.importedWorkoutMismatch(match.localizedSummary)
+        }
+
+        if !(await fetchRoutes(for: workout)).isEmpty {
+            return workout.uuid.uuidString
+        }
+
+        let locations = imported.route
+            .filter { $0.timestamp >= workout.startDate.addingTimeInterval(-Self.importRouteTimeTolerance) }
+            .filter { $0.timestamp <= workout.endDate.addingTimeInterval(Self.importRouteTimeTolerance) }
+            .sorted { $0.timestamp < $1.timestamp }
+        guard locations.count >= 2 else { throw HealthKitError.importedRouteMissing }
+
+        let routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: .local())
+        do {
+            for offset in stride(from: 0, to: locations.count, by: Self.importRouteBatchSize) {
+                let end = min(offset + Self.importRouteBatchSize, locations.count)
+                try await insertRouteData(Array(locations[offset..<end]), into: routeBuilder)
+            }
+            let route = try await finishRoute(
+                routeBuilder,
+                workout: workout,
+                metadata: [
+                    Self.importFingerprintMetadataKey: imported.fingerprint,
+                    Self.importFormatMetadataKey: imported.format.rawValue,
+                    "athlyRouteEnrichment": true
+                ]
+            )
+            guard route != nil else { throw HealthKitError.routeNotReturned }
+            return workout.uuid.uuidString
+        } catch let error as HealthKitError {
+            throw error
+        } catch {
+            Self.writeLogger.error("Failed to attach imported route: \(error.localizedDescription, privacy: .public)")
+            throw HealthKitError.routeAttachmentFailed(error.localizedDescription)
+        }
+    }
+
+    /// Exclui o workout anterior somente quando ele foi salvo pelo próprio bundle do Athly.
+    /// Retorna false para objetos Garmin/Zepp, que o HealthKit não permite que sejam apagados.
+    func deleteWorkoutIfOwned(uuid workoutUUID: String) async throws -> Bool {
+        guard let workout = try await fetchRawWorkout(uuid: workoutUUID),
+              workout.sourceRevision.source.bundleIdentifier == Bundle.main.bundleIdentifier else {
+            return false
+        }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            store.delete(workout) { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: HealthKitError.workoutDeleteFailed)
+                }
+            }
+        }
+        return true
+    }
+
+    private static let importRouteBatchSize = 500
+    private static let importRouteTimeTolerance: TimeInterval = 180
+
+    private func insertRouteData(_ locations: [CLLocation], into builder: HKWorkoutRouteBuilder) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            builder.insertRouteData(locations) { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: HealthKitError.routeAttachmentFailed("falha ao inserir pontos"))
+                }
+            }
+        }
+    }
+
+    private func finishRoute(
+        _ builder: HKWorkoutRouteBuilder,
+        workout: HKWorkout,
+        metadata: [String: Any]
+    ) async throws -> HKWorkoutRoute? {
+        try await withCheckedThrowingContinuation { continuation in
+            builder.finishRoute(with: workout, metadata: metadata) { route, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: route)
+                }
+            }
         }
     }
 
@@ -1175,6 +1297,13 @@ enum HealthKitError: LocalizedError {
     case notAvailable
     case writeDenied
     case workoutNotReturned
+    case workoutNotFound
+    case importedRouteMissing
+    case importedWorkoutMismatch(String)
+    case routeWriteDenied
+    case routeNotReturned
+    case routeAttachmentFailed(String)
+    case workoutDeleteFailed
 
     var errorDescription: String? {
         switch self {
@@ -1184,6 +1313,20 @@ enum HealthKitError: LocalizedError {
             return "A escrita de Treinos está desativada para o Athly. Abra os Ajustes, entre em Saúde e permita que o Athly grave Treinos."
         case .workoutNotReturned:
             return "O Apple Health não retornou o identificador da corrida."
+        case .workoutNotFound:
+            return "A corrida vinculada não foi encontrada no Apple Health."
+        case .importedRouteMissing:
+            return "O arquivo não contém uma rota GPS utilizável."
+        case .importedWorkoutMismatch(let details):
+            return "O arquivo não corresponde à corrida vinculada (\(details))."
+        case .routeWriteDenied:
+            return "A permissão para gravar rotas está desativada no Apple Health."
+        case .routeNotReturned:
+            return "O Apple Health não retornou a rota criada."
+        case .routeAttachmentFailed(let reason):
+            return "Não foi possível anexar a rota à corrida original: \(reason)"
+        case .workoutDeleteFailed:
+            return "A nova corrida foi salva, mas o registro anterior do Athly não pôde ser removido."
         }
     }
 }

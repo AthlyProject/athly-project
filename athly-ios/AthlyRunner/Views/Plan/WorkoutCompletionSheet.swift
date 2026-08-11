@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct WorkoutCompletionSheet: View {
     let workout: WorkoutModel
     var initialStep: Step = .healthKit
-    let onComplete: (WorkoutCompletionSelection) async -> Bool
+    let onComplete: (WorkoutCompletionSelection, ImportedWorkoutHealthKitFallback) async -> WorkoutCompletionOutcome
     let onDismiss: () -> Void
 
     // MARK: - Step machine
@@ -21,7 +21,7 @@ struct WorkoutCompletionSheet: View {
     init(
         workout: WorkoutModel,
         initialStep: Step = .healthKit,
-        onComplete: @escaping (WorkoutCompletionSelection) async -> Bool,
+        onComplete: @escaping (WorkoutCompletionSelection, ImportedWorkoutHealthKitFallback) async -> WorkoutCompletionOutcome,
         onDismiss: @escaping () -> Void
     ) {
         self.workout = workout
@@ -52,6 +52,8 @@ struct WorkoutCompletionSheet: View {
     @State private var saveImportedToHealthKit = true
     @State private var importError: String?
     @State private var showOutsideDateConfirmation = false
+    @State private var showHealthKitFallback = false
+    @State private var healthKitFallbackMessage: String?
 
     private let calendar = Calendar.current
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
@@ -72,7 +74,7 @@ struct WorkoutCompletionSheet: View {
                     feedbackContent
                 }
             }
-            .navigationTitle(step == .healthKit ? "Concluir Treino" : "Como foi o treino?")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -101,6 +103,24 @@ struct WorkoutCompletionSheet: View {
             if let imported = selectedImportedWorkout {
                 Text("A atividade é de \(imported.startDate.formatted(date: .abbreviated, time: .shortened)), fora da janela planejada. Confirme que é a corrida correta.")
             }
+        }
+        .confirmationDialog(
+            "Não foi possível atualizar a corrida original",
+            isPresented: $showHealthKitFallback,
+            titleVisibility: .visible
+        ) {
+            Button("Manter somente no Athly") {
+                Task { await finishCompletion(fallback: .localOnly) }
+            }
+            Button("Criar cópia completa no Apple Health") {
+                Task { await finishCompletion(fallback: .createCopy) }
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text(
+                (healthKitFallbackMessage ?? "O Apple Health recusou a associação da rota.")
+                    + " Uma cópia não remove automaticamente o registro Garmin/Zepp."
+            )
         }
     }
 
@@ -155,26 +175,28 @@ struct WorkoutCompletionSheet: View {
                     .background(AthlyTheme.Color.borderDark)
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
 
-                Button {
-                    selection = .none
-                    step = .feedback
-                } label: {
-                    HStack {
-                        Image(systemName: "checkmark.circle")
-                        Text("Apenas marcar como concluído")
+                if !isEnrichment {
+                    Button {
+                        selection = .none
+                        step = .feedback
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle")
+                            Text("Apenas marcar como concluído")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        .background(AthlyTheme.Color.surfaceDark)
+                        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                                .stroke(AthlyTheme.Color.borderDark, lineWidth: 1)
+                        )
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .foregroundStyle(AthlyTheme.Color.textSecondary)
-                    .background(AthlyTheme.Color.surfaceDark)
-                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                            .stroke(AthlyTheme.Color.borderDark, lineWidth: 1)
-                    )
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, AthlyTheme.Spacing.sm)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, AthlyTheme.Spacing.sm)
             }
             .padding(.vertical, AthlyTheme.Spacing.sm)
         }
@@ -402,14 +424,20 @@ struct WorkoutCompletionSheet: View {
         }
     }
 
-    private func finishCompletion() async {
+    private func finishCompletion(fallback: ImportedWorkoutHealthKitFallback = .ask) async {
         guard !isCompleting else { return }
         isCompleting = true
         submitError = nil
-        let completedSuccessfully = await onComplete(selection)
+        let outcome = await onComplete(selection, fallback)
         isCompleting = false
-        if !completedSuccessfully {
-            submitError = "A corrida foi preservada no Athly, mas não foi possível atualizar o treino agora. Tente novamente."
+        switch outcome {
+        case .success:
+            break
+        case .failure(let message):
+            submitError = message
+        case .healthKitFallbackRequired(let message):
+            healthKitFallbackMessage = message
+            showHealthKitFallback = true
         }
     }
 
@@ -442,7 +470,11 @@ struct WorkoutCompletionSheet: View {
     private func healthRunCard(_ run: HealthKitRunItem) -> some View {
         Button {
             selection = .healthKit(run)
-            step = .feedback
+            if isEnrichment {
+                Task { await finishCompletion() }
+            } else {
+                step = .feedback
+            }
         } label: {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
@@ -705,7 +737,11 @@ struct WorkoutCompletionSheet: View {
     private func selectImportedForCompletion() {
         guard let imported = selectedImportedWorkout else { return }
         selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
-        step = .feedback
+        if isEnrichment {
+            Task { await finishCompletion() }
+        } else {
+            step = .feedback
+        }
     }
 
     private func isOutsideWorkoutWindow(_ date: Date) -> Bool {
@@ -827,6 +863,15 @@ struct WorkoutCompletionSheet: View {
         df.timeStyle = .none
         df.locale = Locale(identifier: "pt_BR")
         return df.string(from: workout.parsedDate)
+    }
+
+    private var isEnrichment: Bool {
+        workout.status == .done || workout.status == .partial
+    }
+
+    private var navigationTitle: String {
+        if step == .feedback { return "Como foi o treino?" }
+        return isEnrichment ? "Adicionar dados" : "Concluir Treino"
     }
 
     private var effortEmoji: String {

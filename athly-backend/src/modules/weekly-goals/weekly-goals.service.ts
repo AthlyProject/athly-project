@@ -58,7 +58,6 @@ export class WeeklyGoalsService {
     return weeklyGoals.map((wg) =>
       this.mapWeeklyGoal({
         ...wg,
-        status: WeeklyGoalStatus.GENERATED,
         previousWeekAnalysis: wg.previousWeekAnalysis ?? undefined,
       }),
     );

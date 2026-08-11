@@ -29,6 +29,8 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var achievementCount: Int = AchievementStore.shared.count
 
     private var generationPollTask: Task<Void, Never>?
+    private var activeGenerationId: String?
+    private let pendingGenerationKey = "athly_pending_plan_generation_id"
 
     // MARK: - Computed Properties
 
@@ -148,7 +150,9 @@ final class TrainingPlanViewModel: ObservableObject {
 
             let (goals, workouts) = try await (goalsTask, workoutsTask)
 
-            weeklyGoals = goals.sorted { $0.parsedStartDate < $1.parsedStartDate }
+            weeklyGoals = goals
+                .filter { $0.status == .GENERATED || $0.status == .LOCKED }
+                .sorted { $0.parsedStartDate < $1.parsedStartDate }
             allWorkouts = workouts
             todayWorkout = Self.todayWorkout(from: allWorkouts)
 
@@ -190,7 +194,9 @@ final class TrainingPlanViewModel: ObservableObject {
     private func hydrateFromCache() -> Bool {
         guard let snapshot = TrainingPlanCache.shared.load() else { return false }
         trainingPlanResponse = snapshot.trainingPlan
-        weeklyGoals = snapshot.weeklyGoals
+        weeklyGoals = snapshot.weeklyGoals.filter {
+            $0.status == .GENERATED || $0.status == .LOCKED
+        }
         allWorkouts = snapshot.allWorkouts
         todayWorkout = Self.todayWorkout(from: allWorkouts) ?? snapshot.todayWorkout.flatMap {
             $0.sportType != .other && $0.isToday ? $0 : nil
@@ -276,13 +282,6 @@ final class TrainingPlanViewModel: ObservableObject {
             }
         }
 
-        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
-        let generatedWeeklyGoalIdsBefore = Set(
-            weeklyGoals
-                .filter { $0.status == .GENERATED }
-                .map { $0.id }
-        )
-
         do {
             let payloads = healthRuns.map { HealthRunPayload(from: $0) }
             // Com corridas → sessões detalhadas (5 na 1ª geração, 7 depois). Sem corridas →
@@ -297,11 +296,10 @@ final class TrainingPlanViewModel: ObservableObject {
             )
             let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
             startGenerationPolling(
-                workoutIdsBefore: workoutIdsBefore,
-                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
                 generationId: response.generationId,
                 pollAfterSeconds: response.pollAfterSeconds
             )
+            await NotificationService.shared.requestAuthorizationIfNeeded()
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -318,13 +316,6 @@ final class TrainingPlanViewModel: ObservableObject {
         isGenerating = true
         errorMessage = nil
 
-        let workoutIdsBefore = Set(allWorkouts.map { $0.id })
-        let generatedWeeklyGoalIdsBefore = Set(
-            weeklyGoals
-                .filter { $0.status == .GENERATED }
-                .map { $0.id }
-        )
-
         do {
             let payloads = runs.map { HealthRunPayload(from: $0) }
             let detailedLimit = trainingPlanResponse == nil ? 5 : 7
@@ -336,11 +327,10 @@ final class TrainingPlanViewModel: ObservableObject {
             )
             let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
             startGenerationPolling(
-                workoutIdsBefore: workoutIdsBefore,
-                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
                 generationId: response.generationId,
                 pollAfterSeconds: response.pollAfterSeconds
             )
+            await NotificationService.shared.requestAuthorizationIfNeeded()
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -483,9 +473,39 @@ final class TrainingPlanViewModel: ObservableObject {
         _ workout: WorkoutModel,
         imported: ImportedWorkout,
         saveToHealthKit: Bool,
+        fallback: ImportedWorkoutHealthKitFallback,
         runStore: RunStore
-    ) async -> Bool {
+    ) async -> WorkoutCompletionOutcome {
         errorMessage = nil
+        let healthService = HealthKitService()
+        var healthKitUUID = workout.appleHealthWorkoutUUID
+            ?? RunWorkoutLinkStore.shared.healthKitUUID(forAthlyWorkoutId: workout.id)
+
+        if healthKitUUID == nil, saveToHealthKit {
+            healthKitUUID = await healthService.findEquivalentWorkoutUUID(for: imported)
+        }
+
+        var healthSummary: HealthKitRunItem?
+        if let healthKitUUID {
+            healthSummary = try? await healthService.fetchRunningWorkout(uuid: healthKitUUID)
+            guard let healthSummary else {
+                let message = "A corrida vinculada não foi encontrada no Apple Health."
+                errorMessage = message
+                return .failure(message)
+            }
+            let match = ImportedWorkoutMatch.evaluate(
+                imported: imported,
+                healthStartDate: healthSummary.startDate,
+                healthDurationSeconds: healthSummary.durationSeconds,
+                healthDistanceMeters: healthSummary.distanceMeters
+            )
+            guard match.isMatch else {
+                let message = "O arquivo não corresponde à corrida vinculada (\(match.localizedSummary))."
+                errorMessage = message
+                return .failure(message)
+            }
+        }
+
         let reconstructed = WorkoutSegmentationEngine.reconstruct(
             prescription: workout.segments,
             startDate: imported.startDate,
@@ -502,32 +522,114 @@ final class TrainingPlanViewModel: ObservableObject {
         let session = runStore.upsert(
             imported: imported,
             athlyWorkoutId: workout.id,
+            healthSummary: healthSummary,
             segmentation: candidateSegmentation
         )
         let segmentation = session.workoutSegmentation ?? candidateSegmentation
-        var healthKitUUID = session.healthKitWorkoutUUID
+        var healthSummaryForTotals = healthSummary
+        session.healthKitWorkoutUUID = healthKitUUID
 
-        if saveToHealthKit {
-            do {
-                var result = imported.runResult
-                result.segmentRecords = segmentation.segments
-                healthKitUUID = try await HealthKitService().syncWorkout(
-                    result: result,
-                    session: session,
-                    runStore: runStore
-                )
-            } catch {
-                // Local persistence is the source of truth for the import. The session keeps
-                // the HealthKit error and exposes a separate retry action in history.
-            }
-        } else {
+        if !saveToHealthKit {
             session.healthKitSyncStatus = .notRequested
             session.healthKitSyncError = nil
+            session.healthKitRouteSyncStatus = .localOnly
             runStore.update(session)
+        } else if let existingUUID = healthKitUUID {
+            switch fallback {
+            case .ask:
+                if imported.hasRoute {
+                    do {
+                        healthKitUUID = try await healthService.attachImportedRoute(
+                            imported,
+                            toWorkoutUUID: existingUUID
+                        )
+                        session.healthKitRouteSyncStatus = .attached
+                        session.healthKitSyncStatus = .synced
+                        session.healthKitSyncError = nil
+                    } catch let healthError as HealthKitError {
+                        if case .importedWorkoutMismatch = healthError {
+                            let message = healthError.localizedDescription
+                            errorMessage = message
+                            session.healthKitRouteSyncStatus = .failed
+                            session.healthKitSyncError = message
+                            runStore.update(session)
+                            return .failure(message)
+                        }
+                        let message = healthError.localizedDescription
+                        session.healthKitRouteSyncStatus = .failed
+                        session.healthKitSyncError = message
+                        runStore.update(session)
+                        return .healthKitFallbackRequired(message)
+                    } catch {
+                        let message = error.localizedDescription
+                        session.healthKitRouteSyncStatus = .failed
+                        session.healthKitSyncError = message
+                        runStore.update(session)
+                        return .healthKitFallbackRequired(message)
+                    }
+                } else {
+                    session.healthKitRouteSyncStatus = .localOnly
+                }
+            case .localOnly:
+                session.healthKitRouteSyncStatus = .localOnly
+                session.healthKitSyncStatus = .synced
+                session.healthKitSyncError = nil
+            case .createCopy:
+                do {
+                    _ = try await healthService.requestWriteAuthorization()
+                    var result = imported.runResult
+                    result.segmentRecords = segmentation.segments
+                    guard let newWorkout = try await healthService.saveWorkout(result: result) else {
+                        throw HealthKitError.workoutNotReturned
+                    }
+                    healthKitUUID = newWorkout.uuid.uuidString
+                    healthSummaryForTotals = nil
+                    session.healthKitRouteSyncStatus = .replacementCreated
+                    session.healthKitSyncStatus = .synced
+                    session.healthKitSyncError = nil
+                    _ = try? await healthService.deleteWorkoutIfOwned(uuid: existingUUID)
+                } catch {
+                    let message = error.localizedDescription
+                    errorMessage = message
+                    session.healthKitRouteSyncStatus = .failed
+                    session.healthKitSyncError = message
+                    runStore.update(session)
+                    return .failure(message)
+                }
+            }
+            session.healthKitWorkoutUUID = healthKitUUID
+            runStore.update(session)
+        } else {
+            do {
+                _ = try await healthService.requestWriteAuthorization()
+                var result = imported.runResult
+                result.segmentRecords = segmentation.segments
+                guard let created = try await healthService.saveWorkout(result: result) else {
+                    throw HealthKitError.workoutNotReturned
+                }
+                healthKitUUID = created.uuid.uuidString
+                healthSummaryForTotals = nil
+                session.healthKitWorkoutUUID = healthKitUUID
+                session.healthKitSyncStatus = .synced
+                session.healthKitSyncError = nil
+                session.healthKitRouteSyncStatus = imported.hasRoute ? .attached : .localOnly
+                runStore.update(session)
+            } catch {
+                let message = error.localizedDescription
+                errorMessage = message
+                session.healthKitSyncStatus = .failed
+                session.healthKitRouteSyncStatus = .failed
+                session.healthKitSyncError = message
+                runStore.update(session)
+                return .failure(message)
+            }
         }
 
         if let healthKitUUID {
-            RunWorkoutLinkStore.shared.link(healthKitUUID: healthKitUUID, athlyWorkoutId: workout.id)
+            RunWorkoutLinkStore.shared.replaceLink(
+                healthKitUUID: healthKitUUID,
+                athlyWorkoutId: workout.id
+            )
             RunWorkoutLinkStore.shared.storeSegmentation(segmentation, for: healthKitUUID)
         }
 
@@ -535,40 +637,46 @@ final class TrainingPlanViewModel: ObservableObject {
             workout: imported,
             athlyWorkoutId: workout.id,
             healthKitUUID: healthKitUUID,
+            healthSummary: healthSummaryForTotals,
             segmentation: segmentation
         )
+
+        let actualDistance = healthSummaryForTotals?.distanceMeters ?? imported.distanceMeters
+        let actualDuration = healthSummaryForTotals?.durationSeconds ?? imported.activeDurationSeconds
+        let actualPace = healthSummaryForTotals?.averagePaceSecondsPerKm ?? imported.averagePaceSecondsPerKm
 
         do {
             let updated = try await APIClient.shared.completeWorkout(
                 workoutId: workout.id,
                 appleHealthWorkoutUUID: healthKitUUID,
-                actualDistanceMeters: imported.distanceMeters,
-                actualDurationSeconds: imported.activeDurationSeconds,
+                actualDistanceMeters: actualDistance,
+                actualDurationSeconds: actualDuration,
                 executionDetails: details
             )
             replaceWorkout(updated)
             recordAchievementIfEarned(
                 workout: workout,
-                actualDistanceMeters: imported.distanceMeters,
-                actualDurationSeconds: imported.activeDurationSeconds,
-                actualPaceSecPerKm: imported.averagePaceSecondsPerKm
+                actualDistanceMeters: actualDistance,
+                actualDurationSeconds: actualDuration,
+                actualPaceSecPerKm: actualPace
             )
-            return true
+            return .success
         } catch is CancellationError {
-            return false
+            return .failure("Operação cancelada.")
         } catch let error as URLError where error.code == .cancelled {
-            return false
+            return .failure("Operação cancelada.")
         } catch {
             errorMessage = error.localizedDescription
-            return false
+            return .failure(error.localizedDescription)
         }
     }
 
     func completeWorkoutSelection(
         _ workout: WorkoutModel,
         selection: WorkoutCompletionSelection,
+        fallback: ImportedWorkoutHealthKitFallback = .ask,
         runStore: RunStore
-    ) async -> Bool {
+    ) async -> WorkoutCompletionOutcome {
         errorMessage = nil
         switch selection {
         case .none:
@@ -580,10 +688,14 @@ final class TrainingPlanViewModel: ObservableObject {
                 workout,
                 imported: imported,
                 saveToHealthKit: saveToHealthKit,
+                fallback: fallback,
                 runStore: runStore
             )
         }
-        return errorMessage == nil
+        if let errorMessage {
+            return .failure(errorMessage)
+        }
+        return .success
     }
 
     private func buildExecutionDetail(for workout: WorkoutModel, healthRun: HealthKitRunItem) async -> WorkoutExecutionDetail? {
@@ -631,65 +743,98 @@ final class TrainingPlanViewModel: ObservableObject {
     // MARK: - Background generation polling
 
     private func startGenerationPolling(
-        workoutIdsBefore: Set<String>,
-        generatedWeeklyGoalIdsBefore: Set<String>,
         generationId: String,
         pollAfterSeconds: Int
     ) {
         generationPollTask?.cancel()
+        activeGenerationId = generationId
+        UserDefaults.standard.set(generationId, forKey: pendingGenerationKey)
         isGeneratingInBackground = true
         generationPollTask = Task { [weak self] in
             guard let self else { return }
-            _ = await self.pollUntilNewWorkouts(
-                workoutIdsBefore: workoutIdsBefore,
-                generatedWeeklyGoalIdsBefore: generatedWeeklyGoalIdsBefore,
+            await self.pollUntilGenerationCompletes(
                 generationId: generationId,
                 intervalSeconds: pollAfterSeconds
             )
-            self.isGeneratingInBackground = false
+            if self.activeGenerationId == generationId {
+                self.isGeneratingInBackground = false
+            }
         }
     }
 
-    private func pollUntilNewWorkouts(
-        workoutIdsBefore: Set<String>,
-        generatedWeeklyGoalIdsBefore: Set<String>,
+    private func pollUntilGenerationCompletes(
         generationId: String,
         intervalSeconds: Int
-    ) async -> Bool {
+    ) async {
         let intervalNanoseconds = UInt64(max(1, intervalSeconds)) * 1_000_000_000
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: intervalNanoseconds)
-            if Task.isCancelled { return false }
             do {
                 let status = try await APIClient.shared.getPlanFromHealthGenerationStatus(generationId: generationId)
                 if status.status == "failed" {
                     errorMessage = status.error ?? status.message
-                    return false
+                    clearPendingGeneration(generationId)
+                    return
                 }
-            } catch APIError.notFound {
-                // O status fica em memória no backend; em deploy multi-instância, outro pod pode não
-                // conhecer o generationId. Continua pela fonte de verdade persistida: weeklyGoals/workouts.
-            } catch {
-                // Falha transitória de rede: mantém o polling sem encerrar por timeout.
-            }
+                if status.status == "completed" {
+                    await loadData()
 
-            await loadData()
-            let currentIds = Set(allWorkouts.map { $0.id })
-            let generatedGoalIds = Set(
-                weeklyGoals
-                    .filter { $0.status == .GENERATED }
-                    .map { $0.id }
-            )
-            if !currentIds.subtracting(workoutIdsBefore).isEmpty ||
-                !generatedGoalIds.subtracting(generatedWeeklyGoalIdsBefore).isEmpty {
-                selectedWeekIndex = max(0, weeks.count - 1)
-                await NotificationService.shared.requestAuthorizationIfNeeded()
-                await NotificationService.shared.reschedule(workouts: allWorkouts)
-                await NotificationService.shared.notifyWeeklyPlanGenerated()
-                return true
+                    // Só encerra quando os mesmos IDs confirmados pelo job também estiverem
+                    // visíveis no contrato de leitura usado pela UI.
+                    if let weeklyGoalId = status.weeklyGoalId,
+                       !weeklyGoals.contains(where: { $0.id == weeklyGoalId }) {
+                        try? await Task.sleep(nanoseconds: intervalNanoseconds)
+                        continue
+                    }
+                    let expectedWorkoutIds = Set(status.workoutIds ?? [])
+                    let visibleWorkoutIds = Set(allWorkouts.map(\.id))
+                    if !expectedWorkoutIds.isSubset(of: visibleWorkoutIds) {
+                        try? await Task.sleep(nanoseconds: intervalNanoseconds)
+                        continue
+                    }
+
+                    if let weeklyGoalId = status.weeklyGoalId,
+                       let index = weeks.firstIndex(where: { $0.id == weeklyGoalId }) {
+                        selectedWeekIndex = index
+                    } else {
+                        selectedWeekIndex = max(0, weeks.count - 1)
+                    }
+                    await NotificationService.shared.reschedule(workouts: allWorkouts)
+                    clearPendingGeneration(generationId)
+                    return
+                }
+            } catch {
+                // Falha transitória de rede: o ID persistido permite retomar depois.
             }
+            try? await Task.sleep(nanoseconds: intervalNanoseconds)
         }
-        return false
+    }
+
+    func resumePendingGenerationIfNeeded() {
+        guard let generationId = UserDefaults.standard.string(forKey: pendingGenerationKey),
+              activeGenerationId != generationId else { return }
+        startGenerationPolling(generationId: generationId, pollAfterSeconds: 2)
+    }
+
+    func handleGenerationPush(generationId: String) {
+        startGenerationPolling(generationId: generationId, pollAfterSeconds: 1)
+    }
+
+    func cancelPendingGeneration() {
+        generationPollTask?.cancel()
+        generationPollTask = nil
+        activeGenerationId = nil
+        isGeneratingInBackground = false
+        UserDefaults.standard.removeObject(forKey: pendingGenerationKey)
+    }
+
+    private func clearPendingGeneration(_ generationId: String) {
+        guard activeGenerationId == generationId else { return }
+        activeGenerationId = nil
+        generationPollTask = nil
+        isGeneratingInBackground = false
+        if UserDefaults.standard.string(forKey: pendingGenerationKey) == generationId {
+            UserDefaults.standard.removeObject(forKey: pendingGenerationKey)
+        }
     }
 
     // MARK: - Private Helpers

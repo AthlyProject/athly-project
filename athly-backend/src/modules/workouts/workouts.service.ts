@@ -14,6 +14,8 @@ import { CreateWorkoutDto } from './dto/create-workout.dto';
 
 const workoutCompletionSelect = {
   id: true,
+  trainingPlanId: true,
+  weeklyGoalId: true,
   dateScheduled: true,
   sportType: true,
   title: true,
@@ -225,6 +227,8 @@ export class WorkoutsService {
 
   private mapWorkout(workout: {
     id: string;
+    trainingPlanId?: string;
+    weeklyGoalId?: string | null;
     dateScheduled: Date;
     sportType: WorkoutModel['sportType'];
     title: string;
@@ -241,6 +245,8 @@ export class WorkoutsService {
   }): WorkoutModel {
     return {
       id: workout.id,
+      trainingPlanId: workout.trainingPlanId,
+      weeklyGoalId: workout.weeklyGoalId ?? undefined,
       date: workout.dateScheduled.toISOString().split('T')[0],
       sportType: workout.sportType,
       title: workout.title,

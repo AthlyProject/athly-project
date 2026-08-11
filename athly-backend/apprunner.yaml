@@ -28,6 +28,10 @@ run:
       value: "otlp"
     - name: OTEL_NODE_RESOURCE_DETECTORS
       value: "env,host,os"
+    - name: APNS_TEAM_ID
+      value: "8C9GB8F87Q"
+    - name: APNS_TOPIC
+      value: "com.athly.runner"
   secrets:
     - name: GEMINI_API_KEY
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"

@@ -35,6 +35,7 @@ final class RunStore: ObservableObject {
     func upsert(
         imported workout: ImportedWorkout,
         athlyWorkoutId: String?,
+        healthSummary: HealthKitRunItem? = nil,
         segmentation: WorkoutSegmentationResult? = nil
     ) -> RunSession {
         let existing = sessions.first { session in
@@ -48,14 +49,15 @@ final class RunStore: ObservableObject {
         }
 
         let session = existing ?? RunSession(sportType: "running")
-        session.startDate = workout.startDate
-        session.endDate = workout.endDate
-        session.distanceMeters = workout.distanceMeters
-        session.durationSeconds = workout.activeDurationSeconds
+        session.startDate = healthSummary?.startDate ?? workout.startDate
+        session.endDate = healthSummary?.endDate ?? workout.endDate
+        session.distanceMeters = healthSummary?.distanceMeters ?? workout.distanceMeters
+        session.durationSeconds = healthSummary?.durationSeconds ?? workout.activeDurationSeconds
         session.totalDurationSeconds = workout.totalDurationSeconds
-        session.averagePaceSecondsPerKm = workout.averagePaceSecondsPerKm
-        session.elevationGainMeters = workout.elevationGainMeters
-        session.caloriesBurned = workout.caloriesBurned
+        session.averagePaceSecondsPerKm = healthSummary?.averagePaceSecondsPerKm ?? workout.averagePaceSecondsPerKm
+        session.elevationGainMeters = healthSummary?.elevationGainMeters ?? workout.elevationGainMeters
+        let healthCalories = healthSummary?.activeEnergyBurned ?? 0
+        session.caloriesBurned = healthCalories > 0 ? healthCalories : workout.caloriesBurned
         session.status = "completed"
         session.sportType = "running"
         session.athlyWorkoutId = athlyWorkoutId ?? session.athlyWorkoutId
@@ -111,7 +113,7 @@ final class RunStore: ObservableObject {
         let durationDelta = abs(session.durationSeconds - workout.activeDurationSeconds)
         let distanceDelta = abs(session.distanceMeters - workout.distanceMeters)
         let distanceTolerance = max(100, workout.distanceMeters * 0.03)
-        return startDelta < 120 && durationDelta < 180 && distanceDelta <= distanceTolerance
+        return startDelta <= 120 && durationDelta <= 180 && distanceDelta <= distanceTolerance
     }
 
     private func richerFormat(current: WorkoutImportFormat?, candidate: WorkoutImportFormat) -> WorkoutImportFormat {

@@ -17,7 +17,36 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        Self.postGenerationNotificationIfPresent(notification.request.content.userInfo)
+        return [.banner, .list, .sound]
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Task { @MainActor in
+            await NotificationService.shared.receiveRemoteDeviceToken(deviceToken)
+        }
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        Self.postGenerationNotificationIfPresent(response.notification.request.content.userInfo)
+    }
+
+    private nonisolated static func postGenerationNotificationIfPresent(
+        _ userInfo: [AnyHashable: Any]
+    ) {
+        guard userInfo["type"] as? String == "weekly_plan_generated",
+              let generationId = userInfo["generationId"] as? String else { return }
+        NotificationCenter.default.post(
+            name: .athlyPlanGenerationPush,
+            object: nil,
+            userInfo: ["generationId": generationId]
+        )
     }
 }
 
@@ -69,6 +98,27 @@ struct AthlyRunnerApp: App {
                 .onOpenURL { url in
                     // Callback OAuth do GoogleSignIn (URL scheme reverso do client ID).
                     GIDSignIn.sharedInstance.handle(url)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .athlyAuthChanged)) { note in
+                    let authenticated = note.userInfo?["authenticated"] as? Bool ?? false
+                    Task { @MainActor in
+                        if authenticated {
+                            await NotificationService.shared.syncRemoteDeviceTokenIfAvailable()
+                            planViewModel.resumePendingGenerationIfNeeded()
+                        } else {
+                            planViewModel.cancelPendingGeneration()
+                        }
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .athlyPlanGenerationPush)) { note in
+                    guard let generationId = note.userInfo?["generationId"] as? String else { return }
+                    planViewModel.handleGenerationPush(generationId: generationId)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    Task { @MainActor in
+                        await NotificationService.shared.registerForRemoteNotificationsIfAuthorized()
+                        planViewModel.resumePendingGenerationIfNeeded()
+                    }
                 }
         }
     }

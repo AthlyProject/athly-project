@@ -8,6 +8,8 @@ extension Notification.Name {
     /// Emitida pelo `AuthViewModel` em login/registro/restauração (authenticated=true) e logout
     /// (false). O `EntitlementManager` escuta para fazer `Purchases.logIn(userId)`/`logOut()`.
     static let athlyAuthChanged = Notification.Name("athlyAuthChanged")
+    /// Emitida pelo AppDelegate quando um push de geração concluída chega ou é aberto.
+    static let athlyPlanGenerationPush = Notification.Name("athlyPlanGenerationPush")
 }
 
 actor APIClient {
@@ -211,6 +213,19 @@ actor APIClient {
 
     func getPlanFromHealthGenerationStatus(generationId: String) async throws -> AiPlannerGenerationStatusResponse {
         try await get("/ai-planner/plan-from-health/generations/\(generationId)")
+    }
+
+    // MARK: - Remote Notifications
+
+    func registerPushDevice(token: String, environment: String) async throws {
+        let _: PushDeviceResponse = try await put(
+            "/notifications/devices",
+            body: RegisterPushDeviceRequest(token: token, environment: environment)
+        )
+    }
+
+    func unregisterPushDevice(token: String) async throws {
+        let _: EmptyResponse = try await delete("/notifications/devices/\(token)")
     }
 
     // MARK: - Assessment (questionário de onboarding)
@@ -534,6 +549,16 @@ struct CompleteWorkoutRequest: Encodable {
         case actualDurationSeconds
         case executionDetails
     }
+}
+
+private struct RegisterPushDeviceRequest: Encodable {
+    let token: String
+    let environment: String
+}
+
+private struct PushDeviceResponse: Decodable {
+    let id: String
+    let environment: String
 }
 
 // MARK: - Assessment payload v2 (espelha SubmitAssessmentDto do backend)

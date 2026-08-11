@@ -170,7 +170,7 @@ struct RunSummaryView: View {
                 WorkoutCompletionSheet(
                     workout: workout,
                     initialStep: .feedback,
-                    onComplete: { _ in
+                    onComplete: { _, _ in
                         let healthKitUUID = viewModel.lastSavedHealthKitUUID
                         let result = viewModel.lastRunResult
                         if let result {
@@ -184,7 +184,10 @@ struct RunSummaryView: View {
                         }
                         viewModel.pendingWorkout = nil
                         viewModel.showWorkoutFeedback = false
-                        return planVM.errorMessage == nil
+                        if let message = planVM.errorMessage {
+                            return .failure(message)
+                        }
+                        return .success
                     },
                     onDismiss: {
                         viewModel.pendingWorkout = nil

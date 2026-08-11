@@ -185,6 +185,84 @@ final class WorkoutImportServiceTests: XCTestCase {
         XCTAssertEqual(first, second)
     }
 
+    func testHealthKitMatchAcceptsConfiguredBoundaryTolerances() {
+        let imported = matchingWorkout(
+            startDate: Date(timeIntervalSince1970: 1_800_000_000),
+            duration: 1_800,
+            distance: 5_000
+        )
+        let match = ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: imported.startDate.addingTimeInterval(120),
+            healthDurationSeconds: 1_980,
+            healthDistanceMeters: 5_150
+        )
+
+        XCTAssertTrue(match.isMatch)
+        XCTAssertEqual(match.distanceToleranceMeters, 150, accuracy: 0.001)
+    }
+
+    func testHealthKitMatchRejectsWhenAnySignalExceedsTolerance() {
+        let imported = matchingWorkout(
+            startDate: Date(timeIntervalSince1970: 1_800_000_000),
+            duration: 1_800,
+            distance: 2_000
+        )
+
+        XCTAssertFalse(ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: imported.startDate.addingTimeInterval(121),
+            healthDurationSeconds: 1_800,
+            healthDistanceMeters: 2_000
+        ).isMatch)
+        XCTAssertFalse(ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: imported.startDate,
+            healthDurationSeconds: 1_981,
+            healthDistanceMeters: 2_000
+        ).isMatch)
+        XCTAssertFalse(ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: imported.startDate,
+            healthDurationSeconds: 1_800,
+            healthDistanceMeters: 2_101
+        ).isMatch)
+    }
+
+    func testHealthKitMatchUsesOneHundredMeterFloorForShortRuns() {
+        let imported = matchingWorkout(
+            startDate: Date(timeIntervalSince1970: 1_800_000_000),
+            duration: 300,
+            distance: 1_000
+        )
+        let match = ImportedWorkoutMatch.evaluate(
+            imported: imported,
+            healthStartDate: imported.startDate,
+            healthDurationSeconds: 300,
+            healthDistanceMeters: 1_100
+        )
+
+        XCTAssertEqual(match.distanceToleranceMeters, 100, accuracy: 0.001)
+        XCTAssertTrue(match.isMatch)
+    }
+
+    private func matchingWorkout(
+        startDate: Date,
+        duration: TimeInterval,
+        distance: Double
+    ) -> ImportedWorkout {
+        ImportedWorkout(
+            format: .fit,
+            fingerprint: "matching-workout",
+            originalFileName: "run.fit",
+            startDate: startDate,
+            endDate: startDate.addingTimeInterval(duration),
+            activeDurationSeconds: duration,
+            totalDurationSeconds: duration,
+            distanceMeters: distance
+        )
+    }
+
     private func importFile(contents: Data, extension fileExtension: String) throws -> [ImportedWorkout] {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)

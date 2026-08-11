@@ -36,6 +36,25 @@ final class RunWorkoutLinkStore: @unchecked Sendable {
         }
     }
 
+    /// Torna um único HKWorkout autoritativo para o treino prescrito e remove vínculos antigos
+    /// do mesmo treino (por exemplo, após criar uma cópia rica a partir de um FIT).
+    func replaceLink(healthKitUUID: String, athlyWorkoutId: String) {
+        queue.sync {
+            let previousSegmentation = cache.values
+                .first { $0.athlyWorkoutId == athlyWorkoutId }?
+                .workoutSegmentation
+            cache = cache.filter { key, value in
+                value.athlyWorkoutId != athlyWorkoutId || key == healthKitUUID
+            }
+            cache[healthKitUUID] = RunWorkoutLink(
+                healthKitUUID: healthKitUUID,
+                athlyWorkoutId: athlyWorkoutId,
+                workoutSegmentation: previousSegmentation
+            )
+            persistLocked()
+        }
+    }
+
     func storeSegmentation(_ result: WorkoutSegmentationResult, for healthKitUUID: String) {
         queue.sync {
             guard var link = cache[healthKitUUID] else { return }

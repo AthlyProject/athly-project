@@ -432,6 +432,8 @@ struct AiPlannerGenerationStatusResponse: Decodable, Sendable {
     let pollAfterSeconds: Int
     let message: String
     let error: String?
+    let weeklyGoalId: String?
+    let workoutIds: [String]?
 }
 
 // MARK: - User Goal

@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import UIKit
 
 /// Lembretes locais de treino (sem backend). Agenda uma notificação na manhã de cada treino
 /// agendado futuro, com base no plano. Reagendado sempre que o plano muda.
@@ -13,6 +14,7 @@ final class NotificationService {
     private let reminderHour = 7
     /// Limite de notificações pendentes (iOS permite no máx. 64; ficamos bem abaixo).
     private let maxScheduled = 12
+    private var remoteDeviceToken: String?
 
     /// Default: ligado (a permissão do sistema ainda gate o agendamento de fato).
     var isEnabled: Bool {
@@ -22,8 +24,12 @@ final class NotificationService {
 
     @discardableResult
     func requestAuthorization() async -> Bool {
-        (try? await UNUserNotificationCenter.current()
+        let granted = (try? await UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        if granted {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+        return granted
     }
 
     /// Pede permissão apenas se ainda não foi decidida (bom para o onboarding após gerar o 1º plano).
@@ -31,7 +37,36 @@ final class NotificationService {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         if settings.authorizationStatus == .notDetermined {
             _ = await requestAuthorization()
+        } else if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional {
+            UIApplication.shared.registerForRemoteNotifications()
         }
+    }
+
+    /// A Apple recomenda registrar a cada lançamento; o token não é persistido em disco.
+    func registerForRemoteNotificationsIfAuthorized() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        if settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    }
+
+    func receiveRemoteDeviceToken(_ data: Data) async {
+        remoteDeviceToken = data.map { String(format: "%02x", $0) }.joined()
+        await syncRemoteDeviceTokenIfAvailable()
+    }
+
+    func syncRemoteDeviceTokenIfAvailable() async {
+        guard let remoteDeviceToken,
+              await APIClient.shared.isAuthenticated else { return }
+        #if DEBUG
+        let environment = "sandbox"
+        #else
+        let environment = "production"
+        #endif
+        try? await APIClient.shared.registerPushDevice(
+            token: remoteDeviceToken,
+            environment: environment
+        )
     }
 
     /// Liga/desliga os lembretes. Ao ligar, pede permissão e agenda; ao desligar, cancela tudo.
@@ -82,32 +117,6 @@ final class NotificationService {
             )
             try? await center.add(request)
         }
-    }
-
-    func notifyWeeklyPlanGenerated() async {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        if settings.authorizationStatus == .notDetermined {
-            _ = await requestAuthorization()
-        }
-
-        let updatedSettings = await center.notificationSettings()
-        guard updatedSettings.authorizationStatus == .authorized || updatedSettings.authorizationStatus == .provisional else {
-            return
-        }
-
-        let content = UNMutableNotificationContent()
-        content.title = "Semana gerada"
-        content.body = "Seus treinos da próxima semana já estão prontos."
-        content.sound = .default
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: "weekly-plan-generated-\(UUID().uuidString)",
-            content: content,
-            trigger: trigger
-        )
-        try? await center.add(request)
     }
 
     func cancelAll() {

@@ -60,6 +60,25 @@ enum WeeklyGoalStatus {
   LOCKED
 }
 
+enum PlanGenerationStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PushEnvironment {
+  SANDBOX
+  PRODUCTION
+}
+
+enum PushDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
 model User {
   id                   String    @id @default(uuid())
   name                 String
@@ -99,6 +118,8 @@ model User {
   assessment    Assessment?
   effortZones   UserEffortZone[]
   userGoals     UserGoal[]
+  planGenerationJobs PlanGenerationJob[]
+  pushDevices        PushDevice[]
 
   @@map("users")
 }
@@ -162,6 +183,7 @@ model TrainingPlan {
   workouts     Workout[]
   userGoalId   String?            @map("user_goal_id")
   userGoal     UserGoal?          @relation(fields: [userGoalId], references: [id], onDelete: SetNull)
+  planGenerationJobs PlanGenerationJob[]
 
   @@map("training_plans")
 }
@@ -239,10 +261,78 @@ model WeeklyGoal {
   workouts     Workout[]
   aiReasonings AiReasoning[]
   promptLog    AiPlannerPromptLog?
+  generationJob PlanGenerationJob?
 
   // Uma única semana por (plano, data de início): bloqueia geração duplicada/sobreposta.
   @@unique([trainingPlanId, weekStartDate])
   @@map("weekly_goals")
+}
+
+model PlanGenerationJob {
+  id               String               @id @default(uuid())
+  userId           String               @map("user_id")
+  weekStartDate    DateTime             @map("week_start_date")
+  trainingPlanId   String?              @map("training_plan_id")
+  status           PlanGenerationStatus @default(QUEUED)
+  payload          Json
+  result           Json?
+  weeklyGoalId     String?              @unique @map("weekly_goal_id")
+  workoutIds       String[]             @default([]) @map("workout_ids")
+  error            String?
+  attempts         Int                  @default(0)
+  leaseOwner       String?              @map("lease_owner")
+  leaseExpiresAt   DateTime?            @map("lease_expires_at")
+  completedAt      DateTime?            @map("completed_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingPlan     TrainingPlan?        @relation(fields: [trainingPlanId], references: [id], onDelete: Cascade)
+  weeklyGoal       WeeklyGoal?          @relation(fields: [weeklyGoalId], references: [id], onDelete: Cascade)
+  pushDeliveries   PushDelivery[]
+
+  @@unique([userId, weekStartDate])
+  @@index([status, leaseExpiresAt, createdAt])
+  @@index([trainingPlanId])
+  @@map("plan_generation_jobs")
+}
+
+model PushDevice {
+  id           String          @id @default(uuid())
+  userId       String          @map("user_id")
+  token        String          @unique
+  environment  PushEnvironment
+  disabledAt   DateTime?       @map("disabled_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries   PushDelivery[]
+
+  @@index([userId, disabledAt])
+  @@map("push_devices")
+}
+
+model PushDelivery {
+  id             String             @id @default(uuid())
+  generationId   String             @map("generation_id")
+  deviceId       String             @map("device_id")
+  status         PushDeliveryStatus @default(PENDING)
+  attempts       Int                @default(0)
+  nextAttemptAt  DateTime           @default(now()) @map("next_attempt_at")
+  leaseOwner     String?            @map("lease_owner")
+  leaseExpiresAt DateTime?          @map("lease_expires_at")
+  error          String?
+  sentAt         DateTime?          @map("sent_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  generation     PlanGenerationJob  @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  device         PushDevice         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([generationId, deviceId])
+  @@index([status, nextAttemptAt, leaseExpiresAt])
+  @@map("push_deliveries")
 }
 
 model Assessment {

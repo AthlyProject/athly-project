@@ -746,6 +746,11 @@
 					DB2561B82C567797BDCC4C4E = {
 						DevelopmentTeam = 8C9GB8F87Q;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
 					};
 					F92BA06724E8DB6D602E67D8 = {
 						DevelopmentTeam = 8C9GB8F87Q;

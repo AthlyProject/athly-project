@@ -184,3 +184,54 @@ enum WorkoutCompletionSelection: Sendable {
     case healthKit(HealthKitRunItem)
     case imported(ImportedWorkout, saveToHealthKit: Bool)
 }
+
+/// Regras conservadoras para decidir se um arquivo exportado representa o mesmo treino
+/// já salvo no Apple Health. O vínculo só é aceito quando todos os sinais concordam.
+struct ImportedWorkoutMatch: Equatable, Sendable {
+    static let startTolerance: TimeInterval = 120
+    static let durationTolerance: TimeInterval = 180
+
+    let startDeltaSeconds: TimeInterval
+    let durationDeltaSeconds: TimeInterval
+    let distanceDeltaMeters: Double
+    let distanceToleranceMeters: Double
+
+    var isMatch: Bool {
+        startDeltaSeconds <= Self.startTolerance
+            && durationDeltaSeconds <= Self.durationTolerance
+            && distanceDeltaMeters <= distanceToleranceMeters
+    }
+
+    static func evaluate(
+        imported: ImportedWorkout,
+        healthStartDate: Date,
+        healthDurationSeconds: Double,
+        healthDistanceMeters: Double
+    ) -> ImportedWorkoutMatch {
+        ImportedWorkoutMatch(
+            startDeltaSeconds: abs(imported.startDate.timeIntervalSince(healthStartDate)),
+            durationDeltaSeconds: abs(imported.activeDurationSeconds - healthDurationSeconds),
+            distanceDeltaMeters: abs(imported.distanceMeters - healthDistanceMeters),
+            distanceToleranceMeters: max(100, imported.distanceMeters * 0.03)
+        )
+    }
+
+    var localizedSummary: String {
+        "início Δ(Int(startDeltaSeconds))s, duração Δ(Int(durationDeltaSeconds))s, distância Δ(Int(distanceDeltaMeters))m"
+    }
+}
+
+enum ImportedWorkoutHealthKitFallback: Sendable {
+    /// Tenta enriquecer o workout existente e devolve uma decisão para a interface se falhar.
+    case ask
+    /// Mantém o workout original e usa os dados ricos somente dentro do Athly.
+    case localOnly
+    /// Cria um workout completo do Athly. Workouts de terceiros não podem ser apagados pelo app.
+    case createCopy
+}
+
+enum WorkoutCompletionOutcome: Sendable {
+    case success
+    case failure(String)
+    case healthKitFallbackRequired(String)
+}

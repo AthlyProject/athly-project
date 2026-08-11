@@ -5,6 +5,7 @@ enum ImportedWorkoutExecutionBuilder {
         workout: ImportedWorkout,
         athlyWorkoutId: String,
         healthKitUUID: String?,
+        healthSummary: HealthKitRunItem? = nil,
         segmentation: WorkoutSegmentationResult? = nil
     ) -> DetailedSessionPayload {
         let iso = ISO8601DateFormatter()
@@ -72,17 +73,25 @@ enum ImportedWorkoutExecutionBuilder {
             }
         }
 
+        let summaryDistance = healthSummary?.distanceMeters ?? workout.distanceMeters
+        let summaryDuration = healthSummary?.durationSeconds ?? workout.activeDurationSeconds
+        let summaryPace = healthSummary?.averagePaceSecondsPerKm ?? workout.averagePaceSecondsPerKm
+        let summaryEnergy = healthSummary.map(\.activeEnergyBurned).flatMap { $0 > 0 ? $0 : nil }
+            ?? (workout.caloriesBurned > 0 ? workout.caloriesBurned : nil)
+        let summaryElevation = healthSummary?.elevationGainMeters
+            ?? (workout.elevationGainMeters > 0 ? workout.elevationGainMeters : nil)
+
         return DetailedSessionPayload(
-            startDate: iso.string(from: workout.startDate),
+            startDate: iso.string(from: healthSummary?.startDate ?? workout.startDate),
             appleHealthWorkoutUUID: healthKitUUID,
             athlyWorkoutId: athlyWorkoutId,
-            distanceMeters: workout.distanceMeters,
-            durationSeconds: workout.activeDurationSeconds,
-            averagePaceSecondsPerKm: workout.averagePaceSecondsPerKm,
+            distanceMeters: summaryDistance,
+            durationSeconds: summaryDuration,
+            averagePaceSecondsPerKm: summaryPace,
             avgHR: workout.averageHeartRate,
             maxHR: workout.maximumHeartRate,
-            activeEnergyBurned: workout.caloriesBurned > 0 ? workout.caloriesBurned : nil,
-            elevationGainMeters: workout.elevationGainMeters > 0 ? workout.elevationGainMeters : nil,
+            activeEnergyBurned: summaryEnergy,
+            elevationGainMeters: summaryElevation,
             segments: segments,
             splitsSource: source
         )

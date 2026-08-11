@@ -9,6 +9,13 @@ enum HealthKitSyncStatus: String, Codable {
     case unavailable
 }
 
+enum HealthKitRouteSyncStatus: String, Codable {
+    case attached
+    case localOnly
+    case replacementCreated
+    case failed
+}
+
 final class RunSession: Identifiable, Codable {
     let id: UUID
     var startDate: Date
@@ -40,6 +47,8 @@ final class RunSession: Identifiable, Codable {
     var healthKitSyncStatus: HealthKitSyncStatus?
     /// Ultimo erro visivel de sync HealthKit. Local-only; usado para diagnostico/retentativa.
     var healthKitSyncError: String?
+    /// Resultado específico do enriquecimento de rota de uma atividade importada.
+    var healthKitRouteSyncStatus: HealthKitRouteSyncStatus?
     /// Provenance and rich samples available only for imported files.
     var importFormat: WorkoutImportFormat?
     var importFingerprint: String?
@@ -72,6 +81,7 @@ final class RunSession: Identifiable, Codable {
         self.healthKitWorkoutUUID = nil
         self.healthKitSyncStatus = nil
         self.healthKitSyncError = nil
+        self.healthKitRouteSyncStatus = nil
         self.importFormat = nil
         self.importFingerprint = nil
         self.importedHeartRateSamples = []

@@ -114,7 +114,15 @@ final class HealthKitRunsViewModel: ObservableObject {
                 if !hasKnownRuns {
                     state = .healthUnavailable
                 }
-            case .writeDenied, .workoutNotReturned:
+            case .writeDenied,
+                 .workoutNotReturned,
+                 .workoutNotFound,
+                 .importedRouteMissing,
+                 .importedWorkoutMismatch,
+                 .routeWriteDenied,
+                 .routeNotReturned,
+                 .routeAttachmentFailed,
+                 .workoutDeleteFailed:
                 if !hasKnownRuns {
                     state = .error(error.localizedDescription)
                 }

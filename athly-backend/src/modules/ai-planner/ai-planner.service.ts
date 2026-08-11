@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, Logger, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import {
+  PlanGenerationStatus,
   Prisma,
   SportType,
   TrainingPlanStatus,
@@ -55,20 +56,10 @@ const MIN_EFFORT_METERS = 1500;
 const REP_EFFORT_PENALTY = 1.05;
 
 const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
-const GENERATION_JOB_TTL_MS = 60 * 60 * 1000;
-
-type GenerationJobStatus = 'processing' | 'completed' | 'failed';
-
-type GenerationJob = {
-  id: string;
-  userId: string;
-  status: GenerationJobStatus;
-  pollAfterSeconds: number;
-  message: string;
-  error?: string;
-  startedAt: number;
-  updatedAt: number;
-};
+const GENERATION_POLL_AFTER_SECONDS = 5;
+const GENERATION_MAX_ATTEMPTS = 3;
+const GENERATION_LEASE_MS = 15 * 60 * 1000;
+const GENERATION_RETRY_DELAY_MS = 30 * 1000;
 
 type PlanningWindow = {
   weekDates: string[];
@@ -82,7 +73,8 @@ type PlanningWindow = {
 @Injectable()
 export class AiPlannerService {
   private readonly logger = new Logger(AiPlannerService.name);
-  private readonly generationJobs = new Map<string, GenerationJob>();
+  private readonly workerId = randomUUID();
+  private generationDrainRunning = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -93,7 +85,7 @@ export class AiPlannerService {
     private readonly trainingReportService: TrainingReportService,
   ) {}
 
-  async planFromHealth(userId: string, input: PlanFromHealthDto) {
+  async planFromHealth(userId: string, input: PlanFromHealthDto, generationId?: string) {
     // Fetch active goal and assessment for context (before creating training plan)
     const [activeGoalRecord, assessmentRecord, userHealth] = await Promise.all([
       this.prisma.userGoal.findFirst({
@@ -121,6 +113,12 @@ export class AiPlannerService {
       activeGoal?.summary,
       activeGoal?.eventDate,
     );
+    if (generationId) {
+      await this.prisma.planGenerationJob.update({
+        where: { id: generationId },
+        data: { trainingPlanId: trainingPlan.id },
+      });
+    }
 
     // Read the current week's PLANNED skeleton row (phase/targets) BEFORE
     // checkWeekOverlap deletes it, so dated-goal context survives the overwrite.
@@ -380,6 +378,42 @@ export class AiPlannerService {
           },
         });
 
+        if (generationId) {
+          const result = {
+            trainingPlanId: trainingPlan.id,
+            weeklyGoalId: weeklyGoal.id,
+            workoutIds: workouts.map((workout) => workout.id),
+          };
+          await tx.planGenerationJob.update({
+            where: { id: generationId },
+            data: {
+              status: PlanGenerationStatus.COMPLETED,
+              result: result as Prisma.InputJsonValue,
+              payload: {} as Prisma.InputJsonValue,
+              weeklyGoalId: weeklyGoal.id,
+              workoutIds: result.workoutIds,
+              error: null,
+              leaseOwner: null,
+              leaseExpiresAt: null,
+              completedAt: new Date(),
+            },
+          });
+
+          const devices = await tx.pushDevice.findMany({
+            where: { userId, disabledAt: null },
+            select: { id: true },
+          });
+          if (devices.length > 0) {
+            await tx.pushDelivery.createMany({
+              data: devices.map((device) => ({
+                generationId,
+                deviceId: device.id,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+
         return { weeklyGoal, workouts };
       })
       .catch(async (err) => {
@@ -417,6 +451,8 @@ export class AiPlannerService {
         blocks: w.blocks as any,
         status: w.status as any,
         intensity: w.intensity ?? undefined,
+        trainingPlanId: w.trainingPlanId,
+        weeklyGoalId: w.weeklyGoalId ?? undefined,
         stravaActivityId: w.stravaActivityId ?? null,
       })),
       analysis: plannerResult.parsed.analysis,
@@ -426,70 +462,197 @@ export class AiPlannerService {
   }
 
   async startPlanFromHealthGeneration(userId: string, input: PlanFromHealthDto) {
-    this.cleanupGenerationJobs();
-    const job: GenerationJob = {
-      id: randomUUID(),
-      userId,
-      status: 'processing',
-      pollAfterSeconds: 5,
-      message: 'A geração da semana foi iniciada e continuará em segundo plano.',
-      startedAt: Date.now(),
-      updatedAt: Date.now(),
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { availableDays: true },
+    });
+    const planningWindow = this.resolvePlanningWindow(
+      input.weekStartDate,
+      user?.availableDays?.length ? user.availableDays : DEFAULT_AVAILABLE_DAYS,
+    );
+    const key = {
+      userId_weekStartDate: { userId, weekStartDate: planningWindow.weekStartDate },
     };
-    this.generationJobs.set(job.id, job);
-
-    // Fire-and-poll flow: the HTTP request returns immediately while the Nest
-    // process keeps generating the plan. This avoids mobile/proxy timeouts
-    // without limiting model thinking or output budget.
-    void this.planFromHealth(userId, input)
-      .then(() => {
-        Object.assign(job, {
-          status: 'completed' satisfies GenerationJobStatus,
-          message: 'A semana foi gerada com sucesso.',
-          updatedAt: Date.now(),
+    const existing = await this.prisma.planGenerationJob.findUnique({ where: key });
+    const job = existing
+      ? existing.status === PlanGenerationStatus.FAILED
+        ? await this.prisma.planGenerationJob.update({
+            where: { id: existing.id },
+            data: {
+              status: PlanGenerationStatus.QUEUED,
+              payload: input as unknown as Prisma.InputJsonValue,
+              result: Prisma.JsonNull,
+              weeklyGoalId: null,
+              workoutIds: [],
+              error: null,
+              attempts: 0,
+              leaseOwner: null,
+              leaseExpiresAt: null,
+              completedAt: null,
+            },
+          })
+        : existing
+      : await this.prisma.planGenerationJob.create({
+          data: {
+            userId,
+            weekStartDate: planningWindow.weekStartDate,
+            payload: input as unknown as Prisma.InputJsonValue,
+          },
         });
-      })
-      .catch((err) => {
-        const message = err instanceof Error ? err.message : String(err);
-        Object.assign(job, {
-          status: 'failed' satisfies GenerationJobStatus,
-          message: 'Não foi possível gerar a semana.',
-          error: message,
-          updatedAt: Date.now(),
-        });
-        this.logger.error(`Async weekly plan generation failed for user ${userId}: ${message}`);
-      });
 
-    return {
-      generationId: job.id,
-      status: job.status,
-      pollAfterSeconds: job.pollAfterSeconds,
-      message: job.message,
-    };
+    queueMicrotask(() => {
+      void this.drainGenerationQueue().catch((error) =>
+        this.logger.error(
+          `Falha ao iniciar worker de geração: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+    });
+    return this.serializeGenerationJob(job);
   }
 
-  getPlanFromHealthGenerationStatus(userId: string, generationId: string) {
-    const job = this.generationJobs.get(generationId);
-    if (!job || job.userId !== userId) {
+  async getPlanFromHealthGenerationStatus(userId: string, generationId: string) {
+    const job = await this.prisma.planGenerationJob.findFirst({
+      where: { id: generationId, userId },
+    });
+    if (!job) {
       throw new NotFoundException('Geração não encontrada');
     }
 
-    return {
-      generationId: job.id,
-      status: job.status,
-      pollAfterSeconds: job.pollAfterSeconds,
-      message: job.message,
-      error: job.error,
-    };
+    return this.serializeGenerationJob(job);
   }
 
-  private cleanupGenerationJobs() {
-    const threshold = Date.now() - GENERATION_JOB_TTL_MS;
-    for (const [id, job] of this.generationJobs.entries()) {
-      if (job.updatedAt < threshold) {
-        this.generationJobs.delete(id);
+  async drainGenerationQueue(): Promise<void> {
+    if (this.generationDrainRunning) return;
+    this.generationDrainRunning = true;
+    try {
+      while (await this.processNextGenerationJob()) {
+        // Drena a fila localmente; leases tornam isto seguro entre várias instâncias.
       }
+    } finally {
+      this.generationDrainRunning = false;
     }
+  }
+
+  private async processNextGenerationJob(): Promise<boolean> {
+    const now = new Date();
+    const candidate = await this.prisma.planGenerationJob.findFirst({
+      where: {
+        attempts: { lt: GENERATION_MAX_ATTEMPTS },
+        OR: [
+          {
+            status: PlanGenerationStatus.QUEUED,
+            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
+          },
+          {
+            status: PlanGenerationStatus.PROCESSING,
+            leaseExpiresAt: { lt: now },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!candidate) return false;
+
+    const leaseOwner = `${this.workerId}:${candidate.id}`;
+    const leaseExpiresAt = new Date(Date.now() + GENERATION_LEASE_MS);
+    const claimed = await this.prisma.planGenerationJob.updateMany({
+      where: {
+        id: candidate.id,
+        attempts: { lt: GENERATION_MAX_ATTEMPTS },
+        OR: [
+          {
+            status: PlanGenerationStatus.QUEUED,
+            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
+          },
+          {
+            status: PlanGenerationStatus.PROCESSING,
+            leaseExpiresAt: { lt: now },
+          },
+        ],
+      },
+      data: {
+        status: PlanGenerationStatus.PROCESSING,
+        attempts: { increment: 1 },
+        leaseOwner,
+        leaseExpiresAt,
+        error: null,
+      },
+    });
+    if (claimed.count === 0) return true;
+
+    const job = await this.prisma.planGenerationJob.findUniqueOrThrow({
+      where: { id: candidate.id },
+    });
+    const heartbeat = setInterval(() => {
+      void this.prisma.planGenerationJob
+        .updateMany({
+          where: { id: job.id, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+          data: { leaseExpiresAt: new Date(Date.now() + GENERATION_LEASE_MS) },
+        })
+        .catch((error) =>
+          this.logger.warn(
+            `Falha no heartbeat da geração ${job.id}: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
+    }, 60_000);
+    heartbeat.unref();
+
+    try {
+      await this.planFromHealth(
+        job.userId,
+        job.payload as unknown as PlanFromHealthDto,
+        job.id,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const canRetry = job.attempts < GENERATION_MAX_ATTEMPTS && !(err instanceof ConflictException);
+      await this.prisma.planGenerationJob.updateMany({
+        where: { id: job.id, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+        data: canRetry
+          ? {
+              status: PlanGenerationStatus.QUEUED,
+              error: message,
+              leaseOwner: null,
+              leaseExpiresAt: new Date(Date.now() + GENERATION_RETRY_DELAY_MS),
+            }
+          : {
+              status: PlanGenerationStatus.FAILED,
+              error: message,
+              leaseOwner: null,
+              leaseExpiresAt: null,
+            },
+      });
+      this.logger.error(`Async weekly plan generation failed for user ${job.userId}: ${message}`);
+    } finally {
+      clearInterval(heartbeat);
+    }
+    return true;
+  }
+
+  private serializeGenerationJob(job: {
+    id: string;
+    status: PlanGenerationStatus;
+    error: string | null;
+    weeklyGoalId: string | null;
+    workoutIds: string[];
+  }) {
+    const status = job.status.toLowerCase();
+    const completed = job.status === PlanGenerationStatus.COMPLETED;
+    const failed = job.status === PlanGenerationStatus.FAILED;
+
+    return {
+      generationId: job.id,
+      status,
+      pollAfterSeconds: GENERATION_POLL_AFTER_SECONDS,
+      message: completed
+        ? 'A semana foi gerada com sucesso.'
+        : failed
+          ? 'Não foi possível gerar a semana.'
+          : 'A geração da semana está em andamento.',
+      error: job.error ?? undefined,
+      weeklyGoalId: job.weeklyGoalId ?? undefined,
+      workoutIds: job.workoutIds,
+    };
   }
 
   private buildUserProfile(answers: any): UserProfileContext {
@@ -1004,8 +1167,7 @@ export class AiPlannerService {
       );
     }
 
-    // PLANNED (esqueleto) OU reserva órfã (GENERATED sem workouts, de um processo que
-    // morreu antes do commit) → deleta e sobrescreve.
+    // PLANNED é apenas esqueleto/reserva e ainda não pode ser exibido como pronto.
     await this.prisma.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
     await this.prisma.weeklyGoal.delete({ where: { id: existing.id } });
   }
@@ -1022,7 +1184,7 @@ export class AiPlannerService {
           trainingPlanId,
           weekStartDate,
           weekEndDate,
-          status: WeeklyGoalStatus.GENERATED,
+          status: WeeklyGoalStatus.PLANNED,
           metrics: {} as unknown as Prisma.InputJsonValue,
         },
       });

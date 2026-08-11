@@ -220,49 +220,81 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
 });
 
 describe('AiPlannerService.startPlanFromHealthGeneration', () => {
-  const buildService = () =>
-    new AiPlannerService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
-  const flushAsyncJob = () => new Promise((resolve) => setImmediate(resolve));
+  const queuedJob = {
+    id: 'generation-1',
+    userId: 'user-1',
+    weekStartDate: new Date('2026-08-10T00:00:00Z'),
+    status: 'QUEUED',
+    payload: {},
+    result: null,
+    weeklyGoalId: null,
+    workoutIds: [],
+    error: null,
+    attempts: 0,
+    leaseOwner: null,
+    leaseExpiresAt: null,
+    completedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const buildService = (job: any = null) => {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ availableDays: ['monday'] }) },
+      planGenerationJob: {
+        findUnique: jest.fn().mockResolvedValue(job),
+        findFirst: jest.fn().mockResolvedValue(job),
+        create: jest.fn().mockResolvedValue(queuedJob),
+        update: jest.fn().mockResolvedValue(queuedJob),
+      },
+    };
+    const service = new AiPlannerService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
+    jest.spyOn(service, 'drainGenerationQueue').mockResolvedValue();
+    return { service, prisma };
+  };
 
-  it('retorna generationId imediatamente e marca completed quando a geração termina', async () => {
-    const svc = buildService();
-    jest.spyOn(svc, 'planFromHealth').mockResolvedValue({} as any);
+  it('persiste e retorna um job queued antes de iniciar o worker', async () => {
+    const { service, prisma } = buildService();
+    const started = await service.startPlanFromHealthGeneration('user-1', {
+      weekStartDate: '2026-08-10',
+    } as any);
 
-    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
-    expect(started.status).toBe('processing');
-    expect(started.generationId).toEqual(expect.any(String));
-
-    await flushAsyncJob();
-
-    expect(svc.getPlanFromHealthGenerationStatus('user-1', started.generationId)).toMatchObject({
-      generationId: started.generationId,
-      status: 'completed',
-    });
+    expect(started).toMatchObject({ generationId: 'generation-1', status: 'queued' });
+    expect(prisma.planGenerationJob.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1' }) }),
+    );
   });
 
-  it('marca failed quando a geração em segundo plano falha', async () => {
-    const svc = buildService();
-    jest.spyOn(svc, 'planFromHealth').mockRejectedValue(new Error('gemini down'));
+  it('retorna os ids persistidos somente quando o job está completed', async () => {
+    const completed = {
+      ...queuedJob,
+      status: 'COMPLETED',
+      weeklyGoalId: 'week-1',
+      workoutIds: ['workout-1'],
+    };
+    const { service } = buildService(completed);
 
-    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
-    await flushAsyncJob();
-
-    expect(svc.getPlanFromHealthGenerationStatus('user-1', started.generationId)).toMatchObject({
-      generationId: started.generationId,
-      status: 'failed',
-      error: 'gemini down',
+    await expect(
+      service.getPlanFromHealthGenerationStatus('user-1', completed.id),
+    ).resolves.toMatchObject({
+      status: 'completed',
+      weeklyGoalId: 'week-1',
+      workoutIds: ['workout-1'],
     });
   });
 
   it('não expõe status de outro usuário', async () => {
-    const svc = buildService();
-    jest.spyOn(svc, 'planFromHealth').mockResolvedValue({} as any);
-
-    const started = await svc.startPlanFromHealthGeneration('user-1', {} as any);
-
-    expect(() => svc.getPlanFromHealthGenerationStatus('user-2', started.generationId)).toThrow(
-      NotFoundException,
-    );
+    const { service, prisma } = buildService();
+    prisma.planGenerationJob.findFirst.mockResolvedValue(null);
+    await expect(
+      service.getPlanFromHealthGenerationStatus('user-2', 'generation-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 

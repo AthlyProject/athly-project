@@ -82,16 +82,17 @@ struct PlanView: View {
             .sheet(item: $workoutToComplete) { workout in
                 WorkoutCompletionSheet(
                     workout: workout,
-                    onComplete: { selection in
-                        let succeeded = await planVM.completeWorkoutSelection(
+                    onComplete: { selection, fallback in
+                        let outcome = await planVM.completeWorkoutSelection(
                             workout,
                             selection: selection,
+                            fallback: fallback,
                             runStore: runStore
                         )
-                        if succeeded {
+                        if case .success = outcome {
                             workoutToComplete = nil
                         }
-                        return succeeded
+                        return outcome
                     },
                     onDismiss: { workoutToComplete = nil }
                 )

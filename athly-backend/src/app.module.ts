@@ -17,6 +17,7 @@ import { EffortZoneModule } from './modules/effort-zones/effort-zone.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { EmailModule } from './modules/email/email.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { EmailModule } from './modules/email/email.module';
     EffortZoneModule,
     GoalsModule,
     WaitlistModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
