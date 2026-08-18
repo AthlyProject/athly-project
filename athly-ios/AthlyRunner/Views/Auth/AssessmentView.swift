@@ -8,12 +8,6 @@ struct AssessmentView: View {
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
-    // MARK: - P1: Motivação
-    @State private var motivations: [String] = []
-
-    // MARK: - P2: Frequência
-    @State private var runningFrequency = ""
-
     // MARK: - P3: Nível
     @State private var fitnessLevel = ""
 
@@ -21,21 +15,20 @@ struct AssessmentView: View {
     @State private var paceSeconds = 345  // default 5:45/km
 
     // MARK: - P5: Objetivos
-    @State private var expandedObjective: String? = nil
     @State private var objective = ""
     @State private var objectiveDistance = ""
     @State private var objectiveType = ""
     @State private var targetTimeText = ""
 
-    private let totalSteps = 5
-    private var isLastStep: Bool { step == totalSteps - 1 }
+    private var totalSteps: Int { objective == "personal" ? 5 : 3 }
+    private var isLastStep: Bool { step == totalSteps - 1 && (step != 2 || !objective.isEmpty) }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
-        ("Motivação\npara Correr",      "Escolha todas que fazem sentido pra você"),
-        ("Quanto\nvocê corre?",         "Com que frequência você vai para a rua correr?"),
         ("Seu nível\nno momento",       "Seja honesto — vamos ajustar seus treinos"),
         ("Seu pace\nconfortável",       "Ritmo em que você corre sentindo-se bem — sem forçar"),
         ("Seus\nObjetivos",             "O que você quer alcançar correndo?"),
+        ("Sua\nDistância",              "Para qual distância você quer treinar?"),
+        ("Tipo de\nObjetivo",           "Como você quer que a IA monte seu treino?"),
     ]
 
     // MARK: - Body
@@ -106,12 +99,8 @@ struct AssessmentView: View {
                     .font(AthlyTheme.Typography.semibold(12))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
             } else {
-                Button("Pular") {
-                    withAnimation(.easeOut(duration: 0.2)) { step += 1 }
-                }
-                .font(AthlyTheme.Typography.semibold(12))
-                .foregroundStyle(AthlyTheme.Color.primary)
-                .buttonStyle(.plain)
+                // Placeholder para manter o contador "X de Y" centralizado (balanceia o botão voltar).
+                Color.clear.frame(width: 30, height: 30)
             }
         }
         .padding(.horizontal, 16)
@@ -158,11 +147,11 @@ struct AssessmentView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
-        case 0: step2
-        case 1: step3
-        case 2: step4
-        case 3: step5
-        default: step6
+        case 0: step4
+        case 1: step5
+        case 2: step6
+        case 3: stepDistancia
+        default: stepTipo
         }
     }
 
@@ -187,7 +176,8 @@ struct AssessmentView: View {
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(isSubmitting)
+        .disabled(isSubmitting || (step == 2 && objective.isEmpty))
+        .opacity((step == 2 && objective.isEmpty) ? 0.5 : 1)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
         .padding(.top, 10)
@@ -206,8 +196,8 @@ struct AssessmentView: View {
             height: nil,
             restingHeartRate: nil,
             maxHeartRate: nil,
-            motivations: motivations,
-            runningFrequency: runningFrequency.isEmpty ? nil : runningFrequency,
+            motivations: [],
+            runningFrequency: nil,
             fitnessLevel: fitnessLevel.isEmpty ? nil : fitnessLevel,
             comfortPaceSeconds: paceSeconds,
             objective: objective.isEmpty ? nil : objective,
@@ -271,116 +261,6 @@ private extension AssessmentView {
             RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous)
                 .stroke(AthlyTheme.Color.borderDark, lineWidth: 1)
         )
-    }
-}
-
-// MARK: - P1: Motivação para Correr
-
-private extension AssessmentView {
-    struct MotivationItem {
-        let emoji: String; let title: String; let value: String
-    }
-
-    static let motivationItems: [MotivationItem] = [
-        .init(emoji: "🔥", title: "Queimar gordura",            value: "fat_burning"),
-        .init(emoji: "😊", title: "Sentir-me bem",              value: "feel_good"),
-        .init(emoji: "🚶", title: "Voltar a me movimentar",     value: "get_active"),
-        .init(emoji: "🧘", title: "Reduzir o stress",           value: "reduce_stress"),
-        .init(emoji: "📊", title: "Otimizar meus treinos",      value: "optimize"),
-        .init(emoji: "⚡", title: "Melhores tempos",            value: "better_times"),
-    ]
-
-    var step2: some View {
-        VStack(spacing: 7) {
-            ForEach(Self.motivationItems, id: \.value) { item in
-                let sel = motivations.contains(item.value)
-                Button {
-                    if sel { motivations.removeAll { $0 == item.value } }
-                    else { motivations.append(item.value) }
-                } label: {
-                    HStack(spacing: 10) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceDark)
-                                .frame(width: 32, height: 32)
-                            Text(item.emoji).font(.system(size: 16))
-                        }
-                        Text(item.title)
-                            .font(AthlyTheme.Typography.semibold(13))
-                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        ZStack {
-                            Circle()
-                                .stroke(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
-                                .frame(width: 18, height: 18)
-                            if sel {
-                                Circle().fill(AthlyTheme.Color.primary).frame(width: 18, height: 18)
-                                Text("✓").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 12)
-                    .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                            .stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-}
-
-// MARK: - P3: Frequência
-
-private extension AssessmentView {
-    struct FrequencyItem {
-        let emoji: String; let title: String; let desc: String; let value: String
-    }
-
-    static let frequencyItems: [FrequencyItem] = [
-        .init(emoji: "🛋️", title: "Dificilmente",  desc: "Menos de uma vez por semana",   value: "rarely"),
-        .init(emoji: "🏃", title: "Regularmente",  desc: "1 a 3 vezes por semana",         value: "regularly"),
-        .init(emoji: "🏅", title: "Há anos",        desc: "Corrida é parte da minha rotina", value: "years"),
-    ]
-
-    var step3: some View {
-        VStack(spacing: 8) {
-            ForEach(Self.frequencyItems, id: \.value) { item in
-                let sel = runningFrequency == item.value
-                Button { runningFrequency = item.value } label: {
-                    HStack(spacing: 12) {
-                        Text(item.emoji).font(.system(size: 22))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.title)
-                                .font(AthlyTheme.Typography.semibold(14))
-                                .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
-                            Text(item.desc)
-                                .font(AthlyTheme.Typography.body(11))
-                                .foregroundStyle(AthlyTheme.Color.textSecondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        ZStack {
-                            Circle()
-                                .stroke(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
-                                .frame(width: 20, height: 20)
-                            if sel { Circle().fill(AthlyTheme.Color.primary).frame(width: 20, height: 20) }
-                        }
-                    }
-                    .padding(14)
-                    .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                            .stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
     }
 }
 
@@ -512,34 +392,7 @@ private extension AssessmentView {
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 8)
-
-            obSectionLabel("Como esse ritmo parece?")
-                .padding(.top, 14)
-                .padding(.bottom, 8)
-
-            HStack(spacing: 6) {
-                paceFeelChip("😓 Pesado",      active: false)
-                paceFeelChip("😊 Confortável", active: true)
-                paceFeelChip("😴 Fácil demais", active: false)
-            }
-
-            obInfoNotice("A IA vai usar esse pace como zona base para calcular suas zonas de treino.")
-                .padding(.top, 12)
         }
-    }
-
-    func paceFeelChip(_ label: String, active: Bool) -> some View {
-        Text(label)
-            .font(AthlyTheme.Typography.semibold(10))
-            .foregroundStyle(active ? AthlyTheme.Color.primary : AthlyTheme.Color.textTertiary)
-            .frame(maxWidth: .infinity)
-            .frame(height: 32)
-            .background(active ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-            .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous)
-                    .stroke(active ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-            )
     }
 }
 
@@ -552,9 +405,6 @@ private extension AssessmentView {
     }
 
     static let objectiveCards: [ObjectiveCard] = [
-        .init(emoji: "🏁", title: "Correr em um evento público",
-              subtitle: "Provas, corridas de rua, maratonas",
-              value: "event",   emojiBg: Color(hex: "#EC4899").opacity(0.12)),
         .init(emoji: "🎯", title: "Objetivo pessoal",
               subtitle: "Definido por mim mesmo",
               value: "personal", emojiBg: Color(hex: "#0EA5E9").opacity(0.10)),
@@ -563,59 +413,177 @@ private extension AssessmentView {
               value: "fitness",  emojiBg: Color(hex: "#10B981").opacity(0.10)),
     ]
 
-    static let distancePills: [(label: String, value: String)] = [
-        ("5K", "5k"), ("10K", "10k"), ("HM", "hm"),
-        ("Meia", "half"), ("42K", "42k"), ("Ultra", "ultra"),
+    var step6: some View {
+        VStack(spacing: 8) {
+            ForEach(Self.objectiveCards, id: \.value) { card in
+                let isSel = objective == card.value
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        objective = card.value
+                        if card.value == "fitness" {
+                            objectiveDistance = ""
+                            objectiveType = ""
+                            targetTimeText = ""
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(card.emojiBg)
+                                .frame(width: 44, height: 44)
+                            Text(card.emoji).font(.system(size: 22))
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(card.title)
+                                .font(AthlyTheme.Typography.semibold(14))
+                                .foregroundStyle(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
+                            Text(card.subtitle)
+                                .font(AthlyTheme.Typography.body(11))
+                                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        ZStack {
+                            Circle()
+                                .stroke(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
+                                .frame(width: 20, height: 20)
+                            if isSel { Circle().fill(AthlyTheme.Color.primary).frame(width: 20, height: 20) }
+                        }
+                    }
+                    .padding(14)
+                    .background(isSel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
+                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                            .stroke(isSel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// MARK: - P7: Distância (personal path)
+
+private extension AssessmentView {
+    struct DistanceItem {
+        let emoji: String; let label: String; let description: String; let value: String
+    }
+
+    static let distanceItems: [DistanceItem] = [
+        .init(emoji: "🏃", label: "5K",       description: "5 quilômetros",       value: "5k"),
+        .init(emoji: "🏃", label: "10K",      description: "10 quilômetros",      value: "10k"),
+        .init(emoji: "🏅", label: "Meia",     description: "21 quilômetros",      value: "half"),
+        .init(emoji: "🏆", label: "Maratona", description: "42 quilômetros",      value: "42k"),
+        .init(emoji: "⚡", label: "Ultra",    description: "Mais de 42 km",       value: "ultra"),
     ]
 
-    var step6: some View {
-        VStack(spacing: 7) {
-            ForEach(Self.objectiveCards, id: \.value) { card in
-                let isExpanded = expandedObjective == card.value
-                let isSel = objective == card.value
+    var stepDistancia: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
+            spacing: 10
+        ) {
+            ForEach(Self.distanceItems, id: \.value) { item in
+                let sel = objectiveDistance == item.value
+                Button { objectiveDistance = item.value } label: {
+                    VStack(spacing: 6) {
+                        Text(item.emoji)
+                            .font(.system(size: 28))
+                        Text(item.label)
+                            .font(AthlyTheme.Typography.semibold(16))
+                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
+                        Text(item.description)
+                            .font(AthlyTheme.Typography.body(10))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
+                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                            .stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
 
+// MARK: - P8: Tipo de Objetivo (personal path)
+
+private extension AssessmentView {
+    struct ObjectiveTypeItem {
+        let emoji: String; let title: String; let description: String; let value: String; let emojiBg: Color
+    }
+
+    static let objectiveTypeItems: [ObjectiveTypeItem] = [
+        .init(emoji: "🤖", title: "Workload adaptado pela IA",
+              description: "A IA define a carga com base na sua evolução",
+              value: "workload", emojiBg: Color(hex: "#7C3AED").opacity(0.10)),
+        .init(emoji: "⏱️", title: "Tempo alvo",
+              description: "Defina um tempo e a IA cria um plano para você bater",
+              value: "target_time", emojiBg: Color(hex: "#F59E0B").opacity(0.10)),
+    ]
+
+    var stepTipo: some View {
+        VStack(spacing: 8) {
+            ForEach(Self.objectiveTypeItems, id: \.value) { item in
+                let isSel = objectiveType == item.value
                 VStack(spacing: 0) {
-                    // Card head
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            if isExpanded {
-                                expandedObjective = nil
-                                if objective == card.value { objective = "" }
-                            } else {
-                                expandedObjective = card.value
-                                objective = card.value
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 10) {
+                    Button { withAnimation(.easeOut(duration: 0.2)) { objectiveType = item.value } } label: {
+                        HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                    .fill(card.emojiBg)
-                                    .frame(width: 30, height: 30)
-                                Text(card.emoji).font(.system(size: 14))
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(item.emojiBg)
+                                    .frame(width: 44, height: 44)
+                                Text(item.emoji).font(.system(size: 22))
                             }
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(card.title)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(item.title)
                                     .font(AthlyTheme.Typography.semibold(13))
                                     .foregroundStyle(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
-                                Text(card.subtitle)
+                                Text(item.description)
                                     .font(AthlyTheme.Typography.body(10))
                                     .foregroundStyle(AthlyTheme.Color.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("›")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.textTertiary)
-                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                                .animation(.easeOut(duration: 0.2), value: isExpanded)
+                            ZStack {
+                                Circle()
+                                    .stroke(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
+                                    .frame(width: 20, height: 20)
+                                if isSel { Circle().fill(AthlyTheme.Color.primary).frame(width: 20, height: 20) }
+                            }
                         }
-                        .padding(11)
+                        .padding(14)
                     }
                     .buttonStyle(.plain)
 
-                    // Expanded sub-options (personal only)
-                    if isExpanded && card.value == "personal" {
-                        personalExpanded
+                    if isSel && item.value == "target_time" {
+                        Rectangle()
+                            .fill(AthlyTheme.Color.borderDark)
+                            .frame(height: 1)
+                            .padding(.horizontal, 14)
+
+                        HStack(spacing: 8) {
+                            Text("Meta")
+                                .font(AthlyTheme.Typography.body(11))
+                                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                            TextField("47:30", text: $targetTimeText)
+                                .keyboardType(.numbersAndPunctuation)
+                                .font(AthlyTheme.Typography.mono(20))
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                                .frame(maxWidth: .infinity)
+                            Text("min:seg")
+                                .font(AthlyTheme.Typography.body(11))
+                                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
                     }
                 }
                 .background(isSel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
@@ -626,103 +594,5 @@ private extension AssessmentView {
                 )
             }
         }
-    }
-
-    var personalExpanded: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider().background(AthlyTheme.Color.borderDark)
-
-            // "Define a distance" sub-option (always selected when this card is open)
-            objSubOption("Definir uma distância", selected: true)
-
-            // Distance pills
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 5), count: 6),
-                spacing: 5
-            ) {
-                ForEach(Self.distancePills, id: \.value) { pill in
-                    let sel = objectiveDistance == pill.value
-                    Button { objectiveDistance = pill.value } label: {
-                        Text(pill.label)
-                            .font(AthlyTheme.Typography.semibold(11))
-                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 5)
-                            .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCardElevated)
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            Text("TIPO DE OBJETIVO")
-                .font(AthlyTheme.Typography.label())
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-                .kerning(1)
-                .padding(.top, 4)
-
-            Button { objectiveType = "workload" } label: {
-                objSubOption("Workload adaptado pela IA", selected: objectiveType == "workload")
-            }
-            .buttonStyle(.plain)
-
-            Button { objectiveType = "target_time" } label: {
-                objSubOption("Tempo alvo", selected: objectiveType == "target_time")
-            }
-            .buttonStyle(.plain)
-
-            if objectiveType == "target_time" {
-                HStack {
-                    Text("Meta")
-                        .font(AthlyTheme.Typography.body(10))
-                        .foregroundStyle(AthlyTheme.Color.textTertiary)
-                    TextField("47:30", text: $targetTimeText)
-                        .keyboardType(.numbersAndPunctuation)
-                        .font(AthlyTheme.Typography.mono(18))
-                        .foregroundStyle(AthlyTheme.Color.primary)
-                        .frame(maxWidth: .infinity)
-                    Text("min:seg")
-                        .font(AthlyTheme.Typography.body(10))
-                        .foregroundStyle(AthlyTheme.Color.textTertiary)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(AthlyTheme.Color.surfaceDark)
-                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous)
-                        .stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1)
-                )
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 12)
-        .padding(.top, 4)
-    }
-
-    func objSubOption(_ title: String, selected: Bool) -> some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(selected ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
-                    .frame(width: 14, height: 14)
-                if selected { Circle().fill(AthlyTheme.Color.primary).frame(width: 14, height: 14) }
-            }
-            Text(title)
-                .font(AthlyTheme.Typography.semibold(12))
-                .foregroundStyle(selected ? AthlyTheme.Color.textPrimary : AthlyTheme.Color.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(AthlyTheme.Color.surfaceDark)
-        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AthlyTheme.Radius.small, style: .continuous)
-                .stroke(selected ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderDark, lineWidth: 1)
-        )
     }
 }
