@@ -62,6 +62,9 @@ struct PlanView: View {
                 AssessmentView {
                     authVM.markAssessmentCompleted()
                     showAssessment = false
+                    // Objetivo já foi criado no backend; gera a primeira semana
+                    // automaticamente (com dados do Apple Health) sem exigir toque manual.
+                    Task { await planVM.generateNextWeekWithHealth() }
                 }
             }
             .sheet(isPresented: $showAnalysisDetails) {

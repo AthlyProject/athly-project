@@ -11,7 +11,6 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
-import { AssessmentService } from '../assessment/assessment.service';
 import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
 import { PlanFromHealthDto, DetailedSessionDto, SegmentLabel } from './dto/plan-from-health.dto';
 import type {
@@ -80,25 +79,26 @@ export class AiPlannerService {
     private readonly prisma: PrismaService,
     private readonly geminiService: GeminiService,
     private readonly effortZoneService: EffortZoneService,
-    private readonly assessmentService: AssessmentService,
     private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
     private readonly trainingReportService: TrainingReportService,
   ) {}
 
   async planFromHealth(userId: string, input: PlanFromHealthDto, generationId?: string) {
-    // Fetch active goal and assessment for context (before creating training plan)
-    const [activeGoalRecord, assessmentRecord, userHealth] = await Promise.all([
+    // Fetch active goal and user profile for context (before creating training plan)
+    const [activeGoalRecord, userHealth] = await Promise.all([
       this.prisma.userGoal.findFirst({
         where: { userId, active: true },
         orderBy: { createdAt: 'desc' },
       }),
-      this.assessmentService.findByUser(userId),
-      this.prisma.user.findUnique({ where: { id: userId }, select: { availableDays: true } }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { availableDays: true, fitnessLevel: true },
+      }),
     ]);
     const activeGoal = activeGoalRecord
       ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal)
       : null;
-    const userProfile = assessmentRecord ? this.buildUserProfile(assessmentRecord.answers) : null;
+    const userProfile = this.buildUserProfile(userHealth?.fitnessLevel ?? null, activeGoal);
     const baseAvailableDays = userHealth?.availableDays?.length
       ? userHealth.availableDays
       : DEFAULT_AVAILABLE_DAYS;
@@ -598,14 +598,11 @@ export class AiPlannerService {
     heartbeat.unref();
 
     try {
-      await this.planFromHealth(
-        job.userId,
-        job.payload as unknown as PlanFromHealthDto,
-        job.id,
-      );
+      await this.planFromHealth(job.userId, job.payload as unknown as PlanFromHealthDto, job.id);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const canRetry = job.attempts < GENERATION_MAX_ATTEMPTS && !(err instanceof ConflictException);
+      const canRetry =
+        job.attempts < GENERATION_MAX_ATTEMPTS && !(err instanceof ConflictException);
       await this.prisma.planGenerationJob.updateMany({
         where: { id: job.id, status: PlanGenerationStatus.PROCESSING, leaseOwner },
         data: canRetry
@@ -655,32 +652,14 @@ export class AiPlannerService {
     };
   }
 
-  private buildUserProfile(answers: any): UserProfileContext {
-    const parqFlagMap: Record<string, string> = {
-      heartCondition: 'Condição cardíaca diagnosticada por médico',
-      chestPainDuringActivity: 'Dor no peito durante atividade física',
-      chestPainLastMonth: 'Dor no peito no último mês',
-      dizzinessOrLossOfConsciousness: 'Tonturas ou perda de consciência',
-      boneJointProblem: 'Problema ósseo ou articular que piora com exercício',
-      takingBloodPressureMeds: 'Medicação para pressão arterial',
-      otherReasonToAvoidExercise: 'Outro motivo para evitar exercício físico',
-    };
-
-    const parqFlags: string[] = [];
-    if (answers?.parq) {
-      for (const [key, label] of Object.entries(parqFlagMap)) {
-        if (answers.parq[key] === true) parqFlags.push(label);
-      }
-    }
-
+  private buildUserProfile(
+    fitnessLevel: string | null,
+    activeGoal: ParsedGoal | null,
+  ): UserProfileContext {
+    // O onboarding atual não coleta mais PAR-Q/sono/dor crônica; o único sinal de
+    // perfil é a experiência declarada (nível no questionário ou o do objetivo).
     return {
-      sleepQuality: answers?.performanceHealth?.sleepQuality,
-      hasChronicPain: answers?.performanceHealth?.hasChronicPain === 'yes',
-      chronicPainDescription: answers?.performanceHealth?.chronicPainDescription,
-      canRun3km: answers?.activityHistory?.canRun3km,
-      runningExperience: answers?.activityHistory?.runningExperience,
-      motivations: answers?.goals?.motivations,
-      parqFlags,
+      runningExperience: fitnessLevel ?? activeGoal?.experienceLevel ?? undefined,
     };
   }
 

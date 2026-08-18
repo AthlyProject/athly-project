@@ -98,6 +98,10 @@ model User {
   availableDays        String[]  @default([]) @map("available_days")
   imc                  Float?
   assessmentCompleted  Boolean   @default(false) @map("assessment_completed")
+  fitnessLevel         String?   @map("fitness_level")
+  comfortPaceSeconds   Int?      @map("comfort_pace_seconds")
+  restingHeartRate     Int?      @map("resting_heart_rate")
+  maxHeartRate         Int?      @map("max_heart_rate")
   // Assinatura (RevenueCat). Atualizado via webhook; entitlement = trial (createdAt+14d) OU assinatura ativa.
   subscriptionStatus    String?   @map("subscription_status")        // active | expired | trial | cancelled | null
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")
@@ -115,7 +119,6 @@ model User {
   trainingPlans TrainingPlan[]
   integrations  Integration[]
   equipments    UserEquipment[]
-  assessment    Assessment?
   effortZones   UserEffortZone[]
   userGoals     UserGoal[]
   planGenerationJobs PlanGenerationJob[]
@@ -333,18 +336,6 @@ model PushDelivery {
   @@unique([generationId, deviceId])
   @@index([status, nextAttemptAt, leaseExpiresAt])
   @@map("push_deliveries")
-}
-
-model Assessment {
-  id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  answers   Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("assessments")
 }
 
 model UserEffortZone {
