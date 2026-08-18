@@ -263,9 +263,13 @@ export class WorkoutsService {
     };
   }
 
-  async updateWorkout(workoutId: string, input: UpdateWorkoutDto): Promise<WorkoutModel> {
+  async updateWorkout(
+    userId: string,
+    workoutId: string,
+    input: UpdateWorkoutDto,
+  ): Promise<WorkoutModel> {
     const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId },
+      where: { id: workoutId, userId },
     });
     if (!workout) {
       throw new NotFoundException('Workout not found');

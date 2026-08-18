@@ -85,9 +85,10 @@ export class WorkoutsController {
   @Put(':workoutId')
   @ApiOkResponse({ type: WorkoutModel })
   updateWorkout(
+    @CurrentUser() user: UserModel,
     @Param('workoutId') workoutId: string,
     @Body() input: UpdateWorkoutDto,
   ): Promise<WorkoutModel> {
-    return this.workoutsService.updateWorkout(workoutId, input);
+    return this.workoutsService.updateWorkout(user.id, workoutId, input);
   }
 }

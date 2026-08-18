@@ -249,6 +249,14 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Update Workout
+
+/// Corpo do `PUT /workouts/:id`. Hoje só usamos `date` (reagendamento via drag-and-drop),
+/// mas o endpoint aceita atualização parcial de outros campos.
+struct UpdateWorkoutRequest: Encodable, Sendable {
+    let date: String
+}
+
 // MARK: - Training Plan
 
 struct TrainingPlanResponse: Codable, Identifiable, Sendable {
@@ -447,10 +455,6 @@ struct ParsedGoal: Codable, Sendable {
     let experienceLevel: String?
     let summary: String
     let rejectionReason: String?
-}
-
-struct CreateGoalRequest: Encodable, Sendable {
-    let goalText: String
 }
 
 struct CreateGoalResponse: Decodable, Sendable {

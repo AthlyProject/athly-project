@@ -198,6 +198,11 @@ actor APIClient {
         try await patch("/workouts/\(workoutId)/skip")
     }
 
+    /// Reagenda um treino para outra data (drag-and-drop no calendário). `newDate` em ISO8601.
+    func rescheduleWorkout(workoutId: String, newDate: String) async throws -> WorkoutModel {
+        try await put("/workouts/\(workoutId)", body: UpdateWorkoutRequest(date: newDate))
+    }
+
     @discardableResult
     func submitWorkoutFeedback(workoutId: String, feedback: WorkoutFeedbackRequest) async throws -> EmptyResponse {
         try await post("/workouts/\(workoutId)/feedback", body: feedback)
@@ -267,10 +272,6 @@ actor APIClient {
     }
 
     // MARK: - Goals Endpoints
-
-    func createGoal(_ request: CreateGoalRequest) async throws -> CreateGoalResponse {
-        try await post("/goals", body: request)
-    }
 
     func getActiveGoal() async throws -> CreateGoalResponse? {
         let req = try buildRequest(path: "/goals/active", method: "GET", authenticated: true)

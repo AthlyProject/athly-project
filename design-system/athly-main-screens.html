@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athly — Dashboard &amp; Plano v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ── Athly v2 Tokens ── */
+    :root {
+      --bg:           #060810;
+      --bg-alt:       #0B0F1C;
+      --surface:      #0F1624;
+      --card:         #141E30;
+      --card-2:       #1A2540;
+
+      --primary:      #0EA5E9;
+      --primary-soft: rgba(14,165,233,0.10);
+      --primary-b:    rgba(14,165,233,0.22);
+      --primary-glow: rgba(14,165,233,0.18);
+
+      --violet:       #7C3AED;
+      --violet-soft:  rgba(124,58,237,0.10);
+      --violet-b:     rgba(124,58,237,0.20);
+
+      --text-1:  #EEF2FF;
+      --text-2:  #94A3B8;
+      --text-3:  #4B5563;
+
+      --border:     rgba(255,255,255,0.06);
+      --border-mid: rgba(255,255,255,0.10);
+
+      --success:      #10B981;
+      --success-soft: rgba(16,185,129,0.10);
+      --success-b:    rgba(16,185,129,0.22);
+      --warn:         #F59E0B;
+      --danger:       #EF4444;
+      --danger-soft:  rgba(239,68,68,0.10);
+      --danger-b:     rgba(239,68,68,0.22);
+
+      --grad:      linear-gradient(135deg,#0EA5E9,#7C3AED);
+      --grad-soft: linear-gradient(135deg,rgba(14,165,233,0.07),rgba(124,58,237,0.04));
+
+      --font: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+      --r-sm:  10px;
+      --r-md:  14px;
+      --r-lg:  20px;
+      --r-pill: 9999px;
+
+      --ease: cubic-bezier(0.22,1,0.36,1);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: var(--font);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    button {
+      font-family: var(--font);
+      cursor: pointer;
+      border: none;
+      background: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: var(--r-md);
+    }
+
+    /* ── Page chrome ── */
+    .page-header { padding: 48px 48px 0; margin-bottom: 40px; }
+    .page-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 8px;
+    }
+    .page-title { font-size: 32px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 8px; }
+    .page-sub   { font-size: 15px; color: var(--text-2); }
+
+    .screens-rail {
+      display: flex; gap: 36px; overflow-x: auto;
+      padding: 0 48px 56px; scrollbar-width: none;
+    }
+    .screens-rail::-webkit-scrollbar { display: none; }
+
+    .phone-wrap {
+      flex-shrink: 0; display: flex; flex-direction: column;
+      align-items: center; gap: 16px;
+    }
+    .phone-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .10em; color: var(--text-3);
+    }
+
+    /* ── iPhone 15 Pro shell ── */
+    .iphone {
+      width: 316px; height: 682px;
+      background: #1C1C22; border-radius: 50px;
+      border: 8px solid #2A2A32;
+      box-shadow:
+        0 0 0 1px #111,
+        inset 0 0 0 1px rgba(255,255,255,.07),
+        0 44px 96px rgba(0,0,0,.75),
+        0 0 50px rgba(14,165,233,.05);
+      overflow: hidden; position: relative;
+    }
+    .iphone-screen {
+      width: 100%; height: 100%; background: var(--bg);
+      border-radius: 42px; overflow: hidden;
+      display: flex; flex-direction: column; position: relative;
+    }
+    .dynamic-island {
+      position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+      width: 96px; height: 26px; background: #000; border-radius: 13px; z-index: 50;
+    }
+
+    /* Ambient glows */
+    .amb { position: absolute; pointer-events: none; z-index: 0; }
+    .amb-tl   { top:-60px;left:-60px; width:240px;height:240px; background:radial-gradient(circle,rgba(14,165,233,.13) 0%,transparent 70%); }
+    .amb-br   { bottom:-40px;right:-40px; width:200px;height:200px; background:radial-gradient(circle,rgba(124,58,237,.09) 0%,transparent 70%); }
+    .amb-v-tl { top:-60px;left:-40px; width:220px;height:220px; background:radial-gradient(circle,rgba(124,58,237,.14) 0%,transparent 70%); }
+
+    /* ── Status bar ── */
+    .status-bar {
+      height: 50px; padding: 14px 20px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0; z-index: 10; position: relative;
+    }
+    .status-time {
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--text-1); font-variant-numeric: tabular-nums;
+    }
+    .status-icons { display: flex; align-items: center; gap: 6px; color: var(--text-1); }
+
+    /* ── Scrollable body ── */
+    .sc-body {
+      flex: 1; display: flex; flex-direction: column;
+      overflow-y: auto; scrollbar-width: none;
+      position: relative; z-index: 1;
+      padding: 2px 13px 76px;
+      gap: 9px;
+    }
+    .sc-body::-webkit-scrollbar { display: none; }
+
+    /* ── Mini floating tab bar ── */
+    .mini-tab-bar {
+      position: absolute; bottom: 10px; left: 10px; right: 10px;
+      background: rgba(11,15,28,.94); backdrop-filter: blur(16px);
+      border: 1px solid var(--border-mid); border-radius: 17px;
+      padding: 5px; display: flex; z-index: 20;
+    }
+    .mt {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 2px; padding: 5px 2px; border-radius: 11px;
+    }
+    .mt.act { background: var(--primary-soft); }
+    .mt svg { color: var(--text-3); }
+    .mt.act svg { color: var(--primary); }
+    .mt-lbl { font-size: 7px; font-weight: 600; color: var(--text-3); }
+    .mt.act .mt-lbl { color: var(--primary); }
+
+    /* ════════════════════════════════════
+       DASHBOARD — components
+    ════════════════════════════════════ */
+
+    .greet-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0 2px; flex-shrink: 0;
+    }
+    .greet-sub  { font-size: 11px; color: var(--text-2); margin-bottom: 2px; }
+    .greet-name { font-size: 21px; font-weight: 700; letter-spacing: -.02em; }
+
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%; background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+
+    /* Today's workout hero card */
+    .today-card {
+      background: var(--card); border: 1px solid var(--primary-b);
+      background-image: var(--grad-soft); border-radius: 18px; padding: 14px;
+      flex-shrink: 0; box-shadow: 0 0 24px rgba(14,165,233,.10);
+    }
+    .today-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--primary-soft); border: 1px solid var(--primary-b);
+      border-radius: var(--r-pill); padding: 3px 9px;
+      font-size: 9px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--primary); margin-bottom: 9px;
+    }
+    .today-title {
+      font-size: 16px; font-weight: 700; letter-spacing: -.015em;
+      color: var(--text-1); margin-bottom: 11px;
+    }
+    .today-stats { display: flex; gap: 0; margin-bottom: 12px; }
+    .today-stat  { flex: 1; text-align: center; }
+    .today-stat + .today-stat { border-left: 1px solid var(--border-mid); }
+    .today-stat-val { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+    .today-stat-lbl {
+      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-3); margin-top: 1px;
+    }
+    .btn-iniciar {
+      width: 100%; height: 40px; background: var(--grad);
+      border-radius: var(--r-md); color: #fff;
+      font-size: 13px; font-weight: 700; letter-spacing: .01em;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      box-shadow: 0 0 16px var(--primary-glow);
+      transition: box-shadow 150ms var(--ease), transform 120ms var(--ease);
+    }
+    .btn-iniciar:hover  { box-shadow: 0 0 28px rgba(14,165,233,.32); transform: translateY(-1px); }
+    .btn-iniciar:active { transform: translateY(0); }
+
+    /* Weekly progress card */
+    .week-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 15px; padding: 12px 13px; flex-shrink: 0;
+    }
+    .week-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .week-title { font-size: 12px; font-weight: 700; }
+    .week-kms   { font-family: var(--mono); font-size: 11px; color: var(--primary); font-weight: 600; }
+
+    .week-days { display: flex; gap: 4px; margin-bottom: 10px; }
+    .week-day  { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .wd-lbl { font-size: 8px; font-weight: 600; color: var(--text-3); text-transform: uppercase; }
+    .wd-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 1.5px solid var(--border-mid);
+    }
+    .wd-dot.done     { background: var(--success); border-color: var(--success); }
+    .wd-dot.today    { background: var(--primary-soft); border-color: var(--primary); }
+    .wd-dot.rest     { background: transparent; border-style: dashed; }
+    .wd-dot.upcoming { background: transparent; }
+
+    .week-chips { display: flex; gap: 6px; }
+    .wchip {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 9px; padding: 7px 9px;
+    }
+    .wchip-val { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+    .wchip-lbl {
+      font-size: 8px; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .06em; margin-top: 1px;
+    }
+
+    /* AI insight card */
+    .insight-card {
+      background: var(--card);
+      border: 1px solid rgba(14,165,233,.28);
+      background-image: linear-gradient(135deg,rgba(14,165,233,.09),transparent,rgba(124,58,237,.06));
+      border-radius: 15px; padding: 12px;
+      display: flex; gap: 10px; align-items: flex-start; flex-shrink: 0;
+    }
+    .insight-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--primary-soft); border: 1px solid var(--primary-b);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--primary);
+    }
+    .insight-lbl {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .10em; color: var(--primary); margin-bottom: 3px;
+    }
+    .insight-txt { font-size: 11px; font-weight: 500; color: var(--text-1); line-height: 1.52; }
+
+    /* ════════════════════════════════════
+       PLAN — week strip + day list
+    ════════════════════════════════════ */
+
+    /* Week strip */
+    .week-strip {
+      flex-shrink: 0;
+      position: sticky; top: -2px; z-index: 10;
+      background: var(--bg); padding-bottom: 4px;
+    }
+    .ws-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2px 0 8px;
+    }
+    .ws-nav-group { display: flex; gap: 4px; }
+    .ws-nav {
+      width: 26px; height: 26px; background: var(--card); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-2); transition: background 120ms, color 120ms;
+    }
+    .ws-nav:hover { background: var(--card-2); color: var(--text-1); }
+    .ws-month { font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
+    .ws-hoje {
+      font-size: 10px; font-weight: 700; color: var(--primary);
+      background: var(--primary-soft); border: 1px solid var(--primary-b);
+      border-radius: var(--r-pill); padding: 2px 9px; transition: opacity 120ms;
+    }
+    .ws-hoje:hover { opacity: .8; }
+    .week-cells { display: flex; gap: 2px; }
+    .wc {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 3px; padding: 4px 2px 5px; border-radius: 10px;
+      cursor: pointer; transition: background 120ms var(--ease);
+    }
+    .wc:hover { background: var(--card); }
+    .wc.active { background: var(--card-2); }
+    .wc-lbl {
+      font-size: 7.5px; font-weight: 700; color: var(--text-3);
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .wc.active .wc-lbl { color: var(--primary); }
+    .wc-num-wrap {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wc.active .wc-num-wrap { background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+    .wc-num { font-size: 11px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+    .wc.active .wc-num { color: #fff; }
+    .wc.past .wc-num { color: var(--text-3); }
+    .wc-dot { width: 5px; height: 5px; border-radius: 50%; opacity: 0; transition: opacity 120ms; }
+    .wc-dot.visible { opacity: 1; }
+
+    /* Day list */
+    .day-list { display: flex; flex-direction: column; gap: 4px; }
+    .day-section {
+      border-radius: 12px; border: 1.5px solid transparent;
+      padding: 2px; flex-shrink: 0;
+      transition: border-color 150ms var(--ease), background 150ms var(--ease);
+    }
+    .day-section.drag-over { border-color: var(--primary); background: var(--primary-soft); }
+    .ds-header { display: flex; align-items: center; gap: 7px; padding: 5px 4px 4px; }
+    .ds-label { font-size: 11px; font-weight: 700; color: var(--text-2); }
+    .ds-label.is-today { color: var(--primary); }
+    .ds-label.is-past  { color: var(--text-3); }
+    .ds-done {
+      font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--success); background: var(--success-soft); border: 1px solid var(--success-b);
+      border-radius: var(--r-pill); padding: 1px 7px;
+    }
+    .ds-today-pill {
+      font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--primary); background: var(--primary-soft); border: 1px solid var(--primary-b);
+      border-radius: var(--r-pill); padding: 1px 7px;
+    }
+
+    /* Workout list card */
+    .wk-list-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px; display: flex; align-items: center; gap: 10px;
+      cursor: grab; user-select: none;
+      transition: border-color 120ms, opacity 150ms, transform 100ms var(--ease), box-shadow 120ms;
+    }
+    .wk-list-card:hover { border-color: var(--border-mid); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+    .wk-list-card.is-dragging { opacity: 0.18; transform: scale(0.96); }
+    .wk-list-card:active { cursor: grabbing; }
+    .wk-list-card.done { opacity: 0.5; cursor: default; }
+    .wk-thumb {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wk-list-info { flex: 1; min-width: 0; }
+    .wk-list-type {
+      font-size: 8px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: 2px;
+    }
+    .wk-list-name {
+      font-size: 12px; font-weight: 700; color: var(--text-1); letter-spacing: -.01em;
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wk-list-stats { display: flex; gap: 8px; }
+    .wk-stat {
+      font-family: var(--mono); font-size: 9px; color: var(--text-3);
+      display: flex; align-items: center; gap: 3px;
+    }
+    .drag-handle {
+      display: flex; flex-direction: column; gap: 2.5px; padding: 3px;
+      flex-shrink: 0; opacity: 0.28; transition: opacity 120ms;
+    }
+    .wk-list-card:hover .drag-handle { opacity: 0.7; }
+    .drag-handle span { display: block; width: 14px; height: 1.5px; background: var(--text-2); border-radius: 1px; }
+
+    /* Empty slot */
+    .empty-slot {
+      border: 1.5px dashed var(--border-mid); border-radius: 12px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 150ms, background 150ms;
+    }
+    .empty-slot:hover { border-color: var(--primary-b); background: var(--primary-soft); }
+    .add-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600; color: var(--text-3); transition: color 120ms;
+    }
+    .empty-slot:hover .add-btn { color: var(--primary); }
+
+    /* ── No-goal empty state (S3 variant) ── */
+    .no-goal-state {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 0 8px 20px;
+    }
+    .ngs-icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%; margin-bottom: 18px;
+      background: var(--primary-soft);
+      border: 1.5px solid var(--primary-b);
+      box-shadow: 0 0 32px var(--primary-glow);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--primary);
+    }
+    .ngs-headline {
+      font-size: 16px; font-weight: 700; color: var(--text-1);
+      letter-spacing: -.015em; margin-bottom: 8px;
+    }
+    .ngs-body {
+      font-size: 11.5px; font-weight: 500; color: var(--text-2);
+      line-height: 1.55; margin-bottom: 24px; max-width: 220px;
+    }
+    .btn-assessment {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--grad); color: #fff;
+      font-family: var(--font); font-size: 13px; font-weight: 700;
+      letter-spacing: .01em; padding: 0 22px; height: 44px;
+      border-radius: var(--r-pill); border: none; cursor: pointer;
+      box-shadow: 0 0 20px var(--primary-glow);
+      transition: box-shadow 150ms var(--ease), transform 120ms var(--ease);
+    }
+    .btn-assessment:hover  { box-shadow: 0 0 32px rgba(14,165,233,.36); transform: translateY(-1px); }
+    .btn-assessment:active { transform: translateY(0); }
+    .ngs-hint {
+      margin-top: 14px; font-size: 10px; font-weight: 500; color: var(--text-3);
+    }
+
+    /* Faded week strip for no-goal variant */
+    .week-strip.no-goal-strip { opacity: 0.4; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+  <div class="page-header" data-od-id="page-header">
+    <div class="page-eyebrow">Athly Runner · App Screens v2</div>
+    <div class="page-title">Dashboard &amp; Plano de Treino</div>
+    <div class="page-sub">Redesenhado com os tokens v2 — hierarquia clara, drag &amp; drop de treinos no calendário</div>
+  </div>
+
+  <div class="screens-rail">
+
+    <!-- ═══════════════════════════════════════════
+         S1 — DASHBOARD
+    ═══════════════════════════════════════════ -->
+    <div class="phone-wrap" data-od-id="wrap-dashboard">
+      <div class="iphone">
+        <div class="iphone-screen" data-od-id="screen-dashboard">
+          <div class="dynamic-island"></div>
+          <div class="amb amb-tl"></div>
+          <div class="amb amb-br"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true">
+                <rect x="0"    y="8"   width="3"   height="4"   rx="1"/>
+                <rect x="4.5"  y="5.5" width="3"   height="6.5" rx="1"/>
+                <rect x="9"    y="3"   width="3"   height="9"   rx="1"/>
+                <rect x="13.5" y="0"   width="2.5" height="12"  rx="1"/>
+              </svg>
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+                <path d="M0.5 3.5C3 1.3 7.5 1.2 14.5 3.5" stroke-width="1.5"/>
+                <path d="M2.5 6C4.5 4.5 7.5 4.2 12.5 6" stroke-width="1.5"/>
+                <path d="M5 8.5C6 7.8 7 7.6 10 8.5" stroke-width="1.5"/>
+                <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/>
+                <rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/>
+                <rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sc-body">
+
+            <!-- Greeting -->
+            <div class="greet-row">
+              <div>
+                <div class="greet-sub">Sexta-feira, 18 jul</div>
+                <div class="greet-name">Bom dia, Gabriel</div>
+              </div>
+              <div class="avatar" aria-label="Perfil de Gabriel Fonseca">GF</div>
+            </div>
+
+            <!-- Today's workout -->
+            <div class="today-card" data-od-id="dashboard-today-card">
+              <div class="today-badge">
+                <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="3"/></svg>
+                Hoje · Corrida
+              </div>
+              <div class="today-title">Corrida Intervalada 5K</div>
+              <div class="today-stats">
+                <div class="today-stat">
+                  <div class="today-stat-val">45</div>
+                  <div class="today-stat-lbl">min</div>
+                </div>
+                <div class="today-stat">
+                  <div class="today-stat-val">5.0</div>
+                  <div class="today-stat-lbl">km</div>
+                </div>
+                <div class="today-stat">
+                  <div class="today-stat-val" style="color:var(--warn);">7</div>
+                  <div class="today-stat-lbl">intensidade</div>
+                </div>
+              </div>
+              <button class="btn-iniciar" data-od-id="dashboard-start-cta">
+                Iniciar Treino
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="1" y1="5" x2="12" y2="5"/>
+                  <polyline points="8,1 12,5 8,9"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Weekly progress -->
+            <div class="week-card" data-od-id="dashboard-week">
+              <div class="week-header">
+                <div class="week-title">Esta semana</div>
+                <div class="week-kms">24.6 km</div>
+              </div>
+              <div class="week-days">
+                <!-- Mon done -->
+                <div class="week-day">
+                  <div class="wd-dot done">
+                    <svg width="8" height="7" viewBox="0 0 8 7" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3.5 3,5.5 7,1"/></svg>
+                  </div>
+                  <div class="wd-lbl">S</div>
+                </div>
+                <!-- Tue rest -->
+                <div class="week-day">
+                  <div class="wd-dot rest"></div>
+                  <div class="wd-lbl">T</div>
+                </div>
+                <!-- Wed done -->
+                <div class="week-day">
+                  <div class="wd-dot done">
+                    <svg width="8" height="7" viewBox="0 0 8 7" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3.5 3,5.5 7,1"/></svg>
+                  </div>
+                  <div class="wd-lbl">Q</div>
+                </div>
+                <!-- Thu done -->
+                <div class="week-day">
+                  <div class="wd-dot done">
+                    <svg width="8" height="7" viewBox="0 0 8 7" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3.5 3,5.5 7,1"/></svg>
+                  </div>
+                  <div class="wd-lbl">Q</div>
+                </div>
+                <!-- Fri today -->
+                <div class="week-day">
+                  <div class="wd-dot today"></div>
+                  <div class="wd-lbl" style="color:var(--primary);">S</div>
+                </div>
+                <!-- Sat upcoming -->
+                <div class="week-day">
+                  <div class="wd-dot upcoming"></div>
+                  <div class="wd-lbl">S</div>
+                </div>
+                <!-- Sun upcoming -->
+                <div class="week-day">
+                  <div class="wd-dot upcoming"></div>
+                  <div class="wd-lbl">D</div>
+                </div>
+              </div>
+              <div class="week-chips">
+                <div class="wchip">
+                  <div class="wchip-val" style="color:var(--primary);">3/5</div>
+                  <div class="wchip-lbl">Treinos</div>
+                </div>
+                <div class="wchip">
+                  <div class="wchip-val">5:38</div>
+                  <div class="wchip-lbl">Pace méd.</div>
+                </div>
+                <div class="wchip">
+                  <div class="wchip-val" style="color:var(--success);">↑ 8%</div>
+                  <div class="wchip-lbl">Evolução</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Insight -->
+            <div class="insight-card" data-od-id="dashboard-insight">
+              <div class="insight-icon">
+                <!-- wand/sparkle SVG -->
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                  <line x1="9" y1="1" x2="13" y2="5"/>
+                  <path d="M1 13 L9 5"/>
+                  <line x1="4" y1="1" x2="4" y2="3.5"/>
+                  <line x1="1" y1="4" x2="3.5" y2="4"/>
+                  <line x1="11" y1="1" x2="11" y2="2.5"/>
+                  <line x1="12.5" y1="3.5" x2="13.5" y2="2.5"/>
+                </svg>
+              </div>
+              <div>
+                <div class="insight-lbl">✦ IA Athly</div>
+                <div class="insight-txt">Seu pace melhorou 8% esta semana. Continue com intervalados para bater 47:30 nos 10K.</div>
+              </div>
+            </div>
+
+          </div><!-- /sc-body -->
+
+          <!-- Tab bar -->
+          <div class="mini-tab-bar" aria-label="Navegação principal">
+            <div class="mt act" role="tab" aria-selected="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 6L7 1L12 6V12H9V8.5H5V12H2Z"/>
+              </svg>
+              <div class="mt-lbl">Home</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1.5" y="2" width="11" height="11" rx="2"/>
+                <line x1="1.5" y1="5.5" x2="12.5" y2="5.5"/>
+                <line x1="4.5" y1="0.5" x2="4.5" y2="3.5"/>
+                <line x1="9.5" y1="0.5" x2="9.5" y2="3.5"/>
+              </svg>
+              <div class="mt-lbl">Plano</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="6"/>
+                <polygon points="5.5,4.5 10.5,7 5.5,9.5" fill="currentColor" stroke="none"/>
+              </svg>
+              <div class="mt-lbl">Correr</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <polyline points="1,11 4.5,7 7,9.5 10.5,4.5 13,2"/>
+                <polyline points="9.5,2 13,2 13,5.5"/>
+              </svg>
+              <div class="mt-lbl">Histórico</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="7" cy="4.5" r="2.5"/>
+                <path d="M1.5 12.5C1.5 10 4 8 7 8s5.5 2 5.5 4.5"/>
+              </svg>
+              <div class="mt-lbl">Perfil</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="phone-label">S1 · Dashboard</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         S2 — PLANO / CALENDÁRIO DRAG-AND-DROP
+    ═══════════════════════════════════════════ -->
+    <div class="phone-wrap" data-od-id="wrap-plan">
+      <div class="iphone">
+        <div class="iphone-screen" data-od-id="screen-plan">
+          <div class="dynamic-island"></div>
+          <div class="amb amb-v-tl"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true">
+                <rect x="0"    y="8"   width="3"   height="4"   rx="1"/>
+                <rect x="4.5"  y="5.5" width="3"   height="6.5" rx="1"/>
+                <rect x="9"    y="3"   width="3"   height="9"   rx="1"/>
+                <rect x="13.5" y="0"   width="2.5" height="12"  rx="1"/>
+              </svg>
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+                <path d="M0.5 3.5C3 1.3 7.5 1.2 14.5 3.5" stroke-width="1.5"/>
+                <path d="M2.5 6C4.5 4.5 7.5 4.2 12.5 6" stroke-width="1.5"/>
+                <path d="M5 8.5C6 7.8 7 7.6 10 8.5" stroke-width="1.5"/>
+                <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/>
+                <rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/>
+                <rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sc-body">
+
+            <!-- Week strip -->
+            <div class="week-strip" data-od-id="plan-week-strip">
+              <div class="ws-header">
+                <div class="ws-nav-group">
+                  <button class="ws-nav" id="ws-prev" aria-label="Semana anterior">
+                    <svg width="6" height="11" viewBox="0 0 6 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 1L1 5.5L5 10"/></svg>
+                  </button>
+                  <button class="ws-nav" id="ws-next" aria-label="Próxima semana">
+                    <svg width="6" height="11" viewBox="0 0 6 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1L5 5.5L1 10"/></svg>
+                  </button>
+                </div>
+                <div class="ws-month" id="ws-month-lbl">Julho 2025</div>
+                <button class="ws-hoje" id="ws-hoje" aria-label="Ir para a semana de hoje">Hoje</button>
+              </div>
+              <div class="week-cells" id="week-cells"></div>
+            </div>
+
+            <!-- Day list -->
+            <div class="day-list" id="day-list"></div>
+
+          </div><!-- /sc-body -->
+
+          <!-- Tab bar -->
+          <div class="mini-tab-bar" aria-label="Navegação principal">
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 6L7 1L12 6V12H9V8.5H5V12H2Z"/>
+              </svg>
+              <div class="mt-lbl">Home</div>
+            </div>
+            <div class="mt act" role="tab" aria-selected="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1.5" y="2" width="11" height="11" rx="2"/>
+                <line x1="1.5" y1="5.5" x2="12.5" y2="5.5"/>
+                <line x1="4.5" y1="0.5" x2="4.5" y2="3.5"/>
+                <line x1="9.5" y1="0.5" x2="9.5" y2="3.5"/>
+              </svg>
+              <div class="mt-lbl">Plano</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="6"/>
+                <polygon points="5.5,4.5 10.5,7 5.5,9.5" fill="currentColor" stroke="none"/>
+              </svg>
+              <div class="mt-lbl">Correr</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <polyline points="1,11 4.5,7 7,9.5 10.5,4.5 13,2"/>
+                <polyline points="9.5,2 13,2 13,5.5"/>
+              </svg>
+              <div class="mt-lbl">Histórico</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="7" cy="4.5" r="2.5"/>
+                <path d="M1.5 12.5C1.5 10 4 8 7 8s5.5 2 5.5 4.5"/>
+              </svg>
+              <div class="mt-lbl">Perfil</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="phone-label">S2 · Plano de Treino</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         S3 — PLANO / SEM META DEFINIDA (variante)
+    ═══════════════════════════════════════════ -->
+    <div class="phone-wrap" data-od-id="wrap-plan-no-goal">
+      <div class="iphone">
+        <div class="iphone-screen" data-od-id="screen-plan-no-goal">
+          <div class="dynamic-island"></div>
+          <div class="amb amb-v-tl"></div>
+
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <div class="status-icons">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true">
+                <rect x="0"    y="8"   width="3"   height="4"   rx="1"/>
+                <rect x="4.5"  y="5.5" width="3"   height="6.5" rx="1"/>
+                <rect x="9"    y="3"   width="3"   height="9"   rx="1"/>
+                <rect x="13.5" y="0"   width="2.5" height="12"  rx="1"/>
+              </svg>
+              <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+                <path d="M0.5 3.5C3 1.3 7.5 1.2 14.5 3.5" stroke-width="1.5"/>
+                <path d="M2.5 6C4.5 4.5 7.5 4.2 12.5 6" stroke-width="1.5"/>
+                <path d="M5 8.5C6 7.8 7 7.6 10 8.5" stroke-width="1.5"/>
+                <circle cx="7.5" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/>
+                <rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/>
+                <rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="sc-body">
+
+            <!-- Week strip — faded, no workouts scheduled -->
+            <div class="week-strip no-goal-strip" aria-hidden="true">
+              <div class="ws-header">
+                <div class="ws-nav-group">
+                  <button class="ws-nav" tabindex="-1">
+                    <svg width="6" height="11" viewBox="0 0 6 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 1L1 5.5L5 10"/></svg>
+                  </button>
+                  <button class="ws-nav" tabindex="-1">
+                    <svg width="6" height="11" viewBox="0 0 6 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1L5 5.5L1 10"/></svg>
+                  </button>
+                </div>
+                <div class="ws-month">Julho 2025</div>
+                <button class="ws-hoje" tabindex="-1">Hoje</button>
+              </div>
+              <!-- Static 7-day strip: Mon 14 – Sun 20, today=16 active, no dots -->
+              <div class="week-cells">
+                <div class="wc past">
+                  <div class="wc-lbl">Seg</div>
+                  <div class="wc-num-wrap"><div class="wc-num">14</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc past">
+                  <div class="wc-lbl">Ter</div>
+                  <div class="wc-num-wrap"><div class="wc-num">15</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc active">
+                  <div class="wc-lbl">Qua</div>
+                  <div class="wc-num-wrap"><div class="wc-num">16</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc">
+                  <div class="wc-lbl">Qui</div>
+                  <div class="wc-num-wrap"><div class="wc-num">17</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc">
+                  <div class="wc-lbl">Sex</div>
+                  <div class="wc-num-wrap"><div class="wc-num">18</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc">
+                  <div class="wc-lbl">Sáb</div>
+                  <div class="wc-num-wrap"><div class="wc-num">19</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+                <div class="wc">
+                  <div class="wc-lbl">Dom</div>
+                  <div class="wc-num-wrap"><div class="wc-num">20</div></div>
+                  <div class="wc-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No-goal empty state -->
+            <div class="no-goal-state" data-od-id="plan-no-goal-state">
+              <div class="ngs-icon-wrap" aria-hidden="true">
+                <!-- Target / goal icon -->
+                <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="17" cy="17" r="14"/>
+                  <circle cx="17" cy="17" r="9"/>
+                  <circle cx="17" cy="17" r="4"/>
+                  <line x1="17" y1="1" x2="17" y2="6"/>
+                  <line x1="17" y1="28" x2="17" y2="33"/>
+                  <line x1="1" y1="17" x2="6" y2="17"/>
+                  <line x1="28" y1="17" x2="33" y2="17"/>
+                </svg>
+              </div>
+
+              <div class="ngs-headline">Sem meta definida</div>
+              <div class="ngs-body">
+                Responda à avaliação para criarmos seu plano de treino personalizado com base no seu nível e objetivos.
+              </div>
+
+              <button class="btn-assessment" data-od-id="plan-assessment-cta">
+                Fazer Avaliação
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="1" y1="5" x2="12" y2="5"/>
+                  <polyline points="8,1 12,5 8,9"/>
+                </svg>
+              </button>
+
+              <div class="ngs-hint">Leva apenas 2 minutos</div>
+            </div>
+
+          </div><!-- /sc-body -->
+
+          <!-- Tab bar -->
+          <div class="mini-tab-bar" aria-label="Navegação principal">
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 6L7 1L12 6V12H9V8.5H5V12H2Z"/>
+              </svg>
+              <div class="mt-lbl">Home</div>
+            </div>
+            <div class="mt act" role="tab" aria-selected="true">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1.5" y="2" width="11" height="11" rx="2"/>
+                <line x1="1.5" y1="5.5" x2="12.5" y2="5.5"/>
+                <line x1="4.5" y1="0.5" x2="4.5" y2="3.5"/>
+                <line x1="9.5" y1="0.5" x2="9.5" y2="3.5"/>
+              </svg>
+              <div class="mt-lbl">Plano</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="7" cy="7" r="6"/>
+                <polygon points="5.5,4.5 10.5,7 5.5,9.5" fill="currentColor" stroke="none"/>
+              </svg>
+              <div class="mt-lbl">Correr</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <polyline points="1,11 4.5,7 7,9.5 10.5,4.5 13,2"/>
+                <polyline points="9.5,2 13,2 13,5.5"/>
+              </svg>
+              <div class="mt-lbl">Histórico</div>
+            </div>
+            <div class="mt" role="tab">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <circle cx="7" cy="4.5" r="2.5"/>
+                <path d="M1.5 12.5C1.5 10 4 8 7 8s5.5 2 5.5 4.5"/>
+              </svg>
+              <div class="mt-lbl">Perfil</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="phone-label">S3 · Plano — Sem Meta</div>
+    </div>
+
+  </div><!-- /screens-rail -->
+
+  <script>
+    const MONTH_OFFSET = 1; // July 1 = Tuesday → Mon-start offset
+    const MONTH_DAYS   = 31;
+    const TODAY        = 16;
+
+    const workouts = {
+      2:  { type:'easy',      label:'FÁCIL', c:'success', name:'Corrida Fácil 3K',   dur:'30 min' },
+      4:  { type:'intervals', label:'5K',    c:'primary', name:'Intervalado 5K',      dur:'45 min' },
+      7:  { type:'sprint',    label:'SPR',   c:'danger',  name:'Sprint 8×200m',       dur:'52 min' },
+      9:  { type:'easy',      label:'FÁCIL', c:'success', name:'Corrida Fácil 3K',   dur:'30 min' },
+      11: { type:'long',      label:'LONGO', c:'violet',  name:'Corrida Longa 12K',  dur:'75 min' },
+      14: { type:'intervals', label:'5K',    c:'primary', name:'Intervalado 5K',      dur:'45 min' },
+      16: { type:'easy',      label:'FÁCIL', c:'success', name:'Corrida Fácil',      dur:'30 min' },
+      18: { type:'sprint',    label:'SPR',   c:'danger',  name:'Sprint 8×200m',       dur:'52 min' },
+      21: { type:'long',      label:'LONGO', c:'violet',  name:'Corrida Longa 12K',  dur:'75 min' },
+      23: { type:'easy',      label:'FÁCIL', c:'success', name:'Corrida Fácil',      dur:'30 min' },
+      25: { type:'intervals', label:'INT',   c:'primary', name:'Intervalado',         dur:'45 min' },
+      28: { type:'sprint',    label:'SPR',   c:'danger',  name:'Sprint',              dur:'52 min' },
+    };
+
+    const completed = new Set(Object.keys(workouts).map(Number).filter(d => d < TODAY));
+
+    function weekMonday(d) {
+      const dow = (d - 1 + MONTH_OFFSET) % 7; // 0=Mon…6=Sun
+      return d - dow;
+    }
+
+    let weekStart = weekMonday(TODAY);
+    let dragging  = null;
+
+    function dayOfWeek(d) { return (d - 1 + MONTH_OFFSET) % 7; }
+    function dayAbbr(d)   { return ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'][dayOfWeek(d)]; }
+
+    function colorOf(c) {
+      return {
+        primary: { bg:'var(--primary-soft)', border:'var(--primary-b)', text:'var(--primary)' },
+        success: { bg:'var(--success-soft)', border:'var(--success-b)', text:'var(--success)' },
+        danger:  { bg:'var(--danger-soft)',  border:'var(--danger-b)',  text:'var(--danger)'  },
+        violet:  { bg:'var(--violet-soft)',  border:'var(--violet-b)',  text:'var(--violet)'  },
+      }[c];
+    }
+
+    function renderAll() { renderWeekStrip(); renderDayList(); }
+
+    function renderWeekStrip() {
+      const wrap = document.getElementById('week-cells');
+      wrap.innerHTML = '';
+      for (let i = 0; i < 7; i++) {
+        const d = weekStart + i;
+        if (d > MONTH_DAYS) break;
+        const today  = d === TODAY;
+        const past   = d < TODAY;
+        const hasW   = !!workouts[d];
+        const done   = completed.has(d);
+        const dotClr = done ? 'var(--success)' : hasW ? (today ? 'var(--primary)' : 'var(--text-3)') : 'transparent';
+
+        const cell = document.createElement('div');
+        cell.className = `wc${today ? ' active' : ''}${past ? ' past' : ''}`;
+        cell.dataset.day = d;
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('aria-label', `${dayAbbr(d)}, ${d} de julho`);
+        cell.innerHTML = `
+          <div class="wc-lbl">${dayAbbr(d)}</div>
+          <div class="wc-num-wrap"><div class="wc-num">${d}</div></div>
+          <div class="wc-dot${hasW ? ' visible' : ''}" style="background:${dotClr};"></div>
+        `;
+        cell.addEventListener('click', () => {
+          document.querySelector(`.day-section[data-day="${d}"]`)
+            ?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        });
+        cell.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') cell.click();
+        });
+        wrap.appendChild(cell);
+      }
+    }
+
+    function renderDayList() {
+      const list = document.getElementById('day-list');
+      list.innerHTML = '';
+      const end = Math.min(weekStart + 13, MONTH_DAYS);
+
+      for (let d = weekStart; d <= end; d++) {
+        const today = d === TODAY;
+        const past  = d < TODAY;
+        const done  = completed.has(d);
+        const w     = workouts[d];
+
+        const section = document.createElement('div');
+        section.className = 'day-section';
+        section.dataset.day = d;
+
+        const lblClass = today ? 'ds-label is-today' : past ? 'ds-label is-past' : 'ds-label';
+        const badge = done
+          ? '<div class="ds-done">Concluído</div>'
+          : today ? '<div class="ds-today-pill">Hoje</div>' : '';
+        section.innerHTML = `<div class="ds-header"><div class="${lblClass}">${dayAbbr(d)}, ${d} jul</div>${badge}</div>`;
+
+        section.appendChild(w ? createWorkoutCard(d, w, done) : createEmptySlot(d));
+
+        if (!done) {
+          section.addEventListener('dragover', e => {
+            if (dragging === null || dragging === d) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            section.classList.add('drag-over');
+          });
+          section.addEventListener('dragleave', e => {
+            if (!section.contains(e.relatedTarget)) section.classList.remove('drag-over');
+          });
+          section.addEventListener('drop', e => {
+            e.preventDefault();
+            section.classList.remove('drag-over');
+            const src = dragging;
+            if (src === null || src === d) return;
+            if (workouts[d]) {
+              [workouts[src], workouts[d]] = [workouts[d], workouts[src]];
+            } else {
+              workouts[d] = workouts[src];
+              delete workouts[src];
+            }
+            renderAll();
+            requestAnimationFrame(() => {
+              const tgt = document.querySelector(`.day-section[data-day="${d}"]`);
+              if (!tgt) return;
+              tgt.style.transition = 'background 0ms';
+              tgt.style.background = 'rgba(14,165,233,.22)';
+              requestAnimationFrame(() => {
+                tgt.style.transition = 'background 600ms var(--ease)';
+                tgt.style.background = '';
+              });
+            });
+          });
+        }
+
+        list.appendChild(section);
+      }
+    }
+
+    function createWorkoutCard(d, w, isDone) {
+      const cv   = colorOf(w.c);
+      const card = document.createElement('div');
+      card.className = `wk-list-card${isDone ? ' done' : ''}`;
+      if (!isDone) card.draggable = true;
+
+      card.innerHTML = `
+        <div class="wk-thumb" style="background:${cv.bg};border:1px solid ${cv.border};">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="${cv.text}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            ${thumbPath(w.type)}
+          </svg>
+        </div>
+        <div class="wk-list-info">
+          <div class="wk-list-type" style="color:${cv.text};">${w.label}</div>
+          <div class="wk-list-name">${w.name}</div>
+          <div class="wk-list-stats">
+            <div class="wk-stat">
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                <circle cx="4.5" cy="4.5" r="3.5"/>
+                <polyline points="4.5,2.5 4.5,4.5 6,5.5"/>
+              </svg>
+              ${w.dur}
+            </div>
+          </div>
+        </div>
+        ${isDone ? '' : '<div class="drag-handle" aria-hidden="true"><span></span><span></span><span></span></div>'}
+      `;
+
+      if (!isDone) {
+        card.addEventListener('dragstart', e => {
+          dragging = d;
+          e.dataTransfer.setData('text/plain', String(d));
+          e.dataTransfer.effectAllowed = 'move';
+          requestAnimationFrame(() => card.classList.add('is-dragging'));
+        });
+        card.addEventListener('dragend', () => {
+          card.classList.remove('is-dragging');
+          document.querySelectorAll('.day-section.drag-over').forEach(s => s.classList.remove('drag-over'));
+          dragging = null;
+        });
+      }
+      return card;
+    }
+
+    function createEmptySlot(d) {
+      const slot = document.createElement('div');
+      slot.className = 'empty-slot';
+      slot.innerHTML = `
+        <button class="add-btn" aria-label="Adicionar treino em ${d} jul">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/>
+          </svg>
+          Adicionar treino
+        </button>
+      `;
+      return slot;
+    }
+
+    function thumbPath(type) {
+      switch (type) {
+        case 'sprint':    return '<polyline points="2,14 5,10 8,12 12,6 16,8"/><polyline points="12,6 16,6 16,10"/>';
+        case 'long':      return '<path d="M2 10 Q5.5 5 9 10 Q12.5 15 16 10"/>';
+        case 'intervals': return '<rect x="2" y="10" width="3.5" height="6" rx="1"/><rect x="7.25" y="6" width="3.5" height="10" rx="1"/><rect x="12.5" y="2" width="3.5" height="14" rx="1"/>';
+        default:          return '<path d="M2 12 C5 9 7 7 9 7 C11 7 13 9 16 6"/><circle cx="13.5" cy="4.5" r="1.5" fill="currentColor" stroke="none"/>';
+      }
+    }
+
+    // Week navigation
+    document.getElementById('ws-prev').addEventListener('click', () => {
+      if (weekStart - 7 >= 1) { weekStart -= 7; renderAll(); }
+    });
+    document.getElementById('ws-next').addEventListener('click', () => {
+      if (weekStart + 7 <= MONTH_DAYS) { weekStart += 7; renderAll(); }
+    });
+    document.getElementById('ws-hoje').addEventListener('click', () => {
+      weekStart = weekMonday(TODAY); renderAll();
+    });
+
+    renderAll();
+  </script>
+
+</body>
+</html>

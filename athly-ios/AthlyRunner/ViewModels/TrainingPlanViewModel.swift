@@ -740,6 +740,23 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
+    /// Reagenda um treino para `newDate` (drag-and-drop no calendário do Plano) e re-agenda
+    /// as notificações locais, já que a data mudou.
+    func rescheduleWorkout(_ workout: WorkoutModel, to newDate: Date) async {
+        let iso = ISO8601DateFormatter().string(from: newDate)
+        do {
+            let updated = try await APIClient.shared.rescheduleWorkout(workoutId: workout.id, newDate: iso)
+            replaceWorkout(updated)
+            await NotificationService.shared.reschedule(workouts: allWorkouts)
+        } catch is CancellationError {
+            // ignored
+        } catch let error as URLError where error.code == .cancelled {
+            // ignored
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Background generation polling
 
     private func startGenerationPolling(

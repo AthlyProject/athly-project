@@ -5,7 +5,6 @@ struct MainTabView: View {
     @State private var selectedTab: AppTab = .dashboard
     @State private var isRunInProgress = false
     @State private var pendingWorkout: WorkoutModel?
-    @State private var planViewMode: PlanView.ViewMode = .list
 
     var body: some View {
         Group {
@@ -15,7 +14,6 @@ struct MainTabView: View {
                     selectedTab: $selectedTab,
                     pendingWorkout: $pendingWorkout,
                     onOpenPlanCalendar: {
-                        planViewMode = .calendar
                         withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .plan }
                     }
                 )
@@ -23,7 +21,7 @@ struct MainTabView: View {
                 PlanView(onStartWorkout: { workout in
                     pendingWorkout = workout
                     withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .run }
-                }, viewMode: $planViewMode)
+                })
             case .run:
                 RunStartView(isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
             case .history:

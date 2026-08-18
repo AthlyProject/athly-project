@@ -21,7 +21,7 @@ import {
   type LongitudinalWeek,
   type DeterministicPlannerContext,
 } from './prompts/planner-prompt';
-import { buildGoalParserPrompt, type ParsedGoal } from './prompts/goal-parser-prompt';
+import type { ParsedGoal } from './prompts/goal-parser-prompt';
 import type { AnalyzedSession } from './workout-execution-analyzer.service';
 import type { PlannedWeek } from './periodization';
 import {
@@ -188,34 +188,6 @@ export const plannerResponseSchema = {
   required: ['analysis', 'weekPlan'],
 };
 
-export const goalParserResponseSchema = {
-  type: 'object',
-  properties: {
-    isRunningRelated: { type: 'boolean' },
-    targetDistance: { type: 'string', nullable: true },
-    targetTime: { type: 'string', nullable: true },
-    eventDate: { type: 'string', nullable: true },
-    eventName: { type: 'string', nullable: true },
-    experienceLevel: {
-      type: 'string',
-      enum: ['beginner', 'intermediate', 'advanced'],
-      nullable: true,
-    },
-    summary: { type: 'string' },
-    rejectionReason: { type: 'string', nullable: true },
-  },
-  required: [
-    'isRunningRelated',
-    'targetDistance',
-    'targetTime',
-    'eventDate',
-    'eventName',
-    'experienceLevel',
-    'summary',
-    'rejectionReason',
-  ],
-};
-
 const GEMINI_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
   'gemini-2.5-flash-lite': { input: 0.1, output: 0.4 },
   'gemini-2.5-flash': { input: 0.3, output: 2.5 },
@@ -230,7 +202,6 @@ const GEMINI_PRICING_USD_PER_1M: Record<string, { input: number; output: number 
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private readonly defaultPlannerModelName = 'gemini-3-flash-preview';
-  private readonly defaultGoalParserModelName = 'gemini-3.1-flash-lite';
   // Quantas vezes regerar quando a IA devolve treino degenerado (bloco único).
   private readonly MAX_STRUCTURE_ATTEMPTS = 3;
 
@@ -246,12 +217,6 @@ export class GeminiService {
 
   private plannerModelName(): string {
     return this.configService.get<string>('GEMINI_PLANNER_MODEL') || this.defaultPlannerModelName;
-  }
-
-  private goalParserModelName(): string {
-    return (
-      this.configService.get<string>('GEMINI_GOAL_PARSER_MODEL') || this.defaultGoalParserModelName
-    );
   }
 
   async generatePlan(
@@ -305,37 +270,6 @@ export class GeminiService {
     );
 
     return this.runWithStructureGate(prompt, undefined, this.plannerModelName());
-  }
-
-  async parseGoal(goalText: string): Promise<ParsedGoal> {
-    const modelName = this.goalParserModelName();
-    const prompt = buildGoalParserPrompt(goalText);
-
-    let responseText: string;
-    try {
-      const result = await this.generateJson(prompt, modelName, goalParserResponseSchema);
-      responseText = result.rawResponse;
-      this.logger.log(this.formatUsageLog('goal_parser', result.usage));
-    } catch (err) {
-      throw new BadGatewayException(
-        `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    let parsed: ParsedGoal;
-    try {
-      parsed = JSON.parse(responseText) as ParsedGoal;
-    } catch {
-      throw new BadGatewayException(
-        'Gemini AI returned an invalid JSON response for goal parsing.',
-      );
-    }
-
-    if (typeof parsed.isRunningRelated !== 'boolean' || !parsed.summary) {
-      throw new BadGatewayException('Gemini AI goal parsing response is missing required fields.');
-    }
-
-    return parsed;
   }
 
   /**
