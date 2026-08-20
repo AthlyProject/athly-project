@@ -5,6 +5,8 @@ struct WorkoutDetailView: View {
     var onComplete: (() -> Void)? = nil
     /// Inicia a corrida deste treino (janela de 2 dias). Quando nil, o botão "Iniciar" não aparece.
     var onStart: ((WorkoutModel) -> Void)? = nil
+    /// Pula o treino agendado. Quando nil, o botão "Pular" não aparece.
+    var onSkip: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
@@ -55,6 +57,18 @@ struct WorkoutDetailView: View {
                         .buttonStyle(AthlyGradientButtonStyle())
                         .padding(.top, 8)
                     }
+                }
+                if workout.status == .scheduled, let onSkip {
+                    Button {
+                        onSkip()
+                    } label: {
+                        HStack {
+                            Image(systemName: "forward.fill")
+                            Text("Pular treino")
+                        }
+                    }
+                    .buttonStyle(AthlySecondaryButtonStyle())
+                    .padding(.top, 8)
                 }
                 if workout.sportType == .running,
                    (workout.status == .done || workout.status == .partial),

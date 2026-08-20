@@ -11,7 +11,6 @@ struct PlanView: View {
 
     @State private var visibleWeekStart: Date = PlanView.weekStart(for: Date())
     @State private var showAssessment = false
-    @State private var showAnalysisDetails = false
     @State private var showPaywall = false
     @State private var workoutToComplete: WorkoutModel?
     /// Dia atualmente sob o cursor durante um drag de reagendamento (destaque visual).
@@ -67,13 +66,6 @@ struct PlanView: View {
                     Task { await planVM.generateNextWeekWithHealth() }
                 }
             }
-            .sheet(isPresented: $showAnalysisDetails) {
-                if let analysis = planVM.lastAnalysis {
-                    AnalysisSummarySheet(analysis: analysis)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
-                }
-            }
             .sheet(item: $workoutToComplete) { workout in
                 WorkoutCompletionSheet(
                     workout: workout,
@@ -122,19 +114,6 @@ struct PlanView: View {
                         dayList
 
                         generateButton
-
-                        if let analysis = planVM.lastAnalysis {
-                            Button {
-                                showAnalysisDetails = true
-                            } label: {
-                                AnalysisSummaryCard(
-                                    analysis: analysis,
-                                    previousWeekAnalysis: planVM.currentWeekGoal?.previousWeekAnalysis,
-                                    isInteractive: true
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
                     .padding(.top, 8)
@@ -313,8 +292,10 @@ struct PlanView: View {
         .dropDestination(for: WorkoutModel.self) { items, _ in
             guard let dragged = items.first else { return false }
             guard !calendar.isDate(dragged.parsedDate, inSameDayAs: day) else { return false }
-            let newDate = combine(day: day, timeFrom: dragged.parsedDate)
-            Task { await planVM.rescheduleWorkout(dragged, to: newDate) }
+            // Envia só o dia (yyyy-MM-dd) no calendário local — o backend guarda a data,
+            // então serializar como timestamp UTC deslocava o dia em fusos a leste de UTC.
+            let dayString = Self.idFormatter.string(from: day)
+            Task { await planVM.rescheduleWorkout(dragged, toDay: dayString) }
             return true
         } isTargeted: { targeted in
             if targeted {
@@ -331,7 +312,8 @@ struct PlanView: View {
             WorkoutDetailView(
                 workout: workout,
                 onComplete: { workoutToComplete = workout },
-                onStart: onStartWorkout
+                onStart: onStartWorkout,
+                onSkip: { Task { await planVM.skipWorkout(workout) } }
             )
         } label: {
             HStack(spacing: 10) {
@@ -383,20 +365,6 @@ struct PlanView: View {
             .opacity(isDone ? 0.55 : 1)
         }
         .buttonStyle(.plain)
-        .contextMenu {
-            if workout.status == .scheduled {
-                Button {
-                    workoutToComplete = workout
-                } label: {
-                    Label("Concluir treino", systemImage: "checkmark.circle")
-                }
-                Button {
-                    Task { await planVM.skipWorkout(workout) }
-                } label: {
-                    Label("Pular treino", systemImage: "forward.fill")
-                }
-            }
-        }
     }
 
     private var restSlot: some View {
@@ -602,21 +570,6 @@ struct PlanView: View {
         planVM.allWorkouts
             .filter { $0.isOnDay(day) && $0.sportType != .other }
             .sorted { $0.parsedDate < $1.parsedDate }
-    }
-
-    /// Junta a data (ano/mês/dia) de `day` com o horário original do treino, preservando a
-    /// hora marcada ao mover o treino para outro dia.
-    private func combine(day: Date, timeFrom original: Date) -> Date {
-        let dayComps = calendar.dateComponents([.year, .month, .day], from: day)
-        let timeComps = calendar.dateComponents([.hour, .minute, .second], from: original)
-        var merged = DateComponents()
-        merged.year = dayComps.year
-        merged.month = dayComps.month
-        merged.day = dayComps.day
-        merged.hour = timeComps.hour
-        merged.minute = timeComps.minute
-        merged.second = timeComps.second
-        return calendar.date(from: merged) ?? day
     }
 
     private func dayID(_ day: Date) -> String {

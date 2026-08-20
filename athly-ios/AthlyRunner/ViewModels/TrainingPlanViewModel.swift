@@ -742,10 +742,12 @@ final class TrainingPlanViewModel: ObservableObject {
 
     /// Reagenda um treino para `newDate` (drag-and-drop no calendário do Plano) e re-agenda
     /// as notificações locais, já que a data mudou.
-    func rescheduleWorkout(_ workout: WorkoutModel, to newDate: Date) async {
-        let iso = ISO8601DateFormatter().string(from: newDate)
+    /// `dayString` é uma data pura `yyyy-MM-dd` no calendário local. O backend só persiste
+    /// o dia (retorna a data sem horário), então enviar timestamp UTC deslocava o dia em
+    /// fusos a leste de UTC — a data pura mantém o dia estável em qualquer fuso.
+    func rescheduleWorkout(_ workout: WorkoutModel, toDay dayString: String) async {
         do {
-            let updated = try await APIClient.shared.rescheduleWorkout(workoutId: workout.id, newDate: iso)
+            let updated = try await APIClient.shared.rescheduleWorkout(workoutId: workout.id, newDate: dayString)
             replaceWorkout(updated)
             await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch is CancellationError {

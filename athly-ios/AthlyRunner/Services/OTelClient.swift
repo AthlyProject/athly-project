@@ -16,7 +16,10 @@ enum OTelClient {
         guard
             let endpointStr = Bundle.main.object(forInfoDictionaryKey: "OTEL_ENDPOINT") as? String,
             !endpointStr.isEmpty,
-            let baseURL = URL(string: endpointStr)
+            let baseURL = URL(string: endpointStr),
+            // Bail out on a host-less endpoint (e.g. "http:" from an xcconfig "//" comment
+            // truncation) — otherwise the exporter posts to "http://v1/traces" and spams -1003.
+            baseURL.host?.isEmpty == false
         else { return }
 
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
