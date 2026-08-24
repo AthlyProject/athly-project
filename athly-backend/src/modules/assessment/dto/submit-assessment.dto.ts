@@ -15,6 +15,7 @@ export class SubmitAssessmentDto {
   @ApiPropertyOptional() @IsOptional() @IsString() objectiveDistance?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() objectiveType?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() targetTime?: string;
+  @ApiPropertyOptional({ type: [String] }) @IsOptional() availableDays?: string[];
 
   @ApiProperty() @IsBoolean() termsAccepted: boolean;
 }

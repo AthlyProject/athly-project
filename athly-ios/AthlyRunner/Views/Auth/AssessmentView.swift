@@ -20,8 +20,11 @@ struct AssessmentView: View {
     @State private var objectiveType = ""
     @State private var targetTimeText = ""
 
-    private var totalSteps: Int { objective == "personal" ? 5 : 3 }
-    private var isLastStep: Bool { step == totalSteps - 1 && (step != 2 || !objective.isEmpty) }
+    // MARK: - P9: Dias disponíveis (último passo em ambos os finais)
+    @State private var availableDays: Set<String> = ["monday", "tuesday", "wednesday", "friday", "saturday"]
+
+    private var totalSteps: Int { objective == "personal" ? 6 : 4 }
+    private var isLastStep: Bool { step == totalSteps - 1 }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
         ("Seu nível\nno momento",       "Seja honesto — vamos ajustar seus treinos"),
@@ -128,8 +131,17 @@ struct AssessmentView: View {
 
     // MARK: - Screen head
 
+    // O passo de dias é sempre o último e seu índice varia por caminho (3 fitness / 5 pessoal),
+    // então não pode ser indexado direto em `screenMeta` (índice trocado/fora de faixa).
+    private var currentMeta: (title: String, subtitle: String) {
+        if step == totalSteps - 1 {
+            return ("Seus dias\nde treino", "Quais dias da semana você quer treinar?")
+        }
+        return screenMeta[step]
+    }
+
     private var screenHead: some View {
-        let meta = screenMeta[step]
+        let meta = currentMeta
         return VStack(alignment: .leading, spacing: 4) {
             Text(meta.title)
                 .font(AthlyTheme.Typography.heading(19))
@@ -150,8 +162,10 @@ struct AssessmentView: View {
         case 0: step4
         case 1: step5
         case 2: step6
-        case 3: stepDistancia
-        default: stepTipo
+        case 3:
+            if objective == "personal" { stepDistancia } else { stepDays }
+        case 4: stepTipo
+        default: stepDays
         }
     }
 
@@ -176,8 +190,8 @@ struct AssessmentView: View {
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(isSubmitting || (step == 2 && objective.isEmpty))
-        .opacity((step == 2 && objective.isEmpty) ? 0.5 : 1)
+        .disabled(isSubmitting || (step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty))
+        .opacity(((step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty)) ? 0.5 : 1)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
         .padding(.top, 10)
@@ -204,6 +218,7 @@ struct AssessmentView: View {
             objectiveDistance: objectiveDistance.isEmpty ? nil : objectiveDistance,
             objectiveType: objectiveType.isEmpty ? nil : objectiveType,
             targetTime: targetTimeText.isEmpty ? nil : targetTimeText,
+            availableDays: Self.weekdays.map(\.key).filter { availableDays.contains($0) },
             termsAccepted: true
         )
 
@@ -315,70 +330,77 @@ private extension AssessmentView {
 // MARK: - P5: Pace Confortável
 
 private extension AssessmentView {
-    var paceLabel: String {
-        String(format: "%d:%02d", paceSeconds / 60, paceSeconds % 60)
-    }
-
     var paceKmhLabel: String {
         String(format: "≈ %.1f km/h", 3600.0 / Double(paceSeconds))
     }
 
+    // Faixa de minutos exibida no drum picker (3:00 a 15:59 /km cobre do elite ao caminhando).
+    private static let paceMinuteRange = 3...15
+
+    // Bindings que decompõem/recompõem `paceSeconds` (fonte da verdade) nos dois cilindros.
+    private var paceMinutesBinding: Binding<Int> {
+        Binding(
+            get: { paceSeconds / 60 },
+            set: { paceSeconds = $0 * 60 + (paceSeconds % 60) }
+        )
+    }
+
+    private var paceSecondsBinding: Binding<Int> {
+        Binding(
+            get: { paceSeconds % 60 },
+            set: { paceSeconds = (paceSeconds / 60) * 60 + $0 }
+        )
+    }
+
     var step5: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Dial card
+            // Drum picker card
             VStack(spacing: 6) {
                 Text("PACE CONFORTÁVEL")
                     .font(AthlyTheme.Typography.label())
                     .foregroundStyle(AthlyTheme.Color.primary)
                     .kerning(1.2)
 
-                Text(paceLabel)
-                    .font(AthlyTheme.Typography.mono(52))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.easeOut(duration: 0.1), value: paceSeconds)
+                HStack(spacing: 0) {
+                    Picker("Minutos", selection: paceMinutesBinding) {
+                        ForEach(Self.paceMinuteRange, id: \.self) { m in
+                            Text("\(m)")
+                                .font(AthlyTheme.Typography.mono(24))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .tag(m)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(width: 72)
 
-                Text("min / km")
-                    .font(AthlyTheme.Typography.body(12))
-                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    Text(":")
+                        .font(AthlyTheme.Typography.mono(24))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+
+                    Picker("Segundos", selection: paceSecondsBinding) {
+                        ForEach(0..<60, id: \.self) { s in
+                            Text(String(format: "%02d", s))
+                                .font(AthlyTheme.Typography.mono(24))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .tag(s)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(width: 72)
+
+                    Text("min / km")
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        .padding(.leading, 10)
+                }
+                .frame(height: 150)
 
                 Text(paceKmhLabel)
                     .font(AthlyTheme.Typography.mono(14))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
-
-                HStack(spacing: 10) {
-                    Button {
-                        paceSeconds = min(900, paceSeconds + 5)
-                    } label: {
-                        Text("−")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(AthlyTheme.Color.textPrimary)
-                            .frame(width: 48, height: 48)
-                            .background(AthlyTheme.Color.surfaceCardElevated)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(AthlyTheme.Color.borderMid, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer().frame(width: 8)
-
-                    Button {
-                        paceSeconds = max(180, paceSeconds - 5)
-                    } label: {
-                        Text("+")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 48, height: 48)
-                            .background(AthlyTheme.Color.primary)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
+            .padding(.vertical, 20)
             .padding(.horizontal, 16)
             .background(AthlyTheme.Color.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.xl, style: .continuous))
@@ -387,7 +409,7 @@ private extension AssessmentView {
                     .stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1)
             )
 
-            Text("Toque + ou − para ajustar em 5 segundos")
+            Text("Gire os cilindros para ajustar seu ritmo")
                 .font(AthlyTheme.Typography.body(10))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -594,5 +616,57 @@ private extension AssessmentView {
                 )
             }
         }
+    }
+}
+
+// MARK: - P9: Dias disponíveis (último passo em ambos os finais)
+
+private extension AssessmentView {
+    // Chaves em inglês minúsculo (contrato do backend / planner); rótulos pt-BR.
+    static let weekdays: [(key: String, label: String)] = [
+        ("sunday",    "Dom"),
+        ("monday",    "Seg"),
+        ("tuesday",   "Ter"),
+        ("wednesday", "Qua"),
+        ("thursday",  "Qui"),
+        ("friday",    "Sex"),
+        ("saturday",  "Sáb"),
+    ]
+
+    var stepDays: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                ForEach(Self.weekdays, id: \.key) { day in
+                    dayToggle(key: day.key, label: day.label)
+                }
+            }
+
+            Text("Selecione ao menos um dia — você pode ajustar depois no perfil.")
+                .font(AthlyTheme.Typography.body(10))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    func dayToggle(key: String, label: String) -> some View {
+        let sel = availableDays.contains(key)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                if sel { availableDays.remove(key) } else { availableDays.insert(key) }
+            }
+        } label: {
+            Text(label)
+                .font(AthlyTheme.Typography.semibold(13))
+                .foregroundStyle(sel ? .white : AthlyTheme.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(sel ? AnyShapeStyle(AthlyTheme.Gradient.brand) : AnyShapeStyle(AthlyTheme.Color.surfaceCard))
+                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                        .stroke(sel ? Color.clear : AthlyTheme.Color.borderMid, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

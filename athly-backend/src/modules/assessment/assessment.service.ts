@@ -30,6 +30,8 @@ export class AssessmentService {
           comfortPaceSeconds: dto.comfortPaceSeconds ?? undefined,
           restingHeartRate: dto.restingHeartRate ?? undefined,
           maxHeartRate: dto.maxHeartRate ?? undefined,
+          // Vazio → mantém o fallback do planner (DEFAULT_AVAILABLE_DAYS).
+          availableDays: dto.availableDays?.length ? dto.availableDays : undefined,
           assessmentCompleted: true,
         },
       }),

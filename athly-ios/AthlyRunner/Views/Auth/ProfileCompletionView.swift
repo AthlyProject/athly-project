@@ -37,18 +37,18 @@ struct ProfileCompletionView: View {
                         nameField
                         genderSection
                         birthDateSection
-                        stepperSection(
+                        drumPickerSection(
                             label: "Peso",
-                            value: weightKg,
-                            unit: "kg",
-                            range: 30...200
-                        ) { weightKg += $0 }
-                        stepperSection(
+                            selection: $weightKg,
+                            range: 30...200,
+                            unit: "kg"
+                        )
+                        drumPickerSection(
                             label: "Altura",
-                            value: heightCm,
-                            unit: "cm",
-                            range: 100...250
-                        ) { heightCm += $0 }
+                            selection: $heightCm,
+                            range: 100...250,
+                            unit: "cm"
+                        )
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -106,7 +106,7 @@ struct ProfileCompletionView: View {
         VStack(alignment: .leading, spacing: 5) {
             sectionLabel("Nome completo")
             HStack {
-                TextField("Gabriel Fonseca", text: $name)
+                TextField("", text: $name)
                     .font(AthlyTheme.Typography.body(13))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
                     .textContentType(.name)
@@ -189,39 +189,35 @@ struct ProfileCompletionView: View {
         }
     }
 
-    // MARK: - Stepper
+    // MARK: - Drum picker
 
-    private func stepperSection(
+    private func drumPickerSection(
         label: String,
-        value: Int,
-        unit: String,
+        selection: Binding<Int>,
         range: ClosedRange<Int>,
-        onStep: @escaping (Int) -> Void
+        unit: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionLabel(label)
-            HStack {
-                stepperButton(symbol: "−", color: AthlyTheme.Color.surfaceCardElevated, textColor: AthlyTheme.Color.textPrimary) {
-                    if value > range.lowerBound { onStep(-1) }
-                }
+            HStack(spacing: 8) {
                 Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(value)")
-                        .font(AthlyTheme.Typography.mono(24))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        .contentTransition(.numericText())
-                        .animation(.easeOut(duration: 0.12), value: value)
-                    Text(unit)
-                        .font(AthlyTheme.Typography.medium(13))
-                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                Picker(label, selection: selection) {
+                    ForEach(range, id: \.self) { v in
+                        Text("\(v)")
+                            .font(AthlyTheme.Typography.mono(24))
+                            .foregroundStyle(AthlyTheme.Color.textPrimary)
+                            .tag(v)
+                    }
                 }
+                .pickerStyle(.wheel)
+                .frame(width: 110, height: 120)
+                Text(unit)
+                    .font(AthlyTheme.Typography.medium(13))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
                 Spacer()
-                stepperButton(symbol: "+", color: AthlyTheme.Color.primary, textColor: .white) {
-                    if value < range.upperBound { onStep(1) }
-                }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.vertical, 6)
             .background(AthlyTheme.Color.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
             .overlay(
@@ -229,22 +225,6 @@ struct ProfileCompletionView: View {
                     .stroke(AthlyTheme.Color.borderMid, lineWidth: 1)
             )
         }
-    }
-
-    private func stepperButton(symbol: String, color: Color, textColor: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(symbol)
-                .font(.system(size: 20, weight: .light))
-                .foregroundStyle(textColor)
-                .frame(width: 36, height: 36)
-                .background(color)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(AthlyTheme.Color.borderMid, lineWidth: color == AthlyTheme.Color.surfaceCardElevated ? 1 : 0)
-                )
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Footer CTA

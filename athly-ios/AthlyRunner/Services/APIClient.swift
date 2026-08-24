@@ -584,6 +584,8 @@ struct AssessmentSubmissionRequest: Encodable, Sendable {
     var objectiveDistance: String?
     var objectiveType: String?
     var targetTime: String?
+    // P9 — Dias disponíveis para treinar (chaves em inglês: monday…sunday)
+    var availableDays: [String] = []
     // Required by backend
     var termsAccepted: Bool = true
 }
