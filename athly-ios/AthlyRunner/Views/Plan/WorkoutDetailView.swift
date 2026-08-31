@@ -22,6 +22,11 @@ struct WorkoutDetailView: View {
                 } else {
                     noBlocksCard
                 }
+                if (workout.status == .done || workout.status == .partial),
+                   let distM = workout.actualDistanceMeters,
+                   let durSec = workout.actualDurationSeconds {
+                    runSummarySection(distanceM: distM, durationSec: durSec)
+                }
                 if workout.canStartNow, let onStart {
                     Button {
                         onStart(workout)
@@ -67,7 +72,7 @@ struct WorkoutDetailView: View {
                             Text("Pular treino")
                         }
                     }
-                    .buttonStyle(AthlySecondaryButtonStyle())
+                    .buttonStyle(AthlyGhostButtonStyle())
                     .padding(.top, 8)
                 }
                 if workout.sportType == .running,
@@ -118,12 +123,23 @@ struct WorkoutDetailView: View {
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
             if let intensity = workout.intensity {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(AthlyTheme.Color.primary)
-                    Text("Intensidade \(Int(intensity))/10")
-                        .font(AthlyTheme.Typography.body(14))
+                HStack(spacing: 8) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(AthlyTheme.Color.warning)
+                    Text("Intensidade")
+                        .font(AthlyTheme.Typography.body(13))
                         .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    HStack(spacing: 3) {
+                        ForEach(1...10, id: \.self) { i in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(i <= Int(intensity) ? AthlyTheme.Color.warning : Color.white.opacity(0.08))
+                                .frame(width: 16, height: 5)
+                        }
+                    }
+                    Text("\(Int(intensity))/10")
+                        .font(AthlyTheme.Typography.mono(9))
+                        .foregroundStyle(AthlyTheme.Color.warning)
                 }
             }
         }
@@ -132,17 +148,78 @@ struct WorkoutDetailView: View {
     }
 
     private func descriptionSection(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Descrição")
-                .font(AthlyTheme.Typography.semibold(15))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .font(AthlyTheme.Typography.label())
+                .textCase(.uppercase)
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
             Text(text)
-                .font(AthlyTheme.Typography.body(15))
+                .font(AthlyTheme.Typography.body(14))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AthlyTheme.Spacing.sm)
         .athlyCard()
+    }
+
+    private func runSummarySection(distanceM: Double, durationSec: Double) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Sessão concluída")
+                .font(AthlyTheme.Typography.label())
+                .textCase(.uppercase)
+                .foregroundStyle(AthlyTheme.Color.success)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                runStatCell(value: String(format: "%.1f km", distanceM / 1000), key: "Distância", valueColor: AthlyTheme.Color.primary)
+                runStatCell(value: formatRunDuration(durationSec), key: "Duração")
+                if distanceM > 0 {
+                    runStatCell(value: formatPaceStat(durationSec: durationSec, distanceM: distanceM), key: "Pace /km")
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AthlyTheme.Spacing.sm)
+        .background(AthlyTheme.Color.success.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                .stroke(AthlyTheme.Color.success.opacity(0.22), lineWidth: 1)
+        )
+    }
+
+    private func runStatCell(value: String, key: String, valueColor: Color = AthlyTheme.Color.textPrimary) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(AthlyTheme.Typography.mono(15))
+                .foregroundStyle(valueColor)
+            Text(key)
+                .font(AthlyTheme.Typography.label())
+                .textCase(.uppercase)
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(AthlyTheme.Color.borderDark, lineWidth: 1)
+        )
+    }
+
+    private func formatRunDuration(_ sec: Double) -> String {
+        let s = Int(sec)
+        if s >= 3600 {
+            return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+        }
+        return String(format: "%d:%02d", s / 60, s % 60)
+    }
+
+    private func formatPaceStat(durationSec: Double, distanceM: Double) -> String {
+        let secPerKm = durationSec / (distanceM / 1000)
+        let min = Int(secPerKm) / 60
+        let sec = Int(secPerKm) % 60
+        return String(format: "%d:%02d", min, sec)
     }
 
     private func segmentsSection(_ ws: WorkoutSegments) -> some View {
@@ -251,7 +328,7 @@ private struct SegmentNodeView: View {
                 HStack {
                     Text(segment.label ?? kindLabel)
                         .font(AthlyTheme.Typography.semibold(14))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        .foregroundStyle(kindColor)
                     Spacer()
                     if let end = segment.end {
                         Text(formatEnd(end))
@@ -301,11 +378,11 @@ private struct SegmentNodeView: View {
 
     private var kindColor: Color {
         switch segment.kind {
-        case .warmup:   return .orange
-        case .work:     return AthlyTheme.Color.primary
-        case .recovery: return .blue
-        case .cooldown: return .teal
-        case .rest:     return Color(.systemGray)
+        case .warmup:   return AthlyTheme.Color.success
+        case .work:     return AthlyTheme.Color.error
+        case .recovery: return AthlyTheme.Color.primary
+        case .cooldown: return AthlyTheme.Color.secondary
+        case .rest:     return AthlyTheme.Color.textTertiary
         default:        return AthlyTheme.Color.secondary
         }
     }

@@ -32,6 +32,10 @@ run:
       value: "8C9GB8F87Q"
     - name: APNS_TOPIC
       value: "com.athly.runner"
+    - name: AWS_REGION
+      value: "eu-central-1"
+    - name: AWS_SQS_PLAN_GENERATION_QUEUE_URL
+      value: "https://sqs.eu-central-1.amazonaws.com/730335545778/training-plan-generation"
   secrets:
     - name: GEMINI_API_KEY
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"

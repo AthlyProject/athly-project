@@ -1,5 +1,4 @@
-import { Injectable, ConflictException, Logger, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import {
   PlanGenerationStatus,
   Prisma,
@@ -38,6 +37,7 @@ import { computeLongitudinalWeeks, computePreviousWeekAnalysis } from './weekly-
 import { TrainingReportService } from '../training-report/training-report.service';
 import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
 import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
+import { PlanGenerationSqsService } from './plan-generation-sqs.service';
 
 const PROMPT_VERSION = 'v3.1';
 const DETAILED_FIRST_GEN = 5;
@@ -56,9 +56,6 @@ const REP_EFFORT_PENALTY = 1.05;
 
 const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
 const GENERATION_POLL_AFTER_SECONDS = 5;
-const GENERATION_MAX_ATTEMPTS = 3;
-const GENERATION_LEASE_MS = 15 * 60 * 1000;
-const GENERATION_RETRY_DELAY_MS = 30 * 1000;
 
 type PlanningWindow = {
   weekDates: string[];
@@ -72,8 +69,6 @@ type PlanningWindow = {
 @Injectable()
 export class AiPlannerService {
   private readonly logger = new Logger(AiPlannerService.name);
-  private readonly workerId = randomUUID();
-  private generationDrainRunning = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -81,6 +76,7 @@ export class AiPlannerService {
     private readonly effortZoneService: EffortZoneService,
     private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
     private readonly trainingReportService: TrainingReportService,
+    private readonly planGenerationSqs: PlanGenerationSqsService,
   ) {}
 
   async planFromHealth(userId: string, input: PlanFromHealthDto, generationId?: string) {
@@ -500,12 +496,10 @@ export class AiPlannerService {
           },
         });
 
-    queueMicrotask(() => {
-      void this.drainGenerationQueue().catch((error) =>
-        this.logger.error(
-          `Falha ao iniciar worker de geração: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-      );
+    await this.planGenerationSqs.send({
+      generationId: job.id,
+      userId,
+      input: input as unknown as Record<string, unknown>,
     });
     return this.serializeGenerationJob(job);
   }
@@ -519,111 +513,6 @@ export class AiPlannerService {
     }
 
     return this.serializeGenerationJob(job);
-  }
-
-  async drainGenerationQueue(): Promise<void> {
-    if (this.generationDrainRunning) return;
-    this.generationDrainRunning = true;
-    try {
-      while (await this.processNextGenerationJob()) {
-        // Drena a fila localmente; leases tornam isto seguro entre várias instâncias.
-      }
-    } finally {
-      this.generationDrainRunning = false;
-    }
-  }
-
-  private async processNextGenerationJob(): Promise<boolean> {
-    const now = new Date();
-    const candidate = await this.prisma.planGenerationJob.findFirst({
-      where: {
-        attempts: { lt: GENERATION_MAX_ATTEMPTS },
-        OR: [
-          {
-            status: PlanGenerationStatus.QUEUED,
-            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
-          },
-          {
-            status: PlanGenerationStatus.PROCESSING,
-            leaseExpiresAt: { lt: now },
-          },
-        ],
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-    if (!candidate) return false;
-
-    const leaseOwner = `${this.workerId}:${candidate.id}`;
-    const leaseExpiresAt = new Date(Date.now() + GENERATION_LEASE_MS);
-    const claimed = await this.prisma.planGenerationJob.updateMany({
-      where: {
-        id: candidate.id,
-        attempts: { lt: GENERATION_MAX_ATTEMPTS },
-        OR: [
-          {
-            status: PlanGenerationStatus.QUEUED,
-            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: now } }],
-          },
-          {
-            status: PlanGenerationStatus.PROCESSING,
-            leaseExpiresAt: { lt: now },
-          },
-        ],
-      },
-      data: {
-        status: PlanGenerationStatus.PROCESSING,
-        attempts: { increment: 1 },
-        leaseOwner,
-        leaseExpiresAt,
-        error: null,
-      },
-    });
-    if (claimed.count === 0) return true;
-
-    const job = await this.prisma.planGenerationJob.findUniqueOrThrow({
-      where: { id: candidate.id },
-    });
-    const heartbeat = setInterval(() => {
-      void this.prisma.planGenerationJob
-        .updateMany({
-          where: { id: job.id, status: PlanGenerationStatus.PROCESSING, leaseOwner },
-          data: { leaseExpiresAt: new Date(Date.now() + GENERATION_LEASE_MS) },
-        })
-        .catch((error) =>
-          this.logger.warn(
-            `Falha no heartbeat da geração ${job.id}: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        );
-    }, 60_000);
-    heartbeat.unref();
-
-    try {
-      await this.planFromHealth(job.userId, job.payload as unknown as PlanFromHealthDto, job.id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const canRetry =
-        job.attempts < GENERATION_MAX_ATTEMPTS && !(err instanceof ConflictException);
-      await this.prisma.planGenerationJob.updateMany({
-        where: { id: job.id, status: PlanGenerationStatus.PROCESSING, leaseOwner },
-        data: canRetry
-          ? {
-              status: PlanGenerationStatus.QUEUED,
-              error: message,
-              leaseOwner: null,
-              leaseExpiresAt: new Date(Date.now() + GENERATION_RETRY_DELAY_MS),
-            }
-          : {
-              status: PlanGenerationStatus.FAILED,
-              error: message,
-              leaseOwner: null,
-              leaseExpiresAt: null,
-            },
-      });
-      this.logger.error(`Async weekly plan generation failed for user ${job.userId}: ${message}`);
-    } finally {
-      clearInterval(heartbeat);
-    }
-    return true;
   }
 
   private serializeGenerationJob(job: {

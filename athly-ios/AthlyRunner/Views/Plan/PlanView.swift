@@ -46,6 +46,12 @@ struct PlanView: View {
                                 .padding(.top, 8)
                         }
 
+                        if planVM.isGeneratingInBackground {
+                            generatingBanner
+                                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                                .padding(.top, 8)
+                        }
+
                         if planVM.trainingPlanResponse == nil {
                             noGoalState
                         } else {
@@ -455,6 +461,26 @@ struct PlanView: View {
         if planVM.isGenerating { return "Iniciando geração..." }
         if planVM.isGeneratingInBackground { return "Gerando em segundo plano" }
         return "Gerar Próxima Semana"
+    }
+
+    // MARK: - Generating banner
+
+    private var generatingBanner: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .tint(AthlyTheme.Color.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Seu treino está sendo preparado")
+                    .font(AthlyTheme.Typography.semibold(14))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Text("Isso pode levar até 3 minutos. Você será notificado quando estiver pronto.")
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+            }
+            Spacer()
+        }
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
     }
 
     // MARK: - No-goal state (S3)
