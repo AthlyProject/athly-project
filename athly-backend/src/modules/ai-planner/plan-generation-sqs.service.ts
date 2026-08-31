@@ -35,9 +35,6 @@ export class PlanGenerationSqsService {
       new SendMessageCommand({
         QueueUrl: this.queueUrl,
         MessageBody: JSON.stringify(body),
-        // Deduplicação por generationId (para filas FIFO) ou idempotência via lógica do consumer
-        MessageGroupId: body.userId,
-        MessageDeduplicationId: body.generationId,
       }),
     );
 
