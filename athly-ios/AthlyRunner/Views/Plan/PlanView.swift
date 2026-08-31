@@ -11,7 +11,6 @@ struct PlanView: View {
 
     @State private var visibleWeekStart: Date = PlanView.weekStart(for: Date())
     @State private var showAssessment = false
-    @State private var showPaywall = false
     @State private var workoutToComplete: WorkoutModel?
     /// Dia atualmente sob o cursor durante um drag de reagendamento (destaque visual).
     @State private var dropTargetDay: Date?
@@ -53,7 +52,9 @@ struct PlanView: View {
                         }
 
                         if planVM.trainingPlanResponse == nil {
-                            noGoalState
+                            if !planVM.isGeneratingInBackground {
+                                noGoalState
+                            }
                         } else {
                             planContent
                         }
@@ -113,13 +114,7 @@ struct PlanView: View {
 
                 ScrollView {
                     VStack(spacing: 12) {
-                        if let plan = planVM.trainingPlanResponse {
-                            planHeaderCard(plan)
-                        }
-
                         dayList
-
-                        generateButton
                     }
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
                     .padding(.top, 8)
@@ -152,20 +147,37 @@ struct PlanView: View {
 
                 Spacer()
 
-                Button {
-                    visibleWeekStart = Self.weekStart(for: Date())
-                } label: {
-                    Text("Hoje")
-                        .font(AthlyTheme.Typography.semibold(10))
-                        .textCase(.uppercase)
-                        .foregroundStyle(AthlyTheme.Color.primary)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 2)
-                        .background(AthlyTheme.Color.primarySoft)
-                        .overlay(Capsule().stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1))
-                        .clipShape(Capsule())
+                HStack(spacing: 8) {
+                    Button {
+                        visibleWeekStart = Self.weekStart(for: Date())
+                    } label: {
+                        Text("Hoje")
+                            .font(AthlyTheme.Typography.semibold(10))
+                            .textCase(.uppercase)
+                            .foregroundStyle(AthlyTheme.Color.primary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 2)
+                            .background(AthlyTheme.Color.primarySoft)
+                            .overlay(Capsule().stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    if interactive, planVM.trainingPlanResponse != nil {
+                        NavigationLink {
+                            TrainingPlanDetailView()
+                                .environmentObject(planVM)
+                        } label: {
+                            Image(systemName: "list.bullet")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                                .frame(width: 26, height: 26)
+                                .background(AthlyTheme.Color.primarySoft)
+                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
 
             HStack(spacing: 2) {
@@ -390,78 +402,6 @@ struct PlanView: View {
         )
     }
 
-    // MARK: - Plan header
-
-    private func planHeaderCard(_ plan: TrainingPlanResponse) -> some View {
-        NavigationLink {
-            TrainingPlanDetailView()
-                .environmentObject(planVM)
-        } label: {
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(plan.objective)
-                        .font(AthlyTheme.Typography.semibold(15))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        .lineLimit(1)
-                    Text("\(planVM.weeks.count) semanas de plano")
-                        .font(AthlyTheme.Typography.body(12))
-                        .foregroundStyle(AthlyTheme.Color.textSecondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(AthlyTheme.Color.textTertiary)
-            }
-            .padding(14)
-            .athlyInsightCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Generate button
-
-    private var generateButton: some View {
-        Button {
-            if entitlementManager.canUsePremium {
-                Task { await planVM.generateNextWeekWithHealth() }
-            } else {
-                showPaywall = true
-            }
-        } label: {
-            HStack {
-                if planVM.isGenerating {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(0.8)
-                } else if planVM.isGeneratingInBackground {
-                    Image(systemName: "clock.arrow.circlepath")
-                } else {
-                    Image(systemName: "sparkles")
-                }
-                Text(generateButtonTitle)
-            }
-        }
-        .buttonStyle(AthlyGradientButtonStyle())
-        .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
-        .sheet(isPresented: $showPaywall) {
-            AthlyPaywallView(
-                founderEligible: entitlementManager.isFounderEligible,
-                onPurchaseCompleted: { _ in
-                    showPaywall = false
-                    Task { await entitlementManager.refresh() }
-                },
-                onRestoreCompleted: { _ in
-                    Task { await entitlementManager.refresh() }
-                }
-            )
-        }
-    }
-
-    private var generateButtonTitle: String {
-        if planVM.isGenerating { return "Iniciando geração..." }
-        if planVM.isGeneratingInBackground { return "Gerando em segundo plano" }
-        return "Gerar Próxima Semana"
-    }
 
     // MARK: - Generating banner
 

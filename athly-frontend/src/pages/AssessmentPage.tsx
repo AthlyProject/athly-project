@@ -4,6 +4,7 @@ import { ChevronRight, ChevronLeft, Sparkles, Check } from "lucide-react";
 import { Button, Card, GradientText, Badge } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { submitAssessment, type AssessmentAnswers } from "@/services/assessmentService";
+import { ResponseError } from "@/client/runtime";
 import toast from "react-hot-toast";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -164,7 +165,16 @@ export function AssessmentPage() {
       toast.success("Questionário enviado! Bem-vindo(a) à Athly 🎉");
       navigate("/app/dashboard");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao enviar questionário.");
+      let message = "Erro ao enviar questionário.";
+      if (err instanceof ResponseError) {
+        try {
+          const body = await err.response.json();
+          message = body.message ?? message;
+        } catch {}
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }

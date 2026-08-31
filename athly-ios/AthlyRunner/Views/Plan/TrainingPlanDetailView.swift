@@ -24,10 +24,7 @@ struct TrainingPlanDetailView: View {
 
                         deleteButton
                     } else {
-                        Text("Nenhum plano ativo.")
-                            .font(AthlyTheme.Typography.body(15))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
-                            .padding(.top, 40)
+                        emptyState
                     }
                 }
                 .padding(AthlyTheme.Spacing.sm)
@@ -93,7 +90,7 @@ struct TrainingPlanDetailView: View {
             .clipShape(Capsule())
     }
 
-    // MARK: - Feasibility (vs objetivo)
+    // MARK: - Feasibility
 
     private func feasibilityCard(_ f: GoalFeasibility) -> some View {
         let (label, color, icon) = verdictInfo(f.verdict)
@@ -118,10 +115,15 @@ struct TrainingPlanDetailView: View {
             HStack(spacing: 0) {
                 metricChip(label: "Projeção atual", value: formatTime(f.currentProjectedTimeSec))
                 divider1
-                metricChip(label: "Meta", value: formatTime(f.targetTimeSec))
+                metricChip(label: "Meta", value: formatTime(f.targetTimeSec), accentColor: color)
                 divider1
                 metricChip(label: "Semanas", value: "\(Int(f.weeksAvailable))")
             }
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(AthlyTheme.Color.glassBorder, lineWidth: 1)
+            )
 
             if let suggestion = f.suggestion,
                (f.verdict == "ambitious" || f.verdict == "unrealistic") {
@@ -143,33 +145,68 @@ struct TrainingPlanDetailView: View {
                 Text("Estimativa preliminar — fica mais precisa conforme você registra corridas.")
                     .font(AthlyTheme.Typography.body(12))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
+                    .italic()
             }
         }
         .padding(AthlyTheme.Spacing.sm)
-        .athlyInsightCard()
+        .background(
+            ZStack {
+                AthlyTheme.Color.surfaceCard
+                AthlyTheme.Gradient.insightBackground
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
+                .stroke(color.opacity(0.25), lineWidth: 1)
+        )
     }
 
-    // MARK: - Weekly analysis (reaproveita os insights da IA já gerados)
+    // MARK: - Weekly analysis
 
     private var weeklyAnalysisSection: some View {
+        let allWeeksSorted = planVM.weeklyGoals.sorted { $0.parsedStartDate < $1.parsedStartDate }
         let analyzed = planVM.weeklyGoals
-            .filter { ($0.metrics?.fitnessInsights?.isEmpty == false) }
+            .filter { $0.metrics?.fitnessInsights?.isEmpty == false }
             .sorted { $0.parsedStartDate > $1.parsedStartDate }
 
         return Group {
             if !analyzed.isEmpty {
                 VStack(alignment: .leading, spacing: AthlyTheme.Spacing.sm) {
-                    Text("Análise semanal da IA")
-                        .font(AthlyTheme.Typography.semibold(16))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Text("ANÁLISE SEMANAL DA IA")
+                        .font(AthlyTheme.Typography.body(11))
+                        .fontWeight(.bold)
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        .tracking(2)
                         .padding(.top, 4)
 
                     ForEach(analyzed) { goal in
-                        WeeklyGoalInsightCard(goal: goal)
+                        let weekNumber = allWeeksSorted.firstIndex(where: { $0.id == goal.id }).map { $0 + 1 }
+                        WeeklyGoalInsightCard(goal: goal, weekNumber: weekNumber)
                     }
                 }
             }
         }
+    }
+
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "calendar")
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+            Text("Nenhum plano ativo")
+                .font(AthlyTheme.Typography.semibold(15))
+                .foregroundStyle(AthlyTheme.Color.textSecondary)
+            Text("Crie um plano na aba Plano para começar a treinar com objetivo.")
+                .font(AthlyTheme.Typography.body(13))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 200)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
     }
 
     // MARK: - Delete
@@ -223,11 +260,11 @@ struct TrainingPlanDetailView: View {
         }
     }
 
-    private func metricChip(label: String, value: String) -> some View {
+    private func metricChip(label: String, value: String, accentColor: Color? = nil) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(14))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                .foregroundStyle(accentColor ?? AthlyTheme.Color.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Text(label)
@@ -235,6 +272,7 @@ struct TrainingPlanDetailView: View {
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Formatting
