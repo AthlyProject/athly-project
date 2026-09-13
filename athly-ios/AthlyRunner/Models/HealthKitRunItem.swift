@@ -16,7 +16,7 @@ struct HealthKitRunItem: Identifiable, Codable, Equatable, Sendable {
     }
 
     var formattedDistance: String {
-        String(format: "%.2f", distanceKm)
+        LocalizedFormatting.formattedDistanceKm(distanceKm)
     }
 
     var formattedDuration: String {

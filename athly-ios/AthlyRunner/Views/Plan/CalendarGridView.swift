@@ -7,7 +7,10 @@ struct CalendarGridView: View {
     @Binding var selectedDate: Date?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
-    private let weekdaySymbols = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    private let weekdaySymbols = [
+        String(localized: "Dom"), String(localized: "Seg"), String(localized: "Ter"),
+        String(localized: "Qua"), String(localized: "Qui"), String(localized: "Sex"), String(localized: "Sáb")
+    ]
     private let calendar = Calendar.current
 
     var body: some View {
@@ -59,7 +62,7 @@ struct CalendarGridView: View {
     // MARK: - Week Goal Banner
 
     private func weekGoalBanner(_ goal: WeeklyGoalResponse) -> some View {
-        let insight = goal.metrics?.title ?? goal.metrics?.trend ?? "Meta da semana"
+        let insight = goal.metrics?.title ?? goal.metrics?.trend ?? String(localized: "Meta da semana")
         let hasPrevious = goal.previousWeekAnalysis != nil
 
         return HStack(spacing: 6) {
@@ -67,7 +70,7 @@ struct CalendarGridView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(AthlyTheme.Color.primary)
 
-            Text(insight.isEmpty ? "Meta da semana" : insight)
+            Text(insight.isEmpty ? String(localized: "Meta da semana") : insight)
                 .font(AthlyTheme.Typography.body(11))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .lineLimit(1)

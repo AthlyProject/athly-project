@@ -1,0 +1,249 @@
+{
+  "sourceLanguage" : "pt-BR",
+  "strings" : {
+    "·" : {
+
+    },
+    "/KM" : {
+      "comment" : "Metric label (pace unit) in the Dynamic Island expanded view. Keep very short — space-constrained.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/KM"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/KM"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/KM"
+          }
+        }
+      }
+    },
+    "%@" : {
+
+    },
+    "%@ km" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ km"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ km"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ km"
+          }
+        }
+      }
+    },
+    "%@/km" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@/km"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@/km"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@/km"
+          }
+        }
+      }
+    },
+    "acompanhando sua corrida" : {
+      "comment" : "Small subtitle under the Athly logo badge on the Live Activity lock screen view.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "verfolgt deinen Lauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tracking your run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "acompanhando sua corrida"
+          }
+        }
+      }
+    },
+    "AO VIVO" : {
+      "comment" : "\"LIVE\" badge shown next to a pulsing dot on the Live Activity lock screen view.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LIVE"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LIVE"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AO VIVO"
+          }
+        }
+      }
+    },
+    "Athly" : {
+
+    },
+    "Corrida" : {
+      "comment" : "Fallback workout title shown on the Live Activity when the run has no custom title.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida"
+          }
+        }
+      }
+    },
+    "DISTÂNCIA" : {
+      "comment" : "Metric label (distance) on the Live Activity lock screen view. Keep short — space-constrained.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DISTANZ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DISTANCE"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DISTÂNCIA"
+          }
+        }
+      }
+    },
+    "KM" : {
+      "comment" : "Metric label (distance unit) in the Dynamic Island expanded view. Keep very short — space-constrained.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KM"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KM"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KM"
+          }
+        }
+      }
+    },
+    "PACE" : {
+      "comment" : "Metric label (running pace) on the Live Activity lock screen view. Keep short — space-constrained.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PACE"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PACE"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PACE"
+          }
+        }
+      }
+    },
+    "TEMPO" : {
+      "comment" : "Metric label (elapsed time) on the Live Activity lock screen and Dynamic Island views. Keep short — space-constrained.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ZEIT"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TIME"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TEMPO"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

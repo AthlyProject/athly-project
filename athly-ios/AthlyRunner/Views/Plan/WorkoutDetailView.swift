@@ -186,7 +186,7 @@ struct WorkoutDetailView: View {
         )
     }
 
-    private func runStatCell(value: String, key: String, valueColor: Color = AthlyTheme.Color.textPrimary) -> some View {
+    private func runStatCell(value: String, key: LocalizedStringKey, valueColor: Color = AthlyTheme.Color.textPrimary) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.mono(15))
@@ -287,7 +287,7 @@ private struct SegmentNodeView: View {
                     Text("\(segment.repetitions ?? 1)×")
                         .font(.custom("SpaceGrotesk-Bold", size: 18))
                         .foregroundStyle(AthlyTheme.Color.primary)
-                    Text(segment.label ?? "Série")
+                    Text(segment.label ?? String(localized: "Série"))
                         .font(AthlyTheme.Typography.semibold(15))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
                     Spacer()
@@ -389,12 +389,12 @@ private struct SegmentNodeView: View {
 
     private var kindLabel: String {
         switch segment.kind {
-        case .warmup:   return "Aquecimento"
-        case .work:     return "Tiro"
-        case .recovery: return "Recuperação"
-        case .cooldown: return "Desaquecimento"
-        case .rest:     return "Descanso"
-        default:        return "Bloco"
+        case .warmup:   return String(localized: "Aquecimento")
+        case .work:     return String(localized: "Tiro")
+        case .recovery: return String(localized: "Recuperação")
+        case .cooldown: return String(localized: "Desaquecimento")
+        case .rest:     return String(localized: "Descanso")
+        default:        return String(localized: "Bloco")
         }
     }
 
@@ -402,13 +402,13 @@ private struct SegmentNodeView: View {
         switch end.by {
         case .distanceM:
             let m = Int(end.value)
-            return m >= 1000 ? String(format: "%.1f km", Double(m) / 1000) : "\(m) m"
+            return m >= 1000 ? String(format: "%.1f km", Double(m) / 1000) : String(localized: "\(m) m")
         case .durationSec:
             let s = Int(end.value)
             if s >= 3600 { return String(format: "%dh%02d", s / 3600, (s % 3600) / 60) }
-            return s >= 60 ? String(format: "%d:%02d", s / 60, s % 60) : "\(s)s"
+            return s >= 60 ? String(format: "%d:%02d", s / 60, s % 60) : String(localized: "\(s)s")
         case .reps:
-            return "\(Int(end.value)) reps"
+            return String(localized: "\(Int(end.value)) reps")
         }
     }
 
@@ -425,10 +425,10 @@ private struct BlockCardView: View {
 
     private var blockTitle: String {
         switch block.type.lowercased() {
-        case "warmup", "aquecimento": return "Aquecimento"
-        case "cooldown", "desaquecimento": return "Desaquecimento"
-        case "rest", "descanso": return "Descanso"
-        case "run", "corrida": return "Corrida"
+        case "warmup", "aquecimento": return String(localized: "Aquecimento")
+        case "cooldown", "desaquecimento": return String(localized: "Desaquecimento")
+        case "rest", "descanso": return String(localized: "Descanso")
+        case "run", "corrida": return String(localized: "Corrida")
         default: return block.type.capitalized
         }
     }
@@ -485,17 +485,17 @@ private struct BlockCardView: View {
 
     private func formatDuration(_ value: Double) -> String {
         if value < 60 {
-            return "\(Int(value)) min"
+            return String(localized: "\(Int(value)) min")
         }
         let min = Int(value) / 60
         let sec = Int(value) % 60
-        return sec > 0 ? "\(min)min \(sec)s" : "\(min) min"
+        return sec > 0 ? String(localized: "\(min)min \(sec)s") : String(localized: "\(min) min")
     }
 
     private func formatDistance(_ km: Double) -> String {
         if km < 1 {
-            return "\(Int(km * 1000)) m"
+            return String(localized: "\(Int(km * 1000)) m")
         }
-        return String(format: "%.2f km", km)
+        return String(localized: "\(LocalizedFormatting.formattedDistanceKm(km)) km")
     }
 }

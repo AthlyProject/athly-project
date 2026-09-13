@@ -131,7 +131,7 @@ struct RunTrackingView: View {
         .padding(.horizontal, 16)
     }
 
-    private func metricItem(value: String, label: String, icon: String) -> some View {
+    private func metricItem(value: String, label: LocalizedStringKey, icon: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 16))

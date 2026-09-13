@@ -74,7 +74,7 @@ struct WeeklyGoalInsightCard: View {
         let endDay = cal.component(.day, from: end)
 
         let monthYearFmt = DateFormatter()
-        monthYearFmt.locale = Locale(identifier: "pt_BR")
+        monthYearFmt.locale = Locale.autoupdatingCurrent
 
         let dateRange: String
         if sameMonth {
@@ -82,14 +82,14 @@ struct WeeklyGoalInsightCard: View {
             dateRange = "\(startDay)–\(endDay) \(monthYearFmt.string(from: end))"
         } else {
             let startFmt = DateFormatter()
-            startFmt.locale = Locale(identifier: "pt_BR")
+            startFmt.locale = Locale.autoupdatingCurrent
             startFmt.dateFormat = "d MMM"
             monthYearFmt.dateFormat = "d MMM yyyy"
             dateRange = "\(startFmt.string(from: start)) – \(monthYearFmt.string(from: end))"
         }
 
         if let n = weekNumber {
-            return "Semana \(n) · \(dateRange)"
+            return String(localized: "Semana \(n) · \(dateRange)")
         }
         return dateRange
     }
@@ -108,17 +108,17 @@ struct WeeklyGoalInsightCard: View {
     private func trendInfo(_ trend: String) -> (String, Color) {
         switch trend.lowercased() {
         case let t where t.contains("improving"):
-            return ("Em alta", AthlyTheme.Color.success)
+            return (String(localized: "Em alta"), AthlyTheme.Color.success)
         case "maintaining":
-            return ("Estável", AthlyTheme.Color.primary)
+            return (String(localized: "Estável"), AthlyTheme.Color.primary)
         case "declining":
-            return ("Em baixa", AthlyTheme.Color.warning)
+            return (String(localized: "Em baixa"), AthlyTheme.Color.warning)
         default:
             return (trend, AthlyTheme.Color.textSecondary)
         }
     }
 
-    private func metricChip(label: String, value: String) -> some View {
+    private func metricChip(label: LocalizedStringKey, value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(13))

@@ -51,7 +51,7 @@ final class AuthViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             guard let self, self.isAuthenticated else { return }
-            self.errorMessage = "Sua sessão expirou. Faça login novamente."
+            self.errorMessage = String(localized: "Sua sessão expirou. Faça login novamente.")
             self.logout()
         }
     }
@@ -97,7 +97,7 @@ final class AuthViewModel: ObservableObject {
     func signInWithGoogle() async {
         errorMessage = nil
         guard let presenting = Self.topViewController() else {
-            errorMessage = "Não foi possível abrir o login do Google."
+            errorMessage = String(localized: "Não foi possível abrir o login do Google.")
             return
         }
 
@@ -292,7 +292,7 @@ enum AuthError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingProviderToken:
-            return "Não foi possível obter as credenciais do provedor. Tente novamente."
+            return String(localized: "Não foi possível obter as credenciais do provedor. Tente novamente.")
         }
     }
 }

@@ -8,6 +8,7 @@ options:
     iOS: "16.1"
   xcodeVersion: "16.4"
   generateEmptyDirectories: true
+  developmentLanguage: pt-BR
 
 configFiles:
   Debug: Config/Config.xcconfig
@@ -69,6 +70,10 @@ targets:
               - "$(GOOGLE_REVERSED_CLIENT_ID)"
         CFBundleDisplayName: Athly
         CFBundleDevelopmentRegion: pt-BR
+        CFBundleLocalizations:
+          - pt-BR
+          - en
+          - de
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UILaunchScreen:
@@ -107,6 +112,7 @@ targets:
     entitlements:
       path: AthlyRunner/AthlyRunner.entitlements
       properties:
+        aps-environment: development
         com.apple.developer.healthkit: true
         com.apple.developer.applesignin:
           - Default

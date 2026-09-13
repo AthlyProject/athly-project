@@ -1308,25 +1308,25 @@ enum HealthKitError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAvailable:
-            return "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador)."
+            return String(localized: "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador).")
         case .writeDenied:
-            return "A escrita de Treinos está desativada para o Athly. Abra os Ajustes, entre em Saúde e permita que o Athly grave Treinos."
+            return String(localized: "A escrita de Treinos está desativada para o Athly. Abra os Ajustes, entre em Saúde e permita que o Athly grave Treinos.")
         case .workoutNotReturned:
-            return "O Apple Health não retornou o identificador da corrida."
+            return String(localized: "O Apple Health não retornou o identificador da corrida.")
         case .workoutNotFound:
-            return "A corrida vinculada não foi encontrada no Apple Health."
+            return String(localized: "A corrida vinculada não foi encontrada no Apple Health.")
         case .importedRouteMissing:
-            return "O arquivo não contém uma rota GPS utilizável."
+            return String(localized: "O arquivo não contém uma rota GPS utilizável.")
         case .importedWorkoutMismatch(let details):
-            return "O arquivo não corresponde à corrida vinculada (\(details))."
+            return String(localized: "O arquivo não corresponde à corrida vinculada (\(details)).")
         case .routeWriteDenied:
-            return "A permissão para gravar rotas está desativada no Apple Health."
+            return String(localized: "A permissão para gravar rotas está desativada no Apple Health.")
         case .routeNotReturned:
-            return "O Apple Health não retornou a rota criada."
+            return String(localized: "O Apple Health não retornou a rota criada.")
         case .routeAttachmentFailed(let reason):
-            return "Não foi possível anexar a rota à corrida original: \(reason)"
+            return String(localized: "Não foi possível anexar a rota à corrida original: \(reason)")
         case .workoutDeleteFailed:
-            return "A nova corrida foi salva, mas o registro anterior do Athly não pôde ser removido."
+            return String(localized: "A nova corrida foi salva, mas o registro anterior do Athly não pôde ser removido.")
         }
     }
 }

@@ -54,7 +54,7 @@ struct LoginView: View {
                     .padding(.bottom, 18)
 
                     // Email
-                    authField(label: "Email") {
+                    authField(label: String(localized: "Email")) {
                         HStack {
                             TextField("", text: $email)
                                 .font(AthlyTheme.Typography.body(13))
@@ -71,7 +71,7 @@ struct LoginView: View {
                     .padding(.bottom, 9)
 
                     // Password
-                    authField(label: "Senha") {
+                    authField(label: String(localized: "Senha")) {
                         HStack {
                             Group {
                                 if showPassword {
@@ -198,7 +198,7 @@ struct LoginView: View {
         }
     }
 
-    private func authDivider(_ label: String) -> some View {
+    private func authDivider(_ label: LocalizedStringKey) -> some View {
         HStack(spacing: 10) {
             Rectangle().fill(AthlyTheme.Color.borderMid).frame(height: 1)
             Text(label)

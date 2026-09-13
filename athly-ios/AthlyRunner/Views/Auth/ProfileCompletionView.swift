@@ -38,16 +38,16 @@ struct ProfileCompletionView: View {
                         genderSection
                         birthDateSection
                         drumPickerSection(
-                            label: "Peso",
+                            label: String(localized: "Peso"),
                             selection: $weightKg,
                             range: 30...200,
-                            unit: "kg"
+                            unit: String(localized: "kg")
                         )
                         drumPickerSection(
-                            label: "Altura",
+                            label: String(localized: "Altura"),
                             selection: $heightCm,
                             range: 100...250,
-                            unit: "cm"
+                            unit: String(localized: "cm")
                         )
 
                         if let errorMessage {
@@ -104,7 +104,7 @@ struct ProfileCompletionView: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: 5) {
-            sectionLabel("Nome completo")
+            sectionLabel(String(localized: "Nome completo"))
             HStack {
                 TextField("", text: $name)
                     .font(AthlyTheme.Typography.body(13))
@@ -134,7 +134,7 @@ struct ProfileCompletionView: View {
 
     private var genderSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Gênero")
+            sectionLabel(String(localized: "Gênero"))
             HStack(spacing: 6) {
                 genderPill("Masculino", value: "male")
                 genderPill("Feminino",  value: "female")
@@ -143,7 +143,7 @@ struct ProfileCompletionView: View {
         }
     }
 
-    private func genderPill(_ label: String, value: String) -> some View {
+    private func genderPill(_ label: LocalizedStringKey, value: String) -> some View {
         let sel = gender == value
         return Button { gender = value } label: {
             Text(label)
@@ -167,7 +167,7 @@ struct ProfileCompletionView: View {
 
     private var birthDateSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Data de nascimento")
+            sectionLabel(String(localized: "Data de nascimento"))
             DatePicker(
                 "",
                 selection: $birthDate,
@@ -235,7 +235,7 @@ struct ProfileCompletionView: View {
         } label: {
             HStack(spacing: 8) {
                 if isSubmitting { ProgressView().tint(.white).scaleEffect(0.85) }
-                Text(isSubmitting ? "Salvando..." : "Continuar")
+                Text(isSubmitting ? String(localized: "Salvando...") : String(localized: "Continuar"))
                     .font(AthlyTheme.Typography.semibold(14))
                 if !isSubmitting {
                     Image(systemName: "arrow.right")

@@ -497,8 +497,8 @@ struct PlanView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(AthlyTheme.Color.primary)
             Text(days == 1
-                 ? "Último dia do seu período de teste"
-                 : "Período de teste: \(days) dias restantes")
+                 ? String(localized: "Último dia do seu período de teste")
+                 : String(localized: "Período de teste: \(days) dias restantes"))
                 .font(AthlyTheme.Typography.semibold(13))
                 .foregroundColor(AthlyTheme.Color.textSecondary)
             Spacer(minLength: 0)
@@ -515,7 +515,7 @@ struct PlanView: View {
 
     // MARK: - Helpers
 
-    private func tag(_ text: String, color: Color, bg: Color, border: Color) -> some View {
+    private func tag(_ text: LocalizedStringKey, color: Color, bg: Color, border: Color) -> some View {
         Text(text)
             .font(.system(size: 8, weight: .bold))
             .textCase(.uppercase)
@@ -568,21 +568,21 @@ struct PlanView: View {
 
     private static let weekdayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "EEE"
         return f
     }()
 
     private static let monthAbbrFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "MMM"
         return f
     }()
 
     private static let monthYearFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "MMMM yyyy"
         return f
     }()

@@ -88,7 +88,7 @@ struct AthlyPaywallView: View {
                         } else {
                             Image(systemName: "checkmark.seal.fill")
                         }
-                        Text(isPurchasing ? "Confirmando..." : ctaTitle)
+                        Text(isPurchasing ? String(localized: "Confirmando...") : ctaTitle)
                     }
                 }
                 .buttonStyle(AthlyGradientButtonStyle())
@@ -105,7 +105,7 @@ struct AthlyPaywallView: View {
                         } else {
                             Image(systemName: "arrow.clockwise")
                         }
-                        Text(isRestoring ? "Restaurando..." : "Restaurar compra")
+                        Text(isRestoring ? String(localized: "Restaurando...") : String(localized: "Restaurar compra"))
                     }
                     .font(AthlyTheme.Typography.semibold(14))
                     .foregroundStyle(AthlyTheme.Color.textSecondary)
@@ -132,7 +132,7 @@ struct AthlyPaywallView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(founderEligible ? "Athly Founder" : "Athly Basic")
+                    Text(founderEligible ? String(localized: "Athly Founder") : String(localized: "Athly Basic"))
                         .font(AthlyTheme.Typography.heading(26))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
                     Text("Planos inteligentes para evoluir sem improviso.")
@@ -151,7 +151,7 @@ struct AthlyPaywallView: View {
         .athlyInsightCard()
     }
 
-    private func featureRow(icon: String, text: String) -> some View {
+    private func featureRow(icon: String, text: LocalizedStringKey) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
@@ -264,8 +264,8 @@ struct AthlyPaywallView: View {
     }
 
     private var ctaTitle: String {
-        guard let selectedPackage else { return "Continuar" }
-        return "Continuar com \(packageTitle(selectedPackage).lowercased())"
+        guard let selectedPackage else { return String(localized: "Continuar") }
+        return String(localized: "Continuar com \(packageTitle(selectedPackage).lowercased())")
     }
 
     private func orderedPackages(from offering: Offering) -> [Package] {
@@ -277,22 +277,22 @@ struct AthlyPaywallView: View {
     private func packageTitle(_ package: Package) -> String {
         switch package.packageType {
         case .annual:
-            return "Plano anual"
+            return String(localized: "Plano anual")
         case .monthly:
-            return "Plano mensal"
+            return String(localized: "Plano mensal")
         default:
-            return package.storeProduct.localizedTitle.isEmpty ? "Plano Athly" : package.storeProduct.localizedTitle
+            return package.storeProduct.localizedTitle.isEmpty ? String(localized: "Plano Athly") : package.storeProduct.localizedTitle
         }
     }
 
     private func packageSubtitle(_ package: Package) -> String {
         switch package.packageType {
         case .annual:
-            return "Acesso por 12 meses"
+            return String(localized: "Acesso por 12 meses")
         case .monthly:
-            return "Acesso mensal flexivel"
+            return String(localized: "Acesso mensal flexivel")
         default:
-            return "Acesso Basic"
+            return String(localized: "Acesso Basic")
         }
     }
 
@@ -305,7 +305,7 @@ struct AthlyPaywallView: View {
 
         guard Purchases.isConfigured else {
             didFinishLoading = true
-            errorMessage = "RevenueCat nao esta configurado nesta build."
+            errorMessage = String(localized: "RevenueCat nao esta configurado nesta build.")
             return
         }
 
@@ -330,7 +330,7 @@ struct AthlyPaywallView: View {
                 dismiss()
             }
         } catch {
-            errorMessage = "Nao foi possivel concluir a compra. Tente novamente."
+            errorMessage = String(localized: "Nao foi possivel concluir a compra. Tente novamente.")
         }
 
         isPurchasing = false
@@ -346,7 +346,7 @@ struct AthlyPaywallView: View {
             onRestoreCompleted(info)
             dismiss()
         } catch {
-            errorMessage = "Nao foi possivel restaurar a compra. Tente novamente."
+            errorMessage = String(localized: "Nao foi possivel restaurar a compra. Tente novamente.")
         }
 
         isRestoring = false

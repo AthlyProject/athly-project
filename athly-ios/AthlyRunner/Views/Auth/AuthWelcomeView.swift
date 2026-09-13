@@ -101,8 +101,8 @@ struct AuthWelcomeView: View {
         iconColor: Color,
         iconBg: Color,
         iconBorder: Color,
-        title: String,
-        subtitle: String
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey
     ) -> some View {
         HStack(spacing: 11) {
             ZStack {

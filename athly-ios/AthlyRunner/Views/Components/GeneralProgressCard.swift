@@ -48,7 +48,7 @@ struct GeneralProgressCard: View {
             metricSummary(
                 icon: "flame.fill",
                 value: "\(streak)",
-                label: streak == 1 ? "treino em sequência" : "treinos em sequência",
+                label: streak == 1 ? String(localized: "treino em sequência") : String(localized: "treinos em sequência"),
                 tint: AthlyTheme.Color.warning
             )
 
@@ -59,7 +59,7 @@ struct GeneralProgressCard: View {
             metricSummary(
                 icon: "trophy.fill",
                 value: "\(achievements)",
-                label: achievements == 1 ? "conquista" : "conquistas",
+                label: achievements == 1 ? String(localized: "conquista") : String(localized: "conquistas"),
                 tint: AthlyTheme.Color.secondary
             )
         }

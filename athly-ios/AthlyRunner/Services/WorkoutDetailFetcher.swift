@@ -63,7 +63,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
         // interpolada) > GPS real (km splits) > splits sintéticos.
         var splitsSource: SplitsSource = .events
         var segmentation = WorkoutSegmentationResult.unavailable(
-            "A atividade não contém eventos de bloco nem uma reconstrução utilizável."
+            String(localized: "A atividade não contém eventos de bloco nem uma reconstrução utilizável.")
         )
         let exactRecords = HealthKitService.segmentRecords(from: workout)
         var rawSegments: [RawSegment]? = exactRecords.isEmpty ? nil : makeRawSegments(from: exactRecords)
@@ -205,22 +205,22 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             switch segment.label {
             case .warmup:
                 kind = .warmup
-                label = "Aquecimento"
+                label = String(localized: "Aquecimento")
             case .cooldown:
                 kind = .cooldown
-                label = "Desaceleramento"
+                label = String(localized: "Desaceleramento")
             case .rep:
                 kind = .work
-                label = segment.index.map { "Tiro \($0)" } ?? "Tiro"
+                label = segment.index.map { String(localized: "Tiro \($0)") } ?? String(localized: "Tiro")
             case .rec:
                 kind = .recovery
-                label = segment.index.map { "Recuperação \($0)" } ?? "Recuperação"
+                label = segment.index.map { String(localized: "Recuperação \($0)") } ?? String(localized: "Recuperação")
             case .tempo:
                 kind = .work
-                label = "Ritmo"
+                label = String(localized: "Ritmo")
             case .easy:
                 kind = .unknown
-                label = segment.index.map { "Lap \($0)" } ?? "Lap"
+                label = segment.index.map { String(localized: "Lap \($0)") } ?? String(localized: "Lap")
             }
             return SegmentRecord(
                 kind: kind,
@@ -239,7 +239,7 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
             origin: .thirdPartyLaps,
             confidence: .high,
             fallbackReason: fallbackReason.map {
-                "\($0) Exibindo os laps reais gravados pelo dispositivo."
+                String(localized: "\($0) Exibindo os laps reais gravados pelo dispositivo.")
             }
         )
     }

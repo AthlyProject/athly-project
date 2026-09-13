@@ -283,20 +283,20 @@ final class HealthKitRunsViewModel: ObservableObject {
     func runZeppDiagnostic() async {
         guard !isRunningZeppDiagnostic else { return }
         guard healthKitService.isHealthDataAvailable else {
-            zeppDiagnosticMessage = "HealthKit indisponivel neste dispositivo."
+            zeppDiagnosticMessage = String(localized: "HealthKit indisponivel neste dispositivo.")
             return
         }
 
         isRunningZeppDiagnostic = true
-        zeppDiagnosticMessage = "Rodando diagnostico Zepp..."
+        zeppDiagnosticMessage = String(localized: "Rodando diagnostico Zepp...")
         defer { isRunningZeppDiagnostic = false }
 
         do {
             try await healthKitService.requestReadAuthorization()
             await healthKitService.diagnoseZeppWorkouts(limit: 10)
-            zeppDiagnosticMessage = "Diagnostico Zepp enviado para os logs do Xcode."
+            zeppDiagnosticMessage = String(localized: "Diagnostico Zepp enviado para os logs do Xcode.")
         } catch {
-            zeppDiagnosticMessage = "Falha no diagnostico Zepp: \(error.localizedDescription)"
+            zeppDiagnosticMessage = String(localized: "Falha no diagnostico Zepp:") + " \(error.localizedDescription)"
         }
     }
     #else

@@ -27,11 +27,11 @@ struct AssessmentView: View {
     private var isLastStep: Bool { step == totalSteps - 1 }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
-        ("Seu nível\nno momento",       "Seja honesto — vamos ajustar seus treinos"),
-        ("Seu pace\nconfortável",       "Ritmo em que você corre sentindo-se bem — sem forçar"),
-        ("Seus\nObjetivos",             "O que você quer alcançar correndo?"),
-        ("Sua\nDistância",              "Para qual distância você quer treinar?"),
-        ("Tipo de\nObjetivo",           "Como você quer que a IA monte seu treino?"),
+        (String(localized: "Seu nível\nno momento"),       String(localized: "Seja honesto — vamos ajustar seus treinos")),
+        (String(localized: "Seu pace\nconfortável"),       String(localized: "Ritmo em que você corre sentindo-se bem — sem forçar")),
+        (String(localized: "Seus\nObjetivos"),             String(localized: "O que você quer alcançar correndo?")),
+        (String(localized: "Sua\nDistância"),              String(localized: "Para qual distância você quer treinar?")),
+        (String(localized: "Tipo de\nObjetivo"),           String(localized: "Como você quer que a IA monte seu treino?")),
     ]
 
     // MARK: - Body
@@ -90,7 +90,7 @@ struct AssessmentView: View {
 
             Spacer()
 
-            Text("\(step + 1) de \(totalSteps)")
+            Text(String(localized: "\(step + 1) de \(totalSteps)"))
                 .font(AthlyTheme.Typography.semibold(11))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .kerning(0.5)
@@ -135,7 +135,7 @@ struct AssessmentView: View {
     // então não pode ser indexado direto em `screenMeta` (índice trocado/fora de faixa).
     private var currentMeta: (title: String, subtitle: String) {
         if step == totalSteps - 1 {
-            return ("Seus dias\nde treino", "Quais dias da semana você quer treinar?")
+            return (String(localized: "Seus dias\nde treino"), String(localized: "Quais dias da semana você quer treinar?"))
         }
         return screenMeta[step]
     }
@@ -179,8 +179,8 @@ struct AssessmentView: View {
             HStack(spacing: 8) {
                 if isSubmitting { ProgressView().tint(.white).scaleEffect(0.85) }
                 Text(isLastStep
-                     ? (isSubmitting ? "Enviando..." : "Começar com a Athly ✦")
-                     : "Continuar →")
+                     ? (isSubmitting ? String(localized: "Enviando...") : String(localized: "Começar com a Athly ✦"))
+                     : String(localized: "Continuar →"))
                     .font(AthlyTheme.Typography.semibold(14))
             }
             .foregroundStyle(.white)
@@ -226,7 +226,7 @@ struct AssessmentView: View {
             try await APIClient.shared.submitAssessment(request)
             onCompleted()
         } catch {
-            errorMessage = "Não foi possível enviar o questionário. Tente novamente."
+            errorMessage = String(localized: "Não foi possível enviar o questionário. Tente novamente.")
         }
         isSubmitting = false
     }
@@ -287,12 +287,12 @@ private extension AssessmentView {
     }
 
     static let levelItems: [LevelItem] = [
-        .init(color: Color(hex: "#94A3B8"), name: "Começando",     desc: "Nunca corri de forma consistente",       value: "beginning"),
-        .init(color: Color(hex: "#10B981"), name: "Iniciante",     desc: "Consigo correr até 5 km",                value: "beginner"),
-        .init(color: Color(hex: "#0EA5E9"), name: "Hobby",         desc: "Corro 10 km sem problema",               value: "hobby"),
-        .init(color: Color(hex: "#7C3AED"), name: "Intermediário", desc: "Participo de provas com preparação",     value: "intermediate"),
-        .init(color: Color(hex: "#EC4899"), name: "Avançado",      desc: "Treino estruturado, meia-maratona+",     value: "advanced"),
-        .init(color: Color(hex: "#F59E0B"), name: "Pro",           desc: "Corrida é meu esporte principal",        value: "pro"),
+        .init(color: Color(hex: "#94A3B8"), name: String(localized: "Começando"),     desc: String(localized: "Nunca corri de forma consistente"),       value: "beginning"),
+        .init(color: Color(hex: "#10B981"), name: String(localized: "Iniciante"),     desc: String(localized: "Consigo correr até 5 km"),                value: "beginner"),
+        .init(color: Color(hex: "#0EA5E9"), name: String(localized: "Hobby"),         desc: String(localized: "Corro 10 km sem problema"),               value: "hobby"),
+        .init(color: Color(hex: "#7C3AED"), name: String(localized: "Intermediário"), desc: String(localized: "Participo de provas com preparação"),     value: "intermediate"),
+        .init(color: Color(hex: "#EC4899"), name: String(localized: "Avançado"),      desc: String(localized: "Treino estruturado, meia-maratona+"),     value: "advanced"),
+        .init(color: Color(hex: "#F59E0B"), name: String(localized: "Pro"),           desc: String(localized: "Corrida é meu esporte principal"),        value: "pro"),
     ]
 
     var step4: some View {
@@ -427,11 +427,11 @@ private extension AssessmentView {
     }
 
     static let objectiveCards: [ObjectiveCard] = [
-        .init(emoji: "🎯", title: "Objetivo pessoal",
-              subtitle: "Definido por mim mesmo",
+        .init(emoji: "🎯", title: String(localized: "Objetivo pessoal"),
+              subtitle: String(localized: "Definido por mim mesmo"),
               value: "personal", emojiBg: Color(hex: "#0EA5E9").opacity(0.10)),
-        .init(emoji: "📈", title: "Melhorar fitness e endurance",
-              subtitle: "Evoluir sem meta específica",
+        .init(emoji: "📈", title: String(localized: "Melhorar fitness e endurance"),
+              subtitle: String(localized: "Evoluir sem meta específica"),
               value: "fitness",  emojiBg: Color(hex: "#10B981").opacity(0.10)),
     ]
 
@@ -494,11 +494,11 @@ private extension AssessmentView {
     }
 
     static let distanceItems: [DistanceItem] = [
-        .init(emoji: "🏃", label: "5K",       description: "5 quilômetros",       value: "5k"),
-        .init(emoji: "🏃", label: "10K",      description: "10 quilômetros",      value: "10k"),
-        .init(emoji: "🏅", label: "Meia",     description: "21 quilômetros",      value: "half"),
-        .init(emoji: "🏆", label: "Maratona", description: "42 quilômetros",      value: "42k"),
-        .init(emoji: "⚡", label: "Ultra",    description: "Mais de 42 km",       value: "ultra"),
+        .init(emoji: "🏃", label: "5K",       description: String(localized: "5 quilômetros"),       value: "5k"),
+        .init(emoji: "🏃", label: "10K",      description: String(localized: "10 quilômetros"),      value: "10k"),
+        .init(emoji: "🏅", label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
+        .init(emoji: "🏆", label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
+        .init(emoji: "⚡", label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
     ]
 
     var stepDistancia: some View {
@@ -543,11 +543,11 @@ private extension AssessmentView {
     }
 
     static let objectiveTypeItems: [ObjectiveTypeItem] = [
-        .init(emoji: "🤖", title: "Workload adaptado pela IA",
-              description: "A IA define a carga com base na sua evolução",
+        .init(emoji: "🤖", title: String(localized: "Workload adaptado pela IA"),
+              description: String(localized: "A IA define a carga com base na sua evolução"),
               value: "workload", emojiBg: Color(hex: "#7C3AED").opacity(0.10)),
-        .init(emoji: "⏱️", title: "Tempo alvo",
-              description: "Defina um tempo e a IA cria um plano para você bater",
+        .init(emoji: "⏱️", title: String(localized: "Tempo alvo"),
+              description: String(localized: "Defina um tempo e a IA cria um plano para você bater"),
               value: "target_time", emojiBg: Color(hex: "#F59E0B").opacity(0.10)),
     ]
 
@@ -624,13 +624,13 @@ private extension AssessmentView {
 private extension AssessmentView {
     // Chaves em inglês minúsculo (contrato do backend / planner); rótulos pt-BR.
     static let weekdays: [(key: String, label: String)] = [
-        ("sunday",    "Dom"),
-        ("monday",    "Seg"),
-        ("tuesday",   "Ter"),
-        ("wednesday", "Qua"),
-        ("thursday",  "Qui"),
-        ("friday",    "Sex"),
-        ("saturday",  "Sáb"),
+        ("sunday",    String(localized: "Dom")),
+        ("monday",    String(localized: "Seg")),
+        ("tuesday",   String(localized: "Ter")),
+        ("wednesday", String(localized: "Qua")),
+        ("thursday",  String(localized: "Qui")),
+        ("friday",    String(localized: "Sex")),
+        ("saturday",  String(localized: "Sáb")),
     ]
 
     var stepDays: some View {

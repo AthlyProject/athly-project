@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HealthKitRunsView: View {
-    private let title: String
+    private let title: LocalizedStringKey
     private let showsPlanTab: Bool
 
     @EnvironmentObject private var planVM: TrainingPlanViewModel
@@ -18,7 +18,7 @@ struct HealthKitRunsView: View {
     @State private var selectedTab: HistoryTab
     @State private var workoutToRepair: WorkoutModel?
 
-    init(title: String = "Corridas do Apple Health", showsPlanTab: Bool = true) {
+    init(title: LocalizedStringKey = "Corridas do Apple Health", showsPlanTab: Bool = true) {
         self.title = title
         self.showsPlanTab = showsPlanTab
         _selectedTab = State(initialValue: showsPlanTab ? .plan : .healthKit)
@@ -27,6 +27,13 @@ struct HealthKitRunsView: View {
     private enum HistoryTab: String, CaseIterable {
         case plan = "Plano"
         case healthKit = "Corridas"
+
+        var label: LocalizedStringKey {
+            switch self {
+            case .plan: return "Plano"
+            case .healthKit: return "Corridas"
+            }
+        }
     }
 
     private enum RunHistoryEntry: Identifiable {
@@ -162,7 +169,7 @@ struct HealthKitRunsView: View {
             if showsPlanTab {
                 Picker("Historico", selection: $selectedTab) {
                     ForEach(HistoryTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
+                        Text(tab.label).tag(tab)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -555,7 +562,7 @@ struct HealthKitRunCard: View {
         .athlyCard()
     }
 
-    private func mainStat(value: String, label: String) -> some View {
+    private func mainStat(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(16))
@@ -640,23 +647,23 @@ struct LocalRunCard: View {
         let color: Color
         switch session.healthKitSyncStatus {
         case .notRequested:
-            text = "Somente Athly"
+            text = String(localized: "Somente Athly")
             icon = "heart.slash"
             color = AthlyTheme.Color.textSecondary
         case .synced:
-            text = "Apple Health"
+            text = String(localized: "Apple Health")
             icon = "checkmark.circle.fill"
             color = AthlyTheme.Color.success
         case .failed:
-            text = "Pendente"
+            text = String(localized: "Pendente")
             icon = "exclamationmark.triangle.fill"
             color = AthlyTheme.Color.warning
         case .unavailable:
-            text = "Local"
+            text = String(localized: "Local")
             icon = "iphone"
             color = AthlyTheme.Color.textSecondary
         case .pending:
-            text = "Sincronizando"
+            text = String(localized: "Sincronizando")
             icon = "arrow.triangle.2.circlepath"
             color = AthlyTheme.Color.primary
         case nil:
@@ -674,7 +681,7 @@ struct LocalRunCard: View {
             .clipShape(Capsule())
     }
 
-    private func mainStat(value: String, label: String) -> some View {
+    private func mainStat(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(16))
@@ -756,7 +763,7 @@ struct PrescribedRunCard: View {
         .athlyCard()
     }
 
-    private func mainStat(value: String, label: String) -> some View {
+    private func mainStat(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(16))
@@ -840,11 +847,11 @@ struct PrescribedLocalRunCard: View {
 
     private var syncText: String {
         switch session.healthKitSyncStatus {
-        case .notRequested: return "Somente Athly"
-        case .synced: return "Apple Health"
-        case .failed: return "Pendente Apple Health"
-        case .unavailable: return "Local Athly"
-        case .pending: return "Sincronizando"
+        case .notRequested: return String(localized: "Somente Athly")
+        case .synced: return String(localized: "Apple Health")
+        case .failed: return String(localized: "Pendente Apple Health")
+        case .unavailable: return String(localized: "Local Athly")
+        case .pending: return String(localized: "Sincronizando")
         case nil: return "Athly"
         }
     }
@@ -860,7 +867,7 @@ struct PrescribedLocalRunCard: View {
         }
     }
 
-    private func mainStat(value: String, label: String) -> some View {
+    private func mainStat(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(16))

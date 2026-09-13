@@ -9,7 +9,7 @@ enum AppTab: String, CaseIterable {
     case history
     case profile
 
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
         case .dashboard: return "Home"
         case .plan:      return "Plan"

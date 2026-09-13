@@ -221,7 +221,7 @@ struct TrainingPlanDetailView: View {
                 } else {
                     Image(systemName: "trash")
                 }
-                Text(planVM.isDeleting ? "Excluindo..." : "Excluir plano")
+                Text(planVM.isDeleting ? String(localized: "Excluindo...") : String(localized: "Excluir plano"))
             }
             .font(AthlyTheme.Typography.semibold(15))
             .foregroundStyle(AthlyTheme.Color.error)
@@ -247,7 +247,7 @@ struct TrainingPlanDetailView: View {
         Rectangle().fill(AthlyTheme.Color.glassBorder).frame(width: 1, height: 28)
     }
 
-    private func infoRow(label: String, value: String) -> some View {
+    private func infoRow(label: LocalizedStringKey, value: String) -> some View {
         HStack {
             Text(label)
                 .font(AthlyTheme.Typography.body(14))
@@ -260,7 +260,7 @@ struct TrainingPlanDetailView: View {
         }
     }
 
-    private func metricChip(label: String, value: String, accentColor: Color? = nil) -> some View {
+    private func metricChip(label: LocalizedStringKey, value: String, accentColor: Color? = nil) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(14))
@@ -295,21 +295,21 @@ struct TrainingPlanDetailView: View {
 
     private func verdictInfo(_ verdict: String) -> (String, Color, String) {
         switch verdict {
-        case "ready": return ("Pronto", AthlyTheme.Color.success, "checkmark.seal.fill")
-        case "feasible": return ("Viável", AthlyTheme.Color.success, "checkmark.circle.fill")
-        case "ambitious": return ("Ambicioso", AthlyTheme.Color.warning, "flame.fill")
-        case "unrealistic": return ("Inviável no prazo", AthlyTheme.Color.error, "exclamationmark.triangle.fill")
+        case "ready": return (String(localized: "Pronto"), AthlyTheme.Color.success, "checkmark.seal.fill")
+        case "feasible": return (String(localized: "Viável"), AthlyTheme.Color.success, "checkmark.circle.fill")
+        case "ambitious": return (String(localized: "Ambicioso"), AthlyTheme.Color.warning, "flame.fill")
+        case "unrealistic": return (String(localized: "Inviável no prazo"), AthlyTheme.Color.error, "exclamationmark.triangle.fill")
         default: return (verdict, AthlyTheme.Color.textSecondary, "questionmark.circle")
         }
     }
 
     private func statusInfo(_ status: String) -> (String, Color) {
         switch status.uppercased() {
-        case "ACTIVE": return ("Ativo", AthlyTheme.Color.success)
-        case "DRAFT": return ("Rascunho", AthlyTheme.Color.textSecondary)
-        case "COMPLETED": return ("Concluído", AthlyTheme.Color.primary)
-        case "CANCELLED": return ("Cancelado", AthlyTheme.Color.warning)
-        case "LOCKED": return ("Bloqueado", AthlyTheme.Color.warning)
+        case "ACTIVE": return (String(localized: "Ativo"), AthlyTheme.Color.success)
+        case "DRAFT": return (String(localized: "Rascunho"), AthlyTheme.Color.textSecondary)
+        case "COMPLETED": return (String(localized: "Concluído"), AthlyTheme.Color.primary)
+        case "CANCELLED": return (String(localized: "Cancelado"), AthlyTheme.Color.warning)
+        case "LOCKED": return (String(localized: "Bloqueado"), AthlyTheme.Color.warning)
         default: return (status.capitalized, AthlyTheme.Color.textSecondary)
         }
     }

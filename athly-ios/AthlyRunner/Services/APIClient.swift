@@ -412,7 +412,7 @@ actor APIClient {
             // não tentam refresh nem sinalizam "sessão expirada" — mostram o motivo real do backend
             // (ex.: "Token da Apple inválido", "Login com Apple não está configurado").
             guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
             }
             if !isRefreshing {
                 isRefreshing = true
@@ -443,7 +443,7 @@ actor APIClient {
         case 404:
             throw APIError.notFound
         default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            let message = String(data: data, encoding: .utf8) ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -467,7 +467,7 @@ actor APIClient {
             return nil
         case 401:
             guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
             }
             if !isRefreshing {
                 isRefreshing = true
@@ -497,7 +497,7 @@ actor APIClient {
             }
             throw APIError.unauthorized
         default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            let message = String(data: data, encoding: .utf8) ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -627,11 +627,11 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return "URL inválida"
-        case .unauthorized: return "Sessão expirada. Faça login novamente."
-        case .notFound: return "Recurso não encontrado"
-        case .invalidResponse: return "Resposta inválida do servidor"
-        case .serverError(let code, let msg): return "Erro \(code): \(msg)"
+        case .invalidURL: return String(localized: "URL inválida")
+        case .unauthorized: return String(localized: "Sessão expirada. Faça login novamente.")
+        case .notFound: return String(localized: "Recurso não encontrado")
+        case .invalidResponse: return String(localized: "Resposta inválida do servidor")
+        case .serverError(let code, let msg): return String(localized: "Erro \(code):") + " " + msg
         }
     }
 }

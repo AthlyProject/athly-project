@@ -58,7 +58,7 @@ struct RegisterView: View {
                     .padding(.bottom, 18)
 
                     // Email
-                    authField(label: "Email") {
+                    authField(label: String(localized: "Email")) {
                         HStack {
                             TextField("", text: $email)
                                 .font(AthlyTheme.Typography.body(13))
@@ -158,7 +158,7 @@ struct RegisterView: View {
 
     private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("Senha".uppercased())
+            Text(String(localized: "Senha").uppercased())
                 .font(AthlyTheme.Typography.label())
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .kerning(0.8)

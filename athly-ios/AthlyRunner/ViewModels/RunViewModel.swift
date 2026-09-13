@@ -156,7 +156,7 @@ final class RunViewModel: ObservableObject {
             session.healthKitSyncStatus = .unavailable
             session.healthKitSyncError = HealthKitError.notAvailable.localizedDescription
             runStore.update(session)
-            saveError = "Corrida salva no Athly. Apple Health indisponível neste dispositivo."
+            saveError = String(localized: "Corrida salva no Athly. Apple Health indisponível neste dispositivo.")
         }
 
         isSaving = false
@@ -204,7 +204,7 @@ final class RunViewModel: ObservableObject {
         let snapshot = healthKitService.writeAuthorizationSnapshot()
         guard snapshot.canWriteWorkout else { return }
         healthKitWriteDenied = false
-        saveError = "Permissão atualizada. Toque em Tentar novamente para enviar ao Apple Health."
+        saveError = String(localized: "Permissão atualizada. Toque em Tentar novamente para enviar ao Apple Health.")
     }
 
     private func handleHealthKitSyncError(_ error: Error) {
@@ -212,7 +212,7 @@ final class RunViewModel: ObservableObject {
            case .writeDenied = healthKitError {
             healthKitWriteDenied = true
         }
-        saveError = "Corrida salva no Athly. \(error.localizedDescription)"
+        saveError = String(localized: "Corrida salva no Athly.") + " " + error.localizedDescription
     }
 
     func dismissSummary() {

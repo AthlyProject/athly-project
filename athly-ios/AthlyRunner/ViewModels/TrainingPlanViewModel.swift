@@ -489,7 +489,7 @@ final class TrainingPlanViewModel: ObservableObject {
         if let healthKitUUID {
             healthSummary = try? await healthService.fetchRunningWorkout(uuid: healthKitUUID)
             guard let healthSummary else {
-                let message = "A corrida vinculada não foi encontrada no Apple Health."
+                let message = String(localized: "A corrida vinculada não foi encontrada no Apple Health.")
                 errorMessage = message
                 return .failure(message)
             }
@@ -500,7 +500,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 healthDistanceMeters: healthSummary.distanceMeters
             )
             guard match.isMatch else {
-                let message = "O arquivo não corresponde à corrida vinculada (\(match.localizedSummary))."
+                let message = String(localized: "O arquivo não corresponde à corrida vinculada (\(match.localizedSummary)).")
                 errorMessage = message
                 return .failure(message)
             }
@@ -662,9 +662,9 @@ final class TrainingPlanViewModel: ObservableObject {
             )
             return .success
         } catch is CancellationError {
-            return .failure("Operação cancelada.")
+            return .failure(String(localized: "Operação cancelada."))
         } catch let error as URLError where error.code == .cancelled {
-            return .failure("Operação cancelada.")
+            return .failure(String(localized: "Operação cancelada."))
         } catch {
             errorMessage = error.localizedDescription
             return .failure(error.localizedDescription)

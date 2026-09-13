@@ -91,7 +91,7 @@ struct WatermarkOverlayView: View {
         }
     }
 
-    private func metricColumn(value: String, unit: String, scale: CGFloat) -> some View {
+    private func metricColumn(value: String, unit: LocalizedStringKey, scale: CGFloat) -> some View {
         VStack(spacing: 2 * scale) {
             Text(value)
                 .font(.custom("SpaceGrotesk-Bold", size: 23 * scale).monospacedDigit())
@@ -204,7 +204,7 @@ struct WatermarkOverlayView: View {
         }
     }
 
-    private func inlineMetric(label: String, value: String, scale: CGFloat) -> some View {
+    private func inlineMetric(label: LocalizedStringKey, value: String, scale: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 1 * scale) {
             Text(label)
                 .font(.custom("SpaceGrotesk-SemiBold", size: 9 * scale))

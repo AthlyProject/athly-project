@@ -251,7 +251,7 @@ struct CameraWatermarkView: View {
         .padding(.top, 8)
     }
 
-    private func statusPill(icon: String, text: String, color: Color) -> some View {
+    private func statusPill(icon: String, text: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
             Text(text)
