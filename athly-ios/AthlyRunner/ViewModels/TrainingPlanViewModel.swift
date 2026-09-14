@@ -727,6 +727,33 @@ final class TrainingPlanViewModel: ObservableObject {
         #endif
     }
 
+    /// Desvincula a corrida de um treino concluído: volta o treino para `scheduled` no servidor
+    /// e limpa todo o estado local, liberando a corrida para ser assinalada de novo (a mesma ou
+    /// outra dentro da janela de busca). Retorna `true` quando o servidor confirmou.
+    @discardableResult
+    func uncompleteWorkout(_ workout: WorkoutModel, runStore: RunStore) async -> Bool {
+        errorMessage = nil
+        do {
+            let updated = try await APIClient.shared.uncompleteWorkout(workoutId: workout.id)
+            // Só limpa o estado local depois do 200: em caso de falha o vínculo continua íntegro.
+            RunWorkoutLinkStore.shared.unlinkAll(athlyWorkoutId: workout.id)
+            runStore.detach(athlyWorkoutId: workout.id)
+            AchievementStore.shared.remove(workoutId: workout.id)
+            achievementCount = AchievementStore.shared.count
+            replaceWorkout(updated)
+            // O lembrete local só é agendado para treinos `scheduled`, então precisa voltar.
+            await NotificationService.shared.reschedule(workouts: allWorkouts)
+            return true
+        } catch is CancellationError {
+            return false
+        } catch let error as URLError where error.code == .cancelled {
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     func skipWorkout(_ workout: WorkoutModel) async {
         do {
             let updated = try await APIClient.shared.skipWorkout(workoutId: workout.id)

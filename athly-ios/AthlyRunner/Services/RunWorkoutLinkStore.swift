@@ -55,6 +55,22 @@ final class RunWorkoutLinkStore: @unchecked Sendable {
         }
     }
 
+    /// Remove todos os vínculos que apontam para um treino prescrito e devolve os UUIDs liberados.
+    /// Usado ao desvincular a corrida de um treino concluído: sem isso a corrida continuaria
+    /// filtrada por `allOrphanCandidates` e não voltaria a aparecer em "Concluir treino".
+    @discardableResult
+    func unlinkAll(athlyWorkoutId: String) -> [String] {
+        queue.sync {
+            let removed = cache.values
+                .filter { $0.athlyWorkoutId == athlyWorkoutId }
+                .map { $0.healthKitUUID }
+            guard !removed.isEmpty else { return [] }
+            cache = cache.filter { $0.value.athlyWorkoutId != athlyWorkoutId }
+            persistLocked()
+            return removed
+        }
+    }
+
     func storeSegmentation(_ result: WorkoutSegmentationResult, for healthKitUUID: String) {
         queue.sync {
             guard var link = cache[healthKitUUID] else { return }

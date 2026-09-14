@@ -175,7 +175,8 @@ struct DashboardView: View {
                 WorkoutDetailView(
                     workout: workout,
                     onComplete: { workoutToComplete = workout },
-                    onStart: { startWorkout($0) }
+                    onStart: { startWorkout($0) },
+                    onUnlink: { await planVM.uncompleteWorkout(workout, runStore: runStore) }
                 )
                 .environmentObject(planVM)
             } label: {

@@ -270,9 +270,11 @@ struct HealthKitRunsView: View {
                         .buttonStyle(.plain)
                     case .missing:
                         NavigationLink {
-                            WorkoutDetailView(workout: item.workout, onComplete: {
-                                workoutToRepair = item.workout
-                            })
+                            WorkoutDetailView(
+                                workout: item.workout,
+                                onComplete: { workoutToRepair = item.workout },
+                                onUnlink: { await planVM.uncompleteWorkout(item.workout, runStore: runStore) }
+                            )
                         } label: {
                             MissingPrescribedRunCard(workout: item.workout)
                         }

@@ -82,6 +82,20 @@ export class WorkoutsController {
     return this.workoutsService.skipWorkout(user.id, workoutId);
   }
 
+  /**
+   * Desfaz a conclusão de um treino: volta para `scheduled` e limpa a corrida vinculada,
+   * as métricas reais, os detalhes de execução e o feedback. Libera o `appleHealthWorkoutUUID`
+   * (índice único) para ser vinculado de novo — ao mesmo treino ou a outro.
+   */
+  @Patch(':workoutId/uncomplete')
+  @ApiOkResponse({ type: WorkoutModel })
+  uncompleteWorkout(
+    @CurrentUser() user: UserModel,
+    @Param('workoutId') workoutId: string,
+  ): Promise<WorkoutModel> {
+    return this.workoutsService.uncompleteWorkout(user.id, workoutId);
+  }
+
   @Put(':workoutId')
   @ApiOkResponse({ type: WorkoutModel })
   updateWorkout(

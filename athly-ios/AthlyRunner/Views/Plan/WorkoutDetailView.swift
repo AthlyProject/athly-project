@@ -5,6 +5,12 @@ struct WorkoutDetailView: View {
     var onComplete: (() -> Void)? = nil
     /// Inicia a corrida deste treino (janela de 2 dias). Quando nil, o botão "Iniciar" não aparece.
     var onStart: ((WorkoutModel) -> Void)? = nil
+    /// Desvincula a corrida de um treino concluído. Retorna `true` quando o servidor confirmou —
+    /// aí esta tela é fechada e o treino reaparece como agendado na lista.
+    var onUnlink: (() async -> Bool)? = nil
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var showUnlinkConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -70,6 +76,19 @@ struct WorkoutDetailView: View {
                     .buttonStyle(AthlySecondaryButtonStyle())
                     .padding(.top, 8)
                 }
+                // Sem filtro por modalidade: qualquer treino pode ter sido concluído por engano.
+                if (workout.status == .done || workout.status == .partial), onUnlink != nil {
+                    Button(role: .destructive) {
+                        showUnlinkConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "xmark.circle")
+                            Text("Desvincular corrida")
+                        }
+                    }
+                    .buttonStyle(AthlySecondaryButtonStyle())
+                    .padding(.top, 8)
+                }
             }
             .padding(AthlyTheme.Spacing.sm)
         }
@@ -77,6 +96,16 @@ struct WorkoutDetailView: View {
         .background(AthlyTheme.Color.backgroundDark)
         .navigationTitle(workout.title)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Desvincular corrida?", isPresented: $showUnlinkConfirmation) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Desvincular", role: .destructive) {
+                Task {
+                    if await onUnlink?() == true { dismiss() }
+                }
+            }
+        } message: {
+            Text("O treino volta para agendado e você poderá assinalar outra corrida. As métricas e o feedback enviados serão apagados.")
+        }
     }
 
     private var headerSection: some View {

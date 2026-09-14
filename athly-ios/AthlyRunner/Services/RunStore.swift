@@ -29,6 +29,20 @@ final class RunStore: ObservableObject {
         save()
     }
 
+    /// Solta as corridas locais de um treino prescrito sem removê-las do histórico.
+    /// Usado ao desvincular a corrida de um treino concluído — `upsert` só consegue *setar*
+    /// `athlyWorkoutId`, nunca limpá-lo.
+    func detach(athlyWorkoutId: String) {
+        let indices = sessions.indices.filter { sessions[$0].athlyWorkoutId == athlyWorkoutId }
+        guard !indices.isEmpty else { return }
+        for index in indices {
+            let session = sessions[index]
+            session.athlyWorkoutId = nil
+            sessions[index] = session // reatribui para disparar o @Published (RunSession é classe)
+        }
+        save()
+    }
+
     /// Idempotently persists an imported activity. Exact fingerprints win; a fuzzy match lets
     /// FIT/TCX/GPX exports of the same run enrich one another without duplicating history.
     @discardableResult

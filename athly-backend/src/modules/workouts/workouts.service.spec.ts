@@ -1,5 +1,10 @@
-import { InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { WorkoutStatus } from '@prisma/client';
+import {
+  ConflictException,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, WorkoutStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { WorkoutsService } from './workouts.service';
 
@@ -9,7 +14,12 @@ describe('WorkoutsService', () => {
     workout: {
       updateMany: jest.Mock;
       findFirst: jest.Mock;
+      update: jest.Mock;
     };
+    workoutFeedback: {
+      deleteMany: jest.Mock;
+    };
+    $transaction: jest.Mock;
   };
 
   const workout = {
@@ -35,7 +45,13 @@ describe('WorkoutsService', () => {
       workout: {
         updateMany: jest.fn(),
         findFirst: jest.fn(),
+        update: jest.fn(),
       },
+      workoutFeedback: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      // O service roda tudo numa transação; aqui o callback recebe o próprio mock.
+      $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(prisma)),
     };
     service = new WorkoutsService(prisma as unknown as PrismaService);
   });
@@ -145,6 +161,80 @@ describe('WorkoutsService', () => {
         expect(error).toMatchObject({
           response: expect.objectContaining({
             message: 'Falha ao completar treino. Tente novamente mais tarde.',
+          }),
+        });
+      }
+    });
+
+    it('maps the unique HealthKit UUID clash to a 409 instead of a generic 500', async () => {
+      prisma.workout.updateMany.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(
+        service.completeWorkout('user-1', 'workout-1', { appleHealthWorkoutUUID: 'hk-uuid' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('uncompleteWorkout', () => {
+    it('clears the linked run, the actuals and the feedback, back to scheduled', async () => {
+      prisma.workout.findFirst.mockResolvedValue({ id: 'workout-1' });
+      prisma.workout.update.mockResolvedValue({
+        ...workout,
+        status: WorkoutStatus.scheduled,
+      });
+
+      const result = await service.uncompleteWorkout('user-1', 'workout-1');
+
+      expect(prisma.workoutFeedback.deleteMany).toHaveBeenCalledWith({
+        where: { workoutId: 'workout-1', userId: 'user-1' },
+      });
+      expect(prisma.workout.update).toHaveBeenCalledWith({
+        where: { id: 'workout-1' },
+        data: {
+          status: 'scheduled',
+          appleHealthWorkoutUUID: null,
+          actualDistanceMeters: null,
+          actualDurationSeconds: null,
+          executionDetails: Prisma.DbNull,
+        },
+        select: expect.objectContaining({ appleHealthWorkoutUUID: true }),
+      });
+      expect(result).toMatchObject({
+        id: 'workout-1',
+        status: WorkoutStatus.scheduled,
+        appleHealthWorkoutUUID: null,
+        actualDistanceMeters: null,
+        actualDurationSeconds: null,
+      });
+    });
+
+    it('throws not found for a workout owned by another user', async () => {
+      prisma.workout.findFirst.mockResolvedValue(null);
+
+      await expect(service.uncompleteWorkout('user-1', 'workout-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prisma.workout.update).not.toHaveBeenCalled();
+      expect(prisma.workoutFeedback.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('does not expose raw Prisma errors to clients', async () => {
+      prisma.workout.findFirst.mockResolvedValue({ id: 'workout-1' });
+      prisma.workout.update.mockRejectedValue(new Error('connection reset'));
+
+      try {
+        await service.uncompleteWorkout('user-1', 'workout-1');
+        fail('Expected uncompleteWorkout to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(InternalServerErrorException);
+        expect(error).toMatchObject({
+          response: expect.objectContaining({
+            message: 'Falha ao desvincular a corrida. Tente novamente mais tarde.',
           }),
         });
       }

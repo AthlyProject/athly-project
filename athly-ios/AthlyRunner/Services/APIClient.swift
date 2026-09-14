@@ -198,6 +198,12 @@ actor APIClient {
         try await patch("/workouts/\(workoutId)/skip")
     }
 
+    /// Desfaz a conclusão de um treino: volta para `scheduled` e limpa, no servidor, a corrida
+    /// vinculada, as métricas reais, os detalhes de execução e o feedback.
+    func uncompleteWorkout(workoutId: String) async throws -> WorkoutModel {
+        try await patch("/workouts/\(workoutId)/uncomplete")
+    }
+
     /// Reagenda um treino para outra data (drag-and-drop no calendário). `newDate` em ISO8601.
     func rescheduleWorkout(workoutId: String, newDate: String) async throws -> WorkoutModel {
         try await put("/workouts/\(workoutId)", body: UpdateWorkoutRequest(date: newDate))

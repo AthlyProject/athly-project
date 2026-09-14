@@ -31,6 +31,17 @@ final class AchievementStore: @unchecked Sendable {
         }
     }
 
+    /// Inverso de `record`: usado ao desvincular a corrida de um treino-alvo, para não manter
+    /// uma conquista concedida por um vínculo errado.
+    @discardableResult
+    func remove(workoutId: String) -> Bool {
+        queue.sync {
+            guard achievedWorkoutIds.remove(workoutId) != nil else { return false }
+            persistLocked()
+            return true
+        }
+    }
+
     var count: Int {
         queue.sync { achievedWorkoutIds.count }
     }

@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -198,12 +199,70 @@ export class WorkoutsService {
       return this.mapWorkout(workout);
     } catch (err) {
       if (err instanceof NotFoundException) throw err;
+      // O índice único global em `apple_health_workout_uuid` impede que a mesma corrida do
+      // Apple Health fique vinculada a dois treinos. Sem este mapeamento o choque virava um 500
+      // opaco, sem indicar ao app que basta desvincular o treino anterior.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new ConflictException(
+          'Esta corrida já está vinculada a outro treino. Desvincule-a antes de usá-la aqui.',
+        );
+      }
       this.logger.error(
         `completeWorkout failed — workoutId=${workoutId} userId=${userId}`,
         err instanceof Error ? err.stack : String(err),
       );
       throw new InternalServerErrorException(
         'Falha ao completar treino. Tente novamente mais tarde.',
+      );
+    }
+  }
+
+  /**
+   * Desfaz a conclusão de um treino. Zera tudo que veio da execução (corrida vinculada, métricas
+   * reais, detalhes e feedback) e devolve o treino para `scheduled`, mantendo a prescrição
+   * (`blocks`, `segments`, `intensity`, `isGoalAttempt`, `dateScheduled`) intacta.
+   *
+   * Limpar `appleHealthWorkoutUUID` é o que libera o índice único para uma nova vinculação.
+   * As métricas semanais são calculadas sob demanda a partir de `status === 'done'`
+   * (`weekly-metrics.util.ts`), então se corrigem sozinhas — só os snapshots históricos já
+   * gravados em `weekly_goals` permanecem, de propósito.
+   */
+  async uncompleteWorkout(userId: string, workoutId: string): Promise<WorkoutModel> {
+    try {
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.workout.findFirst({
+          where: { id: workoutId, userId },
+          select: { id: true },
+        });
+        if (!existing) {
+          throw new NotFoundException('Workout not found');
+        }
+
+        await tx.workoutFeedback.deleteMany({ where: { workoutId, userId } });
+
+        return tx.workout.update({
+          where: { id: workoutId },
+          data: {
+            status: 'scheduled',
+            appleHealthWorkoutUUID: null,
+            actualDistanceMeters: null,
+            actualDurationSeconds: null,
+            executionDetails: Prisma.DbNull,
+          },
+          select: workoutCompletionSelect,
+        });
+      });
+
+      this.logger.log(`uncompleteWorkout — workoutId=${workoutId} userId=${userId}`);
+      return this.mapWorkout(updated);
+    } catch (err) {
+      if (err instanceof NotFoundException) throw err;
+      this.logger.error(
+        `uncompleteWorkout failed — workoutId=${workoutId} userId=${userId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException(
+        'Falha ao desvincular a corrida. Tente novamente mais tarde.',
       );
     }
   }

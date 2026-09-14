@@ -14,6 +14,8 @@ struct PlanView: View {
     @State private var showAnalysisDetails = false
     @State private var showPaywall = false
     @State private var workoutToComplete: WorkoutModel?
+    /// Treino concluído aguardando confirmação para ter a corrida desvinculada (menu de contexto).
+    @State private var workoutToUnlink: WorkoutModel?
     /// Dia atualmente sob o cursor durante um drag de reagendamento (destaque visual).
     @State private var dropTargetDay: Date?
 
@@ -90,12 +92,30 @@ struct PlanView: View {
                     onDismiss: { workoutToComplete = nil }
                 )
             }
+            .alert("Desvincular corrida?", isPresented: unlinkAlertBinding, presenting: workoutToUnlink) { workout in
+                Button("Cancelar", role: .cancel) { workoutToUnlink = nil }
+                Button("Desvincular", role: .destructive) {
+                    Task {
+                        await planVM.uncompleteWorkout(workout, runStore: runStore)
+                        workoutToUnlink = nil
+                    }
+                }
+            } message: { _ in
+                Text("O treino volta para agendado e você poderá assinalar outra corrida. As métricas e o feedback enviados serão apagados.")
+            }
             .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
                 Button("OK") { planVM.errorMessage = nil }
             } message: {
                 Text(planVM.errorMessage ?? "")
             }
         }
+    }
+
+    private var unlinkAlertBinding: Binding<Bool> {
+        Binding(
+            get: { workoutToUnlink != nil },
+            set: { if !$0 { workoutToUnlink = nil } }
+        )
     }
 
     // MARK: - Plan content (week strip + day list)
@@ -331,7 +351,8 @@ struct PlanView: View {
             WorkoutDetailView(
                 workout: workout,
                 onComplete: { workoutToComplete = workout },
-                onStart: onStartWorkout
+                onStart: onStartWorkout,
+                onUnlink: { await planVM.uncompleteWorkout(workout, runStore: runStore) }
             )
         } label: {
             HStack(spacing: 10) {
@@ -394,6 +415,12 @@ struct PlanView: View {
                     Task { await planVM.skipWorkout(workout) }
                 } label: {
                     Label("Pular treino", systemImage: "forward.fill")
+                }
+            } else if workout.status == .done || workout.status == .partial {
+                Button(role: .destructive) {
+                    workoutToUnlink = workout
+                } label: {
+                    Label("Desvincular corrida", systemImage: "xmark.circle")
                 }
             }
         }
