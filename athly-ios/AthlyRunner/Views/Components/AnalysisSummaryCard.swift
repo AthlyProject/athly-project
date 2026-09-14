@@ -91,7 +91,7 @@ struct AnalysisSummaryCard: View {
         .athlyInsightCard()
     }
 
-    private func metricChip(label: String, value: String) -> some View {
+    private func metricChip(label: LocalizedStringKey, value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(13))
@@ -123,19 +123,19 @@ struct AnalysisSummaryCard: View {
 
     private func volumeLabel(_ volume: String) -> String {
         switch volume.lowercased() {
-        case "increase": return "Mais"
-        case "decrease": return "Menos"
-        case "maintain": return "Igual"
+        case "increase": return String(localized: "Mais")
+        case "decrease": return String(localized: "Menos")
+        case "maintain": return String(localized: "Igual")
         default: return volume
         }
     }
 
     private func trendLabel(_ trend: String) -> String {
         switch trend.lowercased() {
-        case "improving (volume)": return "Em alta (volume)"
-        case "improving (intensity)": return "Em alta (intensidade)"
-        case "maintaining": return "Estável"
-        case "declining": return "Em baixa"
+        case "improving (volume)": return String(localized: "Em alta (volume)")
+        case "improving (intensity)": return String(localized: "Em alta (intensidade)")
+        case "maintaining": return String(localized: "Estável")
+        case "declining": return String(localized: "Em baixa")
         default: return trend
         }
     }
@@ -244,7 +244,7 @@ struct AnalysisSummarySheet: View {
             .clipShape(Capsule())
     }
 
-    private func summaryMetricCard(label: String, value: String) -> some View {
+    private func summaryMetricCard(label: LocalizedStringKey, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(AthlyTheme.Typography.body(11))
@@ -267,10 +267,10 @@ struct AnalysisSummarySheet: View {
 
     private func trendLabel(_ trend: String) -> String {
         switch trend.lowercased() {
-        case "improving (volume)": return "Em alta (volume)"
-        case "improving (intensity)": return "Em alta (intensidade)"
-        case "maintaining": return "Estável"
-        case "declining": return "Em baixa"
+        case "improving (volume)": return String(localized: "Em alta (volume)")
+        case "improving (intensity)": return String(localized: "Em alta (intensidade)")
+        case "maintaining": return String(localized: "Estável")
+        case "declining": return String(localized: "Em baixa")
         default: return trend
         }
     }

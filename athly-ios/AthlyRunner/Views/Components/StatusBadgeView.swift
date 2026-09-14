@@ -5,10 +5,10 @@ struct StatusBadgeView: View {
 
     private var label: String {
         switch status {
-        case .done: return "Concluído"
-        case .scheduled: return "Agendado"
-        case .partial: return "Parcial"
-        case .skipped: return "Pulado"
+        case .done: return String(localized: "Concluído")
+        case .scheduled: return String(localized: "Agendado")
+        case .partial: return String(localized: "Parcial")
+        case .skipped: return String(localized: "Pulado")
         }
     }
 

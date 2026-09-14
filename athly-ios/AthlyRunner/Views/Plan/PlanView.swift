@@ -11,8 +11,6 @@ struct PlanView: View {
 
     @State private var visibleWeekStart: Date = PlanView.weekStart(for: Date())
     @State private var showAssessment = false
-    @State private var showAnalysisDetails = false
-    @State private var showPaywall = false
     @State private var workoutToComplete: WorkoutModel?
     /// Treino concluído aguardando confirmação para ter a corrida desvinculada (menu de contexto).
     @State private var workoutToUnlink: WorkoutModel?
@@ -49,8 +47,16 @@ struct PlanView: View {
                                 .padding(.top, 8)
                         }
 
+                        if planVM.isGeneratingInBackground {
+                            generatingBanner
+                                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                                .padding(.top, 8)
+                        }
+
                         if planVM.trainingPlanResponse == nil {
-                            noGoalState
+                            if !planVM.isGeneratingInBackground {
+                                noGoalState
+                            }
                         } else {
                             planContent
                         }
@@ -67,13 +73,6 @@ struct PlanView: View {
                     // Objetivo já foi criado no backend; gera a primeira semana
                     // automaticamente (com dados do Apple Health) sem exigir toque manual.
                     Task { await planVM.generateNextWeekWithHealth() }
-                }
-            }
-            .sheet(isPresented: $showAnalysisDetails) {
-                if let analysis = planVM.lastAnalysis {
-                    AnalysisSummarySheet(analysis: analysis)
-                        .presentationDetents([.medium, .large])
-                        .presentationDragIndicator(.visible)
                 }
             }
             .sheet(item: $workoutToComplete) { workout in
@@ -135,26 +134,7 @@ struct PlanView: View {
 
                 ScrollView {
                     VStack(spacing: 12) {
-                        if let plan = planVM.trainingPlanResponse {
-                            planHeaderCard(plan)
-                        }
-
                         dayList
-
-                        generateButton
-
-                        if let analysis = planVM.lastAnalysis {
-                            Button {
-                                showAnalysisDetails = true
-                            } label: {
-                                AnalysisSummaryCard(
-                                    analysis: analysis,
-                                    previousWeekAnalysis: planVM.currentWeekGoal?.previousWeekAnalysis,
-                                    isInteractive: true
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     .padding(.horizontal, AthlyTheme.Spacing.sm)
                     .padding(.top, 8)
@@ -187,20 +167,37 @@ struct PlanView: View {
 
                 Spacer()
 
-                Button {
-                    visibleWeekStart = Self.weekStart(for: Date())
-                } label: {
-                    Text("Hoje")
-                        .font(AthlyTheme.Typography.semibold(10))
-                        .textCase(.uppercase)
-                        .foregroundStyle(AthlyTheme.Color.primary)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 2)
-                        .background(AthlyTheme.Color.primarySoft)
-                        .overlay(Capsule().stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1))
-                        .clipShape(Capsule())
+                HStack(spacing: 8) {
+                    Button {
+                        visibleWeekStart = Self.weekStart(for: Date())
+                    } label: {
+                        Text("Hoje")
+                            .font(AthlyTheme.Typography.semibold(10))
+                            .textCase(.uppercase)
+                            .foregroundStyle(AthlyTheme.Color.primary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 2)
+                            .background(AthlyTheme.Color.primarySoft)
+                            .overlay(Capsule().stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    if interactive, planVM.trainingPlanResponse != nil {
+                        NavigationLink {
+                            TrainingPlanDetailView()
+                                .environmentObject(planVM)
+                        } label: {
+                            Image(systemName: "list.bullet")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                                .frame(width: 26, height: 26)
+                                .background(AthlyTheme.Color.primarySoft)
+                                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
 
             HStack(spacing: 2) {
@@ -333,8 +330,10 @@ struct PlanView: View {
         .dropDestination(for: WorkoutModel.self) { items, _ in
             guard let dragged = items.first else { return false }
             guard !calendar.isDate(dragged.parsedDate, inSameDayAs: day) else { return false }
-            let newDate = combine(day: day, timeFrom: dragged.parsedDate)
-            Task { await planVM.rescheduleWorkout(dragged, to: newDate) }
+            // Envia só o dia (yyyy-MM-dd) no calendário local — o backend guarda a data,
+            // então serializar como timestamp UTC deslocava o dia em fusos a leste de UTC.
+            let dayString = Self.idFormatter.string(from: day)
+            Task { await planVM.rescheduleWorkout(dragged, toDay: dayString) }
             return true
         } isTargeted: { targeted in
             if targeted {
@@ -352,6 +351,7 @@ struct PlanView: View {
                 workout: workout,
                 onComplete: { workoutToComplete = workout },
                 onStart: onStartWorkout,
+                onSkip: { Task { await planVM.skipWorkout(workout) } },
                 onUnlink: { await planVM.uncompleteWorkout(workout, runStore: runStore) }
             )
         } label: {
@@ -405,18 +405,7 @@ struct PlanView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            if workout.status == .scheduled {
-                Button {
-                    workoutToComplete = workout
-                } label: {
-                    Label("Concluir treino", systemImage: "checkmark.circle")
-                }
-                Button {
-                    Task { await planVM.skipWorkout(workout) }
-                } label: {
-                    Label("Pular treino", systemImage: "forward.fill")
-                }
-            } else if workout.status == .done || workout.status == .partial {
+            if workout.status == .done || workout.status == .partial {
                 Button(role: .destructive) {
                     workoutToUnlink = workout
                 } label: {
@@ -443,77 +432,25 @@ struct PlanView: View {
         )
     }
 
-    // MARK: - Plan header
 
-    private func planHeaderCard(_ plan: TrainingPlanResponse) -> some View {
-        NavigationLink {
-            TrainingPlanDetailView()
-                .environmentObject(planVM)
-        } label: {
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(plan.objective)
-                        .font(AthlyTheme.Typography.semibold(15))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        .lineLimit(1)
-                    Text("\(planVM.weeks.count) semanas de plano")
-                        .font(AthlyTheme.Typography.body(12))
-                        .foregroundStyle(AthlyTheme.Color.textSecondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+    // MARK: - Generating banner
+
+    private var generatingBanner: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .tint(AthlyTheme.Color.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Seu treino está sendo preparado")
+                    .font(AthlyTheme.Typography.semibold(14))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Text("Isso pode levar até 3 minutos. Você será notificado quando estiver pronto.")
+                    .font(AthlyTheme.Typography.body(12))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
             }
-            .padding(14)
-            .athlyInsightCard()
+            Spacer()
         }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Generate button
-
-    private var generateButton: some View {
-        Button {
-            if entitlementManager.canUsePremium {
-                Task { await planVM.generateNextWeekWithHealth() }
-            } else {
-                showPaywall = true
-            }
-        } label: {
-            HStack {
-                if planVM.isGenerating {
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(0.8)
-                } else if planVM.isGeneratingInBackground {
-                    Image(systemName: "clock.arrow.circlepath")
-                } else {
-                    Image(systemName: "sparkles")
-                }
-                Text(generateButtonTitle)
-            }
-        }
-        .buttonStyle(AthlyGradientButtonStyle())
-        .disabled(planVM.isGenerating || planVM.isGeneratingInBackground)
-        .sheet(isPresented: $showPaywall) {
-            AthlyPaywallView(
-                founderEligible: entitlementManager.isFounderEligible,
-                onPurchaseCompleted: { _ in
-                    showPaywall = false
-                    Task { await entitlementManager.refresh() }
-                },
-                onRestoreCompleted: { _ in
-                    Task { await entitlementManager.refresh() }
-                }
-            )
-        }
-    }
-
-    private var generateButtonTitle: String {
-        if planVM.isGenerating { return "Iniciando geração..." }
-        if planVM.isGeneratingInBackground { return "Gerando em segundo plano" }
-        return "Gerar Próxima Semana"
+        .padding(AthlyTheme.Spacing.sm)
+        .athlyCard()
     }
 
     // MARK: - No-goal state (S3)
@@ -590,8 +527,8 @@ struct PlanView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(AthlyTheme.Color.primary)
             Text(days == 1
-                 ? "Último dia do seu período de teste"
-                 : "Período de teste: \(days) dias restantes")
+                 ? String(localized: "Último dia do seu período de teste")
+                 : String(localized: "Período de teste: \(days) dias restantes"))
                 .font(AthlyTheme.Typography.semibold(13))
                 .foregroundColor(AthlyTheme.Color.textSecondary)
             Spacer(minLength: 0)
@@ -608,7 +545,7 @@ struct PlanView: View {
 
     // MARK: - Helpers
 
-    private func tag(_ text: String, color: Color, bg: Color, border: Color) -> some View {
+    private func tag(_ text: LocalizedStringKey, color: Color, bg: Color, border: Color) -> some View {
         Text(text)
             .font(.system(size: 8, weight: .bold))
             .textCase(.uppercase)
@@ -629,21 +566,6 @@ struct PlanView: View {
         planVM.allWorkouts
             .filter { $0.isOnDay(day) && $0.sportType != .other }
             .sorted { $0.parsedDate < $1.parsedDate }
-    }
-
-    /// Junta a data (ano/mês/dia) de `day` com o horário original do treino, preservando a
-    /// hora marcada ao mover o treino para outro dia.
-    private func combine(day: Date, timeFrom original: Date) -> Date {
-        let dayComps = calendar.dateComponents([.year, .month, .day], from: day)
-        let timeComps = calendar.dateComponents([.hour, .minute, .second], from: original)
-        var merged = DateComponents()
-        merged.year = dayComps.year
-        merged.month = dayComps.month
-        merged.day = dayComps.day
-        merged.hour = timeComps.hour
-        merged.minute = timeComps.minute
-        merged.second = timeComps.second
-        return calendar.date(from: merged) ?? day
     }
 
     private func dayID(_ day: Date) -> String {
@@ -676,21 +598,21 @@ struct PlanView: View {
 
     private static let weekdayFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "EEE"
         return f
     }()
 
     private static let monthAbbrFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "MMM"
         return f
     }()
 
     private static let monthYearFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
+        f.locale = .current
         f.dateFormat = "MMMM yyyy"
         return f
     }()

@@ -29,7 +29,7 @@ struct RunStartView: View {
                     preRunView
                 }
             }
-            .navigationTitle(viewModel.isActive ? "" : "Correr")
+            .navigationTitle(viewModel.isActive ? "" : String(localized: "Correr"))
             .navigationBarTitleDisplayMode(.inline)
         }
         .alert("Live Activities desativadas", isPresented: $showLiveActivityAlert) {
@@ -138,8 +138,8 @@ struct RunStartView: View {
                 .multilineTextAlignment(.center)
 
             Text(locationIsDenied
-                ? "Acesso a localizacao foi negado. Habilite em Ajustes > Privacidade > Localizacao > Athly."
-                : "Para rastrear sua corrida, precisamos acessar sua localizacao.")
+                ? String(localized: "Acesso a localizacao foi negado. Habilite em Ajustes > Privacidade > Localizacao > Athly.")
+                : String(localized: "Para rastrear sua corrida, precisamos acessar sua localizacao."))
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -228,7 +228,7 @@ struct RunStartView: View {
                 Image(systemName: viewModel.targetAlert == nil ? "bell.badge" : "bell.fill")
                     .font(.system(size: 16, weight: .semibold))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.targetAlert == nil ? "Adicionar aviso" : "Aviso configurado")
+                    Text(viewModel.targetAlert == nil ? String(localized: "Adicionar aviso") : String(localized: "Aviso configurado"))
                         .font(AthlyTheme.Typography.semibold(14))
                     if let alert = viewModel.targetAlert {
                         Text("Em \(alert.displayValue)")
@@ -289,7 +289,7 @@ private struct TargetAlertSetupSheet: View {
                 .pickerStyle(.segmented)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(selectedKind == .distance ? "Distância" : "Tempo")
+                    Text(selectedKind == .distance ? String(localized: "Distância") : String(localized: "Tempo"))
                         .font(AthlyTheme.Typography.semibold(15))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
 
@@ -359,7 +359,7 @@ private enum RunTargetAlertInputFormatter {
 
     static func string(from value: Double) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = .current
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 2
         return formatter.string(from: NSNumber(value: value)) ?? "\(value)"

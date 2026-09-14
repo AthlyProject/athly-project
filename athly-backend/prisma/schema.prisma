@@ -123,6 +123,7 @@ model User {
   userGoals     UserGoal[]
   planGenerationJobs PlanGenerationJob[]
   pushDevices        PushDevice[]
+  passwordResetCodes PasswordResetCode[]
 
   @@map("users")
 }
@@ -137,6 +138,22 @@ model Session {
   userId String @map("user_id")
 
   @@map("sessions")
+}
+
+model PasswordResetCode {
+  id         String    @id @default(uuid())
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  // Tentativas de validação com código errado; código é bloqueado após 5 (ver AuthService).
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@index([userId, consumedAt])
+  @@map("password_reset_codes")
 }
 
 model Workout {

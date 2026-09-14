@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><script type="application/json" data-od-external-dependencies>["https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"]</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athly — TrainingPlanDetailView</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #060810;
+      --bg-alt:       #0B0F1C;
+      --surface:      #0F1624;
+      --card:         #141E30;
+      --card-2:       #1A2540;
+      --primary:      #0EA5E9;
+      --primary-soft: rgba(14,165,233,0.10);
+      --primary-b:    rgba(14,165,233,0.22);
+      --primary-glow: rgba(14,165,233,0.18);
+      --violet:       #7C3AED;
+      --violet-soft:  rgba(124,58,237,0.10);
+      --violet-b:     rgba(124,58,237,0.20);
+      --text-1:  #EEF2FF;
+      --text-2:  #94A3B8;
+      --text-3:  #4B5563;
+      --border:     rgba(255,255,255,0.06);
+      --border-mid: rgba(255,255,255,0.10);
+      --success:      #10B981;
+      --success-soft: rgba(16,185,129,0.10);
+      --success-b:    rgba(16,185,129,0.22);
+      --warn:         #F59E0B;
+      --warn-soft:    rgba(245,158,11,0.10);
+      --warn-b:       rgba(245,158,11,0.22);
+      --danger:       #EF4444;
+      --danger-soft:  rgba(239,68,68,0.10);
+      --danger-b:     rgba(239,68,68,0.22);
+      --grad:      linear-gradient(135deg,#0EA5E9,#7C3AED);
+      --font: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 9999px;
+      --ease: cubic-bezier(0.22,1,0.36,1);
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text-1); font-family:var(--font); line-height:1.5; overflow-x:hidden; }
+    button { font-family:var(--font); cursor:pointer; border:none; background:none; }
+    button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:var(--r-sm); }
+
+    /* ── Nav ── */
+    nav { position:sticky; top:0; z-index:200; background:rgba(6,8,16,.88); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+    .nav-inner { max-width:1200px; margin:0 auto; padding:0 48px; display:flex; align-items:center; height:58px; }
+    .nav-brand { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:700; text-decoration:none; color:var(--text-1); }
+    .nav-logo { width:30px; height:30px; background:var(--grad); border-radius:9px; display:flex; align-items:center; justify-content:center; }
+    .nav-links { display:flex; gap:28px; margin-left:40px; }
+    .nav-links a { font-size:13px; font-weight:500; color:var(--text-2); text-decoration:none; transition:color 150ms; }
+    .nav-links a:hover { color:var(--text-1); }
+    .nav-pill { margin-left:auto; font-family:var(--mono); font-size:11px; padding:3px 11px; background:var(--primary-soft); border:1px solid var(--primary-b); border-radius:var(--r-pill); color:var(--primary); }
+
+    /* ── Page layout ── */
+    .wrap { max-width:1200px; margin:0 auto; padding:0 48px; }
+    .section { padding:80px 0; border-top:1px solid var(--border); }
+    .section-eyebrow { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--primary); margin-bottom:10px; }
+    .section-title { font-size:34px; font-weight:700; letter-spacing:-.025em; margin-bottom:12px; }
+    .section-desc { font-size:16px; color:var(--text-2); max-width:560px; margin-bottom:44px; line-height:1.65; }
+
+    /* ── Hero ── */
+    .hero { padding:96px 0 76px; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; top:-160px; left:-100px; width:520px; height:520px; background:radial-gradient(circle,rgba(14,165,233,.10) 0%,transparent 70%); pointer-events:none; }
+    .hero::after  { content:''; position:absolute; bottom:-120px; right:-80px; width:440px; height:440px; background:radial-gradient(circle,rgba(124,58,237,.08) 0%,transparent 70%); pointer-events:none; }
+    .hero-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; background:var(--primary-soft); border:1px solid var(--primary-b); border-radius:var(--r-pill); font-size:12px; font-weight:600; color:var(--primary); margin-bottom:24px; }
+    .hero-title { font-size:clamp(42px,5.5vw,72px); font-weight:700; line-height:1.0; letter-spacing:-.035em; margin-bottom:20px; }
+    .grad-text { background:var(--grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .hero-sub { font-size:18px; color:var(--text-2); max-width:540px; line-height:1.65; margin-bottom:40px; }
+    .hero-tags { display:flex; gap:9px; flex-wrap:wrap; }
+    .hero-tag { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; background:var(--card); border:1px solid var(--border-mid); border-radius:var(--r-pill); font-size:12px; font-weight:600; color:var(--text-2); }
+
+    /* ── iPhone shell ── */
+    .screens-rail { display:flex; gap:32px; overflow-x:auto; padding:8px 0 52px; scrollbar-width:none; }
+    .screens-rail::-webkit-scrollbar { display:none; }
+    .phone-wrap { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .phone-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.10em; color:var(--text-3); }
+    .phone-sub   { font-size:10px; color:var(--text-3); font-family:var(--mono); }
+    .iphone { width:316px; height:682px; background:#1C1C22; border-radius:50px; border:8px solid #2A2A32; box-shadow:0 0 0 1px #111, inset 0 0 0 1px rgba(255,255,255,.07), 0 44px 96px rgba(0,0,0,.75); overflow:hidden; position:relative; }
+    .iphone-screen { width:100%; height:100%; background:var(--bg); border-radius:42px; overflow:hidden; display:flex; flex-direction:column; position:relative; }
+    .dynamic-island { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#000; border-radius:13px; z-index:50; }
+    .amb { position:absolute; pointer-events:none; z-index:0; }
+    .amb-tl { top:-60px;left:-60px; width:240px;height:240px; background:radial-gradient(circle,rgba(14,165,233,.12) 0%,transparent 70%); }
+    .amb-tr { top:-60px;right:-60px; width:200px;height:200px; background:radial-gradient(circle,rgba(16,185,129,.10) 0%,transparent 70%); }
+    .amb-br { bottom:-40px;right:-40px; width:160px;height:160px; background:radial-gradient(circle,rgba(245,158,11,.08) 0%,transparent 70%); }
+    .amb-rd { bottom:-60px;right:-40px; width:200px;height:200px; background:radial-gradient(circle,rgba(239,68,68,.08) 0%,transparent 70%); }
+    .status-bar { height:50px; padding:14px 18px 0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; z-index:10; position:relative; }
+    .status-time { font-family:var(--mono); font-size:13px; font-weight:600; }
+    .status-icons { display:flex; align-items:center; gap:5px; color:var(--text-1); }
+
+    /* ── Phone nav bar ── */
+    .wd-nav { display:flex; align-items:center; justify-content:space-between; padding:3px 13px 8px; flex-shrink:0; border-bottom:1px solid var(--border); position:relative; z-index:5; }
+    .wd-back { font-size:11px; font-weight:600; color:var(--primary); }
+    .wd-nav-title { font-size:12px; font-weight:700; letter-spacing:-.01em; }
+    .wd-nav-spacer { width:40px; }
+
+    /* ── Phone scrollable body ── */
+    .sc-body { flex:1; display:flex; flex-direction:column; gap:8px; overflow-y:auto; scrollbar-width:none; padding:10px 13px 16px; position:relative; z-index:1; }
+    .sc-body::-webkit-scrollbar { display:none; }
+
+    /* ── Plan card (insight-style) ── */
+    .plan-card { background:var(--card); border:1px solid var(--border); border-radius:13px; padding:12px; flex-shrink:0; }
+
+    /* ── Status badge ── */
+    .status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:var(--r-pill); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; }
+    .sb-active    { background:var(--success-soft); border:1px solid var(--success-b);  color:var(--success); }
+    .sb-draft     { background:rgba(75,85,99,.14);  border:1px solid var(--border-mid); color:var(--text-2); }
+    .sb-completed { background:var(--primary-soft); border:1px solid var(--primary-b);  color:var(--primary); }
+    .sb-cancelled { background:var(--warn-soft);    border:1px solid var(--warn-b);     color:var(--warn); }
+    .sb-locked    { background:var(--warn-soft);    border:1px solid var(--warn-b);     color:var(--warn); }
+
+    /* ── Summary card innards ── */
+    .plan-title { font-size:14px; font-weight:700; letter-spacing:-.015em; line-height:1.3; margin-bottom:10px; flex:1; }
+    .info-table { display:flex; flex-direction:column; }
+    .info-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; }
+    .info-row + .info-row { border-top:1px solid var(--border); }
+    .info-lbl { font-size:9px; color:var(--text-3); }
+    .info-val  { font-size:10px; font-weight:600; color:var(--text-1); font-family:var(--mono); }
+
+    /* ── Feasibility card ── */
+    .feas-hd { display:flex; align-items:center; gap:5px; margin-bottom:8px; }
+    .feas-lbl { font-size:10px; font-weight:700; flex:1; }
+    .feas-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:var(--r-pill); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .fb-ready      { background:var(--success-soft); border:1px solid var(--success-b); color:var(--success); }
+    .fb-feasible   { background:var(--success-soft); border:1px solid var(--success-b); color:var(--success); }
+    .fb-ambitious  { background:var(--warn-soft);    border:1px solid var(--warn-b);    color:var(--warn); }
+    .fb-unrealistic{ background:var(--danger-soft);  border:1px solid var(--danger-b);  color:var(--danger); }
+    .metric-row { display:flex; align-items:center; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:8px; }
+    .metric-cell { flex:1; display:flex; flex-direction:column; align-items:center; padding:6px 4px; }
+    .metric-cell + .metric-cell { border-left:1px solid var(--border); }
+    .metric-val { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--text-1); }
+    .metric-key { font-size:8px; color:var(--text-3); margin-top:1px; }
+    .feas-note { font-size:9px; color:var(--text-2); line-height:1.5; }
+    .feas-conf { font-size:8px; color:var(--text-3); margin-top:5px; font-style:italic; }
+
+    /* ── Weekly insight card ── */
+    .insight-hd { display:flex; align-items:center; gap:5px; margin-bottom:7px; }
+    .insight-lbl { font-size:10px; font-weight:700; flex:1; }
+    .trend-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:var(--r-pill); font-size:8px; font-weight:700; }
+    .tb-up   { background:var(--success-soft); color:var(--success); }
+    .tb-flat { background:var(--primary-soft); color:var(--primary); }
+    .tb-down { background:var(--warn-soft);    color:var(--warn); }
+    .insight-txt { font-size:9px; color:var(--text-2); line-height:1.55; margin-bottom:7px; }
+    .insight-stats { display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .is-cell { flex:1; display:flex; flex-direction:column; align-items:center; padding:5px 3px; }
+    .is-cell + .is-cell { border-left:1px solid var(--border); }
+    .is-val { font-family:var(--mono); font-size:10px; font-weight:600; }
+    .is-key { font-size:7px; color:var(--text-3); margin-top:1px; }
+
+    /* ── Week date chip ── */
+    .week-chip { font-size:8px; color:var(--text-3); margin-bottom:5px; font-family:var(--mono); }
+
+    /* ── Section label ── */
+    .sc-lbl { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.10em; color:var(--text-3); padding:2px 0; flex-shrink:0; }
+
+    /* ── Delete button (phone) ── */
+    .btn-delete { width:100%; border:1px solid rgba(239,68,68,.45); border-radius:11px; padding:11px; font-size:12px; font-weight:600; color:var(--danger); background:transparent; display:flex; align-items:center; justify-content:center; gap:6px; transition:background 150ms; }
+    .btn-delete:hover { background:var(--danger-soft); }
+    .btn-delete.loading { opacity:.5; pointer-events:none; }
+
+    /* ── Empty state ── */
+    .empty-phone { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; flex:1; padding:32px 20px; }
+    .empty-phone-title { font-size:12px; color:var(--text-2); font-weight:600; margin-top:14px; margin-bottom:4px; }
+    .empty-phone-desc  { font-size:10px; color:var(--text-3); }
+
+    /* ── DESKTOP COMPONENTS ── */
+    .comp-grid   { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .comp-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .comp-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+    .comp-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+    .comp-lbl  { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.10em; color:var(--text-3); margin-bottom:18px; }
+    .comp-note { margin-top:14px; font-size:11px; color:var(--text-3); font-family:var(--mono); border-top:1px solid var(--border); padding-top:10px; line-height:1.6; }
+
+    /* Desktop summary card */
+    .sum-card-lg { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px; }
+    .sum-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .sum-title-lg { font-size:20px; font-weight:700; letter-spacing:-.02em; line-height:1.25; flex:1; }
+    .sum-badge-lg { display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:var(--r-pill); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; flex-shrink:0; }
+    .sb-lg-active    { background:var(--success-soft); border:1px solid var(--success-b);  color:var(--success); }
+    .sb-lg-draft     { background:rgba(75,85,99,.14);  border:1px solid var(--border-mid); color:var(--text-2); }
+    .sb-lg-completed { background:var(--primary-soft); border:1px solid var(--primary-b);  color:var(--primary); }
+    .sb-lg-cancelled { background:var(--warn-soft);    border:1px solid var(--warn-b);     color:var(--warn); }
+    .sum-info-lg { display:flex; flex-direction:column; }
+    .sum-row-lg { display:flex; justify-content:space-between; align-items:center; padding:9px 0; }
+    .sum-row-lg + .sum-row-lg { border-top:1px solid var(--border); }
+    .sum-rl { font-size:13px; color:var(--text-3); }
+    .sum-rv { font-size:13px; font-weight:600; font-family:var(--mono); }
+
+    /* Desktop feasibility card */
+    .feas-card-lg { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px; }
+    .feas-hd-lg { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+    .feas-title-lg { font-size:15px; font-weight:700; flex:1; }
+    .feas-badge-lg { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:var(--r-pill); font-size:11px; font-weight:700; }
+    .fb-lg-ready       { background:var(--success-soft); border:1px solid var(--success-b); color:var(--success); }
+    .fb-lg-feasible    { background:var(--success-soft); border:1px solid var(--success-b); color:var(--success); }
+    .fb-lg-ambitious   { background:var(--warn-soft);    border:1px solid var(--warn-b);    color:var(--warn); }
+    .fb-lg-unrealistic { background:var(--danger-soft);  border:1px solid var(--danger-b);  color:var(--danger); }
+    .feas-metrics-lg { display:flex; border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden; margin-bottom:14px; }
+    .fm-cell-lg { flex:1; display:flex; flex-direction:column; align-items:center; padding:12px 8px; }
+    .fm-cell-lg + .fm-cell-lg { border-left:1px solid var(--border); }
+    .fm-val-lg { font-family:var(--mono); font-size:18px; font-weight:600; }
+    .fm-key-lg { font-size:11px; color:var(--text-3); margin-top:3px; }
+    .feas-note-lg { font-size:13px; color:var(--text-2); line-height:1.65; }
+    .feas-conf-lg { font-size:12px; color:var(--text-3); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-style:italic; }
+
+    /* Desktop insight card */
+    .insight-card-lg { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px; }
+    .insight-hd-lg { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .insight-title-lg { font-size:15px; font-weight:700; flex:1; }
+    .trend-badge-lg { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:var(--r-pill); font-size:11px; font-weight:700; }
+    .tb-lg-up   { background:var(--success-soft); border:1px solid var(--success-b); color:var(--success); }
+    .tb-lg-flat { background:var(--primary-soft); border:1px solid var(--primary-b); color:var(--primary); }
+    .tb-lg-down { background:var(--warn-soft);    border:1px solid var(--warn-b);    color:var(--warn); }
+    .insight-text-lg { font-size:13px; color:var(--text-2); line-height:1.7; margin-bottom:14px; }
+    .insight-stats-lg { display:flex; border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden; }
+    .is-cell-lg { flex:1; display:flex; flex-direction:column; align-items:center; padding:12px 8px; }
+    .is-cell-lg + .is-cell-lg { border-left:1px solid var(--border); }
+    .is-val-lg { font-family:var(--mono); font-size:16px; font-weight:600; }
+    .is-key-lg { font-size:11px; color:var(--text-3); margin-top:3px; }
+    .insight-period { font-size:11px; color:var(--text-3); font-family:var(--mono); margin-bottom:10px; }
+
+    /* Desktop delete / danger */
+    .btn-delete-lg { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:1px solid rgba(239,68,68,.45); border-radius:var(--r-md); padding:14px 20px; font-size:15px; font-weight:600; color:var(--danger); background:transparent; transition:background 150ms,border-color 150ms; }
+    .btn-delete-lg:hover { background:var(--danger-soft); border-color:rgba(239,68,68,.65); }
+
+    /* Status badge column */
+    .badge-demo-col { display:flex; flex-direction:column; gap:10px; }
+    .badge-row-demo { display:flex; align-items:center; gap:12px; }
+    .badge-row-demo .badge-info { flex:1; }
+    .badge-info-lbl { font-size:13px; font-weight:600; }
+    .badge-info-meta { font-family:var(--mono); font-size:11px; color:var(--text-3); margin-top:1px; }
+    .badge-lg { display:inline-flex; align-items:center; gap:5px; padding:5px 13px; border-radius:var(--r-pill); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; }
+
+    /* Verdict row */
+    .verdict-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .verdict-item { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:16px; }
+    .verdict-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:var(--r-pill); font-size:12px; font-weight:700; margin-bottom:10px; }
+    .verdict-rule  { font-size:12px; color:var(--text-3); font-family:var(--mono); line-height:1.65; }
+
+    /* Responsive */
+    @media (max-width:960px) {
+      .comp-grid-4,.comp-grid-3 { grid-template-columns:1fr 1fr; }
+      .verdict-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:640px) {
+      .wrap { padding:0 20px; }
+      .nav-links { display:none; }
+      .comp-grid,.comp-grid-3,.comp-grid-4 { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-brand" href="#">
+      <div class="nav-logo">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M1 11C3.5 8 5.5 6 7 6C8.5 6 10.5 8 13 5"/>
+          <circle cx="11" cy="3.5" r="1.5" fill="white" stroke="none"/>
+        </svg>
+      </div>
+      Athly
+    </a>
+    <div class="nav-links">
+      <a href="#screens">Telas</a>
+      <a href="#summary">Sumário</a>
+      <a href="#feasibility">Viabilidade</a>
+      <a href="#insights">Insights</a>
+    </div>
+    <span class="nav-pill">TrainingPlanDetail v2</span>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<div class="hero" data-od-id="hero">
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="hero-badge">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="5" r="4"/><path d="M3 5h4M5 3v4"/></svg>
+      TrainingPlanDetailView · Redesign v2
+    </div>
+    <h1 class="hero-title">Detalhe do<br><span class="grad-text">Plano</span></h1>
+    <p class="hero-sub">Sumário do plano, veredito de viabilidade vs. objetivo, análise semanal da IA e exclusão — todos os estados e variantes de componente.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">4 Vereditos de Viabilidade</span>
+      <span class="hero-tag">5 Status de Plano</span>
+      <span class="hero-tag">3 Trends de Semana</span>
+      <span class="hero-tag">Card de Insight da IA</span>
+      <span class="hero-tag">Ação Destrutiva</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 01 — SCREENS ═══ -->
+<section class="section" id="screens" data-od-id="screens-section">
+  <div class="wrap">
+    <div class="section-eyebrow">01 — Telas</div>
+    <h2 class="section-title">Três Estados de Plano</h2>
+    <p class="section-desc">Cada tela exibe um conjunto diferente de verdict + insight cards, conforme o veredito de viabilidade retornado pelo backend (ready / feasible / ambitious / unrealistic).</p>
+  </div>
+  <div class="wrap">
+    <div class="screens-rail">
+
+      <!-- ── S1: Ativo · Viável ── -->
+      <div class="phone-wrap">
+        <div class="iphone" data-od-id="screen-feasible">
+          <div class="dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="amb amb-tl"></div>
+            <div class="amb amb-tr"></div>
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/><rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="currentColor"/></svg>
+              </div>
+            </div>
+            <div class="wd-nav">
+              <span class="wd-back">‹ Plano</span>
+              <span class="wd-nav-title">Plano de Treino</span>
+              <span class="wd-nav-spacer"></span>
+            </div>
+            <div class="sc-body">
+              <!-- Summary card -->
+              <div class="plan-card">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                  <div class="plan-title">Correr Meia Maratona sub 2h</div>
+                  <span class="status-badge sb-active">
+                    <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="3"/></svg>
+                    Ativo
+                  </span>
+                </div>
+                <div class="info-table">
+                  <div class="info-row"><span class="info-lbl">Semanas</span><span class="info-val">12</span></div>
+                  <div class="info-row"><span class="info-lbl">Início</span><span class="info-val">07/07/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Data-alvo</span><span class="info-val">28/09/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Esportes</span><span class="info-val">Corrida</span></div>
+                </div>
+              </div>
+
+              <!-- Feasibility card: Viável -->
+              <div class="plan-card" style="border-color:rgba(16,185,129,.18);">
+                <div class="feas-hd">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="5" r="4.5"/><polyline points="3,5 4.5,6.5 7.5,3"/></svg>
+                  <span class="feas-lbl">Viabilidade vs. objetivo</span>
+                  <span class="feas-badge fb-feasible">Viável</span>
+                </div>
+                <div class="metric-row">
+                  <div class="metric-cell">
+                    <span class="metric-val">2:14:30</span>
+                    <span class="metric-key">Projeção atual</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val" style="color:var(--primary);">2:00:00</span>
+                    <span class="metric-key">Meta</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val">12</span>
+                    <span class="metric-key">Semanas</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Weekly analysis header -->
+              <div class="sc-lbl">ANÁLISE SEMANAL DA IA</div>
+
+              <!-- Insight card: Week 3 · Em alta -->
+              <div class="plan-card">
+                <div class="week-chip">Semana 3 · 14–20 Jul 2025</div>
+                <div class="insight-hd">
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="#0EA5E9" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="4.5" r="4"/><path d="M2.5 4.5h4M4.5 2.5v4"/></svg>
+                  <span class="insight-lbl">Meta da Semana</span>
+                  <span class="trend-badge tb-up">Em alta</span>
+                </div>
+                <div class="insight-txt">Pace consistente abaixo de 5:20/km nos treinos intervalados. Volume semanal aumentou 12% em relação à semana anterior sem queda de qualidade.</div>
+                <div class="insight-stats">
+                  <div class="is-cell"><span class="is-val">38.5<span style="font-size:8px;"> km</span></span><span class="is-key">Vol. alvo</span></div>
+                  <div class="is-cell"><span class="is-val">5:15</span><span class="is-key">Pace ref.</span></div>
+                  <div class="is-cell"><span class="is-val">4</span><span class="is-key">Corridas</span></div>
+                </div>
+              </div>
+
+              <!-- Insight card: Week 2 · Estável -->
+              <div class="plan-card">
+                <div class="week-chip">Semana 2 · 07–13 Jul 2025</div>
+                <div class="insight-hd">
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="#0EA5E9" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="4.5" r="4"/><path d="M2.5 4.5h4M4.5 2.5v4"/></svg>
+                  <span class="insight-lbl">Meta da Semana</span>
+                  <span class="trend-badge tb-flat">Estável</span>
+                </div>
+                <div class="insight-txt">Boa execução dos treinos base. Volume dentro do esperado para a fase de construção aeróbica.</div>
+                <div class="insight-stats">
+                  <div class="is-cell"><span class="is-val">34.0<span style="font-size:8px;"> km</span></span><span class="is-key">Vol. alvo</span></div>
+                  <div class="is-cell"><span class="is-val">5:30</span><span class="is-key">Pace ref.</span></div>
+                  <div class="is-cell"><span class="is-val">4</span><span class="is-key">Corridas</span></div>
+                </div>
+              </div>
+
+              <!-- Delete -->
+              <button class="btn-delete">
+                <svg width="11" height="12" viewBox="0 0 11 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3 10,3"/><path d="M4 3V2h3v1"/><rect x="2" y="3" width="7" height="8" rx="1"/><line x1="4" y1="5.5" x2="4" y2="8.5"/><line x1="7" y1="5.5" x2="7" y2="8.5"/></svg>
+                Excluir plano
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">S1 · Viável</div>
+        <div class="phone-sub">verdict = "feasible" · status = ACTIVE</div>
+      </div>
+
+      <!-- ── S2: Ativo · Ambicioso ── -->
+      <div class="phone-wrap">
+        <div class="iphone" data-od-id="screen-ambitious">
+          <div class="dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="amb amb-br" style="background:radial-gradient(circle,rgba(245,158,11,.10) 0%,transparent 70%);"></div>
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/><rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/><rect x="2" y="2" width="11" height="8" rx="1.5" fill="currentColor"/></svg>
+              </div>
+            </div>
+            <div class="wd-nav">
+              <span class="wd-back">‹ Plano</span>
+              <span class="wd-nav-title">Plano de Treino</span>
+              <span class="wd-nav-spacer"></span>
+            </div>
+            <div class="sc-body">
+              <!-- Summary -->
+              <div class="plan-card">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                  <div class="plan-title">Maratona de São Paulo — 3h30</div>
+                  <span class="status-badge sb-active">
+                    <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="3"/></svg>
+                    Ativo
+                  </span>
+                </div>
+                <div class="info-table">
+                  <div class="info-row"><span class="info-lbl">Semanas</span><span class="info-val">18</span></div>
+                  <div class="info-row"><span class="info-lbl">Início</span><span class="info-val">01/06/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Data-alvo</span><span class="info-val">05/10/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Esportes</span><span class="info-val">Corrida</span></div>
+                </div>
+              </div>
+
+              <!-- Feasibility: Ambicioso -->
+              <div class="plan-card" style="border-color:rgba(245,158,11,.22);">
+                <div class="feas-hd">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="#F59E0B" aria-hidden="true"><path d="M5 1L6 3.8H9L6.7 5.5 7.5 8.3 5 6.7 2.5 8.3 3.3 5.5 1 3.8H4z"/></svg>
+                  <span class="feas-lbl">Viabilidade vs. objetivo</span>
+                  <span class="feas-badge fb-ambitious">Ambicioso</span>
+                </div>
+                <div class="metric-row">
+                  <div class="metric-cell">
+                    <span class="metric-val">3:48:15</span>
+                    <span class="metric-key">Projeção atual</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val" style="color:var(--warn);">3:30:00</span>
+                    <span class="metric-key">Meta</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val">14</span>
+                    <span class="metric-key">Semanas</span>
+                  </div>
+                </div>
+                <div class="feas-note">Tempo realista até a data: 3:38:00. Ou mire a data: 02/11/2025 para o objetivo atual.</div>
+              </div>
+
+              <!-- Weekly analysis -->
+              <div class="sc-lbl">ANÁLISE SEMANAL DA IA</div>
+
+              <!-- Week 5 · Em alta -->
+              <div class="plan-card">
+                <div class="week-chip">Semana 5 · 28 Jul – 03 Ago 2025</div>
+                <div class="insight-hd">
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="#0EA5E9" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="4.5" r="4"/><path d="M2.5 4.5h4M4.5 2.5v4"/></svg>
+                  <span class="insight-lbl">Meta da Semana</span>
+                  <span class="trend-badge tb-up">Em alta</span>
+                </div>
+                <div class="insight-txt">Longo de 28km concluído com pace médio de 5:02/km — melhor do que o esperado. Zonas aeróbicas controladas durante toda a sessão.</div>
+                <div class="insight-stats">
+                  <div class="is-cell"><span class="is-val">62.0<span style="font-size:8px;"> km</span></span><span class="is-key">Vol. alvo</span></div>
+                  <div class="is-cell"><span class="is-val">5:00</span><span class="is-key">Pace ref.</span></div>
+                  <div class="is-cell"><span class="is-val">5</span><span class="is-key">Corridas</span></div>
+                </div>
+              </div>
+
+              <button class="btn-delete">
+                <svg width="11" height="12" viewBox="0 0 11 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3 10,3"/><path d="M4 3V2h3v1"/><rect x="2" y="3" width="7" height="8" rx="1"/><line x1="4" y1="5.5" x2="4" y2="8.5"/><line x1="7" y1="5.5" x2="7" y2="8.5"/></svg>
+                Excluir plano
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">S2 · Ambicioso</div>
+        <div class="phone-sub">verdict = "ambitious" · suggestion shown</div>
+      </div>
+
+      <!-- ── S3: Inviável + Em baixa + lowConfidence ── -->
+      <div class="phone-wrap">
+        <div class="iphone" data-od-id="screen-unrealistic">
+          <div class="dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="amb amb-rd"></div>
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/><rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/><rect x="2" y="2" width="6" height="8" rx="1.5" fill="currentColor"/></svg>
+              </div>
+            </div>
+            <div class="wd-nav">
+              <span class="wd-back">‹ Plano</span>
+              <span class="wd-nav-title">Plano de Treino</span>
+              <span class="wd-nav-spacer"></span>
+            </div>
+            <div class="sc-body">
+              <!-- Summary -->
+              <div class="plan-card">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                  <div class="plan-title">5K sub 18 minutos</div>
+                  <span class="status-badge sb-active">
+                    <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="3"/></svg>
+                    Ativo
+                  </span>
+                </div>
+                <div class="info-table">
+                  <div class="info-row"><span class="info-lbl">Semanas</span><span class="info-val">8</span></div>
+                  <div class="info-row"><span class="info-lbl">Início</span><span class="info-val">15/07/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Data-alvo</span><span class="info-val">09/09/2025</span></div>
+                  <div class="info-row"><span class="info-lbl">Esportes</span><span class="info-val">Corrida</span></div>
+                </div>
+              </div>
+
+              <!-- Feasibility: Inviável -->
+              <div class="plan-card" style="border-color:rgba(239,68,68,.22);">
+                <div class="feas-hd">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 1.5v4M5 7.5v.5"/><path d="M1 8.5L5 1.5L9 8.5H1z"/></svg>
+                  <span class="feas-lbl">Viabilidade vs. objetivo</span>
+                  <span class="feas-badge fb-unrealistic">Inviável no prazo</span>
+                </div>
+                <div class="metric-row">
+                  <div class="metric-cell">
+                    <span class="metric-val">21:40</span>
+                    <span class="metric-key">Projeção atual</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val" style="color:var(--danger);">18:00</span>
+                    <span class="metric-key">Meta</span>
+                  </div>
+                  <div class="metric-cell">
+                    <span class="metric-val">5</span>
+                    <span class="metric-key">Semanas</span>
+                  </div>
+                </div>
+                <div class="feas-note">Tempo realista até a data: 20:10. Ou mire a data: 01/02/2026 para atingir sub-18.</div>
+                <div class="feas-conf">Estimativa preliminar — fica mais precisa conforme você registra corridas.</div>
+              </div>
+
+              <!-- Weekly analysis -->
+              <div class="sc-lbl">ANÁLISE SEMANAL DA IA</div>
+
+              <!-- Week 1 · Em baixa -->
+              <div class="plan-card">
+                <div class="week-chip">Semana 1 · 15–21 Jul 2025</div>
+                <div class="insight-hd">
+                  <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="#0EA5E9" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="4.5" r="4"/><path d="M2.5 4.5h4M4.5 2.5v4"/></svg>
+                  <span class="insight-lbl">Meta da Semana</span>
+                  <span class="trend-badge tb-down">Em baixa</span>
+                </div>
+                <div class="insight-txt">Dois treinos intervalados saltados. Volume 38% abaixo do planejado. Recomendo reduzir a meta ou rever a disponibilidade semanal.</div>
+                <div class="insight-stats">
+                  <div class="is-cell"><span class="is-val">18.0<span style="font-size:8px;"> km</span></span><span class="is-key">Vol. alvo</span></div>
+                  <div class="is-cell"><span class="is-val">5:45</span><span class="is-key">Pace ref.</span></div>
+                  <div class="is-cell"><span class="is-val">2</span><span class="is-key">Corridas</span></div>
+                </div>
+              </div>
+
+              <button class="btn-delete">
+                <svg width="11" height="12" viewBox="0 0 11 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,3 10,3"/><path d="M4 3V2h3v1"/><rect x="2" y="3" width="7" height="8" rx="1"/><line x1="4" y1="5.5" x2="4" y2="8.5"/><line x1="7" y1="5.5" x2="7" y2="8.5"/></svg>
+                Excluir plano
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">S3 · Inviável</div>
+        <div class="phone-sub">verdict = "unrealistic" · lowConfidence = true</div>
+      </div>
+
+      <!-- ── S4: Sem plano ativo ── -->
+      <div class="phone-wrap">
+        <div class="iphone" data-od-id="screen-empty">
+          <div class="dynamic-island"></div>
+          <div class="iphone-screen">
+            <div class="status-bar">
+              <span class="status-time">9:41</span>
+              <div class="status-icons">
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/><rect x="20.5" y="3.5" width="3" height="5" rx="1" fill="currentColor"/><rect x="2" y="2" width="5" height="8" rx="1.5" fill="currentColor"/></svg>
+              </div>
+            </div>
+            <div class="wd-nav">
+              <span class="wd-back">‹ Plano</span>
+              <span class="wd-nav-title">Plano de Treino</span>
+              <span class="wd-nav-spacer"></span>
+            </div>
+            <div class="sc-body" style="justify-content:center;align-items:center;text-align:center;gap:0;">
+              <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#4B5563" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="6" y="10" width="40" height="36" rx="5"/>
+                <line x1="6" y1="22" x2="46" y2="22"/>
+                <line x1="18" y1="6" x2="18" y2="16"/>
+                <line x1="34" y1="6" x2="34" y2="16"/>
+                <line x1="18" y1="32" x2="34" y2="32"/>
+                <line x1="26" y1="28" x2="26" y2="36"/>
+              </svg>
+              <div style="font-size:12px;color:var(--text-2);font-weight:600;margin-top:14px;margin-bottom:5px;">Nenhum plano ativo</div>
+              <div style="font-size:10px;color:var(--text-3);max-width:180px;line-height:1.5;">Crie um plano na aba Plano para começar a treinar com objetivo.</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">S4 · Sem Plano</div>
+        <div class="phone-sub">trainingPlanResponse == nil</div>
+      </div>
+
+    </div><!-- /screens-rail -->
+  </div>
+</section>
+
+<!-- ═══ SECTION 02 — SUMMARY CARD ═══ -->
+<section class="section" id="summary" data-od-id="summary-section">
+  <div class="wrap">
+    <div class="section-eyebrow">02 — Sumário</div>
+    <h2 class="section-title">Summary Card + Status Badges</h2>
+    <p class="section-desc">O card de sumário exibe o objetivo do plano, um badge de status e uma tabela de metadados. O badge muda cor conforme o campo <code style="font-family:var(--mono);font-size:14px;">plan.status</code>.</p>
+
+    <div class="comp-grid" style="margin-bottom:28px;">
+      <!-- Live summary card demo -->
+      <div class="comp-card">
+        <div class="comp-lbl">Card de Sumário — Exemplo Completo</div>
+        <div class="sum-card-lg">
+          <div class="sum-top">
+            <div class="sum-title-lg">Correr Meia Maratona sub 2h</div>
+            <span class="sum-badge-lg sb-lg-active">
+              <svg width="7" height="7" viewBox="0 0 7 7" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5"/></svg>
+              Ativo
+            </span>
+          </div>
+          <div class="sum-info-lg">
+            <div class="sum-row-lg"><span class="sum-rl">Semanas</span><span class="sum-rv">12</span></div>
+            <div class="sum-row-lg"><span class="sum-rl">Início</span><span class="sum-rv">07/07/2025</span></div>
+            <div class="sum-row-lg"><span class="sum-rl">Data-alvo</span><span class="sum-rv">28/09/2025</span></div>
+            <div class="sum-row-lg"><span class="sum-rl">Esportes</span><span class="sum-rv">Corrida</span></div>
+          </div>
+        </div>
+        <div class="comp-note">summaryCard(plan) · plan.status == "ACTIVE"</div>
+      </div>
+
+      <!-- Status badges -->
+      <div class="comp-card">
+        <div class="comp-lbl">Variantes de Status Badge</div>
+        <div class="badge-demo-col">
+          <div class="badge-row-demo">
+            <span class="badge-lg sb-lg-active"><svg width="7" height="7" viewBox="0 0 7 7" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5"/></svg>Ativo</span>
+            <div class="badge-info"><div class="badge-info-lbl" style="color:var(--success);">ACTIVE</div><div class="badge-info-meta">--success #10B981</div></div>
+          </div>
+          <div class="badge-row-demo">
+            <span class="badge-lg sb-lg-draft">Rascunho</span>
+            <div class="badge-info"><div class="badge-info-lbl" style="color:var(--text-2);">DRAFT</div><div class="badge-info-meta">--text-2 #94A3B8</div></div>
+          </div>
+          <div class="badge-row-demo">
+            <span class="badge-lg sb-lg-completed">Concluído</span>
+            <div class="badge-info"><div class="badge-info-lbl" style="color:var(--primary);">COMPLETED</div><div class="badge-info-meta">--primary #0EA5E9</div></div>
+          </div>
+          <div class="badge-row-demo">
+            <span class="badge-lg sb-lg-cancelled">Cancelado</span>
+            <div class="badge-info"><div class="badge-info-lbl" style="color:var(--warn);">CANCELLED</div><div class="badge-info-meta">--warn #F59E0B</div></div>
+          </div>
+          <div class="badge-row-demo">
+            <span class="badge-lg sb-lg-cancelled">Bloqueado</span>
+            <div class="badge-info"><div class="badge-info-lbl" style="color:var(--warn);">LOCKED</div><div class="badge-info-meta">--warn #F59E0B</div></div>
+          </div>
+        </div>
+        <div class="comp-note">statusInfo(plan.status) · 5 variantes</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 03 — FEASIBILITY ═══ -->
+<section class="section" id="feasibility" data-od-id="feasibility-section">
+  <div class="wrap">
+    <div class="section-eyebrow">03 — Viabilidade</div>
+    <h2 class="section-title">Feasibility Card — 4 Vereditos</h2>
+    <p class="section-desc">O card de viabilidade compara a projeção atual do atleta com a meta de tempo. O veredito muda a cor do badge e controla a exibição do bloco de sugestão e do aviso de baixa confiança.</p>
+
+    <div class="verdict-grid" style="margin-bottom:28px;">
+
+      <!-- Ready -->
+      <div class="verdict-item">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="verdict-badge fb-lg-ready">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="5.5" cy="5.5" r="5"/><path d="M2.5 5.5l2 2.5 4-4.5"/></svg>
+            Pronto
+          </span>
+        </div>
+        <div class="verdict-rule">verdict == "ready"<br>icon: checkmark.seal.fill<br>color: --success<br>suggestion: não exibida<br>lowConf: pode aparecer</div>
+      </div>
+
+      <!-- Feasible -->
+      <div class="verdict-item">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="verdict-badge fb-lg-feasible">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="5.5" cy="5.5" r="5"/><polyline points="3.5,5.5 5,7 7.5,3.5"/></svg>
+            Viável
+          </span>
+        </div>
+        <div class="verdict-rule">verdict == "feasible"<br>icon: checkmark.circle.fill<br>color: --success<br>suggestion: não exibida<br>lowConf: pode aparecer</div>
+      </div>
+
+      <!-- Ambitious -->
+      <div class="verdict-item">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="verdict-badge fb-lg-ambitious">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true"><path d="M5.5 0.5l1.5 4h4l-3.3 2.5 1.3 4-3.5-2.5-3.5 2.5 1.3-4L0 4.5h4z"/></svg>
+            Ambicioso
+          </span>
+        </div>
+        <div class="verdict-rule">verdict == "ambitious"<br>icon: flame.fill<br>color: --warn<br>suggestion: exibida<br>lowConf: pode aparecer</div>
+      </div>
+
+      <!-- Unrealistic -->
+      <div class="verdict-item">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="verdict-badge fb-lg-unrealistic">
+            <svg width="12" height="11" viewBox="0 0 12 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 1L11 9.5H1L6 1z"/><line x1="6" y1="4" x2="6" y2="6.5"/><circle cx="6" cy="8" r=".5" fill="currentColor" stroke="none"/></svg>
+            Inviável no prazo
+          </span>
+        </div>
+        <div class="verdict-rule">verdict == "unrealistic"<br>icon: exclamationmark.triangle.fill<br>color: --danger<br>suggestion: exibida<br>lowConf: pode aparecer</div>
+      </div>
+    </div>
+
+    <!-- Full card example: Ambitious with suggestion + lowConf -->
+    <div class="comp-card">
+      <div class="comp-lbl">Exemplo Completo — Ambicioso + Sugestão + Baixa Confiança</div>
+      <div class="feas-card-lg">
+        <div class="feas-hd-lg">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="#F59E0B" aria-hidden="true"><path d="M7 0.5L8.7 5.3H14L9.8 8.2 11.5 13 7 10.2 2.5 13 4.2 8.2 0 5.3H5.3z"/></svg>
+          <span class="feas-title-lg">Viabilidade vs. objetivo</span>
+          <span class="feas-badge-lg fb-lg-ambitious">Ambicioso</span>
+        </div>
+        <div class="feas-metrics-lg">
+          <div class="fm-cell-lg"><div class="fm-val-lg">3:48:15</div><div class="fm-key-lg">Projeção atual</div></div>
+          <div class="fm-cell-lg"><div class="fm-val-lg" style="color:var(--warn);">3:30:00</div><div class="fm-key-lg">Meta</div></div>
+          <div class="fm-cell-lg"><div class="fm-val-lg">14</div><div class="fm-key-lg">Semanas</div></div>
+        </div>
+        <div class="feas-note-lg">
+          Tempo realista até a data: <strong>3:38:00</strong><br>
+          Ou mire a data: <strong>02/11/2025</strong> para atingir 3:30:00 com treino contínuo.
+        </div>
+        <div class="feas-conf-lg">Estimativa preliminar — fica mais precisa conforme você registra corridas.</div>
+      </div>
+      <div class="comp-note">feasibilityCard(f) · f.verdict == "ambitious" · f.lowConfidence == true<br>suggestion.realisticTimeSec + suggestion.suggestedDate renderizados no bloco abaixo dos chips</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 04 — INSIGHTS ═══ -->
+<section class="section" id="insights" data-od-id="insights-section">
+  <div class="wrap">
+    <div class="section-eyebrow">04 — Análise Semanal</div>
+    <h2 class="section-title">WeeklyGoalInsightCard</h2>
+    <p class="section-desc">Um card por semana que tem <code style="font-family:var(--mono);font-size:14px;">metrics.fitnessInsights</code> não vazia. Ordenados por data decrescente. O badge de trend muda cor e ícone conforme o campo <code style="font-family:var(--mono);font-size:14px;">metrics.trend</code>.</p>
+
+    <div class="comp-grid-3" style="margin-bottom:28px;">
+
+      <!-- Em alta -->
+      <div class="comp-card" style="padding:20px;">
+        <div class="insight-card-lg">
+          <div class="insight-period">Semana 3 · 14–20 Jul 2025</div>
+          <div class="insight-hd-lg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#0EA5E9" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="6"/><path d="M4.5 7h5M7 4.5v5"/></svg>
+            <span class="insight-title-lg">Meta da Semana</span>
+            <span class="trend-badge-lg tb-lg-up">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 7.5L4.5 4l2.5 2L9.5 2.5"/><path d="M7 2.5H9.5V5"/></svg>
+              Em alta
+            </span>
+          </div>
+          <p class="insight-text-lg">Pace consistente abaixo de 5:20/km nos treinos intervalados. Volume semanal aumentou 12% sem queda de qualidade.</p>
+          <div class="insight-stats-lg">
+            <div class="is-cell-lg"><div class="is-val-lg">38.5<span style="font-size:12px;"> km</span></div><div class="is-key-lg">Vol. alvo</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">5:15</div><div class="is-key-lg">Pace ref.</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">4</div><div class="is-key-lg">Corridas</div></div>
+          </div>
+        </div>
+        <div class="comp-note">trend == "improving" → --success · trend badge + seta para cima</div>
+      </div>
+
+      <!-- Estável -->
+      <div class="comp-card" style="padding:20px;">
+        <div class="insight-card-lg">
+          <div class="insight-period">Semana 2 · 07–13 Jul 2025</div>
+          <div class="insight-hd-lg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#0EA5E9" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="6"/><path d="M4.5 7h5M7 4.5v5"/></svg>
+            <span class="insight-title-lg">Meta da Semana</span>
+            <span class="trend-badge-lg tb-lg-flat">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1 4h8"/></svg>
+              Estável
+            </span>
+          </div>
+          <p class="insight-text-lg">Boa execução dos treinos base. Volume dentro do esperado para a fase de construção aeróbica. Nenhuma sessão saltada.</p>
+          <div class="insight-stats-lg">
+            <div class="is-cell-lg"><div class="is-val-lg">34.0<span style="font-size:12px;"> km</span></div><div class="is-key-lg">Vol. alvo</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">5:30</div><div class="is-key-lg">Pace ref.</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">4</div><div class="is-key-lg">Corridas</div></div>
+          </div>
+        </div>
+        <div class="comp-note">trend == "maintaining" → --primary · trend badge neutro</div>
+      </div>
+
+      <!-- Em baixa -->
+      <div class="comp-card" style="padding:20px;">
+        <div class="insight-card-lg">
+          <div class="insight-period">Semana 1 · 30 Jun – 06 Jul 2025</div>
+          <div class="insight-hd-lg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#0EA5E9" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="6"/><path d="M4.5 7h5M7 4.5v5"/></svg>
+            <span class="insight-title-lg">Meta da Semana</span>
+            <span class="trend-badge-lg tb-lg-down">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5L4.5 6l2.5-2L9.5 7.5"/><path d="M7 7.5H9.5V5"/></svg>
+              Em baixa
+            </span>
+          </div>
+          <p class="insight-text-lg">Dois treinos saltados. Volume 38% abaixo do planejado. Recomendo reduzir a meta ou rever a disponibilidade semanal.</p>
+          <div class="insight-stats-lg">
+            <div class="is-cell-lg"><div class="is-val-lg">18.0<span style="font-size:12px;"> km</span></div><div class="is-key-lg">Vol. alvo</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">5:45</div><div class="is-key-lg">Pace ref.</div></div>
+            <div class="is-cell-lg"><div class="is-val-lg">2</div><div class="is-key-lg">Corridas</div></div>
+          </div>
+        </div>
+        <div class="comp-note">trend == "declining" → --warn · trend badge com seta para baixo</div>
+      </div>
+    </div>
+
+    <!-- Delete button states -->
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="comp-lbl">Botão Excluir — Normal</div>
+        <button class="btn-delete-lg">
+          <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,4 15,4"/><path d="M5.5 4V2.5h5V4"/><rect x="2.5" y="4" width="11" height="12" rx="2"/><line x1="6" y1="8" x2="6" y2="13"/><line x1="10" y1="8" x2="10" y2="13"/></svg>
+          Excluir plano
+        </button>
+        <div class="comp-note">planVM.isDeleting == false<br>tap → showDeleteConfirmation = true<br>Alert de confirmação destrutiva antes da ação</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-lbl">Botão Excluir — Carregando</div>
+        <button class="btn-delete-lg" style="opacity:.45;pointer-events:none;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke-dasharray="28" stroke-dashoffset="8" style="transform-origin:center;animation:spin 1s linear infinite;"/>
+          </svg>
+          Excluindo...
+        </button>
+        <div class="comp-note">planVM.isDeleting == true<br>disabled + ProgressView substituindo ícone de lixeira<br>Dismiss automático após sucesso</div>
+        <style>@keyframes spin { to { transform:rotate(360deg); } }</style>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer style="padding:52px 0 40px;border-top:1px solid var(--border);" data-od-id="footer">
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 11C3.5 8 5.5 6 7 6C8.5 6 10.5 8 13 5"/><circle cx="11" cy="3.5" r="1.5" fill="white" stroke="none"/></svg>
+      </div>
+      <div>
+        <div style="font-size:14px;font-weight:700;">Athly · TrainingPlanDetailView</div>
+        <div style="font-size:11px;color:var(--text-3);">Design System v2 · Space Grotesk + JetBrains Mono</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-3);font-family:var(--mono);">athly-training-plan-detail.html</div>
+  </div>
+</footer>
+
+</body>
+</html>

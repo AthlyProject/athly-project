@@ -5,6 +5,10 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthPayload } from './dto/auth-payload.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MessageResponse } from './dto/message-response.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { AppleLoginDto } from './dto/apple-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -26,6 +30,24 @@ export class AuthController {
   @ApiOkResponse({ type: AuthPayload })
   async login(@Body() input: LoginDto): Promise<AuthPayload> {
     return this.authService.login(input.email, input.password);
+  }
+
+  @Post('forgot-password')
+  @ApiOkResponse({ type: MessageResponse })
+  async forgotPassword(@Body() input: ForgotPasswordDto): Promise<MessageResponse> {
+    return this.authService.forgotPassword(input.email);
+  }
+
+  @Post('verify-reset-code')
+  @ApiOkResponse({ type: MessageResponse })
+  async verifyResetCode(@Body() input: VerifyResetCodeDto): Promise<MessageResponse> {
+    return this.authService.verifyResetCode(input.email, input.code);
+  }
+
+  @Post('reset-password')
+  @ApiOkResponse({ type: MessageResponse })
+  async resetPassword(@Body() input: ResetPasswordDto): Promise<MessageResponse> {
+    return this.authService.resetPassword(input.email, input.code, input.newPassword);
   }
 
   @Post('refresh')

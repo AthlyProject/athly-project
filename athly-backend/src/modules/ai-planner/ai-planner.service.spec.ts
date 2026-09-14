@@ -8,7 +8,15 @@ import { buildMacrocycle } from './periodization';
 
 // bestSubEffortsFromSessions/bestContinuousWindow são matemática pura e não tocam o Prisma —
 // o service é construído com stubs. As privadas são exercitadas via cast, como em outros specs.
-const planner = new AiPlannerService({} as any, {} as any, {} as any, {} as any, {} as any);
+const mockSqs = { send: jest.fn().mockResolvedValue(undefined) } as any;
+const planner = new AiPlannerService(
+  {} as any,
+  {} as any,
+  {} as any,
+  {} as any,
+  {} as any,
+  mockSqs,
+);
 const bestSubEfforts = (sessions: DetailedSessionDto[]): RunDataForZones[] =>
   (planner as any).bestSubEffortsFromSessions(sessions);
 
@@ -186,6 +194,7 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
       {} as any,
       {} as any,
       {} as any,
+      mockSqs,
     );
   const reserve = (svc: AiPlannerService) =>
     (svc as any).reserveWeeklyGoal('tp-1', new Date('2026-06-29'), new Date('2026-07-05'));
@@ -239,8 +248,14 @@ describe('AiPlannerService.startPlanFromHealthGeneration', () => {
         update: jest.fn().mockResolvedValue(queuedJob),
       },
     };
-    const service = new AiPlannerService(prisma as any, {} as any, {} as any, {} as any, {} as any);
-    jest.spyOn(service, 'drainGenerationQueue').mockResolvedValue();
+    const service = new AiPlannerService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      mockSqs,
+    );
     return { service, prisma };
   };
 

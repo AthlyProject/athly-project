@@ -1,4 +1,5 @@
 import { Injectable, ConflictException } from '@nestjs/common';
+import { PlanGenerationStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitAssessmentDto } from './dto/submit-assessment.dto';
 import type { ParsedGoal } from '../ai-planner/prompts/goal-parser-prompt';
@@ -17,6 +18,18 @@ export class AssessmentService {
       throw new ConflictException('Você precisa aceitar os termos para continuar.');
     }
 
+    const activeJob = await this.prisma.planGenerationJob.findFirst({
+      where: {
+        userId,
+        status: { in: [PlanGenerationStatus.QUEUED, PlanGenerationStatus.PROCESSING] },
+      },
+    });
+    if (activeJob) {
+      throw new ConflictException(
+        'Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação.',
+      );
+    }
+
     const parsedGoal = this.buildParsedGoal(dto);
 
     const [, , goal] = await this.prisma.$transaction([
@@ -30,6 +43,8 @@ export class AssessmentService {
           comfortPaceSeconds: dto.comfortPaceSeconds ?? undefined,
           restingHeartRate: dto.restingHeartRate ?? undefined,
           maxHeartRate: dto.maxHeartRate ?? undefined,
+          // Vazio → mantém o fallback do planner (DEFAULT_AVAILABLE_DAYS).
+          availableDays: dto.availableDays?.length ? dto.availableDays : undefined,
           assessmentCompleted: true,
         },
       }),

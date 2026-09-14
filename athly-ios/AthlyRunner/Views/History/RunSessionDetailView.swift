@@ -100,7 +100,7 @@ struct RunSessionDetailView: View {
                                     } else {
                                         Image(systemName: "arrow.triangle.2.circlepath")
                                     }
-                                    Text(isRetryingHealthKit ? "Sincronizando..." : "Tentar Apple Health")
+                                    Text(isRetryingHealthKit ? String(localized: "Sincronizando...") : String(localized: "Tentar Apple Health"))
                                 }
                             }
                             .buttonStyle(AthlySecondaryButtonStyle())
@@ -127,7 +127,7 @@ struct RunSessionDetailView: View {
             guard phase == .active, healthKitWriteDenied else { return }
             if healthKitService.writeAuthorizationSnapshot().canWriteWorkout {
                 healthKitWriteDenied = false
-                syncMessage = "Permissão atualizada. Toque em Tentar Apple Health."
+                syncMessage = String(localized: "Permissão atualizada. Toque em Tentar Apple Health.")
             }
         }
     }
@@ -137,7 +137,7 @@ struct RunSessionDetailView: View {
             GridItem(.flexible()),
             GridItem(.flexible())
         ], spacing: 16) {
-            statCard(icon: "ruler", value: String(format: "%.2f km", session.distanceMeters / 1000), label: "Distancia")
+            statCard(icon: "ruler", value: "\(LocalizedFormatting.formattedDistanceKm(session.distanceMeters / 1000)) km", label: "Distancia")
             statCard(icon: "clock", value: formatDuration(session.durationSeconds), label: "Duracao")
             statCard(icon: "speedometer", value: formatPace(session.averagePaceSecondsPerKm), label: "Pace medio")
             statCard(icon: "mountain.2", value: String(format: "%.0f m", session.elevationGainMeters), label: "Elevacao")
@@ -164,27 +164,27 @@ struct RunSessionDetailView: View {
 
         switch status {
         case .notRequested:
-            text = "Salva somente no Athly. Voce pode enviar ao Apple Health quando quiser."
+            text = String(localized: "Salva somente no Athly. Voce pode enviar ao Apple Health quando quiser.")
             icon = "heart.slash"
             color = AthlyTheme.Color.textSecondary
         case .synced:
-            text = "Sincronizada com Apple Health"
+            text = String(localized: "Sincronizada com Apple Health")
             icon = "checkmark.circle.fill"
             color = AthlyTheme.Color.success
         case .failed:
-            text = session.healthKitSyncError ?? "Falha ao sincronizar com Apple Health"
+            text = session.healthKitSyncError ?? String(localized: "Falha ao sincronizar com Apple Health")
             icon = "exclamationmark.triangle.fill"
             color = AthlyTheme.Color.warning
         case .unavailable:
-            text = "Salva localmente no Athly. Apple Health indisponivel neste dispositivo."
+            text = String(localized: "Salva localmente no Athly. Apple Health indisponivel neste dispositivo.")
             icon = "iphone"
             color = AthlyTheme.Color.textSecondary
         case .pending:
-            text = "Sincronizacao com Apple Health pendente."
+            text = String(localized: "Sincronizacao com Apple Health pendente.")
             icon = "arrow.triangle.2.circlepath"
             color = AthlyTheme.Color.primary
         case nil:
-            text = "Corrida salva localmente no Athly."
+            text = String(localized: "Corrida salva localmente no Athly.")
             icon = "iphone"
             color = AthlyTheme.Color.textSecondary
         }
@@ -215,7 +215,7 @@ struct RunSessionDetailView: View {
         session.healthKitSyncStatus != .synced
     }
 
-    private func statCard(icon: String, value: String, label: String) -> some View {
+    private func statCard(icon: String, value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title3)
@@ -322,13 +322,13 @@ struct RunSessionDetailView: View {
                 )
             }
 
-            syncMessage = "Sincronizada com Apple Health."
+            syncMessage = String(localized: "Sincronizada com Apple Health.")
         } catch {
             if let healthKitError = error as? HealthKitError,
                case .writeDenied = healthKitError {
                 healthKitWriteDenied = true
             }
-            syncMessage = "Falha ao sincronizar: \(error.localizedDescription)"
+            syncMessage = String(localized: "Falha ao sincronizar: \(error.localizedDescription)")
         }
     }
 

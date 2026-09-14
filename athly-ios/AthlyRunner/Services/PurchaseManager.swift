@@ -90,6 +90,6 @@ enum PurchaseError: LocalizedError {
     case notConfigured
 
     var errorDescription: String? {
-        "Assinaturas ainda não estão disponíveis nesta versão."
+        String(localized: "Assinaturas ainda não estão disponíveis nesta versão.")
     }
 }

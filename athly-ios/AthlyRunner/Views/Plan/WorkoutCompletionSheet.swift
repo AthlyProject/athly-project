@@ -117,10 +117,8 @@ struct WorkoutCompletionSheet: View {
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text(
-                (healthKitFallbackMessage ?? "O Apple Health recusou a associação da rota.")
-                    + " Uma cópia não remove automaticamente o registro Garmin/Zepp."
-            )
+            Text(healthKitFallbackMessage ?? String(localized: "O Apple Health recusou a associação da rota."))
+                + Text(" Uma cópia não remove automaticamente o registro Garmin/Zepp.")
         }
     }
 
@@ -212,7 +210,7 @@ struct WorkoutCompletionSheet: View {
                 VStack(spacing: 8) {
                     Text(completed ? "🎉" : "💪")
                         .font(.system(size: 48))
-                    Text(completed ? "Parabéns!" : "Bom trabalho!")
+                    Text(completed ? String(localized: "Parabéns!") : String(localized: "Bom trabalho!"))
                         .font(AthlyTheme.Typography.heading(22))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
                     Text("Conta como foi o seu treino")
@@ -242,7 +240,7 @@ struct WorkoutCompletionSheet: View {
                             } else {
                                 Image(systemName: "chart.bar.fill")
                             }
-                            Text(isSubmitting ? "Enviando…" : "Enviar feedback")
+                            Text(isSubmitting ? String(localized: "Enviando…") : String(localized: "Enviar feedback"))
                         }
                     }
                     .buttonStyle(AthlyGradientButtonStyle())
@@ -301,7 +299,7 @@ struct WorkoutCompletionSheet: View {
         .padding(.horizontal, AthlyTheme.Spacing.sm)
     }
 
-    private func completionButton(label: String, emoji: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func completionButton(label: LocalizedStringKey, emoji: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Text(emoji)
@@ -420,7 +418,7 @@ struct WorkoutCompletionSheet: View {
             await finishCompletion()
         } catch {
             isSubmitting = false
-            submitError = "Não foi possível enviar o feedback. Tente novamente ou use \"Pular por agora\"."
+            submitError = String(localized: "Não foi possível enviar o feedback. Tente novamente ou use \"Pular por agora\".")
         }
     }
 
@@ -498,7 +496,7 @@ struct WorkoutCompletionSheet: View {
                         metricDivider
                         metricCell(value: run.formattedDuration, label: "tempo")
                         metricDivider
-                        metricCell(value: "\(run.formattedPace)/km", label: "pace")
+                        metricCell(value: String(localized: "\(run.formattedPace)/km"), label: "pace")
                     }
                     .frame(maxWidth: .infinity)
 
@@ -528,7 +526,7 @@ struct WorkoutCompletionSheet: View {
         .padding(.horizontal, AthlyTheme.Spacing.sm)
     }
 
-    private func metricCell(value: String, label: String) -> some View {
+    private func metricCell(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.custom("SpaceGrotesk-Bold", size: 16).monospacedDigit())
@@ -560,7 +558,7 @@ struct WorkoutCompletionSheet: View {
                         Image(systemName: "doc.badge.plus")
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(isImportingFile ? "Lendo atividade…" : "Importar FIT, TCX ou GPX")
+                        Text(isImportingFile ? String(localized: "Lendo atividade…") : String(localized: "Importar FIT, TCX ou GPX"))
                             .font(AthlyTheme.Typography.semibold(15))
                         Text("Use o arquivo exportado pelo Zepp ou outro relógio")
                             .font(AthlyTheme.Typography.body(12))
@@ -613,7 +611,7 @@ struct WorkoutCompletionSheet: View {
     private func importedActivityRow(_ imported: ImportedWorkout) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(imported.activityName ?? "Corrida")
+                Text(imported.activityName ?? String(localized: "Corrida"))
                     .font(AthlyTheme.Typography.semibold(14))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
                 Text(imported.startDate.formatted(date: .abbreviated, time: .shortened))
@@ -621,7 +619,7 @@ struct WorkoutCompletionSheet: View {
                     .foregroundStyle(AthlyTheme.Color.textSecondary)
             }
             Spacer()
-            Text(String(format: "%.2f km", imported.distanceMeters / 1_000))
+            Text(String(localized: "\(LocalizedFormatting.formattedDistanceKm(imported.distanceMeters / 1_000)) km"))
                 .font(AthlyTheme.Typography.semibold(14))
                 .foregroundStyle(AthlyTheme.Color.primary)
             Image(systemName: "chevron.right")
@@ -655,7 +653,7 @@ struct WorkoutCompletionSheet: View {
             }
 
             HStack(spacing: 0) {
-                metricCell(value: String(format: "%.2f", imported.distanceMeters / 1_000), label: "km")
+                metricCell(value: LocalizedFormatting.formattedDistanceKm(imported.distanceMeters / 1_000), label: "km")
                 metricDivider
                 metricCell(value: formatDuration(imported.activeDurationSeconds), label: "tempo")
                 metricDivider
@@ -806,7 +804,7 @@ struct WorkoutCompletionSheet: View {
         }()
 
         guard service.isHealthDataAvailable else {
-            loadError = "Apple Health não disponível neste dispositivo."
+            loadError = String(localized: "Apple Health não disponível neste dispositivo.")
             return
         }
 
@@ -861,7 +859,7 @@ struct WorkoutCompletionSheet: View {
         let df = DateFormatter()
         df.dateStyle = .short
         df.timeStyle = .none
-        df.locale = Locale(identifier: "pt_BR")
+        df.locale = .current
         return df.string(from: workout.parsedDate)
     }
 
@@ -870,8 +868,8 @@ struct WorkoutCompletionSheet: View {
     }
 
     private var navigationTitle: String {
-        if step == .feedback { return "Como foi o treino?" }
-        return isEnrichment ? "Adicionar dados" : "Concluir Treino"
+        if step == .feedback { return String(localized: "Como foi o treino?") }
+        return isEnrichment ? String(localized: "Adicionar dados") : String(localized: "Concluir Treino")
     }
 
     private var effortEmoji: String {
@@ -918,8 +916,7 @@ struct WorkoutCompletionSheet: View {
         let runDay = calendar.startOfDay(for: runStart)
         let days = calendar.dateComponents([.day], from: workoutDay, to: runDay).day ?? 0
         switch days {
-        case 1: return "+1 dia"
-        case 2: return "+2 dias"
+        case 1, 2: return String(localized: "+\(days) dia")
         default: return nil
         }
     }

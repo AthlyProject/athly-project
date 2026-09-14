@@ -9,6 +9,7 @@ struct LoginView: View {
     @State private var password     = ""
     @State private var showPassword = false
     @State private var showRegister = false
+    @State private var showForgotPassword = false
 
     var body: some View {
         ZStack {
@@ -54,7 +55,7 @@ struct LoginView: View {
                     .padding(.bottom, 18)
 
                     // Email
-                    authField(label: "Email") {
+                    authField(label: String(localized: "Email")) {
                         HStack {
                             TextField("", text: $email)
                                 .font(AthlyTheme.Typography.body(13))
@@ -71,7 +72,7 @@ struct LoginView: View {
                     .padding(.bottom, 9)
 
                     // Password
-                    authField(label: "Senha") {
+                    authField(label: String(localized: "Senha")) {
                         HStack {
                             Group {
                                 if showPassword {
@@ -96,7 +97,7 @@ struct LoginView: View {
                     // Forgot password
                     HStack {
                         Spacer()
-                        Button("Esqueceu sua senha?") { }
+                        Button("Esqueceu sua senha?") { showForgotPassword = true }
                             .font(AthlyTheme.Typography.semibold(11))
                             .foregroundStyle(AthlyTheme.Color.primary)
                             .buttonStyle(.plain)
@@ -159,6 +160,7 @@ struct LoginView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .sheet(isPresented: $showRegister) { RegisterView() }
+        .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
     }
 
     // MARK: - Sub-views
@@ -198,7 +200,7 @@ struct LoginView: View {
         }
     }
 
-    private func authDivider(_ label: String) -> some View {
+    private func authDivider(_ label: LocalizedStringKey) -> some View {
         HStack(spacing: 10) {
             Rectangle().fill(AthlyTheme.Color.borderMid).frame(height: 1)
             Text(label)

@@ -36,7 +36,7 @@ struct ProfileView: View {
         return Self.adminEmails.contains(email.lowercased())
     }
 
-    private let weekdays: [(key: String, label: String)] = [
+    private let weekdays: [(key: String, label: LocalizedStringKey)] = [
         ("sunday",    "Dom"),
         ("monday",    "Seg"),
         ("tuesday",   "Ter"),
@@ -83,7 +83,7 @@ struct ProfileView: View {
 
                             // Selected count + save
                             HStack {
-                                Text("\(selectedDays.count) dia\(selectedDays.count == 1 ? "" : "s") selecionado\(selectedDays.count == 1 ? "" : "s")")
+                                Text(String(localized: "\(selectedDays.count) dia selecionado"))
                                     .font(AthlyTheme.Typography.body(13))
                                     .foregroundStyle(AthlyTheme.Color.textSecondary)
 
@@ -470,7 +470,7 @@ struct ProfileView: View {
 
     // MARK: - Day Toggle Button
 
-    private func dayToggleButton(key: String, label: String) -> some View {
+    private func dayToggleButton(key: String, label: LocalizedStringKey) -> some View {
         let isSelected = selectedDays.contains(key)
         return Button {
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -508,7 +508,7 @@ struct ProfileView: View {
 
     // MARK: - Stats Row
 
-    private func statsRow(icon: String, label: String, value: String) -> some View {
+    private func statsRow(icon: String, label: LocalizedStringKey, value: String) -> some View {
         HStack {
             Image(systemName: icon)
                 .foregroundStyle(AthlyTheme.Color.primary)
@@ -573,7 +573,7 @@ struct ProfileView: View {
     private func saveWeight() async {
         let normalized = weightText.replacingOccurrences(of: ",", with: ".")
         guard let kg = Double(normalized), kg > 0, kg < 400 else {
-            weightError = "Informe um peso válido em kg."
+            weightError = String(localized: "Informe um peso válido em kg.")
             return
         }
         isSavingWeight = true
@@ -597,7 +597,7 @@ struct ProfileView: View {
         let ok = await authViewModel.deleteAccount()
         isDeletingAccount = false
         if !ok {
-            deleteError = authViewModel.errorMessage ?? "Não foi possível excluir a conta. Tente novamente."
+            deleteError = authViewModel.errorMessage ?? String(localized: "Não foi possível excluir a conta. Tente novamente.")
         }
         // Em caso de sucesso, authViewModel.isAuthenticated vira false e a RootView volta ao login.
     }
@@ -605,7 +605,7 @@ struct ProfileView: View {
     private func linkApple(credential: ASAuthorizationAppleIDCredential) async {
         guard let tokenData = credential.identityToken,
               let identityToken = String(data: tokenData, encoding: .utf8) else {
-            appleLinkError = "Não foi possível obter as credenciais da Apple."
+            appleLinkError = String(localized: "Não foi possível obter as credenciais da Apple.")
             return
         }
         isLinkingApple = true

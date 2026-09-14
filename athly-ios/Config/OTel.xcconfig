@@ -7,8 +7,13 @@
 //   OTEL_ENDPOINT = http://192.168.X.X:4318   (run: ifconfig en0 | grep 'inet ')
 //
 // Production (Grafana Cloud) — override in OTel.User.xcconfig (gitignored):
-//   OTEL_ENDPOINT = https://otlp-gateway-prod-eu-west-0.grafana.net/otlp
-OTEL_ENDPOINT = http://localhost:4318
+//   OTEL_ENDPOINT = https:$(OTEL_SLASH)$(OTEL_SLASH)otlp-gateway-prod-eu-west-0.grafana.net/otlp
+//
+// ⚠️  xcconfig treats "//" as a comment, so a literal "http://..." value is
+// silently truncated to "http:" (host lost → OTLP export fails with -1003).
+// Build the "//" via this helper var so no literal "//" appears in the value.
+OTEL_SLASH = /
+OTEL_ENDPOINT = http:$(OTEL_SLASH)$(OTEL_SLASH)localhost:4318
 
 // Grafana Cloud API key (base64 of "instanceID:apiToken").
 // Leave empty for local dev. Set in OTel.User.xcconfig for production.

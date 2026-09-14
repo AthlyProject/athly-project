@@ -97,6 +97,30 @@ actor APIClient {
         return response
     }
 
+    /// Solicita um código de redefinição de senha. O backend sempre responde com a mesma
+    /// mensagem genérica, exista ou não o email — evita enumeração de contas.
+    @discardableResult
+    func forgotPassword(email: String) async throws -> MessageResponse {
+        let body = ForgotPasswordRequest(email: email)
+        return try await post("/auth/forgot-password", body: body, authenticated: false)
+    }
+
+    /// Confirma que o código digitado bate com o que foi enviado por email, sem ainda trocar a
+    /// senha — usado no passo intermediário entre "pedir código" e "definir nova senha".
+    @discardableResult
+    func verifyResetCode(email: String, code: String) async throws -> MessageResponse {
+        let body = VerifyResetCodeRequest(email: email, code: code)
+        return try await post("/auth/verify-reset-code", body: body, authenticated: false)
+    }
+
+    /// Revalida o código e define a nova senha. Em caso de sucesso o backend revoga todas as
+    /// sessões existentes — o usuário precisa logar novamente.
+    @discardableResult
+    func resetPassword(email: String, code: String, newPassword: String) async throws -> MessageResponse {
+        let body = ResetPasswordRequest(email: email, code: code, newPassword: newPassword)
+        return try await post("/auth/reset-password", body: body, authenticated: false)
+    }
+
     func loginWithGoogle(idToken: String) async throws -> AuthResponse {
         let body = GoogleLoginRequest(idToken: idToken)
         let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
@@ -418,7 +442,7 @@ actor APIClient {
             // não tentam refresh nem sinalizam "sessão expirada" — mostram o motivo real do backend
             // (ex.: "Token da Apple inválido", "Login com Apple não está configurado").
             guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
             }
             if !isRefreshing {
                 isRefreshing = true
@@ -449,7 +473,9 @@ actor APIClient {
         case 404:
             throw APIError.notFound
         default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            let message = Self.backendMessage(from: data)
+                ?? String(data: data, encoding: .utf8)
+                ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -473,7 +499,7 @@ actor APIClient {
             return nil
         case 401:
             guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? "Não autorizado")
+                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
             }
             if !isRefreshing {
                 isRefreshing = true
@@ -503,7 +529,9 @@ actor APIClient {
             }
             throw APIError.unauthorized
         default:
-            let message = String(data: data, encoding: .utf8) ?? "Unknown error"
+            let message = Self.backendMessage(from: data)
+                ?? String(data: data, encoding: .utf8)
+                ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -524,6 +552,25 @@ struct RegisterRequest: Encodable {
 struct AuthResponse: Decodable {
     let accessToken: String
     let refreshToken: String
+}
+
+struct ForgotPasswordRequest: Encodable {
+    let email: String
+}
+
+struct VerifyResetCodeRequest: Encodable {
+    let email: String
+    let code: String
+}
+
+struct ResetPasswordRequest: Encodable {
+    let email: String
+    let code: String
+    let newPassword: String
+}
+
+struct MessageResponse: Decodable {
+    let message: String
 }
 
 struct GoogleLoginRequest: Encodable {
@@ -590,6 +637,8 @@ struct AssessmentSubmissionRequest: Encodable, Sendable {
     var objectiveDistance: String?
     var objectiveType: String?
     var targetTime: String?
+    // P9 — Dias disponíveis para treinar (chaves em inglês: monday…sunday)
+    var availableDays: [String] = []
     // Required by backend
     var termsAccepted: Bool = true
 }
@@ -631,11 +680,11 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return "URL inválida"
-        case .unauthorized: return "Sessão expirada. Faça login novamente."
-        case .notFound: return "Recurso não encontrado"
-        case .invalidResponse: return "Resposta inválida do servidor"
-        case .serverError(let code, let msg): return "Erro \(code): \(msg)"
+        case .invalidURL: return String(localized: "URL inválida")
+        case .unauthorized: return String(localized: "Sessão expirada. Faça login novamente.")
+        case .notFound: return String(localized: "Recurso não encontrado")
+        case .invalidResponse: return String(localized: "Resposta inválida do servidor")
+        case .serverError(let code, let msg): return String(localized: "Erro \(code):") + " " + msg
         }
     }
 }

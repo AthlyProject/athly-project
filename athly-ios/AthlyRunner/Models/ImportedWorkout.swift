@@ -166,15 +166,15 @@ enum WorkoutImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unsupportedFormat:
-            return "Escolha um arquivo FIT, TCX ou GPX válido."
+            return String(localized: "Escolha um arquivo FIT, TCX ou GPX válido.")
         case .fileTooLarge:
-            return "O arquivo excede o limite de 50 MB."
+            return String(localized: "O arquivo excede o limite de 50 MB.")
         case .invalidFile(let reason):
-            return "Não foi possível ler a atividade: \(reason)"
+            return String(localized: "Não foi possível ler a atividade: \(reason)")
         case .noActivities:
-            return "Nenhuma atividade utilizável foi encontrada no arquivo."
+            return String(localized: "Nenhuma atividade utilizável foi encontrada no arquivo.")
         case .incompatibleActivity:
-            return "O arquivo contém uma modalidade diferente de corrida."
+            return String(localized: "O arquivo contém uma modalidade diferente de corrida.")
         }
     }
 }

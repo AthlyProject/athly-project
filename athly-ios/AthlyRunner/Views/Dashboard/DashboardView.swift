@@ -51,6 +51,10 @@ struct DashboardView: View {
 
                             weeklyCard
 
+                            if let plan = planVM.trainingPlanResponse {
+                                planCard(plan)
+                            }
+
                             if let insight = insightText {
                                 insightCard(insight)
                             }
@@ -119,7 +123,7 @@ struct DashboardView: View {
 
     private var firstName: String {
         let name = authVM.userName.split(separator: " ").first.map(String.init) ?? ""
-        return name.isEmpty ? "Atleta" : name
+        return name.isEmpty ? String(localized: "Atleta") : name
     }
 
     private var initials: String {
@@ -134,17 +138,14 @@ struct DashboardView: View {
     }
 
     private var todayLongDate: String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "pt-BR")
-        f.dateFormat = "EEEE, d 'de' MMM"
-        return f.string(from: Date()).capitalized
+        Date().formatted(Date.FormatStyle().weekday(.wide).day().month(.abbreviated)).capitalized
     }
 
     private var greetingPrefix: String {
         switch Calendar.current.component(.hour, from: Date()) {
-        case 6..<12: return "Bom dia"
-        case 12..<18: return "Boa tarde"
-        default: return "Boa noite"
+        case 6..<12: return String(localized: "Bom dia")
+        case 12..<18: return String(localized: "Boa tarde")
+        default: return String(localized: "Boa noite")
         }
     }
 
@@ -197,7 +198,7 @@ struct DashboardView: View {
                 )
                 statDivider
                 todayStat(
-                    value: workout.totalDistanceKm.map { String(format: "%.1f", $0) } ?? "—",
+                    value: workout.totalDistanceKm.map { LocalizedFormatting.formattedDistanceKm($0) } ?? "—",
                     label: "km"
                 )
                 statDivider
@@ -260,7 +261,7 @@ struct DashboardView: View {
         .shadow(color: AthlyTheme.Color.primary.opacity(0.10), radius: 16, y: 4)
     }
 
-    private func todayStat(value: String, label: String, color: Color = AthlyTheme.Color.textPrimary) -> some View {
+    private func todayStat(value: String, label: LocalizedStringKey, color: Color = AthlyTheme.Color.textPrimary) -> some View {
         VStack(spacing: 1) {
             Text(value)
                 .font(AthlyTheme.Typography.mono(16))
@@ -319,7 +320,7 @@ struct DashboardView: View {
                         .font(AthlyTheme.Typography.heading(12))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
                     Spacer()
-                    Text(String(format: "%.1f km", weekKm))
+                    Text("\(LocalizedFormatting.formattedDistanceKm(weekKm)) km")
                         .font(AthlyTheme.Typography.mono(11))
                         .foregroundStyle(AthlyTheme.Color.primary)
                 }
@@ -407,7 +408,7 @@ struct DashboardView: View {
         }
     }
 
-    private func weekChip(value: String, label: String, color: Color = AthlyTheme.Color.textPrimary) -> some View {
+    private func weekChip(value: String, label: LocalizedStringKey, color: Color = AthlyTheme.Color.textPrimary) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(value)
                 .font(AthlyTheme.Typography.mono(13))
@@ -489,6 +490,80 @@ struct DashboardView: View {
         }
         .padding(12)
         .athlyInsightCard()
+    }
+
+    // MARK: - Plan card
+
+    private func planCard(_ plan: TrainingPlanResponse) -> some View {
+        NavigationLink {
+            TrainingPlanDetailView()
+                .environmentObject(planVM)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("PLANO ATIVO")
+                        .font(AthlyTheme.Typography.body(10))
+                        .fontWeight(.bold)
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                        .tracking(1.5)
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AthlyTheme.Color.primary)
+                        .padding(6)
+                        .background(AthlyTheme.Color.primarySoft)
+                        .clipShape(Circle())
+                }
+
+                Text(plan.objective)
+                    .font(AthlyTheme.Typography.semibold(16))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 8) {
+                    if let status = plan.status {
+                        let (label, color) = planStatusInfo(status)
+                        Text(label)
+                            .font(AthlyTheme.Typography.semibold(10))
+                            .foregroundStyle(color)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(color.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                    Text(String(localized: "\(planVM.weeks.count) semanas"))
+                        .font(AthlyTheme.Typography.mono(11))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    Text("· desde \(shortDate(plan.startDate))")
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                }
+            }
+            .padding(14)
+            .athlyInsightCard()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func planStatusInfo(_ status: String) -> (String, Color) {
+        switch status.uppercased() {
+        case "ACTIVE":    return (String(localized: "Ativo"), AthlyTheme.Color.success)
+        case "DRAFT":     return (String(localized: "Rascunho"), AthlyTheme.Color.textSecondary)
+        case "COMPLETED": return (String(localized: "Concluído"), AthlyTheme.Color.primary)
+        case "CANCELLED": return (String(localized: "Cancelado"), AthlyTheme.Color.warning)
+        case "LOCKED":    return (String(localized: "Bloqueado"), AthlyTheme.Color.warning)
+        default:          return (status.capitalized, AthlyTheme.Color.textSecondary)
+        }
+    }
+
+    private func shortDate(_ iso: String) -> String {
+        let inFmt = DateFormatter()
+        inFmt.dateFormat = "yyyy-MM-dd"
+        guard let date = inFmt.date(from: String(iso.prefix(10))) else { return iso }
+        let outFmt = DateFormatter()
+        outFmt.locale = .current
+        outFmt.dateFormat = "d MMM"
+        return outFmt.string(from: date)
     }
 
     // MARK: - Actions

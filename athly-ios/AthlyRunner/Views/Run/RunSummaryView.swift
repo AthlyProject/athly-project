@@ -134,7 +134,7 @@ struct RunSummaryView: View {
                         } label: {
                             HStack {
                                 Image(systemName: viewModel.isSaved ? "checkmark.circle.fill" : "clock")
-                                Text(viewModel.isSaved ? "Corrida salva!" : "Salvando...")
+                                Text(viewModel.isSaved ? String(localized: "Corrida salva!") : String(localized: "Salvando..."))
                             }
                         }
                         .buttonStyle(AthlyGradientButtonStyle())
@@ -222,27 +222,27 @@ struct RunSummaryStat: Identifiable {
 extension Array where Element == RunSummaryStat {
     static func runResult(_ result: RunResult) -> [RunSummaryStat] {
         [
-            RunSummaryStat(id: "distance", icon: "ruler", value: String(format: "%.2f km", result.distanceMeters / 1000), label: "Distancia"),
-            RunSummaryStat(id: "duration", icon: "clock", value: RunSummaryFormatting.duration(result.durationSeconds), label: "Duracao"),
-            RunSummaryStat(id: "pace", icon: "speedometer", value: RunSummaryFormatting.paceWithUnit(result.averagePaceSecondsPerKm), label: "Pace medio"),
-            RunSummaryStat(id: "elevation", icon: "mountain.2", value: String(format: "%.0f m", result.elevationGainMeters), label: "Elevacao"),
-            RunSummaryStat(id: "calories", icon: "flame", value: String(format: "%.0f kcal", result.caloriesBurned), label: "Calorias"),
-            RunSummaryStat(id: "splits", icon: "number", value: "\(result.splits.count)", label: "Splits"),
+            RunSummaryStat(id: "distance", icon: "ruler", value: String(format: "%.2f km", result.distanceMeters / 1000), label: String(localized: "Distancia")),
+            RunSummaryStat(id: "duration", icon: "clock", value: RunSummaryFormatting.duration(result.durationSeconds), label: String(localized: "Duracao")),
+            RunSummaryStat(id: "pace", icon: "speedometer", value: RunSummaryFormatting.paceWithUnit(result.averagePaceSecondsPerKm), label: String(localized: "Pace medio")),
+            RunSummaryStat(id: "elevation", icon: "mountain.2", value: String(format: "%.0f m", result.elevationGainMeters), label: String(localized: "Elevacao")),
+            RunSummaryStat(id: "calories", icon: "flame", value: String(format: "%.0f kcal", result.caloriesBurned), label: String(localized: "Calorias")),
+            RunSummaryStat(id: "splits", icon: "number", value: "\(result.splits.count)", label: String(localized: "Splits")),
         ]
     }
 
     static func healthRun(item: HealthKitRunItem, splitCount: Int, avgHR: Double?) -> [RunSummaryStat] {
         var stats: [RunSummaryStat] = [
-            RunSummaryStat(id: "distance", icon: "ruler", value: "\(item.formattedDistance) km", label: "Distancia"),
-            RunSummaryStat(id: "duration", icon: "clock", value: item.formattedDuration, label: "Duracao"),
-            RunSummaryStat(id: "pace", icon: "speedometer", value: "\(item.formattedPace) /km", label: "Pace medio"),
-            RunSummaryStat(id: "calories", icon: "flame", value: String(format: "%.0f kcal", item.activeEnergyBurned), label: "Calorias"),
+            RunSummaryStat(id: "distance", icon: "ruler", value: "\(item.formattedDistance) km", label: String(localized: "Distancia")),
+            RunSummaryStat(id: "duration", icon: "clock", value: item.formattedDuration, label: String(localized: "Duracao")),
+            RunSummaryStat(id: "pace", icon: "speedometer", value: "\(item.formattedPace) /km", label: String(localized: "Pace medio")),
+            RunSummaryStat(id: "calories", icon: "flame", value: String(format: "%.0f kcal", item.activeEnergyBurned), label: String(localized: "Calorias")),
         ]
         if let avgHR, avgHR > 0 {
-            stats.append(RunSummaryStat(id: "hr", icon: "heart", value: "\(Int(avgHR)) bpm", label: "FC media"))
+            stats.append(RunSummaryStat(id: "hr", icon: "heart", value: "\(Int(avgHR)) bpm", label: String(localized: "FC media")))
         }
         if splitCount > 0 {
-            stats.append(RunSummaryStat(id: "splits", icon: "number", value: "\(splitCount)", label: "Splits"))
+            stats.append(RunSummaryStat(id: "splits", icon: "number", value: "\(splitCount)", label: String(localized: "Splits")))
         }
         return stats
     }
@@ -409,7 +409,7 @@ struct RunExecutedSegmentsSection: View {
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(segment.skipped ? "\(segment.label) (pulado)" : segment.label)
+                Text(segment.skipped ? segment.label + String(localized: " (pulado)") : segment.label)
                     .font(AthlyTheme.Typography.medium(15))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
                 Text(RunSummaryFormatting.segmentDetail(segment))
@@ -545,10 +545,10 @@ struct WorkoutPrescriptionSection: View {
 }
 
 struct RunSummaryListSection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     private let content: Content
 
-    init(title: String, @ViewBuilder content: () -> Content) {
+    init(title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }
@@ -635,11 +635,11 @@ enum RunSummaryFormatting {
 
     static func legacyBlockTitle(_ type: String) -> String {
         switch type.lowercased() {
-        case "warmup": return "Aquecimento"
-        case "work", "main": return "Principal"
-        case "recovery": return "Recuperacao"
-        case "cooldown": return "Desaceleramento"
-        case "rest": return "Descanso"
+        case "warmup": return String(localized: "Aquecimento")
+        case "work", "main": return String(localized: "Principal")
+        case "recovery": return String(localized: "Recuperacao")
+        case "cooldown": return String(localized: "Desaceleramento")
+        case "rest": return String(localized: "Descanso")
         default: return type.capitalized
         }
     }
@@ -653,12 +653,12 @@ enum RunSummaryFormatting {
             parts.append(String(format: "%.1f km", distance))
         }
         if let pace = block.targetPace, !pace.isEmpty {
-            parts.append("Ritmo \(pace)/km")
+            parts.append("\(String(localized: "Ritmo")) \(pace)/km")
         }
         if let instructions = block.instructions, !instructions.isEmpty {
             parts.append(instructions)
         }
-        return parts.isEmpty ? "Sem alvo definido" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Sem alvo definido") : parts.joined(separator: " · ")
     }
 
     static func kind(forLegacyBlockType type: String) -> SegmentKind {
@@ -692,11 +692,11 @@ enum RunSummaryFormatting {
     private static func targetDetails(_ target: SegmentTarget) -> [String] {
         var parts: [String] = []
         if let min = target.paceSecPerKmMin, let max = target.paceSecPerKmMax {
-            parts.append("Ritmo \(pace(Double(min)))-\(pace(Double(max)))/km")
+            parts.append("\(String(localized: "Ritmo")) \(pace(Double(min)))-\(pace(Double(max)))/km")
         } else if let min = target.paceSecPerKmMin {
-            parts.append("Ritmo >= \(pace(Double(min)))/km")
+            parts.append("\(String(localized: "Ritmo")) >= \(pace(Double(min)))/km")
         } else if let max = target.paceSecPerKmMax {
-            parts.append("Ritmo <= \(pace(Double(max)))/km")
+            parts.append("\(String(localized: "Ritmo")) <= \(pace(Double(max)))/km")
         }
         if let zone = target.hrZone {
             parts.append("Z\(zone)")

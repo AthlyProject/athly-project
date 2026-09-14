@@ -29,7 +29,7 @@ struct RunTargetAlert: Equatable, Sendable {
     var displayValue: String {
         switch kind {
         case .distance:
-            return "\(Self.formatDecimal(value)) km"
+            return String(localized: "\(Self.formatDecimal(value)) km")
         case .time:
             return Self.formatDuration(seconds: Int((value * 60).rounded()), compact: true)
         }
@@ -50,7 +50,7 @@ struct RunTargetAlert: Equatable, Sendable {
 
     private static func formatDecimal(_ value: Double) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = .current
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 2
         return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
@@ -61,8 +61,8 @@ struct RunTargetAlert: Equatable, Sendable {
         let remainingSeconds = seconds % 60
 
         if compact {
-            if remainingSeconds == 0 { return "\(minutes) min" }
-            return "\(minutes)m \(remainingSeconds)s"
+            if remainingSeconds == 0 { return String(localized: "\(minutes) min") }
+            return String(localized: "\(minutes)m \(remainingSeconds)s")
         }
 
         if minutes == 0 {

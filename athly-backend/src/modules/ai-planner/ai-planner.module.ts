@@ -6,7 +6,8 @@ import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.se
 import { EffortZoneModule } from '../effort-zones/effort-zone.module';
 import { BillingModule } from '../billing/billing.module';
 import { TrainingReportModule } from '../training-report/training-report.module';
-import { AiPlannerGenerationWorker } from './ai-planner-generation.worker';
+import { PlanGenerationSqsService } from './plan-generation-sqs.service';
+import { PlanGenerationSqsConsumer } from './plan-generation-sqs.consumer';
 
 @Module({
   imports: [EffortZoneModule, BillingModule, TrainingReportModule],
@@ -15,7 +16,8 @@ import { AiPlannerGenerationWorker } from './ai-planner-generation.worker';
     AiPlannerService,
     GeminiService,
     WorkoutExecutionAnalyzerService,
-    AiPlannerGenerationWorker,
+    PlanGenerationSqsService,
+    PlanGenerationSqsConsumer,
   ],
   exports: [GeminiService],
 })

@@ -20,15 +20,18 @@ struct AssessmentView: View {
     @State private var objectiveType = ""
     @State private var targetTimeText = ""
 
-    private var totalSteps: Int { objective == "personal" ? 5 : 3 }
-    private var isLastStep: Bool { step == totalSteps - 1 && (step != 2 || !objective.isEmpty) }
+    // MARK: - P9: Dias disponíveis (último passo em ambos os finais)
+    @State private var availableDays: Set<String> = ["monday", "tuesday", "wednesday", "friday", "saturday"]
+
+    private var totalSteps: Int { objective == "personal" ? 6 : 4 }
+    private var isLastStep: Bool { step == totalSteps - 1 }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
-        ("Seu nível\nno momento",       "Seja honesto — vamos ajustar seus treinos"),
-        ("Seu pace\nconfortável",       "Ritmo em que você corre sentindo-se bem — sem forçar"),
-        ("Seus\nObjetivos",             "O que você quer alcançar correndo?"),
-        ("Sua\nDistância",              "Para qual distância você quer treinar?"),
-        ("Tipo de\nObjetivo",           "Como você quer que a IA monte seu treino?"),
+        (String(localized: "Seu nível\nno momento"),       String(localized: "Seja honesto — vamos ajustar seus treinos")),
+        (String(localized: "Seu pace\nconfortável"),       String(localized: "Ritmo em que você corre sentindo-se bem — sem forçar")),
+        (String(localized: "Seus\nObjetivos"),             String(localized: "O que você quer alcançar correndo?")),
+        (String(localized: "Sua\nDistância"),              String(localized: "Para qual distância você quer treinar?")),
+        (String(localized: "Tipo de\nObjetivo"),           String(localized: "Como você quer que a IA monte seu treino?")),
     ]
 
     // MARK: - Body
@@ -87,7 +90,7 @@ struct AssessmentView: View {
 
             Spacer()
 
-            Text("\(step + 1) de \(totalSteps)")
+            Text(String(localized: "\(step + 1) de \(totalSteps)"))
                 .font(AthlyTheme.Typography.semibold(11))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .kerning(0.5)
@@ -128,8 +131,17 @@ struct AssessmentView: View {
 
     // MARK: - Screen head
 
+    // O passo de dias é sempre o último e seu índice varia por caminho (3 fitness / 5 pessoal),
+    // então não pode ser indexado direto em `screenMeta` (índice trocado/fora de faixa).
+    private var currentMeta: (title: String, subtitle: String) {
+        if step == totalSteps - 1 {
+            return (String(localized: "Seus dias\nde treino"), String(localized: "Quais dias da semana você quer treinar?"))
+        }
+        return screenMeta[step]
+    }
+
     private var screenHead: some View {
-        let meta = screenMeta[step]
+        let meta = currentMeta
         return VStack(alignment: .leading, spacing: 4) {
             Text(meta.title)
                 .font(AthlyTheme.Typography.heading(19))
@@ -150,8 +162,10 @@ struct AssessmentView: View {
         case 0: step4
         case 1: step5
         case 2: step6
-        case 3: stepDistancia
-        default: stepTipo
+        case 3:
+            if objective == "personal" { stepDistancia } else { stepDays }
+        case 4: stepTipo
+        default: stepDays
         }
     }
 
@@ -165,8 +179,8 @@ struct AssessmentView: View {
             HStack(spacing: 8) {
                 if isSubmitting { ProgressView().tint(.white).scaleEffect(0.85) }
                 Text(isLastStep
-                     ? (isSubmitting ? "Enviando..." : "Começar com a Athly ✦")
-                     : "Continuar →")
+                     ? (isSubmitting ? String(localized: "Enviando...") : String(localized: "Começar com a Athly ✦"))
+                     : String(localized: "Continuar →"))
                     .font(AthlyTheme.Typography.semibold(14))
             }
             .foregroundStyle(.white)
@@ -176,8 +190,8 @@ struct AssessmentView: View {
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(isSubmitting || (step == 2 && objective.isEmpty))
-        .opacity((step == 2 && objective.isEmpty) ? 0.5 : 1)
+        .disabled(isSubmitting || (step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty))
+        .opacity(((step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty)) ? 0.5 : 1)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
         .padding(.top, 10)
@@ -204,6 +218,7 @@ struct AssessmentView: View {
             objectiveDistance: objectiveDistance.isEmpty ? nil : objectiveDistance,
             objectiveType: objectiveType.isEmpty ? nil : objectiveType,
             targetTime: targetTimeText.isEmpty ? nil : targetTimeText,
+            availableDays: Self.weekdays.map(\.key).filter { availableDays.contains($0) },
             termsAccepted: true
         )
 
@@ -211,7 +226,7 @@ struct AssessmentView: View {
             try await APIClient.shared.submitAssessment(request)
             onCompleted()
         } catch {
-            errorMessage = "Não foi possível enviar o questionário. Tente novamente."
+            errorMessage = String(localized: "Não foi possível enviar o questionário. Tente novamente.")
         }
         isSubmitting = false
     }
@@ -272,12 +287,12 @@ private extension AssessmentView {
     }
 
     static let levelItems: [LevelItem] = [
-        .init(color: Color(hex: "#94A3B8"), name: "Começando",     desc: "Nunca corri de forma consistente",       value: "beginning"),
-        .init(color: Color(hex: "#10B981"), name: "Iniciante",     desc: "Consigo correr até 5 km",                value: "beginner"),
-        .init(color: Color(hex: "#0EA5E9"), name: "Hobby",         desc: "Corro 10 km sem problema",               value: "hobby"),
-        .init(color: Color(hex: "#7C3AED"), name: "Intermediário", desc: "Participo de provas com preparação",     value: "intermediate"),
-        .init(color: Color(hex: "#EC4899"), name: "Avançado",      desc: "Treino estruturado, meia-maratona+",     value: "advanced"),
-        .init(color: Color(hex: "#F59E0B"), name: "Pro",           desc: "Corrida é meu esporte principal",        value: "pro"),
+        .init(color: Color(hex: "#94A3B8"), name: String(localized: "Começando"),     desc: String(localized: "Nunca corri de forma consistente"),       value: "beginning"),
+        .init(color: Color(hex: "#10B981"), name: String(localized: "Iniciante"),     desc: String(localized: "Consigo correr até 5 km"),                value: "beginner"),
+        .init(color: Color(hex: "#0EA5E9"), name: String(localized: "Hobby"),         desc: String(localized: "Corro 10 km sem problema"),               value: "hobby"),
+        .init(color: Color(hex: "#7C3AED"), name: String(localized: "Intermediário"), desc: String(localized: "Participo de provas com preparação"),     value: "intermediate"),
+        .init(color: Color(hex: "#EC4899"), name: String(localized: "Avançado"),      desc: String(localized: "Treino estruturado, meia-maratona+"),     value: "advanced"),
+        .init(color: Color(hex: "#F59E0B"), name: String(localized: "Pro"),           desc: String(localized: "Corrida é meu esporte principal"),        value: "pro"),
     ]
 
     var step4: some View {
@@ -315,70 +330,77 @@ private extension AssessmentView {
 // MARK: - P5: Pace Confortável
 
 private extension AssessmentView {
-    var paceLabel: String {
-        String(format: "%d:%02d", paceSeconds / 60, paceSeconds % 60)
-    }
-
     var paceKmhLabel: String {
         String(format: "≈ %.1f km/h", 3600.0 / Double(paceSeconds))
     }
 
+    // Faixa de minutos exibida no drum picker (3:00 a 15:59 /km cobre do elite ao caminhando).
+    private static let paceMinuteRange = 3...15
+
+    // Bindings que decompõem/recompõem `paceSeconds` (fonte da verdade) nos dois cilindros.
+    private var paceMinutesBinding: Binding<Int> {
+        Binding(
+            get: { paceSeconds / 60 },
+            set: { paceSeconds = $0 * 60 + (paceSeconds % 60) }
+        )
+    }
+
+    private var paceSecondsBinding: Binding<Int> {
+        Binding(
+            get: { paceSeconds % 60 },
+            set: { paceSeconds = (paceSeconds / 60) * 60 + $0 }
+        )
+    }
+
     var step5: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Dial card
+            // Drum picker card
             VStack(spacing: 6) {
                 Text("PACE CONFORTÁVEL")
                     .font(AthlyTheme.Typography.label())
                     .foregroundStyle(AthlyTheme.Color.primary)
                     .kerning(1.2)
 
-                Text(paceLabel)
-                    .font(AthlyTheme.Typography.mono(52))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.easeOut(duration: 0.1), value: paceSeconds)
+                HStack(spacing: 0) {
+                    Picker("Minutos", selection: paceMinutesBinding) {
+                        ForEach(Self.paceMinuteRange, id: \.self) { m in
+                            Text("\(m)")
+                                .font(AthlyTheme.Typography.mono(24))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .tag(m)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(width: 72)
 
-                Text("min / km")
-                    .font(AthlyTheme.Typography.body(12))
-                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    Text(":")
+                        .font(AthlyTheme.Typography.mono(24))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+
+                    Picker("Segundos", selection: paceSecondsBinding) {
+                        ForEach(0..<60, id: \.self) { s in
+                            Text(String(format: "%02d", s))
+                                .font(AthlyTheme.Typography.mono(24))
+                                .foregroundStyle(AthlyTheme.Color.textPrimary)
+                                .tag(s)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(width: 72)
+
+                    Text("min / km")
+                        .font(AthlyTheme.Typography.body(12))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        .padding(.leading, 10)
+                }
+                .frame(height: 150)
 
                 Text(paceKmhLabel)
                     .font(AthlyTheme.Typography.mono(14))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
-
-                HStack(spacing: 10) {
-                    Button {
-                        paceSeconds = min(900, paceSeconds + 5)
-                    } label: {
-                        Text("−")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(AthlyTheme.Color.textPrimary)
-                            .frame(width: 48, height: 48)
-                            .background(AthlyTheme.Color.surfaceCardElevated)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(AthlyTheme.Color.borderMid, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer().frame(width: 8)
-
-                    Button {
-                        paceSeconds = max(180, paceSeconds - 5)
-                    } label: {
-                        Text("+")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 48, height: 48)
-                            .background(AthlyTheme.Color.primary)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.top, 4)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
+            .padding(.vertical, 20)
             .padding(.horizontal, 16)
             .background(AthlyTheme.Color.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.xl, style: .continuous))
@@ -387,7 +409,7 @@ private extension AssessmentView {
                     .stroke(AthlyTheme.Color.primaryBorder, lineWidth: 1)
             )
 
-            Text("Toque + ou − para ajustar em 5 segundos")
+            Text("Gire os cilindros para ajustar seu ritmo")
                 .font(AthlyTheme.Typography.body(10))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -405,11 +427,11 @@ private extension AssessmentView {
     }
 
     static let objectiveCards: [ObjectiveCard] = [
-        .init(emoji: "🎯", title: "Objetivo pessoal",
-              subtitle: "Definido por mim mesmo",
+        .init(emoji: "🎯", title: String(localized: "Objetivo pessoal"),
+              subtitle: String(localized: "Definido por mim mesmo"),
               value: "personal", emojiBg: Color(hex: "#0EA5E9").opacity(0.10)),
-        .init(emoji: "📈", title: "Melhorar fitness e endurance",
-              subtitle: "Evoluir sem meta específica",
+        .init(emoji: "📈", title: String(localized: "Melhorar fitness e endurance"),
+              subtitle: String(localized: "Evoluir sem meta específica"),
               value: "fitness",  emojiBg: Color(hex: "#10B981").opacity(0.10)),
     ]
 
@@ -472,11 +494,11 @@ private extension AssessmentView {
     }
 
     static let distanceItems: [DistanceItem] = [
-        .init(emoji: "🏃", label: "5K",       description: "5 quilômetros",       value: "5k"),
-        .init(emoji: "🏃", label: "10K",      description: "10 quilômetros",      value: "10k"),
-        .init(emoji: "🏅", label: "Meia",     description: "21 quilômetros",      value: "half"),
-        .init(emoji: "🏆", label: "Maratona", description: "42 quilômetros",      value: "42k"),
-        .init(emoji: "⚡", label: "Ultra",    description: "Mais de 42 km",       value: "ultra"),
+        .init(emoji: "🏃", label: "5K",       description: String(localized: "5 quilômetros"),       value: "5k"),
+        .init(emoji: "🏃", label: "10K",      description: String(localized: "10 quilômetros"),      value: "10k"),
+        .init(emoji: "🏅", label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
+        .init(emoji: "🏆", label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
+        .init(emoji: "⚡", label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
     ]
 
     var stepDistancia: some View {
@@ -521,11 +543,11 @@ private extension AssessmentView {
     }
 
     static let objectiveTypeItems: [ObjectiveTypeItem] = [
-        .init(emoji: "🤖", title: "Workload adaptado pela IA",
-              description: "A IA define a carga com base na sua evolução",
+        .init(emoji: "🤖", title: String(localized: "Workload adaptado pela IA"),
+              description: String(localized: "A IA define a carga com base na sua evolução"),
               value: "workload", emojiBg: Color(hex: "#7C3AED").opacity(0.10)),
-        .init(emoji: "⏱️", title: "Tempo alvo",
-              description: "Defina um tempo e a IA cria um plano para você bater",
+        .init(emoji: "⏱️", title: String(localized: "Tempo alvo"),
+              description: String(localized: "Defina um tempo e a IA cria um plano para você bater"),
               value: "target_time", emojiBg: Color(hex: "#F59E0B").opacity(0.10)),
     ]
 
@@ -594,5 +616,57 @@ private extension AssessmentView {
                 )
             }
         }
+    }
+}
+
+// MARK: - P9: Dias disponíveis (último passo em ambos os finais)
+
+private extension AssessmentView {
+    // Chaves em inglês minúsculo (contrato do backend / planner); rótulos pt-BR.
+    static let weekdays: [(key: String, label: String)] = [
+        ("sunday",    String(localized: "Dom")),
+        ("monday",    String(localized: "Seg")),
+        ("tuesday",   String(localized: "Ter")),
+        ("wednesday", String(localized: "Qua")),
+        ("thursday",  String(localized: "Qui")),
+        ("friday",    String(localized: "Sex")),
+        ("saturday",  String(localized: "Sáb")),
+    ]
+
+    var stepDays: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                ForEach(Self.weekdays, id: \.key) { day in
+                    dayToggle(key: day.key, label: day.label)
+                }
+            }
+
+            Text("Selecione ao menos um dia — você pode ajustar depois no perfil.")
+                .font(AthlyTheme.Typography.body(10))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    func dayToggle(key: String, label: String) -> some View {
+        let sel = availableDays.contains(key)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                if sel { availableDays.remove(key) } else { availableDays.insert(key) }
+            }
+        } label: {
+            Text(label)
+                .font(AthlyTheme.Typography.semibold(13))
+                .foregroundStyle(sel ? .white : AthlyTheme.Color.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(sel ? AnyShapeStyle(AthlyTheme.Gradient.brand) : AnyShapeStyle(AthlyTheme.Color.surfaceCard))
+                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
+                        .stroke(sel ? Color.clear : AthlyTheme.Color.borderMid, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }

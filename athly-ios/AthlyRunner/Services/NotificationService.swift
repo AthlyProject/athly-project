@@ -104,7 +104,7 @@ final class NotificationService {
 
         for (workout, fireDate) in upcoming {
             let content = UNMutableNotificationContent()
-            content.title = "Treino de hoje"
+            content.title = String(localized: "Treino de hoje")
             content.body = workout.title
             content.sound = .default
 

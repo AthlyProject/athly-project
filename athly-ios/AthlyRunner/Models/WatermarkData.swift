@@ -54,7 +54,7 @@ struct WatermarkData {
     // MARK: - Formatação (mesma lógica de RunSession / RunSummaryView)
 
     var formattedDistance: String {
-        String(format: "%.2f", distanceMeters / 1000.0)
+        LocalizedFormatting.formattedDistanceKm(distanceMeters / 1000.0)
     }
 
     var formattedDuration: String {

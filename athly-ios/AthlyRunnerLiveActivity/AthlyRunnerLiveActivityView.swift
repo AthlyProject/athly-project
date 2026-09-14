@@ -139,7 +139,7 @@ struct AthlyLockScreenView: View {
         }
     }
 
-    private func metricCell(value: Text, label: String, icon: String) -> some View {
+    private func metricCell(value: Text, label: LocalizedStringKey, icon: String) -> some View {
         VStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.system(size: 11))
@@ -199,7 +199,7 @@ struct AthlyDynamicIslandExpanded: View {
             HStack {
                 AthlyBrandBadge(showsSubtitle: false)
                 Spacer()
-                Text(context.attributes.workoutTitle.isEmpty ? "Corrida" : context.attributes.workoutTitle)
+                Text(context.attributes.workoutTitle.isEmpty ? String(localized: "Corrida") : context.attributes.workoutTitle)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.78))
                     .lineLimit(1)
@@ -220,7 +220,7 @@ struct AthlyDynamicIslandExpanded: View {
         }
     }
 
-    private func miniMetric(value: Text, label: String) -> some View {
+    private func miniMetric(value: Text, label: LocalizedStringKey) -> some View {
         VStack(spacing: 1) {
             value
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -270,7 +270,7 @@ struct AthlyRunnerLiveActivityWidget: Widget {
                             .font(.system(size: 13, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.white.opacity(0.8))
                         Spacer()
-                        Text(context.attributes.workoutTitle.isEmpty ? "Corrida" : context.attributes.workoutTitle)
+                        Text(context.attributes.workoutTitle.isEmpty ? String(localized: "Corrida") : context.attributes.workoutTitle)
                             .font(.system(size: 12))
                             .foregroundStyle(.white.opacity(0.5))
                             .lineLimit(1)

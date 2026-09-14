@@ -11,15 +11,15 @@ enum WorkoutSegmentationOrigin: String, Codable, Equatable, Sendable {
     var displayName: String {
         switch self {
         case .athlyTracker:
-            return "Registrado pelo Athly"
+            return String(localized: "Registrado pelo Athly")
         case .prescribedRoute:
-            return "Reconstruído pela rota"
+            return String(localized: "Reconstruído pela rota")
         case .prescribedTime:
-            return "Reconstruído por tempo"
+            return String(localized: "Reconstruído por tempo")
         case .thirdPartyLaps:
-            return "Laps do relógio"
+            return String(localized: "Laps do relógio")
         case .unavailable:
-            return "Blocos indisponíveis"
+            return String(localized: "Blocos indisponíveis")
         }
     }
 }
@@ -33,11 +33,11 @@ enum WorkoutSegmentationConfidence: String, Codable, Equatable, Sendable {
     var displayName: String? {
         switch self {
         case .exact:
-            return "Exato"
+            return String(localized: "Exato")
         case .high:
-            return "Alta confiança"
+            return String(localized: "Alta confiança")
         case .low:
-            return "Baixa confiança"
+            return String(localized: "Baixa confiança")
         case .unavailable:
             return nil
         }
@@ -107,7 +107,7 @@ enum WorkoutSegmentationEngine {
         pauses: [SplitCalculator.PauseInterval]
     ) -> WorkoutSegmentationResult {
         guard let prescription else {
-            return .unavailable("Este treino não possui uma estrutura de blocos para reconstruir.")
+            return .unavailable(String(localized: "Este treino não possui uma estrutura de blocos para reconstruir."))
         }
 
         let steps = prescription
@@ -210,7 +210,7 @@ enum WorkoutSegmentationEngine {
         }
 
         guard !records.isEmpty else {
-            return .unavailable(reason ?? "Não foi possível encontrar fronteiras confiáveis para os blocos.")
+            return .unavailable(reason ?? String(localized: "Não foi possível encontrar fronteiras confiáveis para os blocos."))
         }
 
         if records.count < steps.count {

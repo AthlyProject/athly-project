@@ -489,7 +489,7 @@ final class TrainingPlanViewModel: ObservableObject {
         if let healthKitUUID {
             healthSummary = try? await healthService.fetchRunningWorkout(uuid: healthKitUUID)
             guard let healthSummary else {
-                let message = "A corrida vinculada não foi encontrada no Apple Health."
+                let message = String(localized: "A corrida vinculada não foi encontrada no Apple Health.")
                 errorMessage = message
                 return .failure(message)
             }
@@ -500,7 +500,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 healthDistanceMeters: healthSummary.distanceMeters
             )
             guard match.isMatch else {
-                let message = "O arquivo não corresponde à corrida vinculada (\(match.localizedSummary))."
+                let message = String(localized: "O arquivo não corresponde à corrida vinculada (\(match.localizedSummary)).")
                 errorMessage = message
                 return .failure(message)
             }
@@ -662,9 +662,9 @@ final class TrainingPlanViewModel: ObservableObject {
             )
             return .success
         } catch is CancellationError {
-            return .failure("Operação cancelada.")
+            return .failure(String(localized: "Operação cancelada."))
         } catch let error as URLError where error.code == .cancelled {
-            return .failure("Operação cancelada.")
+            return .failure(String(localized: "Operação cancelada."))
         } catch {
             errorMessage = error.localizedDescription
             return .failure(error.localizedDescription)
@@ -769,10 +769,12 @@ final class TrainingPlanViewModel: ObservableObject {
 
     /// Reagenda um treino para `newDate` (drag-and-drop no calendário do Plano) e re-agenda
     /// as notificações locais, já que a data mudou.
-    func rescheduleWorkout(_ workout: WorkoutModel, to newDate: Date) async {
-        let iso = ISO8601DateFormatter().string(from: newDate)
+    /// `dayString` é uma data pura `yyyy-MM-dd` no calendário local. O backend só persiste
+    /// o dia (retorna a data sem horário), então enviar timestamp UTC deslocava o dia em
+    /// fusos a leste de UTC — a data pura mantém o dia estável em qualquer fuso.
+    func rescheduleWorkout(_ workout: WorkoutModel, toDay dayString: String) async {
         do {
-            let updated = try await APIClient.shared.rescheduleWorkout(workoutId: workout.id, newDate: iso)
+            let updated = try await APIClient.shared.rescheduleWorkout(workoutId: workout.id, newDate: dayString)
             replaceWorkout(updated)
             await NotificationService.shared.reschedule(workouts: allWorkouts)
         } catch is CancellationError {

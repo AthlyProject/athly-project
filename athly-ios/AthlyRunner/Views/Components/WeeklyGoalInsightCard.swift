@@ -3,6 +3,7 @@ import SwiftUI
 /// Card que mostra o insight/meta gerado pela IA para a semana atual (metrics.fitnessInsights / trend).
 struct WeeklyGoalInsightCard: View {
     let goal: WeeklyGoalResponse
+    var weekNumber: Int? = nil
 
     var body: some View {
         guard let metrics = goal.metrics,
@@ -11,9 +12,13 @@ struct WeeklyGoalInsightCard: View {
         }
 
         return AnyView(
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(weekChipLabel)
+                    .font(AthlyTheme.Typography.body(10))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+
                 HStack(spacing: 6) {
-                    Image(systemName: "target")
+                    Image(systemName: "plus.circle")
                         .font(.caption)
                         .foregroundStyle(AthlyTheme.Color.primary)
                     Text("Meta da Semana")
@@ -45,11 +50,48 @@ struct WeeklyGoalInsightCard: View {
                             metricChip(label: "Corridas anal.", value: "\(runs)")
                         }
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(AthlyTheme.Color.glassBorder, lineWidth: 1)
+                    )
                 }
             }
             .padding(AthlyTheme.Spacing.sm)
             .athlyInsightCard()
         )
+    }
+
+    private var weekChipLabel: String {
+        let start = goal.parsedStartDate
+        let end = goal.parsedEndDate
+        let cal = Calendar.current
+
+        let sameMonth = cal.component(.month, from: start) == cal.component(.month, from: end) &&
+                        cal.component(.year, from: start) == cal.component(.year, from: end)
+
+        let startDay = cal.component(.day, from: start)
+        let endDay = cal.component(.day, from: end)
+
+        let monthYearFmt = DateFormatter()
+        monthYearFmt.locale = Locale.autoupdatingCurrent
+
+        let dateRange: String
+        if sameMonth {
+            monthYearFmt.dateFormat = "MMM yyyy"
+            dateRange = "\(startDay)–\(endDay) \(monthYearFmt.string(from: end))"
+        } else {
+            let startFmt = DateFormatter()
+            startFmt.locale = Locale.autoupdatingCurrent
+            startFmt.dateFormat = "d MMM"
+            monthYearFmt.dateFormat = "d MMM yyyy"
+            dateRange = "\(startFmt.string(from: start)) – \(monthYearFmt.string(from: end))"
+        }
+
+        if let n = weekNumber {
+            return String(localized: "Semana \(n) · \(dateRange)")
+        }
+        return dateRange
     }
 
     private func trendBadge(_ trend: String) -> some View {
@@ -66,17 +108,17 @@ struct WeeklyGoalInsightCard: View {
     private func trendInfo(_ trend: String) -> (String, Color) {
         switch trend.lowercased() {
         case let t where t.contains("improving"):
-            return ("Em alta", AthlyTheme.Color.success)
+            return (String(localized: "Em alta"), AthlyTheme.Color.success)
         case "maintaining":
-            return ("Estável", AthlyTheme.Color.primary)
+            return (String(localized: "Estável"), AthlyTheme.Color.primary)
         case "declining":
-            return ("Em baixa", AthlyTheme.Color.warning)
+            return (String(localized: "Em baixa"), AthlyTheme.Color.warning)
         default:
             return (trend, AthlyTheme.Color.textSecondary)
         }
     }
 
-    private func metricChip(label: String, value: String) -> some View {
+    private func metricChip(label: LocalizedStringKey, value: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(AthlyTheme.Typography.semibold(13))
@@ -88,5 +130,6 @@ struct WeeklyGoalInsightCard: View {
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 }

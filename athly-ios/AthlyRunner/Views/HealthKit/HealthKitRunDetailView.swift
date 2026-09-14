@@ -214,13 +214,13 @@ struct HealthKitRunDetailView: View {
                     athlyWorkoutId: prescribedWorkout.id,
                     prescribedWorkout: prescribedWorkout
                   ) else {
-                apply(.unavailable("Não foi possível abrir os dados brutos desta corrida para reconstruir os blocos."))
+                apply(.unavailable(String(localized: "Não foi possível abrir os dados brutos desta corrida para reconstruir os blocos.")))
                 return
             }
             apply(detail.segmentation)
             RunWorkoutLinkStore.shared.storeSegmentation(detail.segmentation, for: item.id)
         } catch {
-            apply(.unavailable("Não foi possível reconstruir os blocos desta corrida: \(error.localizedDescription)"))
+            apply(.unavailable(String(localized: "Não foi possível reconstruir os blocos desta corrida: \(error.localizedDescription)")))
         }
     }
 
