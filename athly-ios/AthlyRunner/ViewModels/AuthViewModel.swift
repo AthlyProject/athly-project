@@ -73,6 +73,41 @@ final class AuthViewModel: ObservableObject {
         isLoading = false
     }
 
+    /// Solicita o código de redefinição de senha. Sempre "sucede" do ponto de vista do usuário
+    /// (o backend responde com a mesma mensagem genérica, exista ou não a conta) — só falha em
+    /// caso de erro de rede/servidor.
+    func requestPasswordReset(email: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            _ = try await APIClient.shared.forgotPassword(email: email)
+            isLoading = false
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+            return false
+        }
+    }
+
+    /// Valida o código enviado por email e define a nova senha. Em caso de sucesso o backend
+    /// revoga todas as sessões — o usuário precisa logar novamente com a nova senha.
+    func resetPassword(email: String, code: String, newPassword: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            _ = try await APIClient.shared.resetPassword(email: email, code: code, newPassword: newPassword)
+            isLoading = false
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+            return false
+        }
+    }
+
     func register(email: String, password: String) async {
         isLoading = true
         errorMessage = nil

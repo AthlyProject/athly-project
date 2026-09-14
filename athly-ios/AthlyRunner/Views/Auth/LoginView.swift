@@ -9,6 +9,7 @@ struct LoginView: View {
     @State private var password     = ""
     @State private var showPassword = false
     @State private var showRegister = false
+    @State private var showForgotPassword = false
 
     var body: some View {
         ZStack {
@@ -96,7 +97,7 @@ struct LoginView: View {
                     // Forgot password
                     HStack {
                         Spacer()
-                        Button("Esqueceu sua senha?") { }
+                        Button("Esqueceu sua senha?") { showForgotPassword = true }
                             .font(AthlyTheme.Typography.semibold(11))
                             .foregroundStyle(AthlyTheme.Color.primary)
                             .buttonStyle(.plain)
@@ -159,6 +160,7 @@ struct LoginView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .sheet(isPresented: $showRegister) { RegisterView() }
+        .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
     }
 
     // MARK: - Sub-views

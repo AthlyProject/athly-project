@@ -3878,6 +3878,9 @@
         }
       }
     },
+    "Enviamos um código para %@" : {
+
+    },
     "Enviando..." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3923,6 +3926,9 @@
           }
         }
       }
+    },
+    "Enviar código" : {
+
     },
     "Enviar feedback" : {
       "extractionState" : "stale",
@@ -4110,7 +4116,6 @@
       }
     },
     "Esqueceu sua senha?" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5155,6 +5160,9 @@
         }
       }
     },
+    "Informe seu email e enviaremos um código para redefinir sua senha" : {
+
+    },
     "Informe um peso válido em kg." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5454,6 +5462,9 @@
           }
         }
       }
+    },
+    "Ir para o login" : {
+
     },
     "Isso apaga este plano e todos os treinos e semanas. Guardamos um resumo das últimas semanas para personalizar seu próximo plano. Esta ação não pode ser desfeita." : {
       "localizations" : {
@@ -8988,6 +8999,9 @@
         }
       }
     },
+    "Redefinir senha" : {
+
+    },
     "Refazer" : {
       "comment" : "Retake photo button",
       "localizations" : {
@@ -9926,6 +9940,9 @@
         }
       }
     },
+    "Senha atualizada" : {
+
+    },
     "Série" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10479,6 +10496,9 @@
           }
         }
       }
+    },
+    "Sua senha foi redefinida. Faça login novamente com a nova senha." : {
+
     },
     "Sua sessão expirou. Faça login novamente." : {
       "comment" : "Shown after a 401 that could not be recovered by refresh; the user is logged out.",

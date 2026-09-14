@@ -97,6 +97,22 @@ actor APIClient {
         return response
     }
 
+    /// Solicita um código de redefinição de senha. O backend sempre responde com a mesma
+    /// mensagem genérica, exista ou não o email — evita enumeração de contas.
+    @discardableResult
+    func forgotPassword(email: String) async throws -> MessageResponse {
+        let body = ForgotPasswordRequest(email: email)
+        return try await post("/auth/forgot-password", body: body, authenticated: false)
+    }
+
+    /// Valida o código enviado por email e define a nova senha. Em caso de sucesso o backend
+    /// revoga todas as sessões existentes — o usuário precisa logar novamente.
+    @discardableResult
+    func resetPassword(email: String, code: String, newPassword: String) async throws -> MessageResponse {
+        let body = ResetPasswordRequest(email: email, code: code, newPassword: newPassword)
+        return try await post("/auth/reset-password", body: body, authenticated: false)
+    }
+
     func loginWithGoogle(idToken: String) async throws -> AuthResponse {
         let body = GoogleLoginRequest(idToken: idToken)
         let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
@@ -443,7 +459,9 @@ actor APIClient {
         case 404:
             throw APIError.notFound
         default:
-            let message = String(data: data, encoding: .utf8) ?? String(localized: "Unknown error")
+            let message = Self.backendMessage(from: data)
+                ?? String(data: data, encoding: .utf8)
+                ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -497,7 +515,9 @@ actor APIClient {
             }
             throw APIError.unauthorized
         default:
-            let message = String(data: data, encoding: .utf8) ?? String(localized: "Unknown error")
+            let message = Self.backendMessage(from: data)
+                ?? String(data: data, encoding: .utf8)
+                ?? String(localized: "Unknown error")
             throw APIError.serverError(httpResponse.statusCode, message)
         }
     }
@@ -518,6 +538,20 @@ struct RegisterRequest: Encodable {
 struct AuthResponse: Decodable {
     let accessToken: String
     let refreshToken: String
+}
+
+struct ForgotPasswordRequest: Encodable {
+    let email: String
+}
+
+struct ResetPasswordRequest: Encodable {
+    let email: String
+    let code: String
+    let newPassword: String
+}
+
+struct MessageResponse: Decodable {
+    let message: String
 }
 
 struct GoogleLoginRequest: Encodable {

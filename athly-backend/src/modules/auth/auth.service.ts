@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes, randomUUID } from 'crypto';
+import { randomBytes, randomInt, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
@@ -27,6 +27,11 @@ interface SocialIdentity {
 
 @Injectable()
 export class AuthService {
+  private static readonly RESET_CODE_TTL_MS = 15 * 60 * 1000;
+  private static readonly RESET_REQUEST_WINDOW_MS = 60 * 60 * 1000;
+  private static readonly MAX_RESET_REQUESTS_PER_WINDOW = 3;
+  private static readonly MAX_RESET_ATTEMPTS = 5;
+
   private readonly googleClient = new OAuth2Client();
 
   constructor(
@@ -95,6 +100,123 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  /**
+   * Solicita um código de redefinição de senha. Sempre retorna a mesma mensagem genérica,
+   * exista ou não o email, para evitar enumeração de contas.
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const genericResponse = {
+      message:
+        'Se este email estiver cadastrado, você receberá um código de redefinição em instantes.',
+    };
+
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return genericResponse;
+    }
+
+    // Conta social-only: não tem senha para redefinir, avisa por email para usar o provedor.
+    if (!user.password) {
+      this.emailService
+        .sendSocialOnlyResetEmail(user.email, user.name)
+        .catch((err: Error) =>
+          console.error(
+            `[Auth] Failed to send social-only reset email to ${user.email}:`,
+            err.message,
+          ),
+        );
+      return genericResponse;
+    }
+
+    const recentRequestCount = await this.prisma.passwordResetCode.count({
+      where: {
+        userId: user.id,
+        createdAt: { gte: new Date(Date.now() - AuthService.RESET_REQUEST_WINDOW_MS) },
+      },
+    });
+    if (recentRequestCount >= AuthService.MAX_RESET_REQUESTS_PER_WINDOW) {
+      return genericResponse;
+    }
+
+    // Invalida quaisquer códigos anteriores ainda não usados.
+    await this.prisma.passwordResetCode.updateMany({
+      where: { userId: user.id, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+
+    const code = this.generateResetCode();
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + AuthService.RESET_CODE_TTL_MS);
+
+    await this.prisma.passwordResetCode.create({
+      data: { userId: user.id, codeHash, expiresAt },
+    });
+
+    this.emailService
+      .sendPasswordResetEmail(user.email, user.name, code)
+      .catch((err: Error) =>
+        console.error(`[Auth] Failed to send password reset email to ${user.email}:`, err.message),
+      );
+
+    return genericResponse;
+  }
+
+  /**
+   * Valida o código de redefinição, atualiza a senha e revoga todas as sessões existentes do
+   * usuário (força novo login em todos os dispositivos).
+   */
+  async resetPassword(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const invalidCodeError = () => new BadRequestException('Código inválido ou expirado');
+
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.password) {
+      throw invalidCodeError();
+    }
+
+    const resetCode = await this.prisma.passwordResetCode.findFirst({
+      where: { userId: user.id, consumedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (
+      !resetCode ||
+      resetCode.expiresAt < new Date() ||
+      resetCode.attempts >= AuthService.MAX_RESET_ATTEMPTS
+    ) {
+      throw invalidCodeError();
+    }
+
+    const validCode = await bcrypt.compare(code, resetCode.codeHash);
+    if (!validCode) {
+      await this.prisma.passwordResetCode.update({
+        where: { id: resetCode.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw invalidCodeError();
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } }),
+      this.prisma.passwordResetCode.update({
+        where: { id: resetCode.id },
+        data: { consumedAt: new Date() },
+      }),
+      this.prisma.session.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+    return { message: 'Senha atualizada com sucesso. Faça login novamente.' };
+  }
+
+  private generateResetCode(): string {
+    return randomInt(0, 1_000_000).toString().padStart(6, '0');
   }
 
   async refreshSession(refreshToken: string) {
