@@ -107,7 +107,7 @@ struct ForgotPasswordView: View {
             }
             .navigationBarBackButtonHidden()
             .navigationDestination(isPresented: $codeSent) {
-                ResetPasswordView(email: email, onFinished: { dismiss() })
+                VerifyResetCodeView(email: email, onFinished: { dismiss() })
             }
         }
         .onDisappear { authViewModel.errorMessage = nil }

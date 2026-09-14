@@ -164,23 +164,60 @@ export class AuthService {
   }
 
   /**
-   * Valida o código de redefinição, atualiza a senha e revoga todas as sessões existentes do
-   * usuário (força novo login em todos os dispositivos).
+   * Passo 1 do reset: só confirma que o código digitado é válido (sem consumi-lo), para a UI
+   * poder avançar para a tela de nova senha antes de pedir a senha.
+   */
+  async verifyResetCode(email: string, code: string): Promise<{ message: string }> {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.password) {
+      throw new BadRequestException('Código inválido ou expirado');
+    }
+
+    await this.getValidResetCode(user.id, code);
+
+    return { message: 'Código válido.' };
+  }
+
+  /**
+   * Passo 2 do reset: revalida o código (defesa em profundidade — não confia apenas na
+   * verificação do passo 1), atualiza a senha e revoga todas as sessões existentes do usuário
+   * (força novo login em todos os dispositivos).
    */
   async resetPassword(
     email: string,
     code: string,
     newPassword: string,
   ): Promise<{ message: string }> {
-    const invalidCodeError = () => new BadRequestException('Código inválido ou expirado');
-
     const user = await this.usersService.findByEmail(email);
     if (!user || !user.password) {
-      throw invalidCodeError();
+      throw new BadRequestException('Código inválido ou expirado');
     }
 
+    const resetCode = await this.getValidResetCode(user.id, code);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } }),
+      this.prisma.passwordResetCode.update({
+        where: { id: resetCode.id },
+        data: { consumedAt: new Date() },
+      }),
+      this.prisma.session.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+    return { message: 'Senha atualizada com sucesso. Faça login novamente.' };
+  }
+
+  /**
+   * Busca o código pendente mais recente do usuário e valida expiração/lockout/hash. Não
+   * consome o código — quem chama decide quando marcá-lo como usado (só `resetPassword` faz
+   * isso). Uma tentativa errada aqui conta para o lockout de 5 tentativas.
+   */
+  private async getValidResetCode(userId: string, code: string) {
+    const invalidCodeError = () => new BadRequestException('Código inválido ou expirado');
+
     const resetCode = await this.prisma.passwordResetCode.findFirst({
-      where: { userId: user.id, consumedAt: null },
+      where: { userId, consumedAt: null },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -201,18 +238,7 @@ export class AuthService {
       throw invalidCodeError();
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } }),
-      this.prisma.passwordResetCode.update({
-        where: { id: resetCode.id },
-        data: { consumedAt: new Date() },
-      }),
-      this.prisma.session.deleteMany({ where: { userId: user.id } }),
-    ]);
-
-    return { message: 'Senha atualizada com sucesso. Faça login novamente.' };
+    return resetCode;
   }
 
   private generateResetCode(): string {

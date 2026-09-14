@@ -105,8 +105,16 @@ actor APIClient {
         return try await post("/auth/forgot-password", body: body, authenticated: false)
     }
 
-    /// Valida o código enviado por email e define a nova senha. Em caso de sucesso o backend
-    /// revoga todas as sessões existentes — o usuário precisa logar novamente.
+    /// Confirma que o código digitado bate com o que foi enviado por email, sem ainda trocar a
+    /// senha — usado no passo intermediário entre "pedir código" e "definir nova senha".
+    @discardableResult
+    func verifyResetCode(email: String, code: String) async throws -> MessageResponse {
+        let body = VerifyResetCodeRequest(email: email, code: code)
+        return try await post("/auth/verify-reset-code", body: body, authenticated: false)
+    }
+
+    /// Revalida o código e define a nova senha. Em caso de sucesso o backend revoga todas as
+    /// sessões existentes — o usuário precisa logar novamente.
     @discardableResult
     func resetPassword(email: String, code: String, newPassword: String) async throws -> MessageResponse {
         let body = ResetPasswordRequest(email: email, code: code, newPassword: newPassword)
@@ -542,6 +550,11 @@ struct AuthResponse: Decodable {
 
 struct ForgotPasswordRequest: Encodable {
     let email: String
+}
+
+struct VerifyResetCodeRequest: Encodable {
+    let email: String
+    let code: String
 }
 
 struct ResetPasswordRequest: Encodable {

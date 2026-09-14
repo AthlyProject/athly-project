@@ -91,8 +91,25 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// Valida o código enviado por email e define a nova senha. Em caso de sucesso o backend
-    /// revoga todas as sessões — o usuário precisa logar novamente com a nova senha.
+    /// Confirma o código digitado antes de avançar para a tela de nova senha — passo
+    /// intermediário do fluxo de "esqueci minha senha".
+    func verifyResetCode(email: String, code: String) async -> Bool {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            _ = try await APIClient.shared.verifyResetCode(email: email, code: code)
+            isLoading = false
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            isLoading = false
+            return false
+        }
+    }
+
+    /// Revalida o código e define a nova senha. Em caso de sucesso o backend revoga todas as
+    /// sessões — o usuário precisa logar novamente com a nova senha.
     func resetPassword(email: String, code: String, newPassword: String) async -> Bool {
         isLoading = true
         errorMessage = nil

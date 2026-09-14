@@ -1,21 +1,23 @@
 import SwiftUI
 
+/// Passo 3 (final) do fluxo de "esqueci minha senha": define a nova senha usando o código já
+/// confirmado em `VerifyResetCodeView`.
 struct ResetPasswordView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
 
     let email: String
+    let code: String
     /// Chamado após redefinir a senha com sucesso e o usuário fechar a tela — fecha todo o
     /// fluxo de "esqueci minha senha" (não só este passo) e volta para o login.
     let onFinished: () -> Void
 
-    @State private var code = ""
     @State private var newPassword = ""
     @State private var showPassword = false
     @State private var didSucceed = false
 
     private var isFormValid: Bool {
-        code.count == 6 && newPassword.count >= 8
+        newPassword.count >= 8
     }
 
     var body: some View {
@@ -53,32 +55,17 @@ struct ResetPasswordView: View {
                     .buttonStyle(.plain)
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("Redefinir senha")
+                        Text("Nova senha")
                             .font(AthlyTheme.Typography.heading(20))
                             .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        Text("Enviamos um código para \(email)")
+                        Text("Escolha uma nova senha para sua conta")
                             .font(AthlyTheme.Typography.body(12))
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
                     }
                     Spacer()
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 18)
-
-                // Code
-                authField(label: String(localized: "Código")) {
-                    TextField("000000", text: $code)
-                        .font(AthlyTheme.Typography.body(13))
-                        .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        .keyboardType(.numberPad)
-                        .textContentType(.oneTimeCode)
-                        .onChange(of: code) { newValue in
-                            code = String(newValue.filter(\.isNumber).prefix(6))
-                        }
-                }
-                .padding(.bottom, 9)
 
                 // New password
                 passwordSection
@@ -125,6 +112,7 @@ struct ResetPasswordView: View {
             .padding(.horizontal, 20)
         }
         .scrollDismissesKeyboard(.interactively)
+        .navigationBarBackButtonHidden()
         .onDisappear { authViewModel.errorMessage = nil }
     }
 
@@ -168,24 +156,6 @@ struct ResetPasswordView: View {
                     .font(AthlyTheme.Typography.body(10))
                     .foregroundStyle(AthlyTheme.Color.error)
             }
-        }
-    }
-
-    private func authField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(label.uppercased())
-                .font(AthlyTheme.Typography.label())
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-                .kerning(0.8)
-            content()
-                .padding(.vertical, 11)
-                .padding(.horizontal, 13)
-                .background(AthlyTheme.Color.surfaceCard)
-                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                        .stroke(AthlyTheme.Color.borderMid, lineWidth: 1)
-                )
         }
     }
 

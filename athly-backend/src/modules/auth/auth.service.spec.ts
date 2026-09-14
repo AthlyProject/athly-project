@@ -127,6 +127,60 @@ describe('AuthService', () => {
     });
   });
 
+  describe('verifyResetCode', () => {
+    const activeCode = {
+      id: 'code-1',
+      userId: passwordUser.id,
+      codeHash: '',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      consumedAt: null,
+      attempts: 0,
+    };
+
+    it('throws for an unknown email without leaking which case it is', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+
+      await expect(service.verifyResetCode('missing@example.com', '123456')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.passwordResetCode.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('throws for a social-only account', async () => {
+      usersService.findByEmail.mockResolvedValue(socialOnlyUser);
+
+      await expect(service.verifyResetCode(socialOnlyUser.email, '123456')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws and increments attempts on a wrong code, without consuming it', async () => {
+      const codeHash = await bcrypt.hash('654321', 10);
+      usersService.findByEmail.mockResolvedValue(passwordUser);
+      prisma.passwordResetCode.findFirst.mockResolvedValue({ ...activeCode, codeHash });
+
+      await expect(service.verifyResetCode(passwordUser.email, '000000')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.passwordResetCode.update).toHaveBeenCalledWith({
+        where: { id: activeCode.id },
+        data: { attempts: { increment: 1 } },
+      });
+    });
+
+    it('succeeds without consuming the code when it matches', async () => {
+      const codeHash = await bcrypt.hash('654321', 10);
+      usersService.findByEmail.mockResolvedValue(passwordUser);
+      prisma.passwordResetCode.findFirst.mockResolvedValue({ ...activeCode, codeHash });
+
+      const result = await service.verifyResetCode(passwordUser.email, '654321');
+
+      expect(result.message).toMatch(/válido/);
+      expect(prisma.passwordResetCode.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
   describe('resetPassword', () => {
     const activeCode = {
       id: 'code-1',

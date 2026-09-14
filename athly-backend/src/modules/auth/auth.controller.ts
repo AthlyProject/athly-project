@@ -6,6 +6,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { AuthPayload } from './dto/auth-payload.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MessageResponse } from './dto/message-response.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
@@ -35,6 +36,12 @@ export class AuthController {
   @ApiOkResponse({ type: MessageResponse })
   async forgotPassword(@Body() input: ForgotPasswordDto): Promise<MessageResponse> {
     return this.authService.forgotPassword(input.email);
+  }
+
+  @Post('verify-reset-code')
+  @ApiOkResponse({ type: MessageResponse })
+  async verifyResetCode(@Body() input: VerifyResetCodeDto): Promise<MessageResponse> {
+    return this.authService.verifyResetCode(input.email, input.code);
   }
 
   @Post('reset-password')
