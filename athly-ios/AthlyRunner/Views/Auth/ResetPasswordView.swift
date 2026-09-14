@@ -127,13 +127,14 @@ struct ResetPasswordView: View {
                 Group {
                     if showPassword {
                         TextField("", text: $newPassword)
+                            .textContentType(.newPassword)
                     } else {
                         SecureField("", text: $newPassword)
+                            .textContentType(.newPassword)
                     }
                 }
                 .font(AthlyTheme.Typography.body(13))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
-                .textContentType(.newPassword)
 
                 Button { showPassword.toggle() } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")

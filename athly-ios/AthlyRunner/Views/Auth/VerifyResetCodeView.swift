@@ -53,7 +53,7 @@ struct VerifyResetCodeView: View {
 
                     // Code
                     authField(label: String(localized: "Código")) {
-                        TextField("000000", text: $code)
+                        TextField("", text: $code)
                             .font(AthlyTheme.Typography.body(13))
                             .foregroundStyle(AthlyTheme.Color.textPrimary)
                             .keyboardType(.numberPad)

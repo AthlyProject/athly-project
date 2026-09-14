@@ -2563,7 +2563,6 @@
       }
     },
     "Continuar" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3412,6 +3411,9 @@
         }
       }
     },
+    "Digite o código" : {
+
+    },
     "Dispositivo" : {
       "comment" : "Label in prefilled support-email body, e.g. 'Dispositivo: iOS 18.0'",
       "extractionState" : "stale",
@@ -4068,6 +4070,9 @@
           }
         }
       }
+    },
+    "Escolha uma nova senha para sua conta" : {
+
     },
     "Escolher da galeria" : {
       "localizations" : {
@@ -7002,6 +7007,9 @@
           }
         }
       }
+    },
+    "Nova senha" : {
+
     },
     "Nunca corri de forma consistente" : {
       "extractionState" : "stale",
