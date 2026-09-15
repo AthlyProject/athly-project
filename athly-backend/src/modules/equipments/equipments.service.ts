@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CodedNotFoundException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
@@ -33,7 +35,7 @@ export class EquipmentsService {
     });
 
     if (!equipment) {
-      throw new NotFoundException('Equipment not found');
+      throw new CodedNotFoundException(ErrorCode.EQUIPMENT_NOT_FOUND, 'Equipment not found');
     }
 
     return this.mapEquipment(equipment);

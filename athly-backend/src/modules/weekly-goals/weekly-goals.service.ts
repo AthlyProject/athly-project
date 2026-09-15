@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CodedNotFoundException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { Prisma, WeeklyGoalStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateWeeklyGoalDto } from './dto/create-weekly-goal.dto';
@@ -15,7 +17,10 @@ export class WeeklyGoalsService {
       where: { id: input.trainingPlanId },
     });
     if (!plan || plan.userId !== userId) {
-      throw new NotFoundException('Training plan not found');
+      throw new CodedNotFoundException(
+        ErrorCode.TRAINING_PLAN_NOT_FOUND,
+        'Training plan not found',
+      );
     }
 
     const weeklyGoal = await this.prisma.weeklyGoal.create({
@@ -47,7 +52,10 @@ export class WeeklyGoalsService {
       where: { id: trainingPlanId },
     });
     if (!plan || plan.userId !== userId) {
-      throw new NotFoundException('Training plan not found');
+      throw new CodedNotFoundException(
+        ErrorCode.TRAINING_PLAN_NOT_FOUND,
+        'Training plan not found',
+      );
     }
 
     const weeklyGoals = await this.prisma.weeklyGoal.findMany({
@@ -70,7 +78,7 @@ export class WeeklyGoalsService {
     });
 
     if (!weeklyGoal || weeklyGoal.trainingPlan.userId !== userId) {
-      throw new NotFoundException('Weekly goal not found');
+      throw new CodedNotFoundException(ErrorCode.WEEKLY_GOAL_NOT_FOUND, 'Weekly goal not found');
     }
 
     return this.mapWeeklyGoal({
@@ -95,7 +103,7 @@ export class WeeklyGoalsService {
       include: { trainingPlan: true },
     });
     if (!existing || existing.trainingPlan.userId !== userId) {
-      throw new NotFoundException('Weekly goal not found');
+      throw new CodedNotFoundException(ErrorCode.WEEKLY_GOAL_NOT_FOUND, 'Weekly goal not found');
     }
 
     const updateData: Prisma.WeeklyGoalUpdateInput = {};
@@ -143,7 +151,7 @@ export class WeeklyGoalsService {
     });
 
     if (!weeklyGoal || weeklyGoal.trainingPlan.userId !== userId) {
-      throw new NotFoundException('Weekly goal not found');
+      throw new CodedNotFoundException(ErrorCode.WEEKLY_GOAL_NOT_FOUND, 'Weekly goal not found');
     }
 
     return {
@@ -183,7 +191,7 @@ export class WeeklyGoalsService {
       include: { trainingPlan: true },
     });
     if (!weeklyGoal || weeklyGoal.trainingPlan.userId !== userId) {
-      throw new NotFoundException('Weekly goal not found');
+      throw new CodedNotFoundException(ErrorCode.WEEKLY_GOAL_NOT_FOUND, 'Weekly goal not found');
     }
 
     await this.prisma.weeklyGoal.delete({

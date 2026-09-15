@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   PlanGenerationStatus,
   Prisma,
@@ -7,6 +7,11 @@ import {
   WeeklyGoalStatus,
   WorkoutStatus,
 } from '@prisma/client';
+import {
+  CodedConflictException,
+  CodedNotFoundException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
@@ -509,7 +514,10 @@ export class AiPlannerService {
       where: { id: generationId, userId },
     });
     if (!job) {
-      throw new NotFoundException('Geração não encontrada');
+      throw new CodedNotFoundException(
+        ErrorCode.PLAN_GENERATION_NOT_FOUND,
+        'Geração não encontrada',
+      );
     }
 
     return this.serializeGenerationJob(job);
@@ -972,12 +980,16 @@ export class AiPlannerService {
         existing.status === TrainingPlanStatus.CANCELLED ||
         existing.status === TrainingPlanStatus.COMPLETED
       ) {
-        throw new ConflictException(
+        throw new CodedConflictException(
+          ErrorCode.TRAINING_PLAN_CLOSED,
           `Training plan is ${existing.status.toLowerCase()}. Delete it and create a new one before generating a plan.`,
         );
       }
       if (existing.status === TrainingPlanStatus.LOCKED) {
-        throw new ConflictException('Training plan is locked and cannot be modified.');
+        throw new CodedConflictException(
+          ErrorCode.TRAINING_PLAN_LOCKED,
+          'Training plan is locked and cannot be modified.',
+        );
       }
       const needsGoalUpdate = !!activeGoalId && existing.userGoalId !== activeGoalId;
       const existingTargetISO = existing.targetDate
@@ -1030,7 +1042,8 @@ export class AiPlannerService {
       existing.status === WeeklyGoalStatus.LOCKED ||
       (existing.status === WeeklyGoalStatus.GENERATED && hasWorkouts)
     ) {
-      throw new ConflictException(
+      throw new CodedConflictException(
+        ErrorCode.WEEKLY_PLAN_ALREADY_EXISTS,
         'A plan for this week already exists. Delete the existing weekly goal and its workouts before regenerating.',
       );
     }
@@ -1058,7 +1071,8 @@ export class AiPlannerService {
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        throw new ConflictException(
+        throw new CodedConflictException(
+          ErrorCode.WEEKLY_PLAN_GENERATION_IN_PROGRESS,
           'Uma geração para esta semana já está em andamento ou já existe.',
         );
       }

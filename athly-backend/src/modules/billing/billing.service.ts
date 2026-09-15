@@ -1,4 +1,6 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { CodedUnauthorizedException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { isAdminEmail } from '../../common/admin-emails';
@@ -36,7 +38,10 @@ export class BillingService {
     const expected = this.config.get<string>('REVENUECAT_WEBHOOK_AUTH');
     if (!expected) return;
     if (authHeader !== expected) {
-      throw new UnauthorizedException('Invalid RevenueCat webhook authorization.');
+      throw new CodedUnauthorizedException(
+        ErrorCode.BILLING_WEBHOOK_UNAUTHORIZED,
+        'Invalid RevenueCat webhook authorization.',
+      );
     }
   }
 

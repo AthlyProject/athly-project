@@ -1,15 +1,16 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, randomInt, randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import appleSignin from 'apple-signin-auth';
+import {
+  CodedBadRequestException,
+  CodedConflictException,
+  CodedUnauthorizedException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { User } from '@prisma/client';
@@ -45,7 +46,10 @@ export class AuthService {
   async register(input: RegisterUserDto) {
     const existingUser = await this.usersService.findByEmail(input.email);
     if (existingUser) {
-      throw new ConflictException('Email já cadastrado');
+      throw new CodedConflictException(
+        ErrorCode.AUTH_EMAIL_ALREADY_REGISTERED,
+        'Email já cadastrado',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(input.password, 10);
@@ -79,17 +83,26 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Credenciais inválidas',
+      );
     }
 
     // Conta criada via login social (Apple/Google) não tem senha.
     if (!user.password) {
-      throw new UnauthorizedException('Esta conta usa login social. Entre com Apple ou Google.');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_SOCIAL_ACCOUNT_NO_PASSWORD,
+        'Esta conta usa login social. Entre com Apple ou Google.',
+      );
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_INVALID_CREDENTIALS,
+        'Credenciais inválidas',
+      );
     }
 
     const accessToken = this.signAccessToken(user);
@@ -170,7 +183,10 @@ export class AuthService {
   async verifyResetCode(email: string, code: string): Promise<{ message: string }> {
     const user = await this.usersService.findByEmail(email);
     if (!user || !user.password) {
-      throw new BadRequestException('Código inválido ou expirado');
+      throw new CodedBadRequestException(
+        ErrorCode.AUTH_RESET_CODE_INVALID,
+        'Código inválido ou expirado',
+      );
     }
 
     await this.getValidResetCode(user.id, code);
@@ -190,7 +206,10 @@ export class AuthService {
   ): Promise<{ message: string }> {
     const user = await this.usersService.findByEmail(email);
     if (!user || !user.password) {
-      throw new BadRequestException('Código inválido ou expirado');
+      throw new CodedBadRequestException(
+        ErrorCode.AUTH_RESET_CODE_INVALID,
+        'Código inválido ou expirado',
+      );
     }
 
     const resetCode = await this.getValidResetCode(user.id, code);
@@ -214,7 +233,11 @@ export class AuthService {
    * isso). Uma tentativa errada aqui conta para o lockout de 5 tentativas.
    */
   private async getValidResetCode(userId: string, code: string) {
-    const invalidCodeError = () => new BadRequestException('Código inválido ou expirado');
+    const invalidCodeError = () =>
+      new CodedBadRequestException(
+        ErrorCode.AUTH_RESET_CODE_INVALID,
+        'Código inválido ou expirado',
+      );
 
     const resetCode = await this.prisma.passwordResetCode.findFirst({
       where: { userId, consumedAt: null },
@@ -252,12 +275,18 @@ export class AuthService {
     });
 
     if (!session) {
-      throw new UnauthorizedException('Refresh token inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_REFRESH_TOKEN_INVALID,
+        'Refresh token inválido',
+      );
     }
 
     if (session.expiresAt < new Date()) {
       await this.prisma.session.delete({ where: { id: session.id } });
-      throw new UnauthorizedException('Refresh token expirado');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_REFRESH_TOKEN_EXPIRED,
+        'Refresh token expirado',
+      );
     }
 
     await this.prisma.session.delete({ where: { id: session.id } });
@@ -274,7 +303,10 @@ export class AuthService {
   async loginWithGoogle(idToken: string) {
     const audience = this.config.get<string>('GOOGLE_IOS_CLIENT_ID');
     if (!audience) {
-      throw new UnauthorizedException('Login com Google não está configurado');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_NOT_CONFIGURED,
+        'Login com Google não está configurado',
+      );
     }
 
     let sub: string | undefined;
@@ -287,11 +319,17 @@ export class AuthService {
       email = payload?.email;
       name = payload?.name;
     } catch {
-      throw new UnauthorizedException('Token do Google inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_TOKEN_INVALID,
+        'Token do Google inválido',
+      );
     }
 
     if (!sub) {
-      throw new UnauthorizedException('Token do Google inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_TOKEN_INVALID,
+        'Token do Google inválido',
+      );
     }
 
     const user = await this.resolveSocialUser({
@@ -307,18 +345,27 @@ export class AuthService {
   async loginWithApple(identityToken: string, fullName?: string) {
     const audience = this.config.get<string>('APPLE_CLIENT_ID');
     if (!audience) {
-      throw new UnauthorizedException('Login com Apple não está configurado');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_NOT_CONFIGURED,
+        'Login com Apple não está configurado',
+      );
     }
 
     let payload: Awaited<ReturnType<typeof appleSignin.verifyIdToken>>;
     try {
       payload = await appleSignin.verifyIdToken(identityToken, { audience });
     } catch {
-      throw new UnauthorizedException('Token da Apple inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_TOKEN_INVALID,
+        'Token da Apple inválido',
+      );
     }
 
     if (!payload?.sub) {
-      throw new UnauthorizedException('Token da Apple inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_TOKEN_INVALID,
+        'Token da Apple inválido',
+      );
     }
 
     const user = await this.resolveSocialUser({
@@ -335,7 +382,10 @@ export class AuthService {
   async linkApple(userId: string, identityToken: string) {
     const audience = this.config.get<string>('APPLE_CLIENT_ID');
     if (!audience) {
-      throw new UnauthorizedException('Login com Apple não está configurado');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_NOT_CONFIGURED,
+        'Login com Apple não está configurado',
+      );
     }
 
     let sub: string | undefined;
@@ -343,17 +393,26 @@ export class AuthService {
       const payload = await appleSignin.verifyIdToken(identityToken, { audience });
       sub = payload?.sub;
     } catch {
-      throw new UnauthorizedException('Token da Apple inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_TOKEN_INVALID,
+        'Token da Apple inválido',
+      );
     }
     if (!sub) {
-      throw new UnauthorizedException('Token da Apple inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_APPLE_TOKEN_INVALID,
+        'Token da Apple inválido',
+      );
     }
 
     const existing = await this.prisma.user.findFirst({
       where: { appleUserId: sub },
     });
     if (existing && existing.id !== userId) {
-      throw new ConflictException('Esta conta Apple já está vinculada a outro usuário.');
+      throw new CodedConflictException(
+        ErrorCode.AUTH_APPLE_ALREADY_LINKED,
+        'Esta conta Apple já está vinculada a outro usuário.',
+      );
     }
 
     const updated = await this.prisma.user.update({
@@ -367,7 +426,10 @@ export class AuthService {
   async linkGoogle(userId: string, idToken: string) {
     const audience = this.config.get<string>('GOOGLE_IOS_CLIENT_ID');
     if (!audience) {
-      throw new UnauthorizedException('Login com Google não está configurado');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_NOT_CONFIGURED,
+        'Login com Google não está configurado',
+      );
     }
 
     let sub: string | undefined;
@@ -375,17 +437,26 @@ export class AuthService {
       const ticket = await this.googleClient.verifyIdToken({ idToken, audience });
       sub = ticket.getPayload()?.sub;
     } catch {
-      throw new UnauthorizedException('Token do Google inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_TOKEN_INVALID,
+        'Token do Google inválido',
+      );
     }
     if (!sub) {
-      throw new UnauthorizedException('Token do Google inválido');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_GOOGLE_TOKEN_INVALID,
+        'Token do Google inválido',
+      );
     }
 
     const existing = await this.prisma.user.findFirst({
       where: { googleUserId: sub },
     });
     if (existing && existing.id !== userId) {
-      throw new ConflictException('Esta conta Google já está vinculada a outro usuário.');
+      throw new CodedConflictException(
+        ErrorCode.AUTH_GOOGLE_ALREADY_LINKED,
+        'Esta conta Google já está vinculada a outro usuário.',
+      );
     }
 
     const updated = await this.prisma.user.update({
@@ -421,11 +492,12 @@ export class AuthService {
   private async requireUnlinkable(userId: string, otherProvider: SocialProvider): Promise<User> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new CodedUnauthorizedException(ErrorCode.USER_NOT_FOUND, 'User not found');
     }
     const otherLinked = otherProvider === 'google' ? !!user.googleUserId : !!user.appleUserId;
     if (!user.password && !otherLinked) {
-      throw new BadRequestException(
+      throw new CodedBadRequestException(
+        ErrorCode.AUTH_LAST_CREDENTIAL,
         'Defina uma senha ou vincule outra conta antes de desvincular esta.',
       );
     }
@@ -461,7 +533,10 @@ export class AuthService {
 
     if (!identity.email) {
       // Sem email (Apple em re-autorizações) e sem conta vinculada: não há como criar/associar.
-      throw new UnauthorizedException('Não foi possível identificar a conta. Tente novamente.');
+      throw new CodedUnauthorizedException(
+        ErrorCode.AUTH_SOCIAL_ACCOUNT_UNIDENTIFIED,
+        'Não foi possível identificar a conta. Tente novamente.',
+      );
     }
 
     const username = await this.generateUniqueUsername(identity.email);
@@ -517,7 +592,7 @@ export class AuthService {
       where: { id: userId },
     });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new CodedUnauthorizedException(ErrorCode.USER_NOT_FOUND, 'User not found');
     }
     return this.usersService.toUserModel(user);
   }
