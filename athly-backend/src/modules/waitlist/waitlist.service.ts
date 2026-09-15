@@ -1,4 +1,6 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CodedConflictException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateWaitlistEntryDto } from './dto/create-waitlist-entry.dto';
 
@@ -19,7 +21,10 @@ export class WaitlistService {
     });
 
     if (existing) {
-      throw new ConflictException('Este email já está na lista de espera.');
+      throw new CodedConflictException(
+        ErrorCode.WAITLIST_EMAIL_ALREADY_REGISTERED,
+        'Este email já está na lista de espera.',
+      );
     }
 
     const entry = await this.prisma.waitlistEntry.create({

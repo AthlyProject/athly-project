@@ -1,10 +1,10 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  BadGatewayException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  CodedBadGatewayException,
+  CodedInternalServerErrorException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import type {
   AiPlannerInput,
@@ -210,7 +210,10 @@ export class GeminiService {
   private getClient(): GoogleGenAI {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new InternalServerErrorException('GEMINI_API_KEY is not configured.');
+      throw new CodedInternalServerErrorException(
+        ErrorCode.AI_UNAVAILABLE,
+        'GEMINI_API_KEY is not configured.',
+      );
     }
     return new GoogleGenAI({ apiKey });
   }
@@ -295,7 +298,8 @@ export class GeminiService {
         rawResponse = result.rawResponse;
         aggregateUsage = this.mergeUsage(aggregateUsage, result.usage);
       } catch (err) {
-        throw new BadGatewayException(
+        throw new CodedBadGatewayException(
+          ErrorCode.AI_PLAN_GENERATION_FAILED,
           `Gemini AI request failed: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
@@ -344,7 +348,8 @@ export class GeminiService {
       }`,
     );
     this.logger.log(this.formatUsageLog('weekly_plan_failed', aggregateUsage));
-    throw new BadGatewayException(
+    throw new CodedBadGatewayException(
+      ErrorCode.AI_PLAN_GENERATION_FAILED,
       `O plano gerado veio com treinos sem estrutura completa após ${this.MAX_STRUCTURE_ATTEMPTS} tentativas. Tente gerar novamente.`,
     );
   }
@@ -366,7 +371,10 @@ export class GeminiService {
 
     const rawResponse = response.text;
     if (!rawResponse) {
-      throw new BadGatewayException('Gemini AI returned an empty response.');
+      throw new CodedBadGatewayException(
+        ErrorCode.AI_PLAN_GENERATION_FAILED,
+        'Gemini AI returned an empty response.',
+      );
     }
 
     return {
@@ -381,17 +389,22 @@ export class GeminiService {
     try {
       parsed = JSON.parse(responseText) as PlannerResults;
     } catch {
-      throw new BadGatewayException('Gemini AI returned an invalid JSON response.');
+      throw new CodedBadGatewayException(
+        ErrorCode.AI_PLAN_GENERATION_FAILED,
+        'Gemini AI returned an invalid JSON response.',
+      );
     }
 
     if (!parsed.analysis || !Array.isArray(parsed.weekPlan)) {
-      throw new BadGatewayException(
+      throw new CodedBadGatewayException(
+        ErrorCode.AI_PLAN_GENERATION_FAILED,
         "Gemini AI response is missing required fields: 'analysis' or 'weekPlan'.",
       );
     }
 
     if (parsed.weekPlan.length !== 7) {
-      throw new BadGatewayException(
+      throw new CodedBadGatewayException(
+        ErrorCode.AI_PLAN_GENERATION_FAILED,
         `Gemini AI returned ${parsed.weekPlan.length} workout days instead of 7.`,
       );
     }

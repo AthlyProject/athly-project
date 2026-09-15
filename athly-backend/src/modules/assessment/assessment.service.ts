@@ -1,5 +1,7 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PlanGenerationStatus } from '@prisma/client';
+import { CodedConflictException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitAssessmentDto } from './dto/submit-assessment.dto';
 import type { ParsedGoal } from '../ai-planner/prompts/goal-parser-prompt';
@@ -15,7 +17,10 @@ export class AssessmentService {
    */
   async submit(userId: string, dto: SubmitAssessmentDto) {
     if (!dto.termsAccepted) {
-      throw new ConflictException('Você precisa aceitar os termos para continuar.');
+      throw new CodedConflictException(
+        ErrorCode.ASSESSMENT_TERMS_NOT_ACCEPTED,
+        'Você precisa aceitar os termos para continuar.',
+      );
     }
 
     const activeJob = await this.prisma.planGenerationJob.findFirst({
@@ -25,7 +30,8 @@ export class AssessmentService {
       },
     });
     if (activeJob) {
-      throw new ConflictException(
+      throw new CodedConflictException(
+        ErrorCode.ASSESSMENT_PLAN_GENERATION_IN_PROGRESS,
         'Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação.',
       );
     }

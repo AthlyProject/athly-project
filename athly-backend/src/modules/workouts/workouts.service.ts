@@ -1,9 +1,9 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+  CodedInternalServerErrorException,
+  CodedNotFoundException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -130,7 +130,7 @@ export class WorkoutsService {
         where: { id: workoutId, userId },
       });
       if (!workout) {
-        throw new NotFoundException('Workout not found');
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       }
 
       const feedback = await this.prisma.workoutFeedback.create({
@@ -155,7 +155,8 @@ export class WorkoutsService {
         `submitWorkoutFeedback failed — workoutId=${workoutId} userId=${userId}`,
         err instanceof Error ? err.stack : String(err),
       );
-      throw new InternalServerErrorException(
+      throw new CodedInternalServerErrorException(
+        ErrorCode.WORKOUT_FEEDBACK_FAILED,
         `Falha ao salvar feedback: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
@@ -186,14 +187,14 @@ export class WorkoutsService {
         data,
       });
       if (!updated.count) {
-        throw new NotFoundException('Workout not found');
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       }
       const workout = await this.prisma.workout.findFirst({
         where: { id: workoutId, userId },
         select: workoutCompletionSelect,
       });
       if (!workout) {
-        throw new NotFoundException('Workout not found');
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       }
       return this.mapWorkout(workout);
     } catch (err) {
@@ -202,7 +203,8 @@ export class WorkoutsService {
         `completeWorkout failed — workoutId=${workoutId} userId=${userId}`,
         err instanceof Error ? err.stack : String(err),
       );
-      throw new InternalServerErrorException(
+      throw new CodedInternalServerErrorException(
+        ErrorCode.WORKOUT_COMPLETE_FAILED,
         'Falha ao completar treino. Tente novamente mais tarde.',
       );
     }
@@ -214,13 +216,13 @@ export class WorkoutsService {
       data: { status: 'skipped' },
     });
     if (!updated.count) {
-      throw new NotFoundException('Workout not found');
+      throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
     }
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
     });
     if (!workout) {
-      throw new NotFoundException('Workout not found');
+      throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
     }
     return this.mapWorkout(workout);
   }
@@ -272,7 +274,7 @@ export class WorkoutsService {
       where: { id: workoutId, userId },
     });
     if (!workout) {
-      throw new NotFoundException('Workout not found');
+      throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
     }
 
     const updateData: Prisma.WorkoutUpdateInput = {};

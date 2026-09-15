@@ -1,4 +1,6 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CodedForbiddenException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { BillingService } from './billing.service';
 
 /**
@@ -18,7 +20,8 @@ export class SubscriptionGuard implements CanActivate {
 
     const entitled = await this.billingService.isEntitled(userId);
     if (!entitled) {
-      throw new ForbiddenException(
+      throw new CodedForbiddenException(
+        ErrorCode.BILLING_SUBSCRIPTION_REQUIRED,
         'Assinatura necessária. Inicie ou renove sua assinatura para continuar.',
       );
     }

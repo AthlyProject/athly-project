@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { CodedNotFoundException } from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
@@ -65,7 +67,7 @@ export class UsersService {
   async deleteUser(userId: string): Promise<void> {
     const user = await this.findById(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new CodedNotFoundException(ErrorCode.USER_NOT_FOUND, 'User not found');
     }
 
     await this.prisma.user.delete({
