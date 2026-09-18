@@ -6,6 +6,14 @@ import HealthKit
 #endif
 
 @MainActor
+struct PlanResumeDependencies {
+    var isAuthenticated: @MainActor () async -> Bool = { await APIClient.shared.isAuthenticated }
+    var syncHealth: @MainActor () async -> Void = { await PlannerHealthSyncService.shared.sync() }
+    var request: @MainActor (Bool) async throws -> ResumePlanResponse = { try await APIClient.shared.resumePlan(retryFailed: $0) }
+    var latest: @MainActor () async throws -> AiPlannerGenerationStatusResponse? = { try await APIClient.shared.latestPlanGeneration() }
+}
+
+@MainActor
 final class TrainingPlanViewModel: ObservableObject {
     private static let segmentationLogger = Logger(
         subsystem: "com.athly.runner",
@@ -20,8 +28,17 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isGenerating: Bool = false
     @Published var isGeneratingInBackground: Bool = false
+    @Published var showNextWeekNotice = false
+    private var noticeTask: Task<Void, Never>?
+    private var handledClosureIds = Set<String>()
     @Published var isDeleting: Bool = false
     @Published var errorMessage: String?
+    @Published var generationErrorMessage: String?
+    @Published var canRetryGeneration = false
+    @Published var isResumingPlan = false
+    private var resumeRefreshTask: Task<Void, Never>?
+    private var resumeVersion = 0
+    private var resumableGenerationIds = Set<String>()
     @Published var lastAnalysis: RunAnalysis?
     /// Meta ativa do usuário (inclui o veredito de viabilidade vs. objetivo) — usada na tela de detalhe do plano.
     @Published var activeGoal: CreateGoalResponse?
@@ -31,6 +48,12 @@ final class TrainingPlanViewModel: ObservableObject {
     private var generationPollTask: Task<Void, Never>?
     private var activeGenerationId: String?
     private let pendingGenerationKey = "athly_pending_plan_generation_id"
+
+    private let resumeDependencies: PlanResumeDependencies
+
+    init(resumeDependencies: PlanResumeDependencies = PlanResumeDependencies()) {
+        self.resumeDependencies = resumeDependencies
+    }
 
     // MARK: - Computed Properties
 
@@ -123,13 +146,13 @@ final class TrainingPlanViewModel: ObservableObject {
 
     // MARK: - Load Data
 
-    func loadData() async {
+    func loadData(reportErrors: Bool = true) async {
         let hasCached = hydrateFromCache()
         if !hasCached {
             isLoading = true
         }
         achievementCount = AchievementStore.shared.count
-        errorMessage = nil
+        if reportErrors { errorMessage = nil }
 
         do {
             guard let plan = try await APIClient.shared.getMyTrainingPlan() else {
@@ -182,7 +205,7 @@ final class TrainingPlanViewModel: ObservableObject {
         } catch let error as URLError where error.code == .cancelled {
             // URLSession cancellation — not a real error
         } catch {
-            if !hasCached {
+            if !hasCached && reportErrors {
                 errorMessage = error.localizedDescription
             }
         }
@@ -263,37 +286,10 @@ final class TrainingPlanViewModel: ObservableObject {
         isGenerating = true
         errorMessage = nil
 
-        let service: any HealthKitRunningWorkoutsProviding = {
-            #if targetEnvironment(simulator)
-            return MockHealthKitService()
-            #else
-            return HealthKitService()
-            #endif
-        }()
-
-        var healthRuns: [HealthKitRunItem] = []
-
-        if service.isHealthDataAvailable {
-            do {
-                try await service.requestReadAuthorization()
-                healthRuns = try await service.fetchLatestRunningWorkouts(limit: 20)
-            } catch {
-                // HealthKit indisponível ou negado → continua sem runs (assessment path)
-            }
-        }
-
         do {
-            let payloads = healthRuns.map { HealthRunPayload(from: $0) }
-            // Com corridas → sessões detalhadas (5 na 1ª geração, 7 depois). Sem corridas →
-            // runs vazias e o backend cai no plano de avaliação (cold start).
-            let detailedSessions = healthRuns.isEmpty
-                ? []
-                : await buildDetailedSessions(limit: trainingPlanResponse == nil ? 5 : 7)
-            let request = PlanFromHealthRequest(
-                runs: payloads,
-                detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
-                weekStartDate: nil
-            )
+            let request = (try? await PlannerHealthSyncService.shared.buildInput(
+                detailedLimit: trainingPlanResponse == nil ? 5 : 7, requestAuthorization: true
+            )) ?? PlanFromHealthRequest(runs: [], detailedSessions: nil, weekStartDate: nil)
             let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
             startGenerationPolling(
                 generationId: response.generationId,
@@ -317,14 +313,8 @@ final class TrainingPlanViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let payloads = runs.map { HealthRunPayload(from: $0) }
-            let detailedLimit = trainingPlanResponse == nil ? 5 : 7
-            let detailedSessions = await buildDetailedSessions(limit: detailedLimit)
-            let request = PlanFromHealthRequest(
-                runs: payloads,
-                detailedSessions: detailedSessions.isEmpty ? nil : detailedSessions,
-                weekStartDate: nil
-            )
+            let request = try await PlannerHealthSyncService.shared.buildInput(
+                detailedLimit: trainingPlanResponse == nil ? 5 : 7, requestAuthorization: false, suppliedRuns: runs)
             let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
             startGenerationPolling(
                 generationId: response.generationId,
@@ -342,45 +332,13 @@ final class TrainingPlanViewModel: ObservableObject {
         isGenerating = false
     }
 
-    // MARK: - Detailed session builder (for enriched planFromHealth payload)
-
-    /// Fetches the last N raw HKWorkouts, resolves the prescribed workout link via
-    /// `RunWorkoutLinkStore`, and builds per-segment payloads for the AI planner.
-    /// Skips silently on the simulator (no real HealthKit) or when authorization is missing.
-    private func buildDetailedSessions(limit: Int) async -> [DetailedSessionPayload] {
-        #if targetEnvironment(simulator)
-        return []
-        #else
-        let service = HealthKitService()
-        guard service.isHealthDataAvailable else { return [] }
-
-        do {
-            let rawWorkouts = try await service.fetchLatestRawRunningWorkouts(limit: limit)
-            let fetcher = WorkoutDetailFetcher()
-            var results: [DetailedSessionPayload] = []
-            for workout in rawWorkouts {
-                let uuid = workout.uuid.uuidString
-                let athlyWorkoutId = RunWorkoutLinkStore.shared.athlyWorkoutId(for: uuid)
-                if let payload = try? await fetcher.buildDetailedSession(
-                    for: workout,
-                    athlyWorkoutId: athlyWorkoutId
-                ) {
-                    results.append(payload)
-                }
-            }
-            return results
-        } catch {
-            return []
-        }
-        #endif
-    }
-
     // MARK: - Complete / Skip
 
     func completeWorkout(_ workout: WorkoutModel) async {
         do {
             let updated = try await APIClient.shared.completeWorkout(workoutId: workout.id)
             replaceWorkout(updated)
+            await handleWeekClosure(updated)
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -420,6 +378,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 actualDurationSeconds: result.durationSeconds
             )
             replaceWorkout(updated)
+            await handleWeekClosure(updated)
             recordAchievementIfEarned(
                 workout: workout,
                 actualDistanceMeters: result.distanceMeters,
@@ -452,6 +411,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 executionDetails: executionDetail?.payload
             )
             replaceWorkout(updated)
+            await handleWeekClosure(updated)
             recordAchievementIfEarned(
                 workout: workout,
                 actualDistanceMeters: healthRun.distanceMeters,
@@ -654,6 +614,7 @@ final class TrainingPlanViewModel: ObservableObject {
                 executionDetails: details
             )
             replaceWorkout(updated)
+            await handleWeekClosure(updated)
             recordAchievementIfEarned(
                 workout: workout,
                 actualDistanceMeters: actualDistance,
@@ -758,6 +719,7 @@ final class TrainingPlanViewModel: ObservableObject {
         do {
             let updated = try await APIClient.shared.skipWorkout(workoutId: workout.id)
             replaceWorkout(updated)
+            await handleWeekClosure(updated)
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -786,6 +748,90 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
+    private func handleWeekClosure(_ workout: WorkoutModel) async {
+        guard let closure = workout.nextWeekGeneration, closure.closed else { return }
+        let key = closure.generationId ?? workout.weeklyGoalId ?? workout.id
+        guard handledClosureIds.insert(key).inserted else { return }
+        await loadData(reportErrors: false)
+        await NotificationService.shared.reschedule(workouts: allWorkouts)
+        guard let generationId = closure.generationId else { return }
+        if closure.status == "failed" {
+            generationErrorMessage = String(localized: "Não foi possível gerar a próxima semana. Tente novamente mais tarde.")
+            return
+        }
+        guard closure.status != "completed" else { return }
+        showNextWeekNotice = true
+        noticeTask?.cancel()
+        noticeTask = Task { [weak self] in
+            do { try await Task.sleep(nanoseconds: 6_000_000_000) } catch { return }
+            self?.showNextWeekNotice = false
+        }
+        startGenerationPolling(generationId: generationId, pollAfterSeconds: closure.pollAfterSeconds)
+    }
+
+    func refreshAutomaticGeneration(retryFailed: Bool = false) async {
+        guard await resumeDependencies.isAuthenticated() else { return }
+        if let resumeRefreshTask {
+            await resumeRefreshTask.value
+            return
+        }
+        let version = resumeVersion
+        isResumingPlan = true
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.resumeDependencies.syncHealth()
+            guard !Task.isCancelled, self.resumeVersion == version else { return }
+            do {
+                let response = try await self.resumeDependencies.request(retryFailed)
+                guard !Task.isCancelled, self.resumeVersion == version else { return }
+                if let generation = response.generation {
+                    self.resumableGenerationIds.insert(generation.generationId)
+                    await self.applyDiscoveredGeneration(generation, showNotice: true)
+                    if response.started { await self.loadData(reportErrors: false) }
+                } else if let generation = try await self.resumeDependencies.latest() {
+                    guard !Task.isCancelled, self.resumeVersion == version else { return }
+                    await self.applyDiscoveredGeneration(generation, showNotice: false)
+                }
+            } catch {
+                guard !Task.isCancelled, self.resumeVersion == version else { return }
+                if retryFailed {
+                    self.generationErrorMessage = String(localized: "Não foi possível preparar seus treinos. Tente novamente.")
+                    self.canRetryGeneration = true
+                }
+                // Automatic failures are retried on the next activation; saved polling IDs still work.
+            }
+        }
+        resumeRefreshTask = task
+        await task.value
+        if resumeVersion == version {
+            resumeRefreshTask = nil
+            isResumingPlan = false
+        }
+    }
+
+    private func applyDiscoveredGeneration(_ generation: AiPlannerGenerationStatusResponse, showNotice: Bool) async {
+        if generation.status == "queued" || generation.status == "processing" {
+            if showNotice && handledClosureIds.insert(generation.generationId).inserted {
+                showNextWeekNotice = true
+                noticeTask?.cancel()
+                noticeTask = Task { [weak self] in
+                    do { try await Task.sleep(nanoseconds: 6_000_000_000) } catch { return }
+                    self?.showNextWeekNotice = false
+                }
+            }
+            if activeGenerationId != generation.generationId {
+                startGenerationPolling(generationId: generation.generationId, pollAfterSeconds: generation.pollAfterSeconds)
+            }
+        } else if generation.status == "completed" {
+            generationErrorMessage = nil
+            canRetryGeneration = false
+            await loadData(reportErrors: false)
+        } else if generation.status == "failed" {
+            generationErrorMessage = String(localized: "Não foi possível preparar seus treinos. Tente novamente.")
+            canRetryGeneration = resumableGenerationIds.contains(generation.generationId)
+        }
+    }
+
     // MARK: - Background generation polling
 
     private func startGenerationPolling(
@@ -793,6 +839,8 @@ final class TrainingPlanViewModel: ObservableObject {
         pollAfterSeconds: Int
     ) {
         generationPollTask?.cancel()
+        generationErrorMessage = nil
+        canRetryGeneration = false
         activeGenerationId = generationId
         UserDefaults.standard.set(generationId, forKey: pendingGenerationKey)
         isGeneratingInBackground = true
@@ -817,12 +865,15 @@ final class TrainingPlanViewModel: ObservableObject {
             do {
                 let status = try await APIClient.shared.getPlanFromHealthGenerationStatus(generationId: generationId)
                 if status.status == "failed" {
-                    errorMessage = status.error ?? status.message
+                    canRetryGeneration = resumableGenerationIds.contains(generationId)
+                    generationErrorMessage = canRetryGeneration
+                        ? String(localized: "Não foi possível preparar seus treinos. Tente novamente.")
+                        : String(localized: "Não foi possível gerar a próxima semana. Tente novamente mais tarde.")
                     clearPendingGeneration(generationId)
                     return
                 }
                 if status.status == "completed" {
-                    await loadData()
+                    await loadData(reportErrors: false)
 
                     // Só encerra quando os mesmos IDs confirmados pelo job também estiverem
                     // visíveis no contrato de leitura usado pela UI.
@@ -866,6 +917,16 @@ final class TrainingPlanViewModel: ObservableObject {
     }
 
     func cancelPendingGeneration() {
+        resumeVersion += 1
+        resumeRefreshTask?.cancel()
+        resumeRefreshTask = nil
+        isResumingPlan = false
+        canRetryGeneration = false
+        resumableGenerationIds.removeAll()
+        noticeTask?.cancel()
+        showNextWeekNotice = false
+        generationErrorMessage = nil
+        handledClosureIds.removeAll()
         generationPollTask?.cancel()
         generationPollTask = nil
         activeGenerationId = nil

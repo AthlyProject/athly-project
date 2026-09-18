@@ -4,6 +4,74 @@ import HealthKit
 
 final class WorkoutModelDateTests: XCTestCase {
 
+    @MainActor
+    func testResumeCoalescesForegroundAndLoginAndRequiresExplicitRetry() async {
+        var uploads = 0
+        var requests: [Bool] = []
+        var finishUpload: CheckedContinuation<Void, Never>?
+        let failed = AiPlannerGenerationStatusResponse(generationId: "resume-job", status: "failed", pollAfterSeconds: 5,
+                                                       message: "Failed", error: nil, weeklyGoalId: nil, workoutIds: nil)
+        let vm = TrainingPlanViewModel(resumeDependencies: PlanResumeDependencies(
+            isAuthenticated: { true },
+            syncHealth: {
+                uploads += 1
+                if uploads == 1 { await withCheckedContinuation { finishUpload = $0 } }
+            },
+            request: { retry in
+                requests.append(retry)
+                return ResumePlanResponse(weekStartDate: "2026-09-21", generation: failed, started: false)
+            }, latest: { nil }
+        ))
+        let login = Task { await vm.refreshAutomaticGeneration() }
+        while finishUpload == nil { await Task.yield() }
+        let foreground = Task { await vm.refreshAutomaticGeneration() }
+        await Task.yield()
+        finishUpload?.resume()
+        await login.value
+        await foreground.value
+        XCTAssertEqual(requests, [false])
+        XCTAssertTrue(vm.canRetryGeneration)
+        XCTAssertNil(vm.errorMessage) // Generation failure does not report workout-save failure.
+        await vm.refreshAutomaticGeneration(retryFailed: true)
+        XCTAssertEqual(requests, [false, true])
+        vm.cancelPendingGeneration()
+    }
+
+    @MainActor
+    func testLogoutPreventsResumeAfterDelayedHealthSync() async {
+        var finishUpload: CheckedContinuation<Void, Never>?
+        var requested = false
+        let vm = TrainingPlanViewModel(resumeDependencies: PlanResumeDependencies(
+            isAuthenticated: { true },
+            syncHealth: { await withCheckedContinuation { finishUpload = $0 } },
+            request: { _ in
+                requested = true
+                return ResumePlanResponse(weekStartDate: nil, generation: nil, started: false)
+            }, latest: { nil }
+        ))
+        let task = Task { await vm.refreshAutomaticGeneration() }
+        while finishUpload == nil { await Task.yield() }
+        vm.cancelPendingGeneration()
+        finishUpload?.resume()
+        await task.value
+        XCTAssertFalse(requested)
+        XCTAssertFalse(vm.isResumingPlan)
+        XCTAssertFalse(vm.canRetryGeneration)
+    }
+
+    @MainActor
+    func testResumeNetworkFailureIsQuietUnlessUserExplicitlyRetries() async {
+        let vm = TrainingPlanViewModel(resumeDependencies: PlanResumeDependencies(
+            isAuthenticated: { true }, syncHealth: {}, request: { _ in throw TestError.boom }, latest: { nil }
+        ))
+        await vm.refreshAutomaticGeneration()
+        XCTAssertNil(vm.generationErrorMessage)
+        await vm.refreshAutomaticGeneration(retryFailed: true)
+        XCTAssertNotNil(vm.generationErrorMessage)
+        XCTAssertTrue(vm.canRetryGeneration)
+        vm.cancelPendingGeneration()
+    }
+
     func testWriteAuthorizationRequestsWorkoutAndRouteTogether() {
         let types = HealthKitService.writeAuthorizationTypes
 
@@ -74,6 +142,45 @@ final class WorkoutModelDateTests: XCTestCase {
         let workout = try JSONDecoder().decode(WorkoutModel.self, from: data)
 
         XCTAssertEqual(workout.appleHealthWorkoutUUID, "hk-uuid-1")
+        XCTAssertNil(workout.nextWeekGeneration)
+    }
+
+    func testWorkoutResponseKeepsCompletionWhenGenerationIsQueuedOrFailed() throws {
+        for status in ["queued", "failed"] {
+            let data = Data("""
+            {"id":"w1","date":"2026-09-11","sportType":"running","title":"Run","blocks":[],"status":"done",
+             "nextWeekGeneration":{"closed":true,"generationId":"g1","status":"\(status)","pollAfterSeconds":5}}
+            """.utf8)
+            let workout = try JSONDecoder().decode(WorkoutModel.self, from: data)
+            XCTAssertEqual(workout.status, .done)
+            XCTAssertEqual(workout.nextWeekGeneration?.generationId, "g1")
+            XCTAssertEqual(workout.nextWeekGeneration?.status, status)
+        }
+    }
+
+    func testCompletionPayloadIncludesExecutionAndPlannerSnapshotTogether() throws {
+        let run = makeHealthRun(id: "health-uuid", daysAgo: 0)
+        let context = PlannerHealthContextPayload(runs: [HealthRunPayload(from: run)], detailedSessions: nil,
+                                                  timeZone: "America/Sao_Paulo", capturedAt: "2026-09-11T10:00:00Z")
+        let request = CompleteWorkoutRequest(appleHealthWorkoutUUID: "health-uuid", actualDistanceMeters: 5000,
+                                             actualDurationSeconds: 1800, executionDetails: nil, planningContext: context)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
+        XCTAssertEqual(object["actualDistanceMeters"] as? Double, 5000)
+        let snapshot = try XCTUnwrap(object["planningContext"] as? [String: Any])
+        XCTAssertEqual(snapshot["timeZone"] as? String, "America/Sao_Paulo")
+        let runs = try XCTUnwrap(snapshot["runs"] as? [[String: Any]])
+        XCTAssertEqual(runs.first?["appleHealthWorkoutUUID"] as? String, "health-uuid")
+    }
+
+    @MainActor
+    func testCalendarDragBoundaryRunsMondayThroughSundayAcrossYearChange() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let monday = formatter.date(from: "2026-12-28")!
+        let sunday = formatter.date(from: "2027-01-03")!
+        let nextMonday = formatter.date(from: "2027-01-04")!
+        XCTAssertEqual(PlanView.weekStart(for: monday), PlanView.weekStart(for: sunday))
+        XCTAssertNotEqual(PlanView.weekStart(for: monday), PlanView.weekStart(for: nextMonday))
     }
 
     func testRunSessionDecodesWithoutSegmentRecords() throws {

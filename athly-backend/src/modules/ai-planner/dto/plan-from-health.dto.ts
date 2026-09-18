@@ -148,6 +148,11 @@ export class DetailedSessionDto {
 }
 
 export class HealthRunItemDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  appleHealthWorkoutUUID?: string;
+
   @ApiProperty({ description: 'ISO 8601 start date of the run' })
   @IsDateString()
   startDate: string;

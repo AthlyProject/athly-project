@@ -9,6 +9,10 @@ import { TrainingReportModule } from '../training-report/training-report.module'
 import { PlanGenerationSqsService } from './plan-generation-sqs.service';
 import { PlanGenerationSqsConsumer } from './plan-generation-sqs.consumer';
 
+import { PlanGenerationJobsService } from './plan-generation-jobs.service';
+import { PlannerHealthContextService } from './planner-health-context.service';
+import { WeeklyPlanAutomationService } from './weekly-plan-automation.service';
+
 @Module({
   imports: [EffortZoneModule, BillingModule, TrainingReportModule],
   controllers: [AiPlannerController],
@@ -17,8 +21,11 @@ import { PlanGenerationSqsConsumer } from './plan-generation-sqs.consumer';
     GeminiService,
     WorkoutExecutionAnalyzerService,
     PlanGenerationSqsService,
+    PlanGenerationJobsService,
+    PlannerHealthContextService,
+    WeeklyPlanAutomationService,
     PlanGenerationSqsConsumer,
   ],
-  exports: [GeminiService],
+  exports: [GeminiService, PlannerHealthContextService, WeeklyPlanAutomationService],
 })
 export class AiPlannerModule {}

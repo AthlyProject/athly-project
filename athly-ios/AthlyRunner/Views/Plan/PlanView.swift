@@ -330,6 +330,10 @@ struct PlanView: View {
         .dropDestination(for: WorkoutModel.self) { items, _ in
             guard let dragged = items.first else { return false }
             guard !calendar.isDate(dragged.parsedDate, inSameDayAs: day) else { return false }
+            guard calendar.isDate(Self.weekStart(for: dragged.parsedDate), inSameDayAs: Self.weekStart(for: day)) else {
+                planVM.errorMessage = String(localized: "Só é possível reagendar treinos dentro da mesma semana.")
+                return false
+            }
             // Envia só o dia (yyyy-MM-dd) no calendário local — o backend guarda a data,
             // então serializar como timestamp UTC deslocava o dia em fusos a leste de UTC.
             let dayString = Self.idFormatter.string(from: day)

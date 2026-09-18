@@ -6,7 +6,7 @@ export const PLAN_GENERATION_QUEUE = 'training-plan-generation';
 export interface PlanGenerationMessageBody {
   generationId: string;
   userId: string;
-  input: Record<string, unknown>;
+  input?: Record<string, unknown>;
 }
 
 @Injectable()

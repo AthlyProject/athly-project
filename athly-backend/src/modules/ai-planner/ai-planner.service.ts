@@ -1,3 +1,4 @@
+import { serializeGenerationJob } from './generation-status';
 import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import {
   PlanGenerationStatus,
@@ -37,7 +38,12 @@ import { computeLongitudinalWeeks, computePreviousWeekAnalysis } from './weekly-
 import { TrainingReportService } from '../training-report/training-report.service';
 import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
 import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
-import { PlanGenerationSqsService } from './plan-generation-sqs.service';
+import {
+  DEFAULT_AVAILABLE_DAYS,
+  ResumePlanningWindow,
+  resumeWindowAtExecution,
+} from './weekly-calendar';
+import { PlanGenerationJobsService } from './plan-generation-jobs.service';
 
 const PROMPT_VERSION = 'v3.1';
 const DETAILED_FIRST_GEN = 5;
@@ -53,9 +59,6 @@ const MIN_EFFORT_METERS = 1500;
 // o VDOT ao tratá-lo como se fosse uma corrida contínua. Knob de calibração — validar
 // contra tabelas de Daniels antes de mexer.
 const REP_EFFORT_PENALTY = 1.05;
-
-const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
-const GENERATION_POLL_AFTER_SECONDS = 5;
 
 type PlanningWindow = {
   weekDates: string[];
@@ -76,10 +79,16 @@ export class AiPlannerService {
     private readonly effortZoneService: EffortZoneService,
     private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
     private readonly trainingReportService: TrainingReportService,
-    private readonly planGenerationSqs: PlanGenerationSqsService,
+    private readonly generationJobs: PlanGenerationJobsService,
   ) {}
 
-  async planFromHealth(userId: string, input: PlanFromHealthDto, generationId?: string) {
+  async planFromHealth(
+    userId: string,
+    input: PlanFromHealthDto,
+    generationId?: string,
+    leaseOwner?: string,
+    resumeWindow?: ResumePlanningWindow,
+  ) {
     // Fetch active goal and user profile for context (before creating training plan)
     const [activeGoalRecord, userHealth] = await Promise.all([
       this.prisma.userGoal.findFirst({
@@ -98,7 +107,9 @@ export class AiPlannerService {
     const baseAvailableDays = userHealth?.availableDays?.length
       ? userHealth.availableDays
       : DEFAULT_AVAILABLE_DAYS;
-    const planningWindow = this.resolvePlanningWindow(input.weekStartDate, baseAvailableDays);
+    const planningWindow = resumeWindow
+      ? resumeWindowAtExecution(resumeWindow)
+      : this.resolvePlanningWindow(input.weekStartDate, baseAvailableDays);
     const { weekDates, weekStartDate, weekEndDate, availableDays, trainingDays, minTrainingDate } =
       planningWindow;
 
@@ -127,8 +138,6 @@ export class AiPlannerService {
       },
       select: { metrics: true },
     });
-
-    await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate);
 
     // Calculate effort zones from health runs. O pace médio de corrida inteira inclui
     // aquecimento/volta à calma e subestima o VDOT — por isso também entram como
@@ -258,11 +267,17 @@ export class AiPlannerService {
     // Reserva o slot da semana ANTES da chamada lenta do Gemini. Com a unique constraint
     // (trainingPlanId, weekStartDate), um duplo-submit concorrente recebe ConflictException
     // em vez de criar uma segunda semana sobreposta.
-    const reservedWeeklyGoal = await this.reserveWeeklyGoal(
-      trainingPlan.id,
-      weekStartDate,
-      weekEndDate,
-    );
+    const reservedWeeklyGoal = await this.prisma.$transaction(async (tx) => {
+      if (generationId && leaseOwner) {
+        const ownership = await tx.planGenerationJob.updateMany({
+          where: { id: generationId, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+          data: { leaseExpiresAt: new Date(Date.now() + 15 * 60_000) },
+        });
+        if (!ownership.count) throw new ConflictException('Generation lease lost.');
+      }
+      await this.checkWeekOverlap(trainingPlan.id, weekStartDate, weekEndDate, tx);
+      return this.reserveWeeklyGoal(trainingPlan.id, weekStartDate, weekEndDate, tx);
+    });
 
     const plannerResult = await (
       isAssessment
@@ -297,6 +312,14 @@ export class AiPlannerService {
 
     const { weeklyGoal, workouts } = await this.prisma
       .$transaction(async (tx) => {
+        if (generationId && leaseOwner) {
+          const ownership = await tx.planGenerationJob.updateMany({
+            where: { id: generationId, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+            data: { leaseExpiresAt: new Date(Date.now() + 15 * 60_000) },
+          });
+          if (!ownership.count) throw new ConflictException('Generation lease lost.');
+        }
+
         // Atualiza o placeholder reservado (não cria nova weekly_goal) — a reserva já garantiu unicidade.
         const weeklyGoal = await tx.weeklyGoal.update({
           where: { id: reservedWeeklyGoal.id },
@@ -466,42 +489,30 @@ export class AiPlannerService {
       input.weekStartDate,
       user?.availableDays?.length ? user.availableDays : DEFAULT_AVAILABLE_DAYS,
     );
-    const key = {
-      userId_weekStartDate: { userId, weekStartDate: planningWindow.weekStartDate },
-    };
-    const existing = await this.prisma.planGenerationJob.findUnique({ where: key });
-    const job = existing
-      ? existing.status === PlanGenerationStatus.FAILED
-        ? await this.prisma.planGenerationJob.update({
-            where: { id: existing.id },
-            data: {
-              status: PlanGenerationStatus.QUEUED,
-              payload: input as unknown as Prisma.InputJsonValue,
-              result: Prisma.JsonNull,
-              weeklyGoalId: null,
-              workoutIds: [],
-              error: null,
-              attempts: 0,
-              leaseOwner: null,
-              leaseExpiresAt: null,
-              completedAt: null,
-            },
-          })
-        : existing
-      : await this.prisma.planGenerationJob.create({
-          data: {
-            userId,
-            weekStartDate: planningWindow.weekStartDate,
-            payload: input as unknown as Prisma.InputJsonValue,
-          },
-        });
-
-    await this.planGenerationSqs.send({
-      generationId: job.id,
+    const job = await this.generationJobs.reserve(
+      this.prisma,
       userId,
-      input: input as unknown as Record<string, unknown>,
+      planningWindow.weekStartDate,
+      input,
+      undefined,
+      true,
+    );
+    await this.generationJobs.dispatch(job.id);
+    return serializeGenerationJob(job);
+  }
+
+  async getLatestGeneration(userId: string) {
+    const job = await this.prisma.planGenerationJob.findFirst({
+      where: {
+        userId,
+        OR: [
+          { trainingPlan: { status: 'ACTIVE' } },
+          { trainingPlanId: null, status: { in: ['QUEUED', 'PROCESSING'] } },
+        ],
+      },
+      orderBy: [{ weekStartDate: 'desc' }, { createdAt: 'desc' }],
     });
-    return this.serializeGenerationJob(job);
+    return job ? serializeGenerationJob(job) : null;
   }
 
   async getPlanFromHealthGenerationStatus(userId: string, generationId: string) {
@@ -512,33 +523,7 @@ export class AiPlannerService {
       throw new NotFoundException('Geração não encontrada');
     }
 
-    return this.serializeGenerationJob(job);
-  }
-
-  private serializeGenerationJob(job: {
-    id: string;
-    status: PlanGenerationStatus;
-    error: string | null;
-    weeklyGoalId: string | null;
-    workoutIds: string[];
-  }) {
-    const status = job.status.toLowerCase();
-    const completed = job.status === PlanGenerationStatus.COMPLETED;
-    const failed = job.status === PlanGenerationStatus.FAILED;
-
-    return {
-      generationId: job.id,
-      status,
-      pollAfterSeconds: GENERATION_POLL_AFTER_SECONDS,
-      message: completed
-        ? 'A semana foi gerada com sucesso.'
-        : failed
-          ? 'Não foi possível gerar a semana.'
-          : 'A geração da semana está em andamento.',
-      error: job.error ?? undefined,
-      weeklyGoalId: job.weeklyGoalId ?? undefined,
-      workoutIds: job.workoutIds,
-    };
+    return serializeGenerationJob(job);
   }
 
   private buildUserProfile(
@@ -1011,8 +996,13 @@ export class AiPlannerService {
     });
   }
 
-  private async checkWeekOverlap(trainingPlanId: string, weekStartDate: Date, weekEndDate: Date) {
-    const existing = await this.prisma.weeklyGoal.findFirst({
+  private async checkWeekOverlap(
+    trainingPlanId: string,
+    weekStartDate: Date,
+    weekEndDate: Date,
+    tx: Prisma.TransactionClient = this.prisma,
+  ) {
+    const existing = await tx.weeklyGoal.findFirst({
       where: {
         trainingPlanId,
         weekStartDate: { lte: weekEndDate },
@@ -1036,8 +1026,8 @@ export class AiPlannerService {
     }
 
     // PLANNED é apenas esqueleto/reserva e ainda não pode ser exibido como pronto.
-    await this.prisma.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
-    await this.prisma.weeklyGoal.delete({ where: { id: existing.id } });
+    await tx.workout.deleteMany({ where: { weeklyGoalId: existing.id } });
+    await tx.weeklyGoal.delete({ where: { id: existing.id } });
   }
 
   /**
@@ -1045,9 +1035,14 @@ export class AiPlannerService {
    * (trainingPlanId, weekStartDate) garante que apenas uma geração concorrente vença; as
    * demais recebem ConflictException em vez de criar uma semana duplicada/sobreposta.
    */
-  private async reserveWeeklyGoal(trainingPlanId: string, weekStartDate: Date, weekEndDate: Date) {
+  private async reserveWeeklyGoal(
+    trainingPlanId: string,
+    weekStartDate: Date,
+    weekEndDate: Date,
+    tx: Prisma.TransactionClient = this.prisma,
+  ) {
     try {
-      return await this.prisma.weeklyGoal.create({
+      return await tx.weeklyGoal.create({
         data: {
           trainingPlanId,
           weekStartDate,

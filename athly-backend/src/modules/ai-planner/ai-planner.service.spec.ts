@@ -1,3 +1,4 @@
+import { ResumeWindowExpiredError } from './weekly-calendar';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AiPlannerService } from './ai-planner.service';
@@ -8,14 +9,14 @@ import { buildMacrocycle } from './periodization';
 
 // bestSubEffortsFromSessions/bestContinuousWindow são matemática pura e não tocam o Prisma —
 // o service é construído com stubs. As privadas são exercitadas via cast, como em outros specs.
-const mockSqs = { send: jest.fn().mockResolvedValue(undefined) } as any;
+const mockJobs = { reserve: jest.fn(), dispatch: jest.fn().mockResolvedValue(undefined) } as any;
 const planner = new AiPlannerService(
   {} as any,
   {} as any,
   {} as any,
   {} as any,
   {} as any,
-  mockSqs,
+  mockJobs,
 );
 const bestSubEfforts = (sessions: DetailedSessionDto[]): RunDataForZones[] =>
   (planner as any).bestSubEffortsFromSessions(sessions);
@@ -194,7 +195,7 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
       {} as any,
       {} as any,
       {} as any,
-      mockSqs,
+      mockJobs,
     );
   const reserve = (svc: AiPlannerService) =>
     (svc as any).reserveWeeklyGoal('tp-1', new Date('2026-06-29'), new Date('2026-07-05'));
@@ -248,13 +249,14 @@ describe('AiPlannerService.startPlanFromHealthGeneration', () => {
         update: jest.fn().mockResolvedValue(queuedJob),
       },
     };
+    mockJobs.reserve.mockResolvedValue(job ?? queuedJob);
     const service = new AiPlannerService(
       prisma as any,
       {} as any,
       {} as any,
       {} as any,
       {} as any,
-      mockSqs,
+      mockJobs,
     );
     return { service, prisma };
   };
@@ -266,9 +268,15 @@ describe('AiPlannerService.startPlanFromHealthGeneration', () => {
     } as any);
 
     expect(started).toMatchObject({ generationId: 'generation-1', status: 'queued' });
-    expect(prisma.planGenerationJob.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1' }) }),
+    expect(mockJobs.reserve).toHaveBeenCalledWith(
+      prisma,
+      'user-1',
+      new Date('2026-08-10'),
+      expect.any(Object),
+      undefined,
+      true,
     );
+    expect(mockJobs.dispatch).toHaveBeenCalledWith('generation-1');
   });
 
   it('retorna os ids persistidos somente quando o job está completed', async () => {
@@ -371,5 +379,32 @@ describe('AiPlannerService.assessUndatedGoalAttempt', () => {
   it('permite tentativa quando há esforço contínuo similar dentro de 3%', () => {
     const verdict = assess(continuous5k('5:07'));
     expect(verdict.feasible).toBe(true);
+  });
+});
+
+describe('AiPlannerService expired resumption', () => {
+  it('rejects an expired queue window before reserving a week or calling Gemini', async () => {
+    const prisma = {
+      userGoal: { findFirst: jest.fn().mockResolvedValue(null) },
+      user: { findUnique: jest.fn().mockResolvedValue({ availableDays: ['monday'] }) },
+      trainingPlan: { findUnique: jest.fn() },
+    };
+    const service = new AiPlannerService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      mockJobs,
+    );
+    await expect(
+      service.planFromHealth('user', { runs: [] }, 'job', 'owner', {
+        weekStartDate: '2020-01-06',
+        minTrainingDate: '2020-01-06',
+        timeZone: 'UTC',
+        availableDays: ['monday'],
+      }),
+    ).rejects.toBeInstanceOf(ResumeWindowExpiredError);
+    expect(prisma.trainingPlan.findUnique).not.toHaveBeenCalled();
   });
 });

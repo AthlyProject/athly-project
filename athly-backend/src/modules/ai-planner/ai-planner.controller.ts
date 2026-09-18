@@ -6,6 +6,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
 import { AiPlannerResultModel } from './models/ai-planner-result.model';
+import { PlannerHealthContextService } from './planner-health-context.service';
+import { WeeklyPlanAutomationService } from './weekly-plan-automation.service';
+import { PlannerHealthContextDto, ResumePlanDto } from './dto/planner-health-context.dto';
 import { SubscriptionGuard } from '../billing/subscription.guard';
 
 @ApiTags('ai-planner')
@@ -13,7 +16,11 @@ import { SubscriptionGuard } from '../billing/subscription.guard';
 @Controller('ai-planner')
 @UseGuards(JwtAuthGuard, SubscriptionGuard)
 export class AiPlannerController {
-  constructor(private readonly aiPlannerService: AiPlannerService) {}
+  constructor(
+    private readonly aiPlannerService: AiPlannerService,
+    private readonly healthContext: PlannerHealthContextService,
+    private readonly automation: WeeklyPlanAutomationService,
+  ) {}
 
   @Post('plan-from-health')
   @ApiOkResponse({ type: AiPlannerResultModel })
@@ -28,6 +35,22 @@ export class AiPlannerController {
   @HttpCode(202)
   startPlanFromHealthGeneration(@CurrentUser() user: UserModel, @Body() input: PlanFromHealthDto) {
     return this.aiPlannerService.startPlanFromHealthGeneration(user.id, input);
+  }
+
+  @Post('resume')
+  @HttpCode(200)
+  resume(@CurrentUser() user: UserModel, @Body() input: ResumePlanDto) {
+    return this.automation.resume(user.id, input?.retryFailed ?? false);
+  }
+
+  @Post('health-context')
+  syncHealthContext(@CurrentUser() user: UserModel, @Body() input: PlannerHealthContextDto) {
+    return this.healthContext.sync(user.id, input);
+  }
+
+  @Get('plan-from-health/generations/latest')
+  latestGeneration(@CurrentUser() user: UserModel) {
+    return this.aiPlannerService.getLatestGeneration(user.id);
   }
 
   @Get('plan-from-health/generations/:generationId')

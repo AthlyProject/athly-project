@@ -5,6 +5,8 @@ import {
   DeleteMessageCommand,
   ChangeMessageVisibilityCommand,
 } from '@aws-sdk/client-sqs';
+import { ResumePlanningWindow, ResumeWindowExpiredError } from './weekly-calendar';
+import { randomUUID } from 'node:crypto';
 import { PlanGenerationStatus } from '@prisma/client';
 import { AiPlannerService } from './ai-planner.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -72,60 +74,118 @@ export class PlanGenerationSqsConsumer implements OnApplicationBootstrap, OnAppl
     try {
       body = JSON.parse(msg.Body ?? '{}') as PlanGenerationMessageBody;
     } catch {
-      this.logger.error(`Malformed SQS message body — deleting: ${msg.Body}`);
+      this.logger.error('Malformed SQS message body — deleting');
       await this.deleteMessage(msg.ReceiptHandle!);
       return;
     }
 
-    const { generationId, userId, input } = body;
-    this.logger.log(`Processing plan generation ${generationId} for user ${userId}`);
-
-    await this.prisma.planGenerationJob.updateMany({
-      where: { id: generationId },
-      data: { status: PlanGenerationStatus.PROCESSING, error: null },
+    const { generationId, userId } = body;
+    if (!generationId || !userId || !msg.ReceiptHandle) {
+      if (msg.ReceiptHandle) await this.deleteMessage(msg.ReceiptHandle);
+      return;
+    }
+    let job = await this.prisma.planGenerationJob.findFirst({
+      where: { id: generationId, userId },
     });
-
-    try {
-      await this.aiPlannerService.planFromHealth(
-        userId,
-        input as unknown as PlanFromHealthDto,
-        generationId,
+    if (!job || job.status === 'COMPLETED' || job.status === 'FAILED') {
+      await this.deleteMessage(msg.ReceiptHandle);
+      return;
+    }
+    const leaseOwner = randomUUID();
+    const leaseExpiresAt = new Date(Date.now() + VISIBILITY_TIMEOUT_SECONDS * 1000);
+    const claimed = await this.prisma.planGenerationJob.updateMany({
+      where: {
+        id: generationId,
+        OR: [
+          {
+            status: PlanGenerationStatus.QUEUED,
+            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lte: new Date() } }],
+          },
+          {
+            status: PlanGenerationStatus.PROCESSING,
+            OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lt: new Date() } }],
+          },
+        ],
+      },
+      data: { status: PlanGenerationStatus.PROCESSING, leaseOwner, leaseExpiresAt, error: null },
+    });
+    if (!claimed.count) {
+      await this.client.send(
+        new ChangeMessageVisibilityCommand({
+          QueueUrl: this.queueUrl,
+          ReceiptHandle: msg.ReceiptHandle,
+          VisibilityTimeout: 60,
+        }),
       );
-      await this.deleteMessage(msg.ReceiptHandle!);
-      this.logger.log(`Plan generation ${generationId} completed — message deleted`);
+      return;
+    }
+    job = await this.prisma.planGenerationJob.findFirstOrThrow({
+      where: { id: generationId, leaseOwner },
+    });
+    const heartbeat = setInterval(() => {
+      void this.prisma.planGenerationJob
+        .updateMany({
+          where: { id: generationId, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+          data: { leaseExpiresAt: new Date(Date.now() + VISIBILITY_TIMEOUT_SECONDS * 1000) },
+        })
+        .then(async ({ count }) => {
+          if (count)
+            await this.client.send(
+              new ChangeMessageVisibilityCommand({
+                QueueUrl: this.queueUrl,
+                ReceiptHandle: msg.ReceiptHandle,
+                VisibilityTimeout: VISIBILITY_TIMEOUT_SECONDS,
+              }),
+            );
+        })
+        .catch((error) => this.logger.warn(`Generation heartbeat ${generationId}: ${error}`));
+    }, 60_000);
+    heartbeat.unref();
+    try {
+      // The persisted payload is authoritative; duplicate/stale messages cannot replace it.
+      const input = job.payload as unknown as PlanFromHealthDto & {
+        resumeWindow?: ResumePlanningWindow;
+      };
+      if (input.resumeWindow) {
+        await this.aiPlannerService.planFromHealth(
+          userId,
+          input,
+          generationId,
+          leaseOwner,
+          input.resumeWindow,
+        );
+      } else {
+        await this.aiPlannerService.planFromHealth(userId, input, generationId, leaseOwner);
+      }
+      await this.deleteMessage(msg.ReceiptHandle);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Plan generation ${generationId} failed: ${message}`);
-
-      const job = await this.prisma.planGenerationJob.findUnique({
-        where: { id: generationId },
-        select: { attempts: true },
+      const attempts = job.attempts + 1;
+      const failed = err instanceof ResumeWindowExpiredError || attempts >= 3;
+      const updated = await this.prisma.planGenerationJob.updateMany({
+        where: { id: generationId, status: PlanGenerationStatus.PROCESSING, leaseOwner },
+        data: {
+          status: failed ? PlanGenerationStatus.FAILED : PlanGenerationStatus.QUEUED,
+          error: message,
+          attempts,
+          leaseOwner: null,
+          leaseExpiresAt: failed ? null : new Date(Date.now() + 30 * attempts * 1000),
+        },
       });
-      const attempts = (job?.attempts ?? 0) + 1;
-      const maxAttempts = 3;
-
-      if (attempts >= maxAttempts) {
-        await this.prisma.planGenerationJob.updateMany({
-          where: { id: generationId },
-          data: { status: PlanGenerationStatus.FAILED, error: message, attempts },
-        });
-        // Delete da fila para evitar reprocessamento; falha final registrada no DB
-        await this.deleteMessage(msg.ReceiptHandle!);
-      } else {
-        await this.prisma.planGenerationJob.updateMany({
-          where: { id: generationId },
-          data: { status: PlanGenerationStatus.QUEUED, error: message, attempts },
-        });
-        // Retorna a mensagem para a fila com backoff exponencial (30s, 60s, ...)
-        const delay = 30 * attempts;
-        await this.client.send(
-          new ChangeMessageVisibilityCommand({
-            QueueUrl: this.queueUrl,
-            ReceiptHandle: msg.ReceiptHandle!,
-            VisibilityTimeout: delay,
-          }),
-        );
+      if (updated.count) {
+        if (failed) await this.deleteMessage(msg.ReceiptHandle);
+        else
+          await this.client.send(
+            new ChangeMessageVisibilityCommand({
+              QueueUrl: this.queueUrl,
+              ReceiptHandle: msg.ReceiptHandle,
+              VisibilityTimeout: 30 * attempts,
+            }),
+          );
       }
+      this.logger.error(`Plan generation ${generationId} failed: ${message}`);
+    } finally {
+      clearInterval(heartbeat);
     }
   }
 

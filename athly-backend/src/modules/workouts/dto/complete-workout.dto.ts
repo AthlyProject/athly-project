@@ -1,9 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsNumber, IsOptional, IsString, Length, Min, ValidateNested } from 'class-validator';
+import { WorkoutPlanningContextDto } from '../../ai-planner/dto/planner-health-context.dto';
 import { DetailedSessionDto } from '../../ai-planner/dto/plan-from-health.dto';
 
-export class CompleteWorkoutDto {
+export class CompleteWorkoutDto extends WorkoutPlanningContextDto {
   @ApiPropertyOptional({
     description: 'UUID of the HKWorkout that executed this prescribed workout',
   })

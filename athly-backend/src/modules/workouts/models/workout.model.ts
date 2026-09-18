@@ -19,7 +19,21 @@ export class WorkoutBlock {
   instructions?: string;
 }
 
+export class NextWeekGenerationModel {
+  @ApiProperty()
+  closed: boolean;
+  @ApiPropertyOptional()
+  generationId?: string;
+  @ApiPropertyOptional()
+  status?: string;
+  @ApiProperty()
+  pollAfterSeconds: number;
+}
+
 export class WorkoutModel {
+  @ApiPropertyOptional({ type: () => NextWeekGenerationModel })
+  nextWeekGeneration?: NextWeekGenerationModel;
+
   @ApiProperty()
   id: string;
 

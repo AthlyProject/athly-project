@@ -1,6 +1,121 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
+    "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your workouts are being prepared. We’ll notify you when they’re ready."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Trainings werden vorbereitet. Wir benachrichtigen dich, sobald sie fertig sind."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos."
+          }
+        }
+      }
+    },
+    "Não foi possível preparar seus treinos. Tente novamente." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to prepare your workouts. Please try again."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Trainings konnten nicht vorbereitet werden. Bitte versuche es erneut."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível preparar seus treinos. Tente novamente."
+          }
+        }
+      }
+    },
+    "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next training week is being prepared. We’ll notify you when it’s ready."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine nächste Trainingswoche wird vorbereitet. Wir benachrichtigen dich, sobald sie fertig ist."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta."
+          }
+        }
+      }
+    },
+    "Não foi possível gerar a próxima semana. Tente novamente mais tarde." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to generate your next training week. Please try again later."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine nächste Trainingswoche konnte nicht erstellt werden. Bitte versuche es später erneut."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível gerar a próxima semana. Tente novamente mais tarde."
+          }
+        }
+      }
+    },
+    "Só é possível reagendar treinos dentro da mesma semana." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workouts can only be rescheduled within the same week."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainings können nur innerhalb derselben Woche verschoben werden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Só é possível reagendar treinos dentro da mesma semana."
+          }
+        }
+      }
+    },
     " (pulado)" : {
       "comment" : "Suffix appended to a segment label when it was skipped, e.g. 'Sprint 1 (pulado)'. Leading space is intentional.",
       "extractionState" : "stale",

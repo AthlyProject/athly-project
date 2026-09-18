@@ -195,7 +195,15 @@ struct WorkoutSegments: Codable, Sendable {
 
 // MARK: - Workout Model
 
+struct NextWeekGeneration: Codable, Sendable {
+    let closed: Bool
+    let generationId: String?
+    let status: String?
+    let pollAfterSeconds: Int
+}
+
 struct WorkoutModel: Codable, Identifiable, Sendable {
+    var nextWeekGeneration: NextWeekGeneration? = nil
     let id: String
     let date: String
     let sportType: SportType
@@ -358,6 +366,7 @@ struct RunAnalysis: Codable, Sendable {
 // MARK: - Plan From Health
 
 struct HealthRunPayload: Encodable, Sendable {
+    let appleHealthWorkoutUUID: String
     let startDate: String
     let distanceMeters: Double
     let durationSeconds: Double
@@ -368,6 +377,7 @@ struct HealthRunPayload: Encodable, Sendable {
     init(from item: HealthKitRunItem) {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        self.appleHealthWorkoutUUID = item.id
         self.startDate = iso.string(from: item.startDate)
         self.distanceMeters = item.distanceMeters
         self.durationSeconds = item.durationSeconds
@@ -560,4 +570,10 @@ struct AdminWeeklyReportResponse: Codable, Sendable {
     let previousWeekAnalysis: PreviousWeekAnalysis?
     let promptLog: AdminPromptLog?
     let workouts: [AdminWorkoutSummary]
+}
+
+struct ResumePlanResponse: Decodable, Sendable {
+    let weekStartDate: String?
+    let generation: AiPlannerGenerationStatusResponse?
+    let started: Bool
 }

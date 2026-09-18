@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        PlannerHealthSyncService.shared.startObserving()
         return true
     }
 
@@ -105,7 +106,9 @@ struct AthlyRunnerApp: App {
                         if authenticated {
                             await NotificationService.shared.syncRemoteDeviceTokenIfAvailable()
                             planViewModel.resumePendingGenerationIfNeeded()
+                            await planViewModel.refreshAutomaticGeneration()
                         } else {
+                            PlannerHealthSyncService.shared.cancel()
                             planViewModel.cancelPendingGeneration()
                         }
                     }
@@ -116,8 +119,10 @@ struct AthlyRunnerApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                     Task { @MainActor in
+                        PlannerHealthSyncService.shared.startObserving()
                         await NotificationService.shared.registerForRemoteNotificationsIfAuthorized()
                         planViewModel.resumePendingGenerationIfNeeded()
+                        await planViewModel.refreshAutomaticGeneration()
                     }
                 }
         }

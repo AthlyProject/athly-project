@@ -204,22 +204,34 @@ actor APIClient {
         actualDurationSeconds: Double? = nil,
         executionDetails: DetailedSessionPayload? = nil
     ) async throws -> WorkoutModel {
-        if appleHealthWorkoutUUID != nil || actualDistanceMeters != nil || actualDurationSeconds != nil || executionDetails != nil {
-            return try await patchWithBody(
-                "/workouts/\(workoutId)/complete",
-                body: CompleteWorkoutRequest(
-                    appleHealthWorkoutUUID: appleHealthWorkoutUUID,
-                    actualDistanceMeters: actualDistanceMeters,
-                    actualDurationSeconds: actualDurationSeconds,
-                    executionDetails: executionDetails
-                )
-            )
-        }
-        return try await patch("/workouts/\(workoutId)/complete")
+        let context = try? await PlannerHealthSyncService.shared.capture()
+        return try await patchWithBody(
+            "/workouts/\(workoutId)/complete",
+            body: CompleteWorkoutRequest(appleHealthWorkoutUUID: appleHealthWorkoutUUID,
+                                         actualDistanceMeters: actualDistanceMeters,
+                                         actualDurationSeconds: actualDurationSeconds,
+                                         executionDetails: executionDetails, planningContext: context)
+        )
     }
 
     func skipWorkout(workoutId: String) async throws -> WorkoutModel {
-        try await patch("/workouts/\(workoutId)/skip")
+        let context = try? await PlannerHealthSyncService.shared.capture()
+        return try await patchWithBody("/workouts/\(workoutId)/skip", body: WorkoutPlanningContextRequest(planningContext: context))
+    }
+
+    func syncPlannerHealthContext(_ context: PlannerHealthContextPayload) async throws {
+        struct Response: Decodable { let synced: Bool }
+        let _: Response = try await post("/ai-planner/health-context", body: context)
+    }
+
+    func resumePlan(retryFailed: Bool = false) async throws -> ResumePlanResponse {
+        struct Request: Encodable { let retryFailed: Bool }
+        return try await post("/ai-planner/resume", body: Request(retryFailed: retryFailed))
+    }
+
+    func latestPlanGeneration() async throws -> AiPlannerGenerationStatusResponse? {
+        let request = try buildRequest(path: "/ai-planner/plan-from-health/generations/latest", method: "GET", authenticated: true)
+        return try await executeOptional(request)
     }
 
     /// Desfaz a conclusão de um treino: volta para `scheduled` e limpa, no servidor, a corrida
@@ -596,12 +608,14 @@ struct CompleteWorkoutRequest: Encodable {
     let actualDistanceMeters: Double?
     let actualDurationSeconds: Double?
     let executionDetails: DetailedSessionPayload?
+    let planningContext: PlannerHealthContextPayload?
 
     enum CodingKeys: String, CodingKey {
         case appleHealthWorkoutUUID = "appleHealthWorkoutUUID"
         case actualDistanceMeters
         case actualDurationSeconds
         case executionDetails
+        case planningContext
     }
 }
 
@@ -687,4 +701,8 @@ enum APIError: LocalizedError {
         case .serverError(let code, let msg): return String(localized: "Erro \(code):") + " " + msg
         }
     }
+}
+
+private struct WorkoutPlanningContextRequest: Encodable {
+    let planningContext: PlannerHealthContextPayload?
 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB70A0100000000000000001 /* PlannerHealthSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB70A0100000000000000002 /* PlannerHealthSyncService.swift */; };
 		0365DDE0D12FD9921E153C17 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771F104A20AD0B32E98D4010 /* HistoryView.swift */; };
 		09E7AF563A2725DBBB6D3163 /* OpenTelemetryProtocolExporterHTTP in Frameworks */ = {isa = PBXBuildFile; productRef = DFFD306993612933E53FC52A /* OpenTelemetryProtocolExporterHTTP */; };
 		0A2E84E2E8BEBD693A1CC14D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 078DBE2B1E868ED8FA47B6E4 /* RevenueCatUI */; };
@@ -187,6 +188,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AB70A0100000000000000002 /* PlannerHealthSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerHealthSyncService.swift; sourceTree = "<group>"; };
 		0192367746B3C25C781AE6AD /* AthlyWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyWebView.swift; sourceTree = "<group>"; };
 		03D63F8FA8D5D21765CDAAFA /* AthlyRunner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AthlyRunner.entitlements; sourceTree = "<group>"; };
 		094C48387F33F52259C084A8 /* JetBrainsMono-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "JetBrainsMono-Medium.ttf"; sourceTree = "<group>"; };
@@ -528,6 +530,7 @@
 			children = (
 				9514B8260A0CF7E805E8B010 /* AchievementStore.swift */,
 				9CDA0DF1AE05993FC853D7DB /* APIClient.swift */,
+				AB70A0100000000000000002 /* PlannerHealthSyncService.swift */,
 				9EE756B791DF8440151159C7 /* AudioCueService.swift */,
 				D432A5B4E78E04AEC7BC6FBD /* CameraCaptureService.swift */,
 				8CD3C77B8C52ECCB65A3F4F3 /* CueOrchestrator.swift */,
@@ -848,6 +851,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F2E0F9D61677CA3CA95C7EC1 /* APIClient.swift in Sources */,
+				AB70A0100000000000000001 /* PlannerHealthSyncService.swift in Sources */,
 				872EE89FE37E79C3D1D455AF /* APIModels.swift in Sources */,
 				95F6763EF80D676DBD709108 /* AchievementStore.swift in Sources */,
 				9D3C4E928BF25D42658AD6ED /* ActiveSegment.swift in Sources */,

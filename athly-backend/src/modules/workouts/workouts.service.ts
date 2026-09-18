@@ -1,10 +1,16 @@
 import {
+  BadRequestException,
+  Optional,
   ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { WeeklyPlanAutomationService } from '../ai-planner/weekly-plan-automation.service';
+import { PlannerHealthContextService } from '../ai-planner/planner-health-context.service';
+import { WorkoutPlanningContextDto } from '../ai-planner/dto/planner-health-context.dto';
+import { mondayOf } from '../ai-planner/weekly-calendar';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -36,7 +42,29 @@ const workoutCompletionSelect = {
 export class WorkoutsService {
   private readonly logger = new Logger(WorkoutsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly automation?: WeeklyPlanAutomationService,
+    @Optional() private readonly healthContext?: PlannerHealthContextService,
+  ) {}
+
+  private async lockWeek(tx: Prisma.TransactionClient, userId: string, workoutId: string) {
+    if (!this.automation) return;
+    await tx.$queryRaw`SELECT g.id FROM weekly_goals g JOIN workouts w ON w.weekly_goal_id = g.id
+      WHERE w.id = ${workoutId} AND w.user_id = ${userId} FOR UPDATE OF g`;
+  }
+
+  private async syncContext(userId: string, input?: WorkoutPlanningContextDto) {
+    if (!input?.planningContext || !this.healthContext) return;
+    try {
+      await this.healthContext.sync(userId, input.planningContext);
+    } catch (error) {
+      // Completion remains authoritative; automation can use the previous snapshot.
+      this.logger.warn(
+        `Health context sync deferred for ${userId}: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
 
   async getTodayWorkout(userId: string) {
     const today = new Date();
@@ -164,6 +192,7 @@ export class WorkoutsService {
 
   async completeWorkout(userId: string, workoutId: string, input?: CompleteWorkoutDto) {
     try {
+      await this.syncContext(userId, input);
       const data: Prisma.WorkoutUpdateManyMutationInput & {
         executionDetails?: Prisma.InputJsonValue;
       } = { status: 'done' };
@@ -179,26 +208,21 @@ export class WorkoutsService {
       if (input?.executionDetails) {
         data.executionDetails = input.executionDetails as unknown as Prisma.InputJsonValue;
       }
-      this.logger.log(
-        `completeWorkout — workoutId=${workoutId} userId=${userId} input=${JSON.stringify(input ?? null)}`,
-      );
-      const updated = await this.prisma.workout.updateMany({
-        where: { id: workoutId, userId },
-        data,
+      const workout = await this.prisma.$transaction(async (tx) => {
+        await this.lockWeek(tx, userId, workoutId);
+        const updated = await tx.workout.updateMany({ where: { id: workoutId, userId }, data });
+        if (!updated.count) throw new NotFoundException('Workout not found');
+        const result = await tx.workout.findFirst({
+          where: { id: workoutId, userId },
+          select: workoutCompletionSelect,
+        });
+        if (!result) throw new NotFoundException('Workout not found');
+        return result;
       });
-      if (!updated.count) {
-        throw new NotFoundException('Workout not found');
-      }
-      const workout = await this.prisma.workout.findFirst({
-        where: { id: workoutId, userId },
-        select: workoutCompletionSelect,
-      });
-      if (!workout) {
-        throw new NotFoundException('Workout not found');
-      }
-      return this.mapWorkout(workout);
+      const nextWeekGeneration = await this.automation?.afterWorkout(userId, workout.weeklyGoalId);
+      return { ...this.mapWorkout(workout), ...(nextWeekGeneration ? { nextWeekGeneration } : {}) };
     } catch (err) {
-      if (err instanceof NotFoundException) throw err;
+      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
       // O índice único global em `apple_health_workout_uuid` impede que a mesma corrida do
       // Apple Health fique vinculada a dois treinos. Sem este mapeamento o choque virava um 500
       // opaco, sem indicar ao app que basta desvincular o treino anterior.
@@ -230,6 +254,7 @@ export class WorkoutsService {
   async uncompleteWorkout(userId: string, workoutId: string): Promise<WorkoutModel> {
     try {
       const updated = await this.prisma.$transaction(async (tx) => {
+        await this.lockWeek(tx, userId, workoutId);
         const existing = await tx.workout.findFirst({
           where: { id: workoutId, userId },
           select: { id: true },
@@ -267,21 +292,21 @@ export class WorkoutsService {
     }
   }
 
-  async skipWorkout(userId: string, workoutId: string) {
-    const updated = await this.prisma.workout.updateMany({
-      where: { id: workoutId, userId },
-      data: { status: 'skipped' },
+  async skipWorkout(userId: string, workoutId: string, input?: WorkoutPlanningContextDto) {
+    await this.syncContext(userId, input);
+    const workout = await this.prisma.$transaction(async (tx) => {
+      await this.lockWeek(tx, userId, workoutId);
+      const updated = await tx.workout.updateMany({
+        where: { id: workoutId, userId },
+        data: { status: 'skipped' },
+      });
+      if (!updated.count) throw new NotFoundException('Workout not found');
+      const result = await tx.workout.findFirst({ where: { id: workoutId, userId } });
+      if (!result) throw new NotFoundException('Workout not found');
+      return result;
     });
-    if (!updated.count) {
-      throw new NotFoundException('Workout not found');
-    }
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
-    });
-    if (!workout) {
-      throw new NotFoundException('Workout not found');
-    }
-    return this.mapWorkout(workout);
+    const nextWeekGeneration = await this.automation?.afterWorkout(userId, workout.weeklyGoalId);
+    return { ...this.mapWorkout(workout), ...(nextWeekGeneration ? { nextWeekGeneration } : {}) };
   }
 
   private mapWorkout(workout: {
@@ -327,41 +352,61 @@ export class WorkoutsService {
     workoutId: string,
     input: UpdateWorkoutDto,
   ): Promise<WorkoutModel> {
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.lockWeek(tx, userId, workoutId);
+      const workout = await tx.workout.findFirst({
+        where: { id: workoutId, userId },
+      });
+      if (!workout) {
+        throw new NotFoundException('Workout not found');
+      }
+
+      if (input.date !== undefined) {
+        const date = new Date(input.date);
+        const week = workout.weeklyGoalId
+          ? await tx.weeklyGoal.findUnique({
+              where: { id: workout.weeklyGoalId },
+              select: { weekStartDate: true },
+            })
+          : null;
+        const origin = week?.weekStartDate ?? workout.dateScheduled;
+        if (Number.isNaN(date.getTime()) || +mondayOf(date) !== +mondayOf(origin)) {
+          throw new BadRequestException('Só é possível reagendar treinos dentro da mesma semana.');
+        }
+      }
+
+      const updateData: Prisma.WorkoutUpdateInput = {};
+
+      if (input.title !== undefined) updateData.title = input.title;
+      if (input.description !== undefined) updateData.description = input.description;
+      if (input.intensity !== undefined) updateData.intensity = input.intensity;
+      if (input.status !== undefined) updateData.status = input.status;
+      if (input.sportType !== undefined) updateData.sportType = input.sportType;
+      if (input.date !== undefined) updateData.dateScheduled = new Date(input.date);
+
+      if (input.blocks !== undefined) {
+        updateData.blocks = input.blocks.map((block) => ({
+          type: block.type,
+          duration: block.duration ?? undefined,
+          distance: block.distance ?? undefined,
+          targetPace: block.targetPace ?? undefined,
+          instructions: block.instructions ?? undefined,
+        })) as unknown as Prisma.InputJsonValue;
+      }
+
+      if (input.segments !== undefined) {
+        updateData.segments = input.segments as unknown as Prisma.InputJsonValue;
+      }
+
+      return tx.workout.update({
+        where: { id: workoutId },
+        data: updateData,
+      });
     });
-    if (!workout) {
-      throw new NotFoundException('Workout not found');
-    }
-
-    const updateData: Prisma.WorkoutUpdateInput = {};
-
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.intensity !== undefined) updateData.intensity = input.intensity;
-    if (input.status !== undefined) updateData.status = input.status;
-    if (input.sportType !== undefined) updateData.sportType = input.sportType;
-    if (input.date !== undefined) updateData.dateScheduled = new Date(input.date);
-
-    if (input.blocks !== undefined) {
-      updateData.blocks = input.blocks.map((block) => ({
-        type: block.type,
-        duration: block.duration ?? undefined,
-        distance: block.distance ?? undefined,
-        targetPace: block.targetPace ?? undefined,
-        instructions: block.instructions ?? undefined,
-      })) as unknown as Prisma.InputJsonValue;
-    }
-
-    if (input.segments !== undefined) {
-      updateData.segments = input.segments as unknown as Prisma.InputJsonValue;
-    }
-
-    const updated = await this.prisma.workout.update({
-      where: { id: workoutId },
-      data: updateData,
-    });
-
-    return this.mapWorkout(updated);
+    const nextWeekGeneration =
+      input.status && ['done', 'partial', 'skipped'].includes(input.status)
+        ? await this.automation?.afterWorkout(userId, updated.weeklyGoalId)
+        : undefined;
+    return { ...this.mapWorkout(updated), ...(nextWeekGeneration ? { nextWeekGeneration } : {}) };
   }
 }

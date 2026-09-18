@@ -10,6 +10,8 @@ run:
   network:
     port: 4000
   env:
+    - name: WEEKLY_PLAN_AUTOMATION_ENABLED
+      value: "false"
     - name: NODE_ENV
       value: production
     - name: OTEL_SERVICE_NAME

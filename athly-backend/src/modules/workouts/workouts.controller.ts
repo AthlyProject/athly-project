@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiCreatedResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { WorkoutPlanningContextDto } from '../ai-planner/dto/planner-health-context.dto';
 import { WorkoutsService } from './workouts.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -78,8 +79,9 @@ export class WorkoutsController {
   skipWorkout(
     @CurrentUser() user: UserModel,
     @Param('workoutId') workoutId: string,
+    @Body() input?: WorkoutPlanningContextDto,
   ): Promise<WorkoutModel> {
-    return this.workoutsService.skipWorkout(user.id, workoutId);
+    return this.workoutsService.skipWorkout(user.id, workoutId, input);
   }
 
   /**
