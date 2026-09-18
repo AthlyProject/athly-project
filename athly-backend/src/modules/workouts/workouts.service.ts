@@ -7,6 +7,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  CodedInternalServerErrorException,
+  CodedNotFoundException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { WeeklyPlanAutomationService } from '../ai-planner/weekly-plan-automation.service';
 import { PlannerHealthContextService } from '../ai-planner/planner-health-context.service';
 import { WorkoutPlanningContextDto } from '../ai-planner/dto/planner-health-context.dto';
@@ -159,7 +164,7 @@ export class WorkoutsService {
         where: { id: workoutId, userId },
       });
       if (!workout) {
-        throw new NotFoundException('Workout not found');
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       }
 
       const feedback = await this.prisma.workoutFeedback.create({
@@ -184,7 +189,8 @@ export class WorkoutsService {
         `submitWorkoutFeedback failed — workoutId=${workoutId} userId=${userId}`,
         err instanceof Error ? err.stack : String(err),
       );
-      throw new InternalServerErrorException(
+      throw new CodedInternalServerErrorException(
+        ErrorCode.WORKOUT_FEEDBACK_FAILED,
         `Falha ao salvar feedback: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
@@ -211,12 +217,14 @@ export class WorkoutsService {
       const workout = await this.prisma.$transaction(async (tx) => {
         await this.lockWeek(tx, userId, workoutId);
         const updated = await tx.workout.updateMany({ where: { id: workoutId, userId }, data });
-        if (!updated.count) throw new NotFoundException('Workout not found');
+        if (!updated.count)
+          throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
         const result = await tx.workout.findFirst({
           where: { id: workoutId, userId },
           select: workoutCompletionSelect,
         });
-        if (!result) throw new NotFoundException('Workout not found');
+        if (!result)
+          throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
         return result;
       });
       const nextWeekGeneration = await this.automation?.afterWorkout(userId, workout.weeklyGoalId);
@@ -235,7 +243,8 @@ export class WorkoutsService {
         `completeWorkout failed — workoutId=${workoutId} userId=${userId}`,
         err instanceof Error ? err.stack : String(err),
       );
-      throw new InternalServerErrorException(
+      throw new CodedInternalServerErrorException(
+        ErrorCode.WORKOUT_COMPLETE_FAILED,
         'Falha ao completar treino. Tente novamente mais tarde.',
       );
     }
@@ -260,7 +269,7 @@ export class WorkoutsService {
           select: { id: true },
         });
         if (!existing) {
-          throw new NotFoundException('Workout not found');
+          throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
         }
 
         await tx.workoutFeedback.deleteMany({ where: { workoutId, userId } });
@@ -300,9 +309,11 @@ export class WorkoutsService {
         where: { id: workoutId, userId },
         data: { status: 'skipped' },
       });
-      if (!updated.count) throw new NotFoundException('Workout not found');
+      if (!updated.count)
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       const result = await tx.workout.findFirst({ where: { id: workoutId, userId } });
-      if (!result) throw new NotFoundException('Workout not found');
+      if (!result)
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       return result;
     });
     const nextWeekGeneration = await this.automation?.afterWorkout(userId, workout.weeklyGoalId);
@@ -358,7 +369,7 @@ export class WorkoutsService {
         where: { id: workoutId, userId },
       });
       if (!workout) {
-        throw new NotFoundException('Workout not found');
+        throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
       }
 
       if (input.date !== undefined) {

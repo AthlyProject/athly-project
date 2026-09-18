@@ -47,34 +47,15 @@ actor APIClient {
         NotificationCenter.default.post(name: .athlySessionExpired, object: nil)
     }
 
-    /// Extrai a mensagem de erro do corpo padrão do NestJS: `{ "message": string | string[] }`.
+    /// Traduz o erro do backend para o idioma do app.
+    ///
+    /// O servidor manda um `code` estável junto do `message` em pt-BR; o app resolve o código
+    /// no próprio catálogo de strings (ver `BackendErrorCode`) e só cai no texto do servidor
+    /// quando o código é desconhecido — assim um código novo no backend degrada para pt-BR em
+    /// vez de sumir da tela.
     private static func backendMessage(from data: Data) -> String? {
         guard !data.isEmpty else { return nil }
-
-        struct BackendError: Decodable {
-            let message: Message?
-            enum Message: Decodable {
-                case single(String)
-                case multiple([String])
-                init(from decoder: Decoder) throws {
-                    let container = try decoder.singleValueContainer()
-                    if let text = try? container.decode(String.self) {
-                        self = .single(text)
-                    } else {
-                        self = .multiple((try? container.decode([String].self)) ?? [])
-                    }
-                }
-                var text: String {
-                    switch self {
-                    case .single(let value): return value
-                    case .multiple(let values): return values.joined(separator: "\n")
-                    }
-                }
-            }
-        }
-
-        let text = (try? JSONDecoder().decode(BackendError.self, from: data))?.message?.text
-        return (text?.isEmpty == false) ? text : nil
+        return (try? JSONDecoder().decode(BackendErrorBody.self, from: data))?.localizedText
     }
 
     var isAuthenticated: Bool {

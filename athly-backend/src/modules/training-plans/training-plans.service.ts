@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import {
+  CodedConflictException,
+  CodedNotFoundException,
+} from '../../common/errors/coded-exception';
+import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma, SportType, TrainingPlanStatus } from '@prisma/client';
 import { CreateTrainingPlanDto } from './dto/create-training-plan.dto';
@@ -26,7 +31,10 @@ export class TrainingPlansService {
     });
 
     if (!plan) {
-      throw new NotFoundException('Training plan not found');
+      throw new CodedNotFoundException(
+        ErrorCode.TRAINING_PLAN_NOT_FOUND,
+        'Training plan not found',
+      );
     }
 
     return this.mapTrainingPlan(plan);
@@ -41,7 +49,10 @@ export class TrainingPlansService {
     });
 
     if (existing) {
-      throw new ConflictException('User already has a training plan. Use update or delete first.');
+      throw new CodedConflictException(
+        ErrorCode.TRAINING_PLAN_ALREADY_EXISTS,
+        'User already has a training plan. Use update or delete first.',
+      );
     }
 
     const plan = await this.prisma.trainingPlan.create({
@@ -69,7 +80,10 @@ export class TrainingPlansService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Training plan not found');
+      throw new CodedNotFoundException(
+        ErrorCode.TRAINING_PLAN_NOT_FOUND,
+        'Training plan not found',
+      );
     }
 
     const updateData: Prisma.TrainingPlanUpdateInput = {};
@@ -103,7 +117,10 @@ export class TrainingPlansService {
     });
 
     if (!existing) {
-      throw new NotFoundException('Training plan not found');
+      throw new CodedNotFoundException(
+        ErrorCode.TRAINING_PLAN_NOT_FOUND,
+        'Training plan not found',
+      );
     }
 
     // Capture a laudo of the last weeks BEFORE the cascade wipes them, so the next
