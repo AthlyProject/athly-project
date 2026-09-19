@@ -364,21 +364,7 @@ struct HealthKitRunsView: View {
     }
 
     private func isDuplicateLocalSession(_ session: RunSession, healthRuns: [HealthKitRunItem]) -> Bool {
-        if let uuid = session.healthKitWorkoutUUID,
-           healthRuns.contains(where: { $0.id == uuid }) {
-            return true
-        }
-        return healthRuns.contains { healthRunMatches(session: session, run: $0) }
-    }
-
-    private func healthRunMatches(session: RunSession, run: HealthKitRunItem) -> Bool {
-        let startDelta = abs(session.startDate.timeIntervalSince(run.startDate))
-        let distanceDelta = abs(session.distanceMeters - run.distanceMeters)
-        let durationDelta = abs(session.durationSeconds - run.durationSeconds)
-        let distanceTolerance = max(100, run.distanceMeters * 0.03)
-        return startDelta < 120
-            && distanceDelta <= distanceTolerance
-            && durationDelta < 180
+        HealthKitRunMatch.isDuplicate(session: session, healthRuns: healthRuns)
     }
 
     private func loadData() async {

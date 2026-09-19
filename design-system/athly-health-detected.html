@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><script type="application/json" data-od-external-dependencies>["https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"]</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athly — Nova atividade detectada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#060810; --bg-alt:#0B0F1C; --surface:#0F1624; --card:#141E30; --card-2:#1A2540;
+      --primary:#0EA5E9; --primary-soft:rgba(14,165,233,.10); --primary-b:rgba(14,165,233,.22); --primary-glow:rgba(14,165,233,.18);
+      --violet:#7C3AED; --violet-soft:rgba(124,58,237,.10); --violet-b:rgba(124,58,237,.20);
+      --text-1:#EEF2FF; --text-2:#94A3B8; --text-3:#4B5563;
+      --border:rgba(255,255,255,.06); --border-mid:rgba(255,255,255,.10);
+      --success:#10B981; --success-soft:rgba(16,185,129,.10); --success-b:rgba(16,185,129,.22);
+      --warn:#F59E0B; --warn-soft:rgba(245,158,11,.10); --warn-b:rgba(245,158,11,.22);
+      --danger:#EF4444; --danger-soft:rgba(239,68,68,.10); --danger-b:rgba(239,68,68,.22);
+      --grad:linear-gradient(135deg,#0EA5E9,#7C3AED);
+      --font:'Space Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+      --r-sm:10px; --r-md:14px; --r-lg:20px; --r-pill:9999px; --ease:cubic-bezier(0.22,1,0.36,1);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text-1);font-family:var(--font);line-height:1.5;overflow-x:hidden;}
+    button{font-family:var(--font);cursor:pointer;border:none;background:none;color:inherit;}
+    button:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:var(--r-sm);}
+    a{color:inherit;text-decoration:none;}
+
+    nav{position:sticky;top:0;z-index:200;background:rgba(6,8,16,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:0 48px;display:flex;align-items:center;height:58px;}
+    .nav-brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:var(--text-1);}
+    .nav-logo{width:30px;height:30px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+    .nav-links{display:flex;gap:28px;margin-left:40px;}
+    .nav-links a{font-size:13px;font-weight:500;color:var(--text-2);transition:color 150ms;}
+    .nav-links a:hover,.nav-links a.active{color:var(--text-1);}
+    .nav-pill{margin-left:auto;font-family:var(--mono);font-size:11px;padding:3px 11px;background:var(--primary-soft);border:1px solid var(--primary-b);border-radius:var(--r-pill);color:var(--primary);}
+
+    .wrap{max-width:1200px;margin:0 auto;padding:0 48px;}
+    .section{padding:80px 0;border-top:1px solid var(--border);}
+    .section-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);margin-bottom:10px;}
+    .section-title{font-size:34px;font-weight:700;letter-spacing:-.025em;margin-bottom:12px;}
+    .section-desc{font-size:16px;color:var(--text-2);max-width:580px;margin-bottom:44px;line-height:1.65;}
+
+    .hero{padding:96px 0 76px;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;top:-160px;left:-100px;width:520px;height:520px;background:radial-gradient(circle,rgba(14,165,233,.10) 0%,transparent 70%);pointer-events:none;}
+    .hero::after{content:'';position:absolute;bottom:-120px;right:-80px;width:440px;height:440px;background:radial-gradient(circle,rgba(124,58,237,.08) 0%,transparent 70%);pointer-events:none;}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:var(--primary-soft);border:1px solid var(--primary-b);border-radius:var(--r-pill);font-size:12px;font-weight:600;color:var(--primary);margin-bottom:24px;}
+    .hero-title{font-size:clamp(42px,5.5vw,72px);font-weight:700;line-height:1.0;letter-spacing:-.035em;margin-bottom:20px;}
+    .grad-text{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-sub{font-size:18px;color:var(--text-2);max-width:560px;line-height:1.65;margin-bottom:40px;}
+    .hero-tags{display:flex;gap:9px;flex-wrap:wrap;}
+    .hero-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:var(--card);border:1px solid var(--border-mid);border-radius:var(--r-pill);font-size:12px;font-weight:600;color:var(--text-2);}
+
+    .screens-rail{display:flex;gap:32px;overflow-x:auto;padding:8px 0 52px;scrollbar-width:none;}
+    .screens-rail::-webkit-scrollbar{display:none;}
+    .phone-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:16px;}
+    .phone-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);}
+    .phone-sub{font-size:10px;color:var(--text-3);font-family:var(--mono);}
+    .iphone{width:316px;height:682px;background:#1C1C22;border-radius:50px;border:8px solid #2A2A32;box-shadow:0 0 0 1px #111,inset 0 0 0 1px rgba(255,255,255,.07),0 44px 96px rgba(0,0,0,.75);overflow:hidden;position:relative;}
+    .iphone-screen{width:100%;height:100%;background:var(--bg);border-radius:42px;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+    .dynamic-island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#000;border-radius:13px;z-index:50;}
+    .status-bar{height:50px;padding:14px 18px 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:10;position:relative;}
+    .status-time{font-family:var(--mono);font-size:13px;font-weight:600;}
+    .status-icons{display:flex;align-items:center;gap:5px;color:var(--text-1);}
+
+    .sc-body{flex:1;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:none;position:relative;z-index:1;}
+    .sc-body::-webkit-scrollbar{display:none;}
+
+    /* ── Detected reveal hero ── */
+    .detect-top{padding:2px 16px 12px;text-align:center;flex-shrink:0;}
+    .detect-kicker{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--primary);}
+    .detect-h{font-size:17px;font-weight:700;letter-spacing:-.02em;margin-top:5px;}
+    .detect-date{font-size:10px;color:var(--text-2);font-family:var(--mono);margin-top:2px;}
+
+    .detect-hero{position:relative;height:186px;margin:0 16px;border-radius:var(--r-lg);overflow:hidden;flex-shrink:0;background:linear-gradient(150deg,#0b2740,#12143a 55%,#2a1250);border:1px solid var(--border-mid);}
+    .detect-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px;opacity:.6;}
+    .detect-glowa{position:absolute;top:-40px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(14,165,233,.5) 0%,transparent 65%);}
+    .detect-glowb{position:absolute;bottom:-50px;left:-20px;width:170px;height:170px;background:radial-gradient(circle,rgba(124,58,237,.45) 0%,transparent 65%);}
+    .detect-route{position:absolute;inset:0;}
+    .detect-source{position:absolute;top:11px;left:11px;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--r-pill);background:rgba(6,8,16,.62);backdrop-filter:blur(8px);border:1px solid var(--border-mid);font-size:9px;font-weight:600;color:var(--text-1);}
+    .detect-ping{position:absolute;top:11px;right:11px;display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--r-pill);background:rgba(16,185,129,.16);border:1px solid var(--success-b);font-size:9px;font-weight:700;color:var(--success);}
+    .detect-ping .dot{width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);}
+    .detect-scrim{position:absolute;left:0;right:0;bottom:0;height:88px;background:linear-gradient(transparent,rgba(6,8,16,.86));}
+    .detect-caption{position:absolute;left:14px;bottom:12px;right:14px;}
+    .detect-type{font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--primary);}
+    .detect-name{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-top:2px;}
+
+    .detect-stats{display:flex;margin:12px 16px 0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--card);flex-shrink:0;}
+    .ds-cell{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;}
+    .ds-cell + .ds-cell{border-left:1px solid var(--border);}
+    .ds-val{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-.01em;}
+    .ds-key{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-top:3px;}
+
+    /* ── Question block ── */
+    .qblock{padding:18px 16px 4px;flex-shrink:0;}
+    .qtitle{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-2);}
+    .qsub{font-size:10px;color:var(--text-3);margin-top:3px;}
+
+    .opts{display:flex;flex-direction:column;gap:9px;padding:12px 16px 0;flex-shrink:0;}
+    .opt-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-md);background:var(--card);border:1.5px solid var(--border);text-align:left;width:100%;transition:all 150ms var(--ease);position:relative;}
+    .opt-card:hover{border-color:var(--border-mid);background:var(--card-2);}
+    .opt-card.sel{border-color:var(--primary);background:var(--primary-soft);}
+    .opt-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .opt-ic.fun{background:#0B0F1C;border:1px solid var(--border-mid);color:var(--warn);}
+    .opt-ic.plan{background:#0B0F1C;border:1px solid var(--border-mid);color:var(--primary);}
+    .opt-main{flex:1;min-width:0;}
+    .opt-title{font-size:13px;font-weight:700;letter-spacing:-.01em;}
+    .opt-sub{font-size:10px;color:var(--text-2);margin-top:2px;line-height:1.45;}
+    .opt-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-mid);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;transition:all 150ms var(--ease);}
+    .opt-card.sel .opt-check{background:var(--primary);border-color:var(--primary);color:#fff;}
+    .opt-chev{color:var(--text-3);flex-shrink:0;}
+
+    /* ── Footer CTA ── */
+    .sheet-foot{margin-top:auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 24%);flex-shrink:0;position:sticky;bottom:0;}
+    .cta-primary{width:100%;background:var(--grad);border-radius:var(--r-md);padding:14px;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 8px 22px var(--primary-glow);transition:all 150ms var(--ease);}
+    .cta-primary:hover{transform:translateY(-1px);box-shadow:0 12px 28px var(--primary-glow);}
+    .cta-primary:active{transform:translateY(0);}
+    .link-line{display:block;text-align:center;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:underline;text-underline-offset:3px;margin-top:11px;transition:color 150ms;}
+    .link-line:hover{color:var(--text-1);}
+
+    /* ── Calendar bottom sheet ── */
+    .sheet-dim{position:absolute;inset:0;z-index:40;background:rgba(3,5,12,.55);backdrop-filter:blur(2px);}
+    .sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:#131A2A;border-top-left-radius:24px;border-top-right-radius:24px;border-top:1px solid var(--border-mid);box-shadow:0 -20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;max-height:74%;}
+    .sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--border-mid);margin:9px auto 0;}
+    .sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 8px;}
+    .sheet-title{font-size:18px;font-weight:700;letter-spacing:-.02em;}
+    .sheet-x{width:28px;height:28px;border-radius:50%;background:var(--bg-alt);border:1px solid var(--border-mid);display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:all 150ms;}
+    .sheet-x:hover{color:var(--text-1);border-color:var(--primary-b);}
+    .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:4px 18px 12px;}
+    .cal-arrow{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-2);background:var(--bg-alt);border:1px solid var(--border-mid);transition:all 150ms;}
+    .cal-arrow:hover{color:var(--primary);border-color:var(--primary-b);}
+    .cal-month{font-size:13px;font-weight:700;}
+    .week-strip{display:flex;gap:6px;padding:0 14px 4px;}
+    .cal-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 2px;border-radius:12px;border:1.5px solid transparent;transition:all 150ms var(--ease);position:relative;}
+    .cal-day:hover{background:var(--bg-alt);}
+    .cal-day.sel{border-color:var(--primary);background:var(--primary-soft);}
+    .cd-dow{font-size:8px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;}
+    .cal-day.sel .cd-dow{color:var(--primary);}
+    .cd-num{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text-1);}
+    .cd-tag{position:absolute;bottom:-3px;width:6px;height:6px;border-radius:50%;}
+    .cd-tag.cy{background:var(--primary);}
+    .cd-tag.vi{background:var(--violet);}
+    .cd-tag.gr{background:var(--success);}
+
+    .cal-list{overflow-y:auto;scrollbar-width:none;padding:12px 16px 0;}
+    .cal-list::-webkit-scrollbar{display:none;}
+    .cal-daylabel{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);margin-bottom:8px;}
+    .plan-opt{display:flex;align-items:center;gap:11px;padding:11px;border-radius:var(--r-md);background:var(--card);border:1.5px solid var(--border);width:100%;text-align:left;margin-bottom:8px;transition:all 150ms var(--ease);}
+    .plan-opt:hover{border-color:var(--border-mid);}
+    .plan-opt.sel{border-color:var(--primary);background:var(--primary-soft);}
+    .po-bar{width:4px;height:34px;border-radius:2px;flex-shrink:0;}
+    .po-main{flex:1;min-width:0;}
+    .po-title{font-size:12px;font-weight:700;}
+    .po-meta{font-size:9px;color:var(--text-2);font-family:var(--mono);margin-top:2px;}
+    .po-check{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border-mid);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;}
+    .plan-opt.sel .po-check{background:var(--primary);border-color:var(--primary);color:#fff;}
+    .cal-foot{padding:12px 16px calc(14px + env(safe-area-inset-bottom));}
+
+    /* ── Match confirmation ── */
+    .ok-wrap{flex:1;display:flex;flex-direction:column;padding:0 16px;overflow-y:auto;scrollbar-width:none;}
+    .ok-wrap::-webkit-scrollbar{display:none;}
+    .ok-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 0 6px;}
+    .ok-ring{width:70px;height:70px;border-radius:50%;background:var(--success-soft);border:1px solid var(--success-b);display:flex;align-items:center;justify-content:center;color:var(--success);box-shadow:0 0 28px rgba(16,185,129,.3);}
+    .ok-title{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:14px;}
+    .ok-sub{font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.5;max-width:230px;}
+    .cmp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-top:16px;}
+    .cmp-name{font-size:13px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px;}
+    .cmp-meta{font-size:9px;color:var(--text-2);font-family:var(--mono);margin-bottom:12px;}
+    .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .cmp-col{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;}
+    .cmp-col.real{border-color:var(--primary-b);background:var(--primary-soft);}
+    .cmp-h{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
+    .cmp-col.real .cmp-h{color:var(--primary);}
+    .cmp-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;}
+    .cmp-k{font-size:9px;color:var(--text-2);}
+    .cmp-v{font-family:var(--mono);font-size:11px;font-weight:600;}
+    .cmp-verdict{display:flex;align-items:center;gap:6px;margin-top:12px;padding:9px 11px;border-radius:var(--r-sm);background:var(--success-soft);border:1px solid var(--success-b);font-size:10px;font-weight:600;color:var(--success);}
+
+    /* Desktop breakdown */
+    .comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    .comp-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+    .comp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;}
+    .comp-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);margin-bottom:18px;}
+    .comp-note{margin-top:16px;font-size:11px;color:var(--text-3);font-family:var(--mono);border-top:1px solid var(--border);padding-top:12px;line-height:1.6;}
+
+    footer{border-top:1px solid var(--border);padding:40px 0;}
+    .foot-inner{max-width:1200px;margin:0 auto;padding:0 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+    .foot-brand{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;}
+    .foot-links{display:flex;gap:24px;}
+    .foot-links a{font-size:12px;color:var(--text-2);transition:color 150ms;}
+    .foot-links a:hover{color:var(--text-1);}
+    .foot-copy{font-size:11px;color:var(--text-3);font-family:var(--mono);}
+
+    @media(max-width:720px){
+      .nav-links,.foot-links{display:none;}
+      .wrap,.nav-inner,.foot-inner{padding:0 20px;}
+      .comp-grid,.comp-grid-3{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+  <nav data-od-id="topnav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="athly-design-system.html">
+        <span class="nav-logo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13L8 3l5 10M5.5 9.5h5"/></svg></span>
+        Athly
+      </a>
+      <div class="nav-links">
+        <a href="athly-main-screens.html">App</a>
+        <a href="athly-workout-detail.html">Treinos</a>
+        <a href="athly-profile.html">Perfil</a>
+        <a href="athly-settings.html">Ajustes</a>
+      </div>
+      <span class="nav-pill">HealthKit sync</span>
+    </div>
+  </nav>
+
+  <header class="hero" data-od-id="hero">
+    <div class="wrap">
+      <span class="hero-badge">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14s-5.5-3.4-5.5-7.2A3.3 3.3 0 018 4.8a3.3 3.3 0 015.5 2A7.9 7.9 0 018 14z"/></svg>
+        Sincronização com Apple Saúde
+      </span>
+      <h1 class="hero-title">Nova atividade<br><span class="grad-text">detectada.</span></h1>
+      <p class="hero-sub">Quando o Apple Saúde registra uma corrida que você não iniciou pelo app, a Athly revela a atividade e pergunta: foi um treino planejado? O atleta vincula ao plano ou marca como corrida livre — em um só toque.</p>
+      <div class="hero-tags">
+        <span class="hero-tag">Reveal da atividade</span>
+        <span class="hero-tag">Planejado?</span>
+        <span class="hero-tag">Calendário de vínculo</span>
+        <span class="hero-tag">Planejado × realizado</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" data-od-id="screens">
+    <div class="wrap">
+      <div class="section-eyebrow">Fluxo</div>
+      <h2 class="section-title">Detecção → vínculo → confirmação</h2>
+      <p class="section-desc">Três telas: o reveal com a pergunta "estava no plano?", a folha de calendário para atribuir a atividade a um treino planejado, e a confirmação comparando planejado com o que foi realizado.</p>
+
+      <div class="screens-rail">
+
+        <!-- S1 · REVEAL -->
+        <div class="phone-wrap">
+          <div class="iphone" data-od-id="screen-detected">
+            <div class="dynamic-island"></div>
+            <div class="iphone-screen">
+              <div class="status-bar">
+                <span class="status-time">21:45</span>
+                <span class="status-icons">
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx=".6"/><rect x="3.7" y="4" width="2.6" height="6" rx=".6"/><rect x="7.4" y="2" width="2.6" height="8" rx=".6"/><rect x="11.1" y="0" width="2.6" height="10" rx=".6"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2c1.9 0 3.6.7 4.9 1.9l1-1.1C11.8 1.4 9.8.6 7.5.6S3.2 1.4 1.6 3l1 1.1C3.9 2.9 5.6 2.2 7.5 2.2z" opacity=".9"/><path d="M7.5 5.2c1 0 2 .4 2.7 1.1l1-1.1C10.2 4.2 8.9 3.7 7.5 3.7S4.8 4.2 3.8 5.2l1 1.1c.7-.7 1.7-1.1 2.7-1.1z"/><circle cx="7.5" cy="8.6" r="1.5"/></svg>
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="1" y="1" width="19" height="9" rx="2.4" stroke="currentColor" opacity=".5"/><rect x="2.6" y="2.6" width="14" height="5.8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="1.6" height="3" rx=".8" fill="currentColor" opacity=".5"/></svg>
+                </span>
+              </div>
+
+              <div class="sc-body">
+                <div class="detect-top">
+                  <span class="detect-kicker"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1v2M6 9v2M1 6h2M9 6h2M2.5 2.5l1.4 1.4M8.1 8.1l1.4 1.4M9.5 2.5L8.1 3.9M3.9 8.1L2.5 9.5"/></svg> Athly detectou</span>
+                  <div class="detect-h">Nova atividade encontrada</div>
+                  <div class="detect-date">Quarta · 9 de setembro</div>
+                </div>
+
+                <div class="detect-hero" data-od-id="detect-hero">
+                  <div class="detect-grid"></div>
+                  <div class="detect-glowa"></div>
+                  <div class="detect-glowb"></div>
+                  <svg class="detect-route" viewBox="0 0 284 186" fill="none" preserveAspectRatio="none">
+                    <path d="M20 150 C55 120 42 92 78 96 C118 100 104 52 138 60 C170 68 158 30 196 40 C232 49 244 84 264 70" stroke="rgba(14,165,233,.35)" stroke-width="7" stroke-linecap="round" filter="blur(3px)"/>
+                    <path d="M20 150 C55 120 42 92 78 96 C118 100 104 52 138 60 C170 68 158 30 196 40 C232 49 244 84 264 70" stroke="#7DE3FF" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="20" cy="150" r="5" fill="#10B981" stroke="#06231A" stroke-width="2"/>
+                    <circle cx="264" cy="70" r="5" fill="#0EA5E9" stroke="#031622" stroke-width="2"/>
+                  </svg>
+                  <div class="detect-source">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="#FF4B5C"><path d="M8 14s-5.5-3.4-5.5-7.2A3.3 3.3 0 018 4.8a3.3 3.3 0 015.5 2A7.9 7.9 0 018 14z"/></svg>
+                    Apple Saúde
+                  </div>
+                  <div class="detect-ping"><span class="dot"></span> Detectada</div>
+                  <div class="detect-scrim"></div>
+                  <div class="detect-caption">
+                    <div class="detect-type">Corrida ao ar livre</div>
+                    <div class="detect-name">Corrida da manhã</div>
+                  </div>
+                </div>
+
+                <div class="detect-stats" data-od-id="detect-stats">
+                  <div class="ds-cell"><span class="ds-val">51:42</span><span class="ds-key">Tempo</span></div>
+                  <div class="ds-cell"><span class="ds-val">8,4<small style="font-size:9px;color:var(--text-3)"> km</small></span><span class="ds-key">Distância</span></div>
+                  <div class="ds-cell"><span class="ds-val">6:09</span><span class="ds-key">Pace /km</span></div>
+                  <div class="ds-cell"><span class="ds-val">152</span><span class="ds-key">FC média</span></div>
+                </div>
+
+                <div class="qblock">
+                  <div class="qtitle">Este treino estava no seu plano?</div>
+                  <div class="qsub">Vincule a um treino planejado ou marque como corrida livre.</div>
+                </div>
+
+                <div class="opts">
+                  <button class="opt-card sel" data-od-id="opt-fun">
+                    <span class="opt-ic fun">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.3-7-9.2A4.2 4.2 0 0112 7a4.2 4.2 0 017 3.8C19 15.7 12 20 12 20z"/></svg>
+                    </span>
+                    <span class="opt-main">
+                      <span class="opt-title">Corri por conta própria</span>
+                      <span class="opt-sub">Fora do plano — mas todo quilômetro conta pra sua evolução.</span>
+                    </span>
+                    <span class="opt-check"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+                  </button>
+
+                  <button class="opt-card" data-od-id="opt-plan">
+                    <span class="opt-ic plan">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4M8.5 14l2.2 2.2 4-4.4"/></svg>
+                    </span>
+                    <span class="opt-main">
+                      <span class="opt-title">Vincular a um treino</span>
+                      <span class="opt-sub">Escolha o treino planejado no calendário.</span>
+                    </span>
+                    <span class="opt-chev"><svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l4 4-4 4"/></svg></span>
+                  </button>
+                </div>
+
+                <div class="sheet-foot">
+                  <button class="cta-primary">Continuar</button>
+                  <a href="#" class="link-line">Ignorar esta atividade</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-label">S1 · Reveal</div>
+          <div class="phone-sub">detecção + "estava no plano?"</div>
+        </div>
+
+        <!-- S2 · CALENDAR -->
+        <div class="phone-wrap">
+          <div class="iphone" data-od-id="screen-calendar">
+            <div class="dynamic-island"></div>
+            <div class="iphone-screen">
+              <div class="status-bar">
+                <span class="status-time">21:45</span>
+                <span class="status-icons">
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx=".6"/><rect x="3.7" y="4" width="2.6" height="6" rx=".6"/><rect x="7.4" y="2" width="2.6" height="8" rx=".6"/><rect x="11.1" y="0" width="2.6" height="10" rx=".6"/></svg>
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="1" y="1" width="19" height="9" rx="2.4" stroke="currentColor" opacity=".5"/><rect x="2.6" y="2.6" width="14" height="5.8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="1.6" height="3" rx=".8" fill="currentColor" opacity=".5"/></svg>
+                </span>
+              </div>
+
+              <!-- Dimmed reveal behind -->
+              <div class="sc-body" style="opacity:.5;pointer-events:none">
+                <div class="detect-top">
+                  <div class="detect-h">Nova atividade encontrada</div>
+                  <div class="detect-date">Quarta · 9 de setembro</div>
+                </div>
+                <div class="detect-hero">
+                  <div class="detect-grid"></div><div class="detect-glowa"></div><div class="detect-glowb"></div>
+                  <div class="detect-scrim"></div>
+                  <div class="detect-caption"><div class="detect-type">Corrida ao ar livre</div><div class="detect-name">Corrida da manhã</div></div>
+                </div>
+              </div>
+
+              <div class="sheet-dim"></div>
+              <div class="sheet" data-od-id="calendar-sheet">
+                <div class="sheet-grip"></div>
+                <div class="sheet-hd">
+                  <span class="sheet-title">Calendário</span>
+                  <button class="sheet-x" aria-label="Fechar"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8"/></svg></button>
+                </div>
+                <div class="cal-nav">
+                  <button class="cal-arrow" aria-label="Semana anterior"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3L5 7l3.5 4"/></svg></button>
+                  <span class="cal-month">Setembro · 09–15</span>
+                  <button class="cal-arrow" aria-label="Próxima semana"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3L9 7l-3.5 4"/></svg></button>
+                </div>
+                <div class="week-strip">
+                  <div class="cal-day"><span class="cd-dow">Ter</span><span class="cd-num">8</span></div>
+                  <div class="cal-day sel"><span class="cd-dow">Qua</span><span class="cd-num">9</span></div>
+                  <div class="cal-day"><span class="cd-dow">Qui</span><span class="cd-num">10</span><span class="cd-tag cy"></span></div>
+                  <div class="cal-day"><span class="cd-dow">Sex</span><span class="cd-num">11</span></div>
+                  <div class="cal-day"><span class="cd-dow">Sáb</span><span class="cd-num">12</span><span class="cd-tag vi"></span></div>
+                  <div class="cal-day"><span class="cd-dow">Dom</span><span class="cd-num">13</span></div>
+                  <div class="cal-day"><span class="cd-dow">Seg</span><span class="cd-num">14</span><span class="cd-tag gr"></span></div>
+                </div>
+
+                <div class="cal-list">
+                  <div class="cal-daylabel">Quarta, 9 de setembro</div>
+                  <button class="plan-opt sel" data-od-id="plan-opt-tempo">
+                    <span class="po-bar" style="background:var(--primary)"></span>
+                    <span class="po-main"><span class="po-title">Treino de ritmo · 8 km</span><span class="po-meta">Alvo 6:00/km · 50 min</span></span>
+                    <span class="po-check"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+                  </button>
+                  <button class="plan-opt" data-od-id="plan-opt-easy">
+                    <span class="po-bar" style="background:var(--success)"></span>
+                    <span class="po-main"><span class="po-title">Corrida leve · 5 km</span><span class="po-meta">Zona 2 · recuperação</span></span>
+                    <span class="po-check"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+                  </button>
+                  <div class="cal-daylabel" style="margin-top:6px">Sem treino neste dia</div>
+                  <p style="font-size:10px;color:var(--text-3);line-height:1.5;padding-bottom:4px">Escolha outro dia na faixa acima para ver os treinos planejados.</p>
+                </div>
+
+                <div class="cal-foot">
+                  <button class="cta-primary">Vincular treino</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-label">S2 · Calendário</div>
+          <div class="phone-sub">atribuir a um treino planejado</div>
+        </div>
+
+        <!-- S3 · MATCH CONFIRMATION -->
+        <div class="phone-wrap">
+          <div class="iphone" data-od-id="screen-linked">
+            <div class="dynamic-island"></div>
+            <div class="iphone-screen">
+              <div class="status-bar">
+                <span class="status-time">21:45</span>
+                <span class="status-icons">
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx=".6"/><rect x="3.7" y="4" width="2.6" height="6" rx=".6"/><rect x="7.4" y="2" width="2.6" height="8" rx=".6"/><rect x="11.1" y="0" width="2.6" height="10" rx=".6"/></svg>
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="1" y="1" width="19" height="9" rx="2.4" stroke="currentColor" opacity=".5"/><rect x="2.6" y="2.6" width="14" height="5.8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="1.6" height="3" rx=".8" fill="currentColor" opacity=".5"/></svg>
+                </span>
+              </div>
+
+              <div class="ok-wrap">
+                <div class="ok-hero">
+                  <div class="ok-ring"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></div>
+                  <div class="ok-title">Treino vinculado!</div>
+                  <div class="ok-sub">Sua corrida do Apple Saúde foi atribuída ao <strong style="color:var(--text-1)">Treino de ritmo</strong> de hoje.</div>
+                </div>
+
+                <div class="cmp-card" data-od-id="compare">
+                  <div class="cmp-name">Treino de ritmo · 8 km</div>
+                  <div class="cmp-meta">Quarta, 9 set · vinculado ao plano</div>
+                  <div class="cmp-grid">
+                    <div class="cmp-col">
+                      <div class="cmp-h">Planejado</div>
+                      <div class="cmp-row"><span class="cmp-k">Distância</span><span class="cmp-v">8,0 km</span></div>
+                      <div class="cmp-row"><span class="cmp-k">Pace alvo</span><span class="cmp-v">6:00</span></div>
+                      <div class="cmp-row"><span class="cmp-k">Duração</span><span class="cmp-v">50:00</span></div>
+                    </div>
+                    <div class="cmp-col real">
+                      <div class="cmp-h">Realizado</div>
+                      <div class="cmp-row"><span class="cmp-k">Distância</span><span class="cmp-v">8,4 km</span></div>
+                      <div class="cmp-row"><span class="cmp-k">Pace real</span><span class="cmp-v">6:09</span></div>
+                      <div class="cmp-row"><span class="cmp-k">Duração</span><span class="cmp-v">51:42</span></div>
+                    </div>
+                  </div>
+                  <div class="cmp-verdict">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.6a4 4 0 00-4 4c0 3-1.4 4.4-1.4 4.4h10.8S12 8.6 12 5.6a4 4 0 00-4-4z"/><path d="M6.6 13a1.5 1.5 0 002.8 0"/></svg>
+                    Meta cumprida — 5% acima da distância planejada.
+                  </div>
+                </div>
+
+                <div class="sheet-foot" style="background:transparent">
+                  <button class="cta-primary">Ver treino no plano</button>
+                  <a href="#" class="link-line">Voltar ao início</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-label">S3 · Vinculado</div>
+          <div class="phone-sub">planejado × realizado</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPONENT BREAKDOWN -->
+  <section class="section" data-od-id="components">
+    <div class="wrap">
+      <div class="section-eyebrow">Componentes</div>
+      <h2 class="section-title">Blocos do fluxo</h2>
+      <p class="section-desc">O card de opção com seus estados, os dias do calendário e a comparação planejado × realizado, em escala de leitura.</p>
+
+      <div class="comp-grid">
+        <div class="comp-card" data-od-id="comp-opts">
+          <div class="comp-lbl">Card de opção · estados</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="opt-card sel">
+              <span class="opt-ic fun"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.3-7-9.2A4.2 4.2 0 0112 7a4.2 4.2 0 017 3.8C19 15.7 12 20 12 20z"/></svg></span>
+              <span class="opt-main"><span class="opt-title">Selecionado</span><span class="opt-sub">Borda em --primary + fundo --primary-soft + check preenchido.</span></span>
+              <span class="opt-check"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+            </div>
+            <div class="opt-card">
+              <span class="opt-ic plan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></span>
+              <span class="opt-main"><span class="opt-title">Padrão / navegação</span><span class="opt-sub">Chevron indica que abre o calendário.</span></span>
+              <span class="opt-chev"><svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l4 4-4 4"/></svg></span>
+            </div>
+          </div>
+          <div class="comp-note">Tile de ícone 44px sobre fundo escuro (nod à referência: quadrado preto + ícone). Um card é sempre selecionável; o outro navega.</div>
+        </div>
+
+        <div class="comp-card" data-od-id="comp-days">
+          <div class="comp-lbl">Dia do calendário · estados</div>
+          <div class="week-strip" style="padding:0">
+            <div class="cal-day"><span class="cd-dow">Ter</span><span class="cd-num">8</span></div>
+            <div class="cal-day sel"><span class="cd-dow">Qua</span><span class="cd-num">9</span></div>
+            <div class="cal-day"><span class="cd-dow">Qui</span><span class="cd-num">10</span><span class="cd-tag cy"></span></div>
+            <div class="cal-day"><span class="cd-dow">Sáb</span><span class="cd-num">12</span><span class="cd-tag vi"></span></div>
+          </div>
+          <div style="height:18px"></div>
+          <button class="plan-opt sel" style="margin:0">
+            <span class="po-bar" style="background:var(--primary)"></span>
+            <span class="po-main"><span class="po-title">Treino de ritmo · 8 km</span><span class="po-meta">Alvo 6:00/km · 50 min</span></span>
+            <span class="po-check"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+          </button>
+          <div class="comp-note">Ponto colorido = há treino planejado (cyan ritmo · violeta longo · verde leve). Dia selecionado ganha borda --primary. Barra lateral colorida herda o tipo de treino.</div>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+      <div class="comp-card" data-od-id="comp-compare">
+        <div class="comp-lbl">Comparação planejado × realizado</div>
+        <div class="cmp-grid" style="max-width:420px">
+          <div class="cmp-col">
+            <div class="cmp-h">Planejado</div>
+            <div class="cmp-row"><span class="cmp-k">Distância</span><span class="cmp-v">8,0 km</span></div>
+            <div class="cmp-row"><span class="cmp-k">Pace alvo</span><span class="cmp-v">6:00</span></div>
+            <div class="cmp-row"><span class="cmp-k">Duração</span><span class="cmp-v">50:00</span></div>
+          </div>
+          <div class="cmp-col real">
+            <div class="cmp-h">Realizado</div>
+            <div class="cmp-row"><span class="cmp-k">Distância</span><span class="cmp-v">8,4 km</span></div>
+            <div class="cmp-row"><span class="cmp-k">Pace real</span><span class="cmp-v">6:09</span></div>
+            <div class="cmp-row"><span class="cmp-k">Duração</span><span class="cmp-v">51:42</span></div>
+          </div>
+        </div>
+        <div class="comp-note">A coluna "Realizado" (dados do Apple Saúde) é destacada em --primary. O veredito resume o desvio vs. o planejado, reaproveitando o mapa de cores de viabilidade do TrainingPlanDetailView.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer data-od-id="footer">
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <span class="nav-logo" style="width:26px;height:26px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13L8 3l5 10M5.5 9.5h5"/></svg></span>
+        Athly
+      </div>
+      <div class="foot-links">
+        <a href="athly-main-screens.html">App</a>
+        <a href="athly-profile.html">Perfil</a>
+        <a href="athly-settings.html">Ajustes</a>
+        <a href="athly-design-system.html">Design System</a>
+      </div>
+      <div class="foot-copy">HealthKit detection · v1</div>
+    </div>
+  </footer>
+
+</body>
+</html>

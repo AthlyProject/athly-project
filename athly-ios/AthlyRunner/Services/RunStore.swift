@@ -110,6 +110,67 @@ final class RunStore: ObservableObject {
         return session
     }
 
+    /// Idempotently persists a run that already exists in Apple Health but was **not** started
+    /// by Athly ("corri por conta própria" na detecção automática). Reaproveita uma sessão
+    /// equivalente quando houver, para que reabrir o app não duplique o histórico.
+    ///
+    /// Não escreve nada de volta no Apple Health: a corrida já está lá, por isso
+    /// `healthKitSyncStatus = .synced`.
+    @discardableResult
+    func upsert(healthRun run: HealthKitRunItem, detail: RunRouteDetail?) -> RunSession {
+        let existing = sessions.first { session in
+            if let uuid = session.healthKitWorkoutUUID { return uuid == run.id }
+            return HealthKitRunMatch.matches(session: session, run: run)
+        }
+
+        let session = existing ?? RunSession(sportType: "running")
+        session.startDate = run.startDate
+        session.endDate = run.endDate
+        session.distanceMeters = run.distanceMeters
+        session.durationSeconds = run.durationSeconds
+        session.averagePaceSecondsPerKm = run.averagePaceSecondsPerKm
+        session.elevationGainMeters = run.elevationGainMeters ?? session.elevationGainMeters
+        session.caloriesBurned = run.activeEnergyBurned
+        session.status = "completed"
+        session.sportType = "running"
+        session.healthKitWorkoutUUID = run.id
+        session.healthKitSyncStatus = .synced
+        session.healthKitSyncError = nil
+
+        if let detail {
+            let points = detail.coordinates.map {
+                RoutePoint(latitude: $0.latitude, longitude: $0.longitude, altitude: 0, timestamp: run.startDate)
+            }
+            if points.count > session.routePoints.count {
+                session.routePoints = points
+            }
+            if detail.splits.count > session.splits.count {
+                session.splits = detail.splits.map {
+                    Split(
+                        kilometer: $0.kilometer,
+                        durationSeconds: $0.durationSeconds,
+                        distanceMeters: $0.distanceMeters,
+                        elevationDelta: $0.elevationDelta
+                    )
+                }
+            }
+            if detail.segmentRecords.count > (session.segmentRecords?.count ?? 0) {
+                session.segmentRecords = detail.segmentRecords
+            }
+        }
+
+        if existing == nil {
+            sessions.insert(session, at: 0)
+        } else {
+            // RunSession é classe: reatribui para disparar o @Published.
+            if let index = sessions.firstIndex(where: { $0.id == session.id }) {
+                sessions[index] = session
+            }
+        }
+        save()
+        return session
+    }
+
     func importedSession(for workoutId: String) -> RunSession? {
         sessions
             .filter { $0.athlyWorkoutId == workoutId && $0.status == "completed" }
