@@ -52,6 +52,8 @@ export class UsersService {
     if (data.goals !== undefined) updateData.goals = data.goals;
     if (data.availableDays !== undefined) updateData.availableDays = data.availableDays;
     if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.restingHeartRate !== undefined) updateData.restingHeartRate = data.restingHeartRate;
+    if (data.maxHeartRate !== undefined) updateData.maxHeartRate = data.maxHeartRate;
     if (password !== undefined) {
       updateData.password = (await bcrypt.hash(password, 10)) as string;
     }
@@ -88,6 +90,9 @@ export class UsersService {
       goals: user.goals ?? [],
       availableDays: user.availableDays ?? [],
       gender: user.gender ?? undefined,
+      fitnessLevel: user.fitnessLevel ?? undefined,
+      restingHeartRate: user.restingHeartRate ?? undefined,
+      maxHeartRate: user.maxHeartRate ?? undefined,
       assessmentCompleted: user.assessmentCompleted,
       appleLinked: !!user.appleUserId,
       googleLinked: !!user.googleUserId,

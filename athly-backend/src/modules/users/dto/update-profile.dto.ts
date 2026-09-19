@@ -5,7 +5,9 @@ import {
   IsString,
   IsArray,
   IsIn,
+  IsInt,
   Min,
+  Max,
   MinLength,
   IsEnum,
   IsNumber,
@@ -64,6 +66,20 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   gender?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(20)
+  @Max(150)
+  restingHeartRate?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(100)
+  @Max(240)
+  maxHeartRate?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

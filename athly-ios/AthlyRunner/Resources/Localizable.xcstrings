@@ -1,121 +1,6 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
-    "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your workouts are being prepared. We’ll notify you when they’re ready."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Trainings werden vorbereitet. Wir benachrichtigen dich, sobald sie fertig sind."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos."
-          }
-        }
-      }
-    },
-    "Não foi possível preparar seus treinos. Tente novamente." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unable to prepare your workouts. Please try again."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Trainings konnten nicht vorbereitet werden. Bitte versuche es erneut."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível preparar seus treinos. Tente novamente."
-          }
-        }
-      }
-    },
-    "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your next training week is being prepared. We’ll notify you when it’s ready."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine nächste Trainingswoche wird vorbereitet. Wir benachrichtigen dich, sobald sie fertig ist."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta."
-          }
-        }
-      }
-    },
-    "Não foi possível gerar a próxima semana. Tente novamente mais tarde." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unable to generate your next training week. Please try again later."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine nächste Trainingswoche konnte nicht erstellt werden. Bitte versuche es später erneut."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível gerar a próxima semana. Tente novamente mais tarde."
-          }
-        }
-      }
-    },
-    "Só é possível reagendar treinos dentro da mesma semana." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workouts can only be rescheduled within the same week."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainings können nur innerhalb derselben Woche verschoben werden."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Só é possível reagendar treinos dentro da mesma semana."
-          }
-        }
-      }
-    },
     " (pulado)" : {
       "comment" : "Suffix appended to a segment label when it was skipped, e.g. 'Sprint 1 (pulado)'. Leading space is intentional.",
       "extractionState" : "stale",
@@ -185,859 +70,12 @@
         }
       }
     },
-    ":" : {},
-    "A geração de planos está indisponível no momento. Tente novamente mais tarde." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Planerstellung ist derzeit nicht verfügbar. Bitte versuche es später erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plan generation is unavailable right now. Please try again later."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A geração de planos está indisponível no momento. Tente novamente mais tarde."
-          }
-        }
-      }
+    ":" : {
+
     },
-    "Acesso restrito." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zugriff beschränkt."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access restricted."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acesso restrito."
-          }
-        }
-      }
+    "·" : {
+
     },
-    "Assinatura necessária. Inicie ou renove sua assinatura para continuar." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ein Abo ist erforderlich. Starte oder erneuere dein Abo, um fortzufahren."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A subscription is required. Start or renew your subscription to continue."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assinatura necessária. Inicie ou renove sua assinatura para continuar."
-          }
-        }
-      }
-    },
-    "Credenciais inválidas" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ungültige Anmeldedaten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid credentials"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Credenciais inválidas"
-          }
-        }
-      }
-    },
-    "Código inválido" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ungültiger Code"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código inválido"
-          }
-        }
-      }
-    },
-    "Código inválido ou expirado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ungültiger oder abgelaufener Code"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid or expired code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código inválido ou expirado"
-          }
-        }
-      }
-    },
-    "Defina uma senha ou vincule outra conta antes de desvincular esta." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lege ein Passwort fest oder verknüpfe ein anderes Konto, bevor du dieses trennst."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Set a password or link another account before unlinking this one."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Defina uma senha ou vincule outra conta antes de desvincular esta."
-          }
-        }
-      }
-    },
-    "Email inválido" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ungültige E-Mail"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid email"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email inválido"
-          }
-        }
-      }
-    },
-    "Email já cadastrado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "E-Mail bereits registriert"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email already registered"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email já cadastrado"
-          }
-        }
-      }
-    },
-    "Email é obrigatório" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "E-Mail ist erforderlich"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email is required"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email é obrigatório"
-          }
-        }
-      }
-    },
-    "Equipamento não encontrado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ausrüstung nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Equipment not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Equipamento não encontrado"
-          }
-        }
-      }
-    },
-    "Esta conta Apple já está vinculada a outro usuário." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Apple-Konto ist bereits mit einem anderen Nutzer verknüpft."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This Apple account is already linked to another user."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta conta Apple já está vinculada a outro usuário."
-          }
-        }
-      }
-    },
-    "Esta conta Google já está vinculada a outro usuário." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Google-Konto ist bereits mit einem anderen Nutzer verknüpft."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This Google account is already linked to another user."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta conta Google já está vinculada a outro usuário."
-          }
-        }
-      }
-    },
-    "Esta conta usa login social. Entre com Apple ou Google." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Konto nutzt Social Login. Melde dich mit Apple oder Google an."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This account uses social sign-in. Sign in with Apple or Google."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta conta usa login social. Entre com Apple ou Google."
-          }
-        }
-      }
-    },
-    "Este plano de treino está bloqueado e não pode ser alterado." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieser Trainingsplan ist gesperrt und kann nicht geändert werden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This training plan is locked and can't be changed."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este plano de treino está bloqueado e não pode ser alterado."
-          }
-        }
-      }
-    },
-    "Este plano de treino foi encerrado. Exclua-o e crie um novo para gerar um plano." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieser Trainingsplan ist abgeschlossen. Lösche ihn und erstelle einen neuen, um einen Plan zu generieren."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This training plan is closed. Delete it and create a new one to generate a plan."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este plano de treino foi encerrado. Exclua-o e crie um novo para gerar um plano."
-          }
-        }
-      }
-    },
-    "Geração não encontrada" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generierung nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Generation not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geração não encontrada"
-          }
-        }
-      }
-    },
-    "Já existe um plano para esta semana. Exclua a semana atual e seus treinos antes de gerar de novo." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für diese Woche gibt es bereits einen Plan. Lösche die aktuelle Woche und ihre Trainings, bevor du neu generierst."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A plan for this week already exists. Delete the current week and its workouts before generating again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Já existe um plano para esta semana. Exclua a semana atual e seus treinos antes de gerar de novo."
-          }
-        }
-      }
-    },
-    "Meta semanal não encontrada" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wochenziel nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Weekly goal not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meta semanal não encontrada"
-          }
-        }
-      }
-    },
-    "Não foi possível concluir o treino. Tente novamente mais tarde." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Training konnte nicht abgeschlossen werden. Bitte versuche es später erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't complete the workout. Please try again later."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível concluir o treino. Tente novamente mais tarde."
-          }
-        }
-      }
-    },
-    "Não foi possível gerar seu plano agora. Tente novamente." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Plan konnte gerade nicht erstellt werden. Bitte versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't generate your plan right now. Please try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível gerar seu plano agora. Tente novamente."
-          }
-        }
-      }
-    },
-    "Não foi possível identificar a conta. Tente novamente." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Konto konnte nicht identifiziert werden. Bitte versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't identify your account. Please try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível identificar a conta. Tente novamente."
-          }
-        }
-      }
-    },
-    "Não foi possível salvar seu feedback. Tente novamente." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Feedback konnte nicht gespeichert werden. Bitte versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't save your feedback. Please try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível salvar seu feedback. Tente novamente."
-          }
-        }
-      }
-    },
-    "Não foi possível validar seu login com a Apple. Tente novamente." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Apple-Anmeldung konnte nicht überprüft werden. Bitte versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't verify your Apple sign-in. Please try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível validar seu login com a Apple. Tente novamente."
-          }
-        }
-      }
-    },
-    "Não foi possível validar seu login com o Google. Tente novamente." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Google-Anmeldung konnte nicht überprüft werden. Bitte versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't verify your Google sign-in. Please try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não foi possível validar seu login com o Google. Tente novamente."
-          }
-        }
-      }
-    },
-    "O login com Apple não está disponível no momento." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Apple-Anmeldung ist derzeit nicht verfügbar."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple sign-in isn't available right now."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O login com Apple não está disponível no momento."
-          }
-        }
-      }
-    },
-    "O login com Google não está disponível no momento." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Google-Anmeldung ist derzeit nicht verfügbar."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Google sign-in isn't available right now."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O login com Google não está disponível no momento."
-          }
-        }
-      }
-    },
-    "Plano de treino não encontrado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsplan nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Training plan not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plano de treino não encontrado"
-          }
-        }
-      }
-    },
-    "Senha deve conter letras maiúsculas, minúsculas e números" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Passwort muss Groß- und Kleinbuchstaben sowie Zahlen enthalten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Password must contain uppercase and lowercase letters and numbers"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Senha deve conter letras maiúsculas, minúsculas e números"
-          }
-        }
-      }
-    },
-    "Senha deve ter no mínimo 8 caracteres" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Passwort muss mindestens 8 Zeichen lang sein"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Password must be at least 8 characters"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Senha deve ter no mínimo 8 caracteres"
-          }
-        }
-      }
-    },
-    "Senha é obrigatória" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passwort ist erforderlich"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Password is required"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Senha é obrigatória"
-          }
-        }
-      }
-    },
-    "Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Plan wird erstellt. Warte, bis er fertig ist, bevor du eine neue Bewertung startest."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your plan is being generated. Wait for it to finish before starting a new assessment."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação."
-          }
-        }
-      }
-    },
-    "Treino não encontrado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Training nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workout not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Treino não encontrado"
-          }
-        }
-      }
-    },
-    "Uma geração para esta semana já está em andamento." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für diese Woche läuft bereits eine Generierung."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A generation for this week is already in progress."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uma geração para esta semana já está em andamento."
-          }
-        }
-      }
-    },
-    "Usuário não encontrado" : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Benutzer nicht gefunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "User not found"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usuário não encontrado"
-          }
-        }
-      }
-    },
-    "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du hast bereits einen Trainingsplan. Aktualisiere oder lösche den aktuellen, bevor du einen neuen erstellst."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You already have a training plan. Update or delete the current one before creating another."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro."
-          }
-        }
-      }
-    },
-    "Você precisa aceitar os termos para continuar." : {
-      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du musst die Bedingungen akzeptieren, um fortzufahren."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You need to accept the terms to continue."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você precisa aceitar os termos para continuar."
-          }
-        }
-      }
-    },
-    "·" : {},
     "· desde %@" : {
       "comment" : "Appended after plan duration, e.g. \"12 semanas · desde 3 mar\"",
       "localizations" : {
@@ -1061,7 +99,9 @@
         }
       }
     },
-    "‹" : {},
+    "‹" : {
+
+    },
     "(opcional)" : {
       "comment" : "Suffix next to an optional form field label.",
       "localizations" : {
@@ -1085,8 +125,12 @@
         }
       }
     },
-    "/km" : {},
-    "%@" : {},
+    "/km" : {
+
+    },
+    "%@" : {
+
+    },
     "%@  ·  %@ /km" : {
       "localizations" : {
         "pt-BR" : {
@@ -1141,8 +185,12 @@
         }
       }
     },
-    "%@ km" : {},
-    "%@ min" : {},
+    "%@ km" : {
+
+    },
+    "%@ min" : {
+
+    },
     "%@, %@" : {
       "localizations" : {
         "pt-BR" : {
@@ -1173,8 +221,12 @@
         }
       }
     },
-    "%@/10" : {},
-    "%@×" : {},
+    "%@/10" : {
+
+    },
+    "%@×" : {
+
+    },
     "%lld de %lld" : {
       "comment" : "Step counter, e.g. '2 de 5' = step 2 of 5.",
       "extractionState" : "stale",
@@ -1283,8 +335,35 @@
         }
       }
     },
-    "• %@" : {},
-    "↩ %@%%" : {},
+    "• %@" : {
+
+    },
+    "↑ %@ km nas últimas 4 semanas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↑ %@ km in den letzten 4 Wochen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↑ %@ km in the last 4 weeks"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↑ %@ km nas últimas 4 semanas"
+          }
+        }
+      }
+    },
+    "↩ %@%%" : {
+
+    },
     "+%lld dia" : {
       "comment" : "Relative-day badge, e.g. '+1 dia' / '+2 dias'.",
       "extractionState" : "stale",
@@ -1368,7 +447,32 @@
         }
       }
     },
-    "🎯" : {},
+    "🎯" : {
+
+    },
+    "5 km" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 km"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 km"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5 km"
+          }
+        }
+      }
+    },
     "5 quilômetros" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1388,6 +492,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "5 quilômetros"
+          }
+        }
+      }
+    },
+    "10 km" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 km"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 km"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 km"
           }
         }
       }
@@ -1597,6 +724,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A escrita de Treinos está desativada para o Athly. Abra os Ajustes, entre em Saúde e permita que o Athly grave Treinos."
+          }
+        }
+      }
+    },
+    "A exclusão é permanente e não pode ser desfeita. Todos os seus dados são removidos dos nossos servidores." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Löschung ist endgültig und kann nicht rückgängig gemacht werden. Alle deine Daten werden von unseren Servern entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletion is permanent and cannot be undone. All your data is removed from our servers."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A exclusão é permanente e não pode ser desfeita. Todos os seus dados são removidos dos nossos servidores."
+          }
+        }
+      }
+    },
+    "A FC de repouso precisa ser menor que a FC máxima." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Ruhepuls muss niedriger als dein Maximalpuls sein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your resting heart rate must be lower than your max heart rate."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A FC de repouso precisa ser menor que a FC máxima."
+          }
+        }
+      }
+    },
+    "A geração de planos está indisponível no momento. Tente novamente mais tarde." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Planerstellung ist derzeit nicht verfügbar. Bitte versuche es später erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan generation is unavailable right now. Please try again later."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A geração de planos está indisponível no momento. Tente novamente mais tarde."
           }
         }
       }
@@ -1878,6 +1075,30 @@
         }
       }
     },
+    "Acesso restrito." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zugriff beschränkt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access restricted."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acesso restrito."
+          }
+        }
+      }
+    },
     "Adaptado ao seu ritmo e objetivo" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2035,6 +1256,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Agendado"
+          }
+        }
+      }
+    },
+    "Ajustes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes"
           }
         }
       }
@@ -2200,6 +1444,29 @@
         }
       }
     },
+    "Apaga plano, treinos e histórico" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löscht Plan, Trainings und Verlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletes your plan, workouts and history"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apaga plano, treinos e histórico"
+          }
+        }
+      }
+    },
     "Apenas marcar como concluído" : {
       "localizations" : {
         "de" : {
@@ -2218,6 +1485,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apenas marcar como concluído"
+          }
+        }
+      }
+    },
+    "Apple" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        }
+      }
+    },
+    "Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
           }
         }
       }
@@ -2263,6 +1576,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apple Health não disponível neste dispositivo."
+          }
+        }
+      }
+    },
+    "Apple não vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple nicht verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple not linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple não vinculada"
+          }
+        }
+      }
+    },
+    "Apple vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple vinculada"
           }
         }
       }
@@ -2336,6 +1695,53 @@
         }
       }
     },
+    "Assinatura ativa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abo aktiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription active"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assinatura ativa"
+          }
+        }
+      }
+    },
+    "Assinatura necessária. Inicie ou renove sua assinatura para continuar." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Abo ist erforderlich. Starte oder erneuere dein Abo, um fortzufahren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A subscription is required. Start or renew your subscription to continue."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assinatura necessária. Inicie ou renove sua assinatura para continuar."
+          }
+        }
+      }
+    },
     "Assinaturas ainda não estão disponíveis nesta versão." : {
       "comment" : "PurchaseError.notConfigured — shown when RevenueCat has no configured offering (e.g. app not fully set up for purchases yet).",
       "extractionState" : "stale",
@@ -2382,9 +1788,15 @@
         }
       }
     },
-    "Athly" : {},
-    "ATHLY" : {},
-    "Athly · %@" : {},
+    "Athly" : {
+
+    },
+    "ATHLY" : {
+
+    },
+    "Athly · %@" : {
+
+    },
     "Athly Basic" : {
       "comment" : "Product/tier name, kept identical across languages.",
       "extractionState" : "stale",
@@ -2433,6 +1845,29 @@
         }
       }
     },
+    "Athly Pro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly Pro"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly Pro"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly Pro"
+          }
+        }
+      }
+    },
     "Ativo" : {
       "comment" : "Plan status badge",
       "extractionState" : "stale",
@@ -2477,6 +1912,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Atleta"
+          }
+        }
+      }
+    },
+    "Aumentar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erhöhen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar"
           }
         }
       }
@@ -2992,6 +2450,54 @@
         }
       }
     },
+    "Código inválido" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültiger Code"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid code"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código inválido"
+          }
+        }
+      }
+    },
+    "Código inválido ou expirado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültiger oder abgelaufener Code"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid or expired code"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código inválido ou expirado"
+          }
+        }
+      }
+    },
     "Começando" : {
       "comment" : "Fitness level: never ran consistently.",
       "extractionState" : "stale",
@@ -3107,7 +2613,9 @@
         }
       }
     },
-    "Compartilhar .txt" : {},
+    "Compartilhar .txt" : {
+
+    },
     "Concluído" : {
       "comment" : "Used for both a completed workout day tag and a completed plan status",
       "extractionState" : "stale",
@@ -3362,7 +2870,6 @@
       }
     },
     "Conta" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3451,7 +2958,6 @@
       }
     },
     "Contas conectadas" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3868,6 +3374,7 @@
     },
     "Corridas do Apple Health" : {
       "comment" : "Default navigation title for the Apple Health runs list",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3930,6 +3437,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Corro 10 km sem problema"
+          }
+        }
+      }
+    },
+    "Credenciais inválidas" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültige Anmeldedaten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid credentials"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Credenciais inválidas"
           }
         }
       }
@@ -4093,6 +3624,30 @@
         }
       }
     },
+    "Defina uma senha ou vincule outra conta antes de desvincular esta." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lege ein Passwort fest oder verknüpfe ein anderes Konto, bevor du dieses trennst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set a password or link another account before unlinking this one."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Defina uma senha ou vincule outra conta antes de desvincular esta."
+          }
+        }
+      }
+    },
     "Definido por mim mesmo" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4231,6 +3786,9 @@
         }
       }
     },
+    "Desvincular corrida" : {
+
+    },
     "Detalhes" : {
       "comment" : "Navigation title for a run detail screen",
       "extractionState" : "stale",
@@ -4324,6 +3882,7 @@
       }
     },
     "Dias disponíveis para treinar" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4345,7 +3904,32 @@
         }
       }
     },
-    "Digite o código" : {},
+    "Digite o código" : {
+
+    },
+    "Diminuir" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verringern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diminuir"
+          }
+        }
+      }
+    },
     "Dispositivo" : {
       "comment" : "Label in prefilled support-email body, e.g. 'Dispositivo: iOS 18.0'",
       "extractionState" : "stale",
@@ -4464,7 +4048,6 @@
       }
     },
     "Distância total" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4557,6 +4140,29 @@
         }
       }
     },
+    "Editar perfil" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil bearbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit profile"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar perfil"
+          }
+        }
+      }
+    },
     "Elevacao" : {
       "comment" : "Stat label; source text missing accent, kept byte-identical",
       "extractionState" : "stale",
@@ -4624,6 +4230,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elevacao total"
+          }
+        }
+      }
+    },
+    "Elevação total" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesamtanstieg"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total elevation"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elevação total"
           }
         }
       }
@@ -4767,6 +4396,101 @@
         }
       }
     },
+    "Email é obrigatório" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail ist erforderlich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email is required"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email é obrigatório"
+          }
+        }
+      }
+    },
+    "Email inválido" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültige E-Mail"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid email"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email inválido"
+          }
+        }
+      }
+    },
+    "Email já cadastrado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail bereits registriert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email already registered"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email já cadastrado"
+          }
+        }
+      }
+    },
+    "Encerra a sessão neste dispositivo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beendet die Sitzung auf diesem Gerät"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ends your session on this device"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encerra a sessão neste dispositivo"
+          }
+        }
+      }
+    },
     "Energizado" : {
       "localizations" : {
         "de" : {
@@ -4812,7 +4536,9 @@
         }
       }
     },
-    "Enviamos um código para %@" : {},
+    "Enviamos um código para %@" : {
+
+    },
     "Enviando..." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4859,7 +4585,9 @@
         }
       }
     },
-    "Enviar código" : {},
+    "Enviar código" : {
+
+    },
     "Enviar feedback" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4879,6 +4607,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enviar feedback"
+          }
+        }
+      }
+    },
+    "Equipamento não encontrado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausrüstung nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equipment not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equipamento não encontrado"
           }
         }
       }
@@ -4999,7 +4751,9 @@
         }
       }
     },
-    "Escolha uma nova senha para sua conta" : {},
+    "Escolha uma nova senha para sua conta" : {
+
+    },
     "Escolher da galeria" : {
       "localizations" : {
         "de" : {
@@ -5068,6 +4822,78 @@
         }
       }
     },
+    "Esta conta Apple já está vinculada a outro usuário." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Apple-Konto ist bereits mit einem anderen Nutzer verknüpft."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Apple account is already linked to another user."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta conta Apple já está vinculada a outro usuário."
+          }
+        }
+      }
+    },
+    "Esta conta Google já está vinculada a outro usuário." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Google-Konto ist bereits mit einem anderen Nutzer verknüpft."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Google account is already linked to another user."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta conta Google já está vinculada a outro usuário."
+          }
+        }
+      }
+    },
+    "Esta conta usa login social. Entre com Apple ou Google." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Konto nutzt Social Login. Melde dich mit Apple oder Google an."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account uses social sign-in. Sign in with Apple or Google."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta conta usa login social. Entre com Apple ou Google."
+          }
+        }
+      }
+    },
     "Esta semana" : {
       "localizations" : {
         "de" : {
@@ -5132,6 +4958,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estável"
+          }
+        }
+      }
+    },
+    "Este plano de treino está bloqueado e não pode ser alterado." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Trainingsplan ist gesperrt und kann nicht geändert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This training plan is locked and can't be changed."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este plano de treino está bloqueado e não pode ser alterado."
+          }
+        }
+      }
+    },
+    "Este plano de treino foi encerrado. Exclua-o e crie um novo para gerar um plano." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Trainingsplan ist abgeschlossen. Lösche ihn und erstelle einen neuen, um einen Plan zu generieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This training plan is closed. Delete it and create a new one to generate a plan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este plano de treino foi encerrado. Exclua-o e crie um novo para gerar um plano."
           }
         }
       }
@@ -5623,7 +5497,6 @@
       }
     },
     "Fechar" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5713,6 +5586,75 @@
         }
       }
     },
+    "Frequência cardíaca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herzfrequenz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequência cardíaca"
+          }
+        }
+      }
+    },
+    "Frequência cardíaca de repouso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruhepuls"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequência cardíaca de repouso"
+          }
+        }
+      }
+    },
+    "Frequência cardíaca máxima" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximalpuls"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frequência cardíaca máxima"
+          }
+        }
+      }
+    },
     "Gênero" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5736,7 +5678,33 @@
         }
       }
     },
-    "Gerado em: %@" : {},
+    "Geração não encontrada" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generierung nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generation not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geração não encontrada"
+          }
+        }
+      }
+    },
+    "Gerado em: %@" : {
+
+    },
     "Gerenciar assinatura" : {
       "localizations" : {
         "de" : {
@@ -5777,6 +5745,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gire os cilindros para ajustar seu ritmo"
+          }
+        }
+      }
+    },
+    "Google" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        }
+      }
+    },
+    "Google não vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google nicht verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google not linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google não vinculada"
+          }
+        }
+      }
+    },
+    "Google vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google vinculada"
           }
         }
       }
@@ -5992,7 +6029,9 @@
         }
       }
     },
-    "ℹ" : {},
+    "ℹ" : {
+
+    },
     "I.A Report" : {
       "comment" : "Share-link label for the AI-generated run report file",
       "localizations" : {
@@ -6064,6 +6103,29 @@
         }
       }
     },
+    "Importar corridas do Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läufe aus Apple Health importieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import runs from Apple Health"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar corridas do Apple Health"
+          }
+        }
+      }
+    },
     "Importar FIT, TCX ou GPX" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6087,7 +6149,32 @@
         }
       }
     },
-    "Informe seu email e enviaremos um código para redefinir sua senha" : {},
+    "Informe seu email e enviaremos um código para redefinir sua senha" : {
+
+    },
+    "Informe seu nome completo." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib deinen vollständigen Namen ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your full name."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informe seu nome completo."
+          }
+        }
+      }
+    },
     "Informe um peso válido em kg." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6249,6 +6336,29 @@
         }
       }
     },
+    "Integrações" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Integrationen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Integrations"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Integrações"
+          }
+        }
+      }
+    },
     "intensidade" : {
       "comment" : "Stat label under today's workout intensity value",
       "extractionState" : "stale",
@@ -6388,7 +6498,9 @@
         }
       }
     },
-    "Ir para o login" : {},
+    "Ir para o login" : {
+
+    },
     "Isso apaga este plano e todos os treinos e semanas. Guardamos um resumo das últimas semanas para personalizar seu próximo plano. Esta ação não pode ser desfeita." : {
       "localizations" : {
         "de" : {
@@ -6455,6 +6567,30 @@
         }
       }
     },
+    "Já existe um plano para esta semana. Exclua a semana atual e seus treinos antes de gerar de novo." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für diese Woche gibt es bereits einen Plan. Lösche die aktuelle Woche und ihre Trainings, bevor du neu generierst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A plan for this week already exists. Delete the current week and its workouts before generating again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já existe um plano para esta semana. Exclua a semana atual e seus treinos antes de gerar de novo."
+          }
+        }
+      }
+    },
     "Já tem conta?" : {
       "localizations" : {
         "de" : {
@@ -6499,9 +6635,15 @@
         }
       }
     },
-    "km" : {},
-    "KM" : {},
-    "Km %@" : {},
+    "km" : {
+
+    },
+    "KM" : {
+
+    },
+    "Km %@" : {
+
+    },
     "Lap" : {
       "comment" : "Segment label for an unnumbered lap.",
       "extractionState" : "stale",
@@ -6920,6 +7062,29 @@
         }
       }
     },
+    "máx" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "max"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "max"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "máx"
+          }
+        }
+      }
+    },
     "Média" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6967,6 +7132,29 @@
         }
       }
     },
+    "Meia maratona" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halbmarathon"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Half marathon"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meia maratona"
+          }
+        }
+      }
+    },
     "Melhor valor" : {
       "localizations" : {
         "de" : {
@@ -6985,6 +7173,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Melhor valor"
+          }
+        }
+      }
+    },
+    "Melhorar fitness" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fitness verbessern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Improve fitness"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melhorar fitness"
           }
         }
       }
@@ -7059,6 +7270,52 @@
         }
       }
     },
+    "Meta · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel · %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal · %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta · %@"
+          }
+        }
+      }
+    },
+    "Meta ativa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktives Ziel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active goal"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta ativa"
+          }
+        }
+      }
+    },
     "Meta da semana" : {
       "comment" : "Fallback label for the weekly goal insight banner in the calendar",
       "extractionState" : "stale",
@@ -7105,7 +7362,33 @@
         }
       }
     },
-    "min / km" : {},
+    "Meta semanal não encontrada" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wochenziel nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly goal not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta semanal não encontrada"
+          }
+        }
+      }
+    },
+    "min / km" : {
+
+    },
     "min:seg" : {
       "comment" : "Unit suffix for a minutes:seconds time field.",
       "localizations" : {
@@ -7153,7 +7436,9 @@
         }
       }
     },
-    "Modelo: %@" : {},
+    "Modelo: %@" : {
+
+    },
     "Moderado" : {
       "localizations" : {
         "de" : {
@@ -7409,6 +7694,30 @@
         }
       }
     },
+    "Não foi possível concluir o treino. Tente novamente mais tarde." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Training konnte nicht abgeschlossen werden. Bitte versuche es später erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't complete the workout. Please try again later."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível concluir o treino. Tente novamente mais tarde."
+          }
+        }
+      }
+    },
     "Não foi possível encontrar fronteiras confiáveis para os blocos." : {
       "comment" : "Generic fallback reason used when block boundaries could not be reliably reconstructed and no more specific reason was set.",
       "extractionState" : "stale",
@@ -7502,6 +7811,77 @@
         }
       }
     },
+    "Não foi possível gerar a próxima semana. Tente novamente mais tarde." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine nächste Trainingswoche konnte nicht erstellt werden. Bitte versuche es später erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to generate your next training week. Please try again later."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível gerar a próxima semana. Tente novamente mais tarde."
+          }
+        }
+      }
+    },
+    "Não foi possível gerar seu plano agora. Tente novamente." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Plan konnte gerade nicht erstellt werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't generate your plan right now. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível gerar seu plano agora. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível identificar a conta. Tente novamente." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Konto konnte nicht identifiziert werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't identify your account. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível identificar a conta. Tente novamente."
+          }
+        }
+      }
+    },
     "Não foi possível ler a atividade: %@" : {
       "comment" : "WorkoutImportError.invalidFile — %@ is a dynamic parser-level diagnostic reason appended after the colon.",
       "extractionState" : "stale",
@@ -7573,6 +7953,29 @@
         }
       }
     },
+    "Não foi possível preparar seus treinos. Tente novamente." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Trainings konnten nicht vorbereitet werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to prepare your workouts. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível preparar seus treinos. Tente novamente."
+          }
+        }
+      }
+    },
     "Não foi possível reconstruir os blocos desta corrida: %@" : {
       "comment" : "%@ is a system/error localizedDescription appended to the message",
       "extractionState" : "stale",
@@ -7617,6 +8020,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nao foi possivel restaurar a compra. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível salvar seu feedback. Tente novamente." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Feedback konnte nicht gespeichert werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your feedback. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível salvar seu feedback. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível validar seu login com a Apple. Tente novamente." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Apple-Anmeldung konnte nicht überprüft werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't verify your Apple sign-in. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível validar seu login com a Apple. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível validar seu login com o Google. Tente novamente." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Google-Anmeldung konnte nicht überprüft werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't verify your Google sign-in. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível validar seu login com o Google. Tente novamente."
           }
         }
       }
@@ -7799,8 +8274,58 @@
         }
       }
     },
-    "Nenhuma corrida registrada." : {},
-    "Nenhuma semana disponível" : {},
+    "Nenhuma corrida nas últimas 4 semanas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Läufe in den letzten 4 Wochen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No runs in the last 4 weeks"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma corrida nas últimas 4 semanas"
+          }
+        }
+      }
+    },
+    "Nenhuma corrida registrada." : {
+
+    },
+    "Nenhuma semana disponível" : {
+
+    },
+    "Nível · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level · %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level · %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nível · %@"
+          }
+        }
+      }
+    },
     "Nível de Esforço" : {
       "localizations" : {
         "de" : {
@@ -7912,7 +8437,32 @@
         }
       }
     },
-    "Nova senha" : {},
+    "Notificação no dia do treino agendado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benachrichtigung am Tag des geplanten Trainings"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notification on the day of the scheduled workout"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notificação no dia do treino agendado"
+          }
+        }
+      }
+    },
+    "Nova senha" : {
+
+    },
     "Nunca corri de forma consistente" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8193,6 +8743,54 @@
         }
       }
     },
+    "O login com Apple não está disponível no momento." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Apple-Anmeldung ist derzeit nicht verfügbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple sign-in isn't available right now."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O login com Apple não está disponível no momento."
+          }
+        }
+      }
+    },
+    "O login com Google não está disponível no momento." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Google-Anmeldung ist derzeit nicht verfügbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google sign-in isn't available right now."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O login com Google não está disponível no momento."
+          }
+        }
+      }
+    },
     "O que você quer alcançar correndo?" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8215,6 +8813,9 @@
           }
         }
       }
+    },
+    "O treino volta para agendado e você poderá assinalar outra corrida. As métricas e o feedback enviados serão apagados." : {
+
     },
     "Objetivo pessoal" : {
       "extractionState" : "stale",
@@ -8538,6 +9139,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pace médio"
+          }
+        }
+      }
+    },
+    "Pace médio /km" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ø Pace /km"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avg. pace /km"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pace médio /km"
           }
         }
       }
@@ -9019,6 +9643,7 @@
       }
     },
     "Peso (kg)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9157,6 +9782,29 @@
         }
       }
     },
+    "Plano de treino" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainingsplan"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training plan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plano de treino"
+          }
+        }
+      }
+    },
     "Plano de Treino" : {
       "comment" : "Training plan detail screen navigation title",
       "extractionState" : "stale",
@@ -9181,6 +9829,30 @@
         }
       }
     },
+    "Plano de treino não encontrado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainingsplan nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training plan not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plano de treino não encontrado"
+          }
+        }
+      }
+    },
     "Plano gerado por IA" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9200,6 +9872,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plano gerado por IA"
+          }
+        }
+      }
+    },
+    "Plano gratuito" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kostenloser Plan"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free plan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plano gratuito"
           }
         }
       }
@@ -9273,6 +9968,7 @@
       }
     },
     "Preferências de treino" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9813,6 +10509,29 @@
         }
       }
     },
+    "Recordes pessoais" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persönliche Rekorde"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal records"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordes pessoais"
+          }
+        }
+      }
+    },
     "Recuperacao" : {
       "comment" : "Legacy workout block type; source text missing accent, kept byte-identical",
       "extractionState" : "stale",
@@ -9909,7 +10628,9 @@
         }
       }
     },
-    "Redefinir senha" : {},
+    "Redefinir senha" : {
+
+    },
     "Refazer" : {
       "comment" : "Retake photo button",
       "localizations" : {
@@ -9998,6 +10719,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover aviso em %@"
+          }
+        }
+      }
+    },
+    "rep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruhe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rest"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rep"
           }
         }
       }
@@ -10330,7 +11074,9 @@
         }
       }
     },
-    "Runner" : {},
+    "Runner" : {
+
+    },
     "Sáb" : {
       "comment" : "Calendar weekday header abbreviation (Saturday)",
       "extractionState" : "stale",
@@ -10374,6 +11120,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sair"
+          }
+        }
+      }
+    },
+    "Sair da conta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sair da conta"
+          }
+        }
+      }
+    },
+    "Sair da conta e exclusão permanente" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abmelden und endgültige Löschung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out and permanent deletion"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sair da conta e exclusão permanente"
           }
         }
       }
@@ -10488,6 +11280,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salvar"
+          }
+        }
+      }
+    },
+    "Salvar alterações" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Änderungen speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save changes"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvar alterações"
           }
         }
       }
@@ -10674,7 +11489,9 @@
         }
       }
     },
-    "Selecione uma semana acima" : {},
+    "Selecione uma semana acima" : {
+
+    },
     "Sem alvo definido" : {
       "comment" : "Fallback when a legacy workout block has no target",
       "extractionState" : "stale",
@@ -10695,6 +11512,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sem alvo definido"
+          }
+        }
+      }
+    },
+    "Sem assinatura ativa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein aktives Abo"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No active subscription"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem assinatura ativa"
           }
         }
       }
@@ -10722,8 +11562,12 @@
         }
       }
     },
-    "Sem prompt log para esta semana" : {},
-    "Semana" : {},
+    "Sem prompt log para esta semana" : {
+
+    },
+    "Semana" : {
+
+    },
     "Semana %lld · %@" : {
       "comment" : "Week chip label, e.g. 'Semana 3 · 12–18 mar 2026'.",
       "extractionState" : "stale",
@@ -10744,6 +11588,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Semana %lld · %@"
+          }
+        }
+      }
+    },
+    "Semana %lld/%lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Woche %lld/%lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Week %lld/%lld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana %lld/%lld"
           }
         }
       }
@@ -10840,7 +11707,81 @@
         }
       }
     },
-    "Senha atualizada" : {},
+    "Senha atualizada" : {
+
+    },
+    "Senha deve conter letras maiúsculas, minúsculas e números" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Passwort muss Groß- und Kleinbuchstaben sowie Zahlen enthalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password must contain uppercase and lowercase letters and numbers"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senha deve conter letras maiúsculas, minúsculas e números"
+          }
+        }
+      }
+    },
+    "Senha deve ter no mínimo 8 caracteres" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Passwort muss mindestens 8 Zeichen lang sein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password must be at least 8 characters"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senha deve ter no mínimo 8 caracteres"
+          }
+        }
+      }
+    },
+    "Senha é obrigatória" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passwort ist erforderlich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password is required"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senha é obrigatória"
+          }
+        }
+      }
+    },
     "Série" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10860,6 +11801,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Série"
+          }
+        }
+      }
+    },
+    "Sessão" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão"
           }
         }
       }
@@ -10956,6 +11920,30 @@
         }
       }
     },
+    "Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Plan wird erstellt. Warte, bis er fertig ist, bevor du eine neue Bewertung startest."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your plan is being generated. Wait for it to finish before starting a new assessment."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação."
+          }
+        }
+      }
+    },
     "Seu treino está sendo preparado" : {
       "localizations" : {
         "de" : {
@@ -11042,6 +12030,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seus dias\nde treino"
+          }
+        }
+      }
+    },
+    "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Trainings werden vorbereitet. Wir benachrichtigen dich, sobald sie fertig sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your workouts are being prepared. We’ll notify you when they’re ready."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos."
           }
         }
       }
@@ -11234,6 +12245,29 @@
         }
       }
     },
+    "Só é possível reagendar treinos dentro da mesma semana." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainings können nur innerhalb derselben Woche verschoben werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workouts can only be rescheduled within the same week."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Só é possível reagendar treinos dentro da mesma semana."
+          }
+        }
+      }
+    },
     "Sobre" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11395,7 +12429,32 @@
         }
       }
     },
-    "Sua senha foi redefinida. Faça login novamente com a nova senha." : {},
+    "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine nächste Trainingswoche wird vorbereitet. Wir benachrichtigen dich, sobald sie fertig ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next training week is being prepared. We’ll notify you when it’s ready."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta."
+          }
+        }
+      }
+    },
+    "Sua senha foi redefinida. Faça login novamente com a nova senha." : {
+
+    },
     "Sua sessão expirou. Faça login novamente." : {
       "comment" : "Shown after a 401 that could not be recovered by refresh; the user is logged out.",
       "extractionState" : "stale",
@@ -11579,6 +12638,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tempo alvo"
+          }
+        }
+      }
+    },
+    "Tempo estimado: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geschätzte Zeit: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated time: %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo estimado: %@"
           }
         }
       }
@@ -11785,6 +12867,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termos de Uso e Política de Privacidade"
+          }
+        }
+      }
+    },
+    "Teste · %lld dias restantes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test · noch %lld Tage"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trial · %lld days remaining"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teste · %lld dias restantes"
           }
         }
       }
@@ -12022,6 +13127,30 @@
         }
       }
     },
+    "Treino não encontrado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workout not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treino não encontrado"
+          }
+        }
+      }
+    },
     "Treino prescrito" : {
       "comment" : "Section title: prescribed workout plan",
       "extractionState" : "stale",
@@ -12231,6 +13360,30 @@
         }
       }
     },
+    "Uma geração para esta semana já está em andamento." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für diese Woche läuft bereits eine Generierung."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A generation for this week is already in progress."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma geração para esta semana já está em andamento."
+          }
+        }
+      }
+    },
     "Unknown error" : {
       "comment" : "Client-authored fallback used as the server error message when a non-2xx HTTP response body cannot be decoded as text.",
       "extractionState" : "stale",
@@ -12347,6 +13500,30 @@
         }
       }
     },
+    "Usuário não encontrado" : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benutzer nicht gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User not found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usuário não encontrado"
+          }
+        }
+      }
+    },
     "Verifique sua conexão com a internet e tente novamente." : {
       "localizations" : {
         "de" : {
@@ -12370,6 +13547,7 @@
       }
     },
     "Versao" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12525,6 +13703,100 @@
         }
       }
     },
+    "Vincule provedores para entrar de mais de uma forma. Você só pode desvincular se sobrar outra credencial ativa." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpfe Anbieter, um dich auf mehreren Wegen anzumelden. Trennen ist nur möglich, solange eine andere aktive Anmeldemöglichkeit bleibt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link providers so you can sign in more than one way. You can only unlink while another active credential remains."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincule provedores para entrar de mais de uma forma. Você só pode desvincular se sobrar outra credencial ativa."
+          }
+        }
+      }
+    },
+    "Visível apenas para administradores" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur für Administratoren sichtbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visible to administrators only"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visível apenas para administradores"
+          }
+        }
+      }
+    },
+    "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast bereits einen Trainingsplan. Aktualisiere oder lösche den aktuellen, bevor du einen neuen erstellst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have a training plan. Update or delete the current one before creating another."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro."
+          }
+        }
+      }
+    },
+    "Você precisa aceitar os termos para continuar." : {
+      "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst die Bedingungen akzeptieren, um fortzufahren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You need to accept the terms to continue."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você precisa aceitar os termos para continuar."
+          }
+        }
+      }
+    },
     "Vol. alvo" : {
       "comment" : "Abbreviated metric chip label: target volume.",
       "extractionState" : "stale",
@@ -12637,6 +13909,259 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zona %lld"
+          }
+        }
+      }
+    },
+    "Zona de risco" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gefahrenzone"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danger zone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zona de risco"
+          }
+        }
+      }
+    },
+    "Ao fim do teste, assine para continuar com todos os recursos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Ablauf der Testphase abonnieren, um alle Funktionen zu behalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the trial ends, subscribe to keep all features."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao fim do teste, assine para continuar com todos os recursos."
+          }
+        }
+      }
+    },
+    "Assine para desbloquear todos os recursos do Athly." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonniere, um alle Funktionen von Athly freizuschalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe to unlock all Athly features."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assine para desbloquear todos os recursos do Athly."
+          }
+        }
+      }
+    },
+    "Ativado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ativado"
+          }
+        }
+      }
+    },
+    "Conta vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conta vinculada"
+          }
+        }
+      }
+    },
+    "Desativado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desativado"
+          }
+        }
+      }
+    },
+    "Disponível para vincular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Verknüpfen verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available to link"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponível para vincular"
+          }
+        }
+      }
+    },
+    "Não vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não vinculada"
+          }
+        }
+      }
+    },
+    "Sessão e exclusão da conta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung und Kontolöschung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session and account deletion"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão e exclusão da conta"
+          }
+        }
+      }
+    },
+    "Sua assinatura é cobrada e gerenciada pela App Store." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Abo wird über den App Store abgerechnet und verwaltet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your subscription is billed and managed by the App Store."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua assinatura é cobrada e gerenciada pela App Store."
+          }
+        }
+      }
+    },
+    "Vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada"
           }
         }
       }
