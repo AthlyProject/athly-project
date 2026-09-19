@@ -1444,6 +1444,29 @@
         }
       }
     },
+    "Ao fim do teste, assine para continuar com todos os recursos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Ablauf der Testphase abonnieren, um alle Funktionen zu behalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the trial ends, subscribe to keep all features."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ao fim do teste, assine para continuar com todos os recursos."
+          }
+        }
+      }
+    },
     "Apaga plano, treinos e histórico" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1788,6 +1811,29 @@
         }
       }
     },
+    "Assine para desbloquear todos os recursos do Athly." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonniere, um alle Funktionen von Athly freizuschalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe to unlock all Athly features."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assine para desbloquear todos os recursos do Athly."
+          }
+        }
+      }
+    },
     "Athly" : {
 
     },
@@ -1864,6 +1910,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Athly Pro"
+          }
+        }
+      }
+    },
+    "Ativado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ativado"
           }
         }
       }
@@ -2892,6 +2961,7 @@
       }
     },
     "Conta Apple vinculada" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2936,6 +3006,7 @@
       }
     },
     "Conta Google vinculada" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2953,6 +3024,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conta Google vinculada"
+          }
+        }
+      }
+    },
+    "Conta vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conta vinculada"
           }
         }
       }
@@ -3718,6 +3812,29 @@
         }
       }
     },
+    "Desativado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desativado"
+          }
+        }
+      }
+    },
     "Descanso" : {
       "comment" : "Rest day slot label / rest block type label",
       "localizations" : {
@@ -3764,7 +3881,6 @@
       }
     },
     "Desvincular" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3926,6 +4042,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diminuir"
+          }
+        }
+      }
+    },
+    "Disponível para vincular" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Verknüpfen verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available to link"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponível para vincular"
           }
         }
       }
@@ -8140,6 +8279,29 @@
         }
       }
     },
+    "Não vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não vinculada"
+          }
+        }
+      }
+    },
     "Nenhum bloco definido para este treino" : {
       "localizations" : {
         "de" : {
@@ -11850,6 +12012,29 @@
         }
       }
     },
+    "Sessão e exclusão da conta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung und Kontolöschung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session and account deletion"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão e exclusão da conta"
+          }
+        }
+      }
+    },
     "Sessão expirada. Faça login novamente." : {
       "comment" : "APIError.unauthorized — generic unauthorized error surfaced by the API client.",
       "extractionState" : "stale",
@@ -12403,6 +12588,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sua\nDistância"
+          }
+        }
+      }
+    },
+    "Sua assinatura é cobrada e gerenciada pela App Store." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Abo wird über den App Store abgerechnet und verwaltet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your subscription is billed and managed by the App Store."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua assinatura é cobrada e gerenciada pela App Store."
           }
         }
       }
@@ -13637,7 +13845,31 @@
         }
       }
     },
+    "Vinculada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinculada"
+          }
+        }
+      }
+    },
     "Vincular conta Apple" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13682,6 +13914,7 @@
       }
     },
     "Vincule para poder entrar com a Apple além do seu email e senha." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13932,236 +14165,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zona de risco"
-          }
-        }
-      }
-    },
-    "Ao fim do teste, assine para continuar com todos os recursos." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nach Ablauf der Testphase abonnieren, um alle Funktionen zu behalten."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When the trial ends, subscribe to keep all features."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ao fim do teste, assine para continuar com todos os recursos."
-          }
-        }
-      }
-    },
-    "Assine para desbloquear todos os recursos do Athly." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abonniere, um alle Funktionen von Athly freizuschalten."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Subscribe to unlock all Athly features."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assine para desbloquear todos os recursos do Athly."
-          }
-        }
-      }
-    },
-    "Ativado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "An"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ativado"
-          }
-        }
-      }
-    },
-    "Conta vinculada" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Konto verknüpft"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Account linked"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conta vinculada"
-          }
-        }
-      }
-    },
-    "Desativado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aus"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Off"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desativado"
-          }
-        }
-      }
-    },
-    "Disponível para vincular" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zum Verknüpfen verfügbar"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Available to link"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disponível para vincular"
-          }
-        }
-      }
-    },
-    "Não vinculada" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht verknüpft"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not linked"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não vinculada"
-          }
-        }
-      }
-    },
-    "Sessão e exclusão da conta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sitzung und Kontolöschung"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Session and account deletion"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sessão e exclusão da conta"
-          }
-        }
-      }
-    },
-    "Sua assinatura é cobrada e gerenciada pela App Store." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Abo wird über den App Store abgerechnet und verwaltet."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your subscription is billed and managed by the App Store."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sua assinatura é cobrada e gerenciada pela App Store."
-          }
-        }
-      }
-    },
-    "Vinculada" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verknüpft"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Linked"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vinculada"
           }
         }
       }
