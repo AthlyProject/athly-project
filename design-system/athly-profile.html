@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><script type="application/json" data-od-external-dependencies>["https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"]</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athly — Perfil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#060810; --bg-alt:#0B0F1C; --surface:#0F1624; --card:#141E30; --card-2:#1A2540;
+      --primary:#0EA5E9; --primary-soft:rgba(14,165,233,.10); --primary-b:rgba(14,165,233,.22); --primary-glow:rgba(14,165,233,.18);
+      --violet:#7C3AED; --violet-soft:rgba(124,58,237,.10); --violet-b:rgba(124,58,237,.20);
+      --text-1:#EEF2FF; --text-2:#94A3B8; --text-3:#4B5563;
+      --border:rgba(255,255,255,.06); --border-mid:rgba(255,255,255,.10);
+      --success:#10B981; --success-soft:rgba(16,185,129,.10); --success-b:rgba(16,185,129,.22);
+      --warn:#F59E0B; --warn-soft:rgba(245,158,11,.10); --warn-b:rgba(245,158,11,.22);
+      --danger:#EF4444; --danger-soft:rgba(239,68,68,.10); --danger-b:rgba(239,68,68,.22);
+      --grad:linear-gradient(135deg,#0EA5E9,#7C3AED);
+      --font:'Space Grotesk',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+      --r-sm:10px; --r-md:14px; --r-lg:20px; --r-pill:9999px; --ease:cubic-bezier(0.22,1,0.36,1);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text-1);font-family:var(--font);line-height:1.5;overflow-x:hidden;}
+    button{font-family:var(--font);cursor:pointer;border:none;background:none;color:inherit;}
+    button:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:var(--r-sm);}
+    a{color:inherit;text-decoration:none;}
+
+    /* Nav */
+    nav{position:sticky;top:0;z-index:200;background:rgba(6,8,16,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:0 48px;display:flex;align-items:center;height:58px;}
+    .nav-brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:var(--text-1);}
+    .nav-logo{width:30px;height:30px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+    .nav-links{display:flex;gap:28px;margin-left:40px;}
+    .nav-links a{font-size:13px;font-weight:500;color:var(--text-2);transition:color 150ms;}
+    .nav-links a:hover{color:var(--text-1);}
+    .nav-links a.active{color:var(--text-1);}
+    .nav-pill{margin-left:auto;font-family:var(--mono);font-size:11px;padding:3px 11px;background:var(--primary-soft);border:1px solid var(--primary-b);border-radius:var(--r-pill);color:var(--primary);}
+
+    .wrap{max-width:1200px;margin:0 auto;padding:0 48px;}
+    .section{padding:80px 0;border-top:1px solid var(--border);}
+    .section-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);margin-bottom:10px;}
+    .section-title{font-size:34px;font-weight:700;letter-spacing:-.025em;margin-bottom:12px;}
+    .section-desc{font-size:16px;color:var(--text-2);max-width:560px;margin-bottom:44px;line-height:1.65;}
+
+    /* Hero */
+    .hero{padding:96px 0 76px;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;top:-160px;left:-100px;width:520px;height:520px;background:radial-gradient(circle,rgba(14,165,233,.10) 0%,transparent 70%);pointer-events:none;}
+    .hero::after{content:'';position:absolute;bottom:-120px;right:-80px;width:440px;height:440px;background:radial-gradient(circle,rgba(124,58,237,.08) 0%,transparent 70%);pointer-events:none;}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:var(--primary-soft);border:1px solid var(--primary-b);border-radius:var(--r-pill);font-size:12px;font-weight:600;color:var(--primary);margin-bottom:24px;}
+    .hero-title{font-size:clamp(42px,5.5vw,72px);font-weight:700;line-height:1.0;letter-spacing:-.035em;margin-bottom:20px;}
+    .grad-text{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-sub{font-size:18px;color:var(--text-2);max-width:540px;line-height:1.65;margin-bottom:40px;}
+    .hero-tags{display:flex;gap:9px;flex-wrap:wrap;}
+    .hero-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;background:var(--card);border:1px solid var(--border-mid);border-radius:var(--r-pill);font-size:12px;font-weight:600;color:var(--text-2);}
+
+    /* iPhone */
+    .screens-rail{display:flex;gap:32px;overflow-x:auto;padding:8px 0 52px;scrollbar-width:none;}
+    .screens-rail::-webkit-scrollbar{display:none;}
+    .phone-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:16px;}
+    .phone-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);}
+    .phone-sub{font-size:10px;color:var(--text-3);font-family:var(--mono);}
+    .iphone{width:316px;height:682px;background:#1C1C22;border-radius:50px;border:8px solid #2A2A32;box-shadow:0 0 0 1px #111,inset 0 0 0 1px rgba(255,255,255,.07),0 44px 96px rgba(0,0,0,.75);overflow:hidden;position:relative;}
+    .iphone-screen{width:100%;height:100%;background:var(--bg);border-radius:42px;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+    .dynamic-island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:96px;height:26px;background:#000;border-radius:13px;z-index:50;}
+    .amb{position:absolute;pointer-events:none;z-index:0;}
+    .amb-tl{top:-60px;left:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(14,165,233,.12) 0%,transparent 70%);}
+    .amb-tr{top:-40px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(124,58,237,.12) 0%,transparent 70%);}
+    .status-bar{height:50px;padding:14px 18px 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:10;position:relative;}
+    .status-time{font-family:var(--mono);font-size:13px;font-weight:600;}
+    .status-icons{display:flex;align-items:center;gap:5px;color:var(--text-1);}
+
+    /* Phone nav bar */
+    .wd-nav{display:flex;align-items:center;justify-content:space-between;padding:3px 15px 8px;flex-shrink:0;position:relative;z-index:5;}
+    .wd-back{font-size:11px;font-weight:600;color:var(--primary);}
+    .wd-nav-title{font-size:12px;font-weight:700;letter-spacing:-.01em;}
+    .icon-btn{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--border-mid);color:var(--text-2);transition:all 150ms var(--ease);}
+    .icon-btn:hover{color:var(--text-1);border-color:var(--primary-b);background:var(--primary-soft);}
+
+    /* Phone body */
+    .sc-body{flex:1;display:flex;flex-direction:column;gap:10px;overflow-y:auto;scrollbar-width:none;padding:8px 15px 78px;position:relative;z-index:1;}
+    .sc-body::-webkit-scrollbar{display:none;}
+
+    /* Identity header */
+    .id-head{display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 0 2px;flex-shrink:0;}
+    .id-avatar{width:74px;height:74px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:#fff;box-shadow:0 0 22px var(--primary-glow);position:relative;}
+    .id-avatar .edit-dot{position:absolute;right:-2px;bottom:-2px;width:24px;height:24px;border-radius:50%;background:var(--card-2);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;color:var(--primary);}
+    .id-name{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:11px;}
+    .id-email{font-size:11px;color:var(--text-2);font-family:var(--mono);margin-top:2px;}
+    .id-chips{display:flex;gap:6px;margin-top:11px;}
+    .id-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--r-pill);font-size:10px;font-weight:600;background:var(--card);border:1px solid var(--border-mid);color:var(--text-2);}
+    .id-chip.accent{background:var(--primary-soft);border-color:var(--primary-b);color:var(--primary);}
+    .id-chip.violet{background:var(--violet-soft);border-color:var(--violet-b);color:#b794f6;}
+
+    /* Section label */
+    .sc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--text-3);padding:6px 2px 0;flex-shrink:0;}
+
+    /* Hero stat (distance highlight) */
+    .stat-hero{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 15px;position:relative;overflow:hidden;flex-shrink:0;}
+    .stat-hero::after{content:'';position:absolute;inset:0;border-radius:var(--r-md);padding:1px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.5;pointer-events:none;}
+    .sh-key{font-size:9px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--text-3);}
+    .sh-val{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.02em;margin-top:3px;}
+    .sh-val span{font-size:15px;color:var(--text-2);margin-left:3px;}
+    .sh-sub{font-size:10px;color:var(--text-2);margin-top:3px;}
+
+    /* Stat grid */
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0;}
+    .stat-cell{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 11px;display:flex;align-items:center;gap:9px;}
+    .stat-ic{width:28px;height:28px;border-radius:8px;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0;}
+    .stat-txt{display:flex;flex-direction:column;min-width:0;}
+    .stat-num{font-family:var(--mono);font-size:14px;font-weight:600;line-height:1.1;}
+    .stat-cap{font-size:8px;color:var(--text-3);margin-top:2px;white-space:nowrap;}
+
+    /* Goal card */
+    .goal-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 14px;flex-shrink:0;}
+    .goal-top{display:flex;align-items:center;gap:8px;margin-bottom:11px;}
+    .goal-ic{width:30px;height:30px;border-radius:9px;background:var(--violet-soft);display:flex;align-items:center;justify-content:center;color:#b794f6;flex-shrink:0;}
+    .goal-name{font-size:13px;font-weight:700;letter-spacing:-.01em;}
+    .goal-meta{font-size:9px;color:var(--text-2);margin-top:1px;}
+    .goal-badge{margin-left:auto;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:var(--r-pill);background:var(--success-soft);border:1px solid var(--success-b);color:var(--success);}
+    .goal-bar{height:6px;border-radius:var(--r-pill);background:var(--bg-alt);overflow:hidden;margin-bottom:6px;}
+    .goal-fill{height:100%;width:64%;background:var(--grad);border-radius:var(--r-pill);}
+    .goal-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--text-3);}
+
+    /* Training days */
+    .days-row{display:flex;gap:5px;}
+    .day-pill{flex:1;text-align:center;padding:8px 0;border-radius:9px;font-size:11px;font-weight:600;background:var(--bg-alt);border:1px solid var(--border-mid);color:var(--text-3);transition:all 150ms var(--ease);}
+    .day-pill.on{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 3px 10px var(--primary-glow);}
+    .day-pill:hover{border-color:var(--primary-b);}
+    .day-pill.on:hover{filter:brightness(1.06);}
+    .days-foot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+    .days-count{font-size:9px;color:var(--text-2);}
+
+    /* PR list */
+    .pr-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;}
+    .pr-ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .pr-dist{font-size:11px;font-weight:600;}
+    .pr-date{font-size:8px;color:var(--text-3);font-family:var(--mono);margin-top:1px;}
+    .pr-time{margin-left:auto;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text-1);}
+
+    /* Edit form */
+    .field{margin-bottom:2px;}
+    .field-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);margin-bottom:6px;display:block;}
+    .field-input{width:100%;background:var(--bg-alt);border:1px solid var(--border-mid);border-radius:var(--r-sm);padding:10px 12px;color:var(--text-1);font-family:var(--font);font-size:13px;transition:border-color 150ms;}
+    .field-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+    .seg{display:flex;gap:6px;}
+    .seg-opt{flex:1;text-align:center;padding:9px 0;border-radius:var(--r-sm);font-size:11px;font-weight:600;background:var(--bg-alt);border:1px solid var(--border-mid);color:var(--text-2);transition:all 150ms var(--ease);}
+    .seg-opt.on{background:var(--primary-soft);border-color:var(--primary-b);color:var(--primary);}
+    .stepper{display:flex;align-items:center;background:var(--bg-alt);border:1px solid var(--border-mid);border-radius:var(--r-sm);overflow:hidden;}
+    .stepper button{width:42px;height:40px;font-size:18px;font-weight:400;color:var(--text-2);transition:background 150ms;}
+    .stepper button:hover{background:var(--primary-soft);color:var(--primary);}
+    .stepper .step-val{flex:1;text-align:center;font-family:var(--mono);font-size:15px;font-weight:600;}
+    .stepper .step-val small{font-size:10px;color:var(--text-3);margin-left:2px;}
+
+    /* Primary CTA */
+    .cta-primary{width:100%;background:var(--grad);border-radius:var(--r-md);padding:13px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 8px 22px var(--primary-glow);transition:all 150ms var(--ease);margin-top:4px;}
+    .cta-primary:hover{transform:translateY(-1px);box-shadow:0 12px 28px var(--primary-glow);}
+    .cta-primary:active{transform:translateY(0);}
+    .cta-ghost{width:100%;background:transparent;border:1px solid var(--border-mid);border-radius:var(--r-md);padding:12px;font-size:12px;font-weight:600;color:var(--text-2);transition:all 150ms var(--ease);}
+    .cta-ghost:hover{border-color:var(--primary-b);color:var(--text-1);background:var(--primary-soft);}
+
+    /* Tab bar */
+    .mini-tab-bar{position:absolute;bottom:10px;left:10px;right:10px;background:rgba(11,15,28,.94);backdrop-filter:blur(16px);border:1px solid var(--border-mid);border-radius:17px;padding:5px;display:flex;z-index:20;}
+    .mt{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;border-radius:11px;}
+    .mt.act{background:var(--primary-soft);}
+    .mt svg{color:var(--text-3);}
+    .mt.act svg{color:var(--primary);}
+    .mt-lbl{font-size:7px;font-weight:600;color:var(--text-3);}
+    .mt.act .mt-lbl{color:var(--primary);}
+
+    /* Desktop breakdown */
+    .comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+    .comp-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+    .comp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;}
+    .comp-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.10em;color:var(--text-3);margin-bottom:18px;}
+    .comp-note{margin-top:16px;font-size:11px;color:var(--text-3);font-family:var(--mono);border-top:1px solid var(--border);padding-top:12px;line-height:1.6;}
+
+    footer{border-top:1px solid var(--border);padding:40px 0;}
+    .foot-inner{max-width:1200px;margin:0 auto;padding:0 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+    .foot-brand{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;}
+    .foot-links{display:flex;gap:24px;}
+    .foot-links a{font-size:12px;color:var(--text-2);transition:color 150ms;}
+    .foot-links a:hover{color:var(--text-1);}
+    .foot-copy{font-size:11px;color:var(--text-3);font-family:var(--mono);}
+
+    @media(max-width:720px){
+      .nav-links,.foot-links{display:none;}
+      .wrap,.nav-inner,.foot-inner{padding:0 20px;}
+      .comp-grid,.comp-grid-3{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+  <nav data-od-id="topnav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="athly-design-system.html">
+        <span class="nav-logo">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13L8 3l5 10M5.5 9.5h5"/></svg>
+        </span>
+        Athly
+      </a>
+      <div class="nav-links">
+        <a href="athly-main-screens.html">App</a>
+        <a href="athly-workout-detail.html">Treinos</a>
+        <a href="athly-profile.html" class="active">Perfil</a>
+        <a href="athly-settings.html">Ajustes</a>
+      </div>
+      <span class="nav-pill">ProfileView</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero" data-od-id="hero">
+    <div class="wrap">
+      <span class="hero-badge">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="4.5" r="2.5"/><path d="M1.5 12.5C1.5 10 4 8 7 8s5.5 2 5.5 4.5"/></svg>
+        Perfil do atleta
+      </span>
+      <h1 class="hero-title">Seu perfil,<br><span class="grad-text">só o essencial.</span></h1>
+      <p class="hero-sub">Uma identidade clara com estatísticas de vida, meta ativa, nível e dias de treino — separando o que é <em>você</em> do que é configuração. Toda a parametrização mora agora em Ajustes.</p>
+      <div class="hero-tags">
+        <span class="hero-tag">Identidade + avatar</span>
+        <span class="hero-tag">Estatísticas gerais</span>
+        <span class="hero-tag">Meta &amp; nível</span>
+        <span class="hero-tag">Dias de treino</span>
+        <span class="hero-tag">Recordes pessoais</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- SCREENS -->
+  <section class="section" data-od-id="screens">
+    <div class="wrap">
+      <div class="section-eyebrow">Telas</div>
+      <h2 class="section-title">Perfil &amp; edição</h2>
+      <p class="section-desc">Duas telas: a visão principal do perfil (acessada pela aba Perfil) e a folha de edição dos dados pessoais coletados no onboarding.</p>
+
+      <div class="screens-rail">
+
+        <!-- S1 · PERFIL -->
+        <div class="phone-wrap">
+          <div class="iphone" data-od-id="screen-profile">
+            <div class="dynamic-island"></div>
+            <div class="iphone-screen">
+              <div class="amb amb-tl"></div><div class="amb amb-tr"></div>
+              <div class="status-bar">
+                <span class="status-time">9:41</span>
+                <span class="status-icons">
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx=".6"/><rect x="3.7" y="4" width="2.6" height="6" rx=".6"/><rect x="7.4" y="2" width="2.6" height="8" rx=".6"/><rect x="11.1" y="0" width="2.6" height="10" rx=".6"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M7.5 2.2c1.9 0 3.6.7 4.9 1.9l1-1.1C11.8 1.4 9.8.6 7.5.6S3.2 1.4 1.6 3l1 1.1C3.9 2.9 5.6 2.2 7.5 2.2z" opacity=".9"/><path d="M7.5 5.2c1 0 2 .4 2.7 1.1l1-1.1C10.2 4.2 8.9 3.7 7.5 3.7S4.8 4.2 3.8 5.2l1 1.1c.7-.7 1.7-1.1 2.7-1.1z"/><circle cx="7.5" cy="8.6" r="1.5"/></svg>
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="1" y="1" width="19" height="9" rx="2.4" stroke="currentColor" opacity=".5"/><rect x="2.6" y="2.6" width="14" height="5.8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="1.6" height="3" rx=".8" fill="currentColor" opacity=".5"/></svg>
+                </span>
+              </div>
+
+              <div class="wd-nav">
+                <span style="width:30px"></span>
+                <span class="wd-nav-title">Perfil</span>
+                <a href="athly-settings.html" class="icon-btn" aria-label="Abrir ajustes">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.2v1.8M8 13v1.8M1.2 8h1.8M13 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3" stroke-linecap="round"/></svg>
+                </a>
+              </div>
+
+              <div class="sc-body">
+                <div class="id-head">
+                  <div class="id-avatar">GF
+                    <span class="edit-dot">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1.5l2 2L4 10l-2.5.5L2 8z"/></svg>
+                    </span>
+                  </div>
+                  <div class="id-name">Gabriel Fonseca</div>
+                  <div class="id-email">alexandrefonseca998@gmail.com</div>
+                  <div class="id-chips">
+                    <span class="id-chip accent">Nível · Hobby</span>
+                    <span class="id-chip violet">Meta · 10K</span>
+                  </div>
+                </div>
+
+                <div class="stat-hero" data-od-id="stat-distance">
+                  <div class="sh-key">Distância total</div>
+                  <div class="sh-val">312,4<span>km</span></div>
+                  <div class="sh-sub">↑ 24,8 km nas últimas 4 semanas</div>
+                </div>
+
+                <div class="stat-grid">
+                  <div class="stat-cell">
+                    <span class="stat-ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="2.6" r="1.3"/><path d="M8 5.5L5.5 7l1.8 2 .7 4M8 5.5l2.5 1 2 1M8 5.5L5 6M7.3 9L4 11"/></svg></span>
+                    <span class="stat-txt"><span class="stat-num">47</span><span class="stat-cap">Corridas</span></span>
+                  </div>
+                  <div class="stat-cell">
+                    <span class="stat-ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.2V8l2.6 1.6"/></svg></span>
+                    <span class="stat-txt"><span class="stat-num">28h 45</span><span class="stat-cap">Tempo total</span></span>
+                  </div>
+                  <div class="stat-cell">
+                    <span class="stat-ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12a6 6 0 1112 0"/><path d="M8 12l3-3.5"/><circle cx="8" cy="12" r=".8" fill="currentColor"/></svg></span>
+                    <span class="stat-txt"><span class="stat-num">5:52</span><span class="stat-cap">Pace médio /km</span></span>
+                  </div>
+                  <div class="stat-cell">
+                    <span class="stat-ic"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 13l4-6 2.5 3 2-3 4.5 6z"/></svg></span>
+                    <span class="stat-txt"><span class="stat-num">1.240 m</span><span class="stat-cap">Elevação total</span></span>
+                  </div>
+                </div>
+
+                <div class="sc-lbl">Meta ativa</div>
+                <div class="goal-card" data-od-id="goal-snapshot">
+                  <div class="goal-top">
+                    <span class="goal-ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r=".7" fill="currentColor"/></svg></span>
+                    <div>
+                      <div class="goal-name">10K sub 47:30</div>
+                      <div class="goal-meta">Tempo alvo pessoal · 12 semanas</div>
+                    </div>
+                    <span class="goal-badge">No prazo</span>
+                  </div>
+                  <div class="goal-bar"><div class="goal-fill"></div></div>
+                  <div class="goal-scale"><span>Semana 8/12</span><span>64%</span></div>
+                </div>
+
+                <div class="sc-lbl">Dias disponíveis para treinar</div>
+                <div class="days-row" data-od-id="training-days">
+                  <div class="day-pill">D</div>
+                  <div class="day-pill on">S</div>
+                  <div class="day-pill">T</div>
+                  <div class="day-pill on">Q</div>
+                  <div class="day-pill">Q</div>
+                  <div class="day-pill on">S</div>
+                  <div class="day-pill">S</div>
+                </div>
+                <div class="days-foot">
+                  <span class="days-count">3 dias selecionados</span>
+                  <span class="days-count" style="color:var(--text-3);font-family:var(--mono)">Seg · Qua · Sex</span>
+                </div>
+
+                <div class="sc-lbl">Recordes pessoais</div>
+                <div class="pr-row">
+                  <span class="pr-ic" style="background:var(--success-soft);color:var(--success)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 2h8v3a4 4 0 01-8 0zM6 11h4M5.5 14h5M8 9v2"/></svg></span>
+                  <div><div class="pr-dist">5 km</div><div class="pr-date">12 JUN 2025</div></div>
+                  <span class="pr-time">22:14</span>
+                </div>
+                <div class="pr-row">
+                  <span class="pr-ic" style="background:var(--primary-soft);color:var(--primary)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 2h8v3a4 4 0 01-8 0zM6 11h4M5.5 14h5M8 9v2"/></svg></span>
+                  <div><div class="pr-dist">10 km</div><div class="pr-date">03 AGO 2025</div></div>
+                  <span class="pr-time">48:52</span>
+                </div>
+                <div class="pr-row">
+                  <span class="pr-ic" style="background:var(--violet-soft);color:#b794f6"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 2h8v3a4 4 0 01-8 0zM6 11h4M5.5 14h5M8 9v2"/></svg></span>
+                  <div><div class="pr-dist">Meia maratona</div><div class="pr-date">21 SET 2025</div></div>
+                  <span class="pr-time">1:52:30</span>
+                </div>
+              </div>
+
+              <div class="mini-tab-bar" aria-label="Navegação principal">
+                <div class="mt" role="tab"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6L7 1L12 6V12H9V8.5H5V12H2Z"/></svg><div class="mt-lbl">Home</div></div>
+                <div class="mt" role="tab"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="11" height="11" rx="2"/><line x1="1.5" y1="5.5" x2="12.5" y2="5.5"/><line x1="4.5" y1="0.5" x2="4.5" y2="3.5"/><line x1="9.5" y1="0.5" x2="9.5" y2="3.5"/></svg><div class="mt-lbl">Plano</div></div>
+                <div class="mt" role="tab"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="6"/><polygon points="5.5,4.5 10.5,7 5.5,9.5" fill="currentColor" stroke="none"/></svg><div class="mt-lbl">Correr</div></div>
+                <div class="mt" role="tab"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polyline points="1,11 4.5,7 7,9.5 10.5,4.5 13,2"/><polyline points="9.5,2 13,2 13,5.5"/></svg><div class="mt-lbl">Histórico</div></div>
+                <div class="mt act" role="tab" aria-selected="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="4.5" r="2.5"/><path d="M1.5 12.5C1.5 10 4 8 7 8s5.5 2 5.5 4.5"/></svg><div class="mt-lbl">Perfil</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-label">S1 · Perfil</div>
+          <div class="phone-sub">aba Perfil · visão principal</div>
+        </div>
+
+        <!-- S2 · EDITAR -->
+        <div class="phone-wrap">
+          <div class="iphone" data-od-id="screen-profile-edit">
+            <div class="dynamic-island"></div>
+            <div class="iphone-screen">
+              <div class="amb amb-tl"></div>
+              <div class="status-bar">
+                <span class="status-time">9:41</span>
+                <span class="status-icons">
+                  <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx=".6"/><rect x="3.7" y="4" width="2.6" height="6" rx=".6"/><rect x="7.4" y="2" width="2.6" height="8" rx=".6"/><rect x="11.1" y="0" width="2.6" height="10" rx=".6"/></svg>
+                  <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="1" y="1" width="19" height="9" rx="2.4" stroke="currentColor" opacity=".5"/><rect x="2.6" y="2.6" width="14" height="5.8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="1.6" height="3" rx=".8" fill="currentColor" opacity=".5"/></svg>
+                </span>
+              </div>
+
+              <div class="wd-nav">
+                <a href="#" class="wd-back">Cancelar</a>
+                <span class="wd-nav-title">Editar perfil</span>
+                <span style="width:56px"></span>
+              </div>
+
+              <div class="sc-body" style="gap:14px;padding-bottom:20px">
+                <div class="id-head" style="padding-top:0">
+                  <div class="id-avatar" style="width:64px;height:64px;font-size:23px">GF
+                    <span class="edit-dot"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v8M2 6h8"/></svg></span>
+                  </div>
+                  <button class="cta-ghost" style="width:auto;padding:6px 14px;margin-top:10px;font-size:11px">Alterar foto</button>
+                </div>
+
+                <div class="field">
+                  <label class="field-lbl" for="ed-name">Nome completo</label>
+                  <input class="field-input" id="ed-name" value="Gabriel Fonseca">
+                </div>
+
+                <div class="field">
+                  <span class="field-lbl">Gênero</span>
+                  <div class="seg">
+                    <div class="seg-opt on">Masculino</div>
+                    <div class="seg-opt">Feminino</div>
+                    <div class="seg-opt">Outro</div>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <span class="field-lbl">Peso</span>
+                  <div class="stepper">
+                    <button aria-label="Diminuir peso">−</button>
+                    <span class="step-val">75<small>kg</small></span>
+                    <button aria-label="Aumentar peso">+</button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <span class="field-lbl">Altura</span>
+                  <div class="stepper">
+                    <button aria-label="Diminuir altura">−</button>
+                    <span class="step-val">178<small>cm</small></span>
+                    <button aria-label="Aumentar altura">+</button>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <span class="field-lbl">Frequência cardíaca</span>
+                  <div style="display:flex;gap:8px">
+                    <div class="stepper" style="flex:1"><button aria-label="Diminuir FC repouso">−</button><span class="step-val">62<small>rep</small></span><button aria-label="Aumentar FC repouso">+</button></div>
+                    <div class="stepper" style="flex:1"><button aria-label="Diminuir FC máxima">−</button><span class="step-val">192<small>máx</small></span><button aria-label="Aumentar FC máxima">+</button></div>
+                  </div>
+                </div>
+
+                <button class="cta-primary">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>
+                  Salvar alterações
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="phone-label">S2 · Editar perfil</div>
+          <div class="phone-sub">folha de dados pessoais</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPONENT BREAKDOWN -->
+  <section class="section" data-od-id="components">
+    <div class="wrap">
+      <div class="section-eyebrow">Componentes</div>
+      <h2 class="section-title">Anatomia do perfil</h2>
+      <p class="section-desc">Os blocos que compõem a tela, em escala de leitura para revisão.</p>
+
+      <div class="comp-grid-3">
+        <div class="comp-card" data-od-id="comp-identity">
+          <div class="comp-lbl">Cabeçalho de identidade</div>
+          <div class="id-head">
+            <div class="id-avatar">GF<span class="edit-dot"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1.5l2 2L4 10l-2.5.5L2 8z"/></svg></span></div>
+            <div class="id-name">Gabriel Fonseca</div>
+            <div class="id-email">alexandrefonseca998@gmail.com</div>
+            <div class="id-chips"><span class="id-chip accent">Nível · Hobby</span><span class="id-chip violet">Meta · 10K</span></div>
+          </div>
+          <div class="comp-note">Avatar com gradiente da marca + iniciais (fallback quando não há foto). Botão de editar sobreposto no canto. Chips de nível e meta em cores semânticas.</div>
+        </div>
+
+        <div class="comp-card" data-od-id="comp-goal">
+          <div class="comp-lbl">Card de meta ativa</div>
+          <div class="goal-card" style="background:var(--bg-alt)">
+            <div class="goal-top">
+              <span class="goal-ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3.2"/><circle cx="8" cy="8" r=".7" fill="currentColor"/></svg></span>
+              <div><div class="goal-name">10K sub 47:30</div><div class="goal-meta">Tempo alvo pessoal · 12 semanas</div></div>
+              <span class="goal-badge">No prazo</span>
+            </div>
+            <div class="goal-bar"><div class="goal-fill"></div></div>
+            <div class="goal-scale"><span>Semana 8/12</span><span>64%</span></div>
+          </div>
+          <div class="comp-note">Barra de progresso com gradiente. Badge de viabilidade herda o mesmo mapa de cores do TrainingPlanDetailView (verde / âmbar / vermelho).</div>
+        </div>
+
+        <div class="comp-card" data-od-id="comp-days">
+          <div class="comp-lbl">Seletor de dias · estados</div>
+          <div class="days-row">
+            <div class="day-pill">D</div><div class="day-pill on">S</div><div class="day-pill">T</div><div class="day-pill on">Q</div><div class="day-pill">Q</div><div class="day-pill on">S</div><div class="day-pill">S</div>
+          </div>
+          <div class="days-foot"><span class="days-count">3 dias selecionados</span></div>
+          <div style="height:14px"></div>
+          <div style="display:flex;gap:8px">
+            <div class="day-pill" style="flex:1">off</div>
+            <div class="day-pill on" style="flex:1">on</div>
+            <div class="day-pill" style="flex:1;border-color:var(--primary-b)">hover</div>
+          </div>
+          <div class="comp-note">Pílula selecionada usa AthlyTheme.Gradient.brand + sombra; não-selecionada usa glassBackground + glassBorder — igual ao dayToggleButton do código.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer data-od-id="footer">
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <span class="nav-logo" style="width:26px;height:26px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13L8 3l5 10M5.5 9.5h5"/></svg></span>
+        Athly
+      </div>
+      <div class="foot-links">
+        <a href="athly-main-screens.html">App</a>
+        <a href="athly-profile.html">Perfil</a>
+        <a href="athly-settings.html">Ajustes</a>
+        <a href="athly-design-system.html">Design System</a>
+      </div>
+      <div class="foot-copy">ProfileView · redesign v2</div>
+    </div>
+  </footer>
+
+</body>
+</html>

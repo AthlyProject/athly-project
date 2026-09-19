@@ -658,6 +658,9 @@ struct UserProfile: Decodable {
     let weight: Double?
     let height: Double?
     let availableDays: [String]?
+    let fitnessLevel: String?
+    let restingHeartRate: Int?
+    let maxHeartRate: Int?
     let assessmentCompleted: Bool?
     let appleLinked: Bool?
     let googleLinked: Bool?

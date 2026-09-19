@@ -35,6 +35,15 @@ export class UserModel {
   @ApiPropertyOptional({ type: [String] })
   availableDays?: string[];
 
+  @ApiPropertyOptional()
+  fitnessLevel?: string;
+
+  @ApiPropertyOptional()
+  restingHeartRate?: number;
+
+  @ApiPropertyOptional()
+  maxHeartRate?: number;
+
   @ApiProperty()
   assessmentCompleted: boolean;
 

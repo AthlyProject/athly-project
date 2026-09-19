@@ -504,6 +504,8 @@ struct UpdateProfileRequest: Encodable, Sendable {
     let dateOfBirth: String?
     let availableDays: [String]?
     let gender: String?
+    let restingHeartRate: Int?
+    let maxHeartRate: Int?
 
     init(
         name: String? = nil,
@@ -511,7 +513,9 @@ struct UpdateProfileRequest: Encodable, Sendable {
         height: Double? = nil,
         dateOfBirth: String? = nil,
         availableDays: [String]? = nil,
-        gender: String? = nil
+        gender: String? = nil,
+        restingHeartRate: Int? = nil,
+        maxHeartRate: Int? = nil
     ) {
         self.name = name
         self.weight = weight
@@ -519,6 +523,25 @@ struct UpdateProfileRequest: Encodable, Sendable {
         self.dateOfBirth = dateOfBirth
         self.availableDays = availableDays
         self.gender = gender
+        self.restingHeartRate = restingHeartRate
+        self.maxHeartRate = maxHeartRate
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name, weight, height, dateOfBirth, availableDays, gender, restingHeartRate, maxHeartRate
+    }
+
+    // Campos nulos ficam fora do corpo: o PUT é parcial e o backend só toca no que veio.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encodeIfPresent(weight, forKey: .weight)
+        try container.encodeIfPresent(height, forKey: .height)
+        try container.encodeIfPresent(dateOfBirth, forKey: .dateOfBirth)
+        try container.encodeIfPresent(availableDays, forKey: .availableDays)
+        try container.encodeIfPresent(gender, forKey: .gender)
+        try container.encodeIfPresent(restingHeartRate, forKey: .restingHeartRate)
+        try container.encodeIfPresent(maxHeartRate, forKey: .maxHeartRate)
     }
 }
 
