@@ -261,6 +261,7 @@ final class AuthViewModel: ObservableObject {
         TrainingPlanCache.shared.clear()
         HealthKitRunsCache.shared.clear()
         AchievementStore.shared.clear()
+        DetectedRunAckStore.shared.clear()
         Task {
             await APIClient.shared.clearTokens()
         }
