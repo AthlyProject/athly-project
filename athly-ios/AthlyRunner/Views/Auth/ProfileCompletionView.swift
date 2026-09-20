@@ -269,7 +269,7 @@ struct ProfileCompletionView: View {
             )
             let profile = try await APIClient.shared.updateProfile(request)
             UserMetrics.weightKg = profile.weight ?? 0
-            authViewModel.markProfileCompleted()
+            authViewModel.applyProfile(profile)
         } catch {
             errorMessage = error.localizedDescription
         }

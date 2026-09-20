@@ -202,9 +202,21 @@ final class AuthViewModel: ObservableObject {
         await refreshUserName()
     }
 
-    /// Chamado pela `ProfileCompletionView` após o PUT /users/profile com sucesso.
-    func markProfileCompleted() {
-        needsProfileCompletion = false
+    /// Ponto único que mapeia um `UserProfile` recém-carregado no estado publicado:
+    /// nome exibido + gates de onboarding. Toda tela que recebe um perfil atualizado
+    /// (login, restauração de sessão, PUT /users/profile) deve passar por aqui.
+    func applyProfile(_ profile: UserProfile) {
+        userName = profile.name ?? ""
+        // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
+        assessmentCompleted = profile.assessmentCompleted ?? true
+        // Gate de completar perfil: contas sociais nascem sem peso/altura.
+        needsProfileCompletion = profile.weight == nil || profile.height == nil
+    }
+
+    /// Atualiza apenas o nome exibido. Para telas de *edição* de perfil, que não devem
+    /// reabrir os gates de onboarding caso o usuário limpe peso/altura.
+    func updateDisplayName(_ name: String?) {
+        userName = name ?? ""
     }
 
     /// Apresenta o GoogleSignIn e devolve o idToken — usado para *vincular* a conta Google sem
@@ -230,12 +242,7 @@ final class AuthViewModel: ObservableObject {
 
     func refreshUserName() async {
         guard let profile = try? await APIClient.shared.getUserProfile() else { return }
-        self.userName = profile.name ?? ""
-        // Gate do questionário: perfis antigos sem o campo contam como completos (fail-open).
-        self.assessmentCompleted = profile.assessmentCompleted ?? true
-        // Gate de completar perfil: contas sociais nascem sem peso/altura.
-        self.needsProfileCompletion =
-            profile.weight == nil || profile.height == nil
+        applyProfile(profile)
     }
 
     /// Chamado pela AssessmentView após o POST /assessment com sucesso.
@@ -288,9 +295,7 @@ final class AuthViewModel: ObservableObject {
                 let profile = try await APIClient.shared.getUserProfile()
                 isAuthenticated = true
                 postAuthChanged(true)
-                userName = profile.name ?? ""
-                assessmentCompleted = profile.assessmentCompleted ?? true
-                needsProfileCompletion = profile.weight == nil || profile.height == nil
+                applyProfile(profile)
             } catch APIError.unauthorized {
                 // Token expired and refresh also failed — wipe local session so
                 // RootView shows AuthWelcomeView as soon as the splash dismisses.

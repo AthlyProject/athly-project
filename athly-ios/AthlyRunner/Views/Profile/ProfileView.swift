@@ -487,6 +487,8 @@ struct ProfileView: View {
 
     private func applyProfile(_ profile: UserProfile) {
         userProfile = profile
+        // Mantém o nome exibido no restante do app (ex.: saudação do Dashboard) em dia.
+        authViewModel.updateDisplayName(profile.name)
         let days = Set(profile.availableDays ?? [])
         selectedDays = days
         savedDays = days
