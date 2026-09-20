@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/AthlyProject/athly-project/compare/v1.0.4...v1.1.0) (2026-09-20)
+
+
+### Features
+
+* make auth required to see swagger documentation ([72bd3a3](https://github.com/AthlyProject/athly-project/commit/72bd3a37b35667004c7f883169d6525d57f860b8))
+
 ## [1.0.4](https://github.com/AthlyProject/athly-project/compare/v1.0.3...v1.0.4) (2026-09-20)
 
 
