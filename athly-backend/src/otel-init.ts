@@ -11,16 +11,30 @@ import { BatchLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import { hostname } from 'os';
 
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
 const base = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? 'http://otel-collector:4318';
 
+// Grafana Cloud Application Observability bills on host-hours and identifies a host from
+// k8s.node.name -> host.id -> grafana.host.id, first match wins. On App Runner the first two
+// are unavailable: there is no Kubernetes node, and host.id is read from /etc/machine-id,
+// which the alpine runtime image does not ship. Without one of them the service is excluded
+// from host-hours accounting. grafana.host.id is the documented opt-in fallback; being the
+// lowest priority, a real host.id still takes precedence wherever one exists.
+// Per-instance by design - a constant would collapse an autoscaled service to a single host.
+const grafanaHostId = process.env.GRAFANA_HOST_ID?.trim() || hostname();
+
 // Supports OTel spec ("Authorization=Basic xxx") and JSON (AWS Secrets Manager default).
 const rawHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS ?? '';
 const headers: Record<string, string> = {};
 if (rawHeaders.trimStart().startsWith('{')) {
-  try { Object.assign(headers, JSON.parse(rawHeaders)); } catch { /* invalid JSON */ }
+  try {
+    Object.assign(headers, JSON.parse(rawHeaders));
+  } catch {
+    /* invalid JSON */
+  }
 } else {
   for (const pair of rawHeaders.split(',')) {
     const eq = pair.indexOf('=');
@@ -31,9 +45,9 @@ if (rawHeaders.trimStart().startsWith('{')) {
 const sdk = new NodeSDK({
   resource: new Resource({
     [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'athly-backend',
+    'grafana.host.id': grafanaHostId,
   }),
   traceExporter: new OTLPTraceExporter({ url: `${base}/v1/traces`, headers }),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metricReader: new PeriodicExportingMetricReader({
     exporter: new OTLPMetricExporter({ url: `${base}/v1/metrics`, headers }),
     exportIntervalMillis: 15_000,
@@ -59,7 +73,10 @@ const sdk = new NodeSDK({
 
 try {
   sdk.start();
-  diag.info(`[OTel] SDK started — ${base} headers=[${Object.keys(headers).join(', ') || 'none'}]`);
+  diag.info(
+    `[OTel] SDK started — ${base} headers=[${Object.keys(headers).join(', ') || 'none'}] ` +
+      `grafana.host.id=${grafanaHostId}`,
+  );
 } catch (err) {
   diag.error('[OTel] SDK failed to start', err as Error);
 }
