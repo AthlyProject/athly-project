@@ -1,6 +1,6 @@
 {
   "name": "athly-project",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Monorepo Athly — tooling de release (semantic-release + commitlint). Nao e um workspace npm: athly-backend e athly-frontend tem suas proprias instalacoes.",
   "scripts": {

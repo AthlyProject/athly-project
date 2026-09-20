@@ -1,3 +1,16 @@
+## [1.0.1](https://github.com/AthlyProject/athly-project/compare/v1.0.0...v1.0.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* trigger new version ([cca3724](https://github.com/AthlyProject/athly-project/commit/cca37249bb1d37fa2e92d175b25c1e1c643769b5))
+* trigger new version ([6df056c](https://github.com/AthlyProject/athly-project/commit/6df056c508bc17d28a47522f5d086136ad3672fa))
+
+
+### Reverts
+
+* Revert "feat: add git semantic release" ([0088746](https://github.com/AthlyProject/athly-project/commit/0088746a88ef59d99ed03ec4b78837dffda734c3))
+
 # 1.0.0 (2026-09-20)
 
 
