@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/AthlyProject/athly-project/compare/v1.0.3...v1.0.4) (2026-09-20)
+
+
+### Bug Fixes
+
+* send grafana host id ([05fa313](https://github.com/AthlyProject/athly-project/commit/05fa31377ea7bee0e2ca5e6d90a031caa67b4bf4))
+
 ## [1.0.3](https://github.com/AthlyProject/athly-project/compare/v1.0.2...v1.0.3) (2026-09-20)
 
 
