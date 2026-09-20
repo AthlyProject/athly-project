@@ -9,7 +9,7 @@ Full-stack application for AI-generated workout planning: React frontend and Nes
 | [athly-frontend](./athly-frontend) | React + Vite app (mocked, ready for API) |
 | [athly-backend](./athly-backend)   | NestJS REST API + Prisma + PostgreSQL    |
 
-## Prerequisites
+## Prerequisites 
 
 - **Node.js** 18+
 - **PostgreSQL** 14+ (for backend)
