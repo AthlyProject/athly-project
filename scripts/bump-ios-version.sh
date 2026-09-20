@@ -23,7 +23,7 @@ fi
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$REPO_ROOT/athly-ios/Config/Version.xcconfig"
 
-CURRENT_BUILD="$(grep -E '^[[:space:]]*CURRENT_PROJECT_VERSION' "$CONFIG" | head -1 | sed 's/.*=//' | tr -d '[:space:]')"
+CURRENT_BUILD="$(grep -E '^[[:space:]]*CURRENT_PROJECT_VERSION' "$CONFIG" | head -1 | sed 's/^[^=]*=//' | tr -d '[:space:]')"
 
 if [[ ! "$CURRENT_BUILD" =~ ^[0-9]+$ ]]; then
   echo "erro: CURRENT_PROJECT_VERSION invalido em $CONFIG: '$CURRENT_BUILD'" >&2
