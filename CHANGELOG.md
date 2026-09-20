@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/AthlyProject/athly-project/compare/v1.0.2...v1.0.3) (2026-09-20)
+
+
+### Bug Fixes
+
+* update name after registering ([e8735d9](https://github.com/AthlyProject/athly-project/commit/e8735d93b1077edbfc2495a71e1ff4454ef40d57))
+
 ## [1.0.2](https://github.com/AthlyProject/athly-project/compare/v1.0.1...v1.0.2) (2026-09-20)
 
 
