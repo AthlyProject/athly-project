@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Permite disparar um release manualmente
+
+# Um release por vez: dois pushes seguidos em main nao podem competir pela mesma tag.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # criar tag, GitHub Release e commitar o CHANGELOG/versao de volta
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: semantic-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # semantic-release precisa do historico completo de tags/commits
+          persist-credentials: false
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './package-lock.json'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🚀 Release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

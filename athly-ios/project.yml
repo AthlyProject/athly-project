@@ -68,6 +68,8 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - "$(GOOGLE_REVERSED_CLIENT_ID)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDisplayName: Athly
         CFBundleDevelopmentRegion: pt-BR
         CFBundleLocalizations:
@@ -154,6 +156,9 @@ targets:
     info:
       path: AthlyRunnerLiveActivity/Info.plist
       properties:
+        # Deve casar com a versao do app host, senao a App Store rejeita o upload.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: false
         NSExtension:

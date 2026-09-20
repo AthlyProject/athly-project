@@ -13,3 +13,7 @@ athly-ios/Config/OTel.User.xcconfig
 athly-ios/.deriveddata/
 *.xcuserstate
 **/xcuserdata/
+
+# Tooling de release na raiz (semantic-release + commitlint)
+/node_modules/
+.husky/_/

@@ -19,4 +19,9 @@ GOOGLE_IOS_CLIENT_ID = REPLACE_WITH_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.
 GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.REPLACE_WITH_GOOGLE_IOS_CLIENT_ID
 
 #include "OTel.xcconfig"
+
+// Versao do app (MARKETING_VERSION / CURRENT_PROJECT_VERSION).
+// Gerado pelo semantic-release — ver scripts/bump-ios-version.sh.
+#include "Version.xcconfig"
+
 #include? "User.xcconfig"

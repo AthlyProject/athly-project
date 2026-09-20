@@ -1,0 +1,19 @@
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      # No merge por squash o titulo do PR vira a mensagem do commit em main —
+      # que e exatamente o que o semantic-release le para calcular a versao.
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
