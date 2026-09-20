@@ -35,13 +35,8 @@ jobs:
 
       - name: 📦 Install Dependencies
         run: npm ci
-        env:
-          HUSKY: 0 # nao instalar hooks de git no CI
 
       - name: 🚀 Release
         run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # O commit de release embute as release notes no corpo; o hook de
-          # commit-msg nao deve rodar aqui de jeito nenhum.
-          HUSKY: 0
