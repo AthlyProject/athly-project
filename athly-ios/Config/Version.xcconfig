@@ -1,5 +1,5 @@
 // Gerado automaticamente pelo semantic-release. Nao editar a mao.
 // MARKETING_VERSION       -> CFBundleShortVersionString (ex: 1.4.0)
 // CURRENT_PROJECT_VERSION -> CFBundleVersion (build, sempre crescente)
-MARKETING_VERSION = 1.1.0
-CURRENT_PROJECT_VERSION = 7
+MARKETING_VERSION = 1.1.1
+CURRENT_PROJECT_VERSION = 8

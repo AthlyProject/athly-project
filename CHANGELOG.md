@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/AthlyProject/athly-project/compare/v1.1.0...v1.1.1) (2026-09-21)
+
+
+### Bug Fixes
+
+* remove Sunday automatic plan generation ([c51e26d](https://github.com/AthlyProject/athly-project/commit/c51e26d1c7abefdd3067f59671e6b2f606cf8685))
+
 # [1.1.0](https://github.com/AthlyProject/athly-project/compare/v1.0.4...v1.1.0) (2026-09-20)
 
 
