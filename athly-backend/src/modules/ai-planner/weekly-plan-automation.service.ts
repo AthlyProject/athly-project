@@ -5,13 +5,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { PlannerHealthContextService } from './planner-health-context.service';
 import { PlanGenerationJobsService } from './plan-generation-jobs.service';
-import {
-  addCalendarDays,
-  localCalendar,
-  mondayOf,
-  resumePlanningWindow,
-  sundayCutoffPassed,
-} from './weekly-calendar';
+import { addCalendarDays, localCalendar, mondayOf, resumePlanningWindow } from './weekly-calendar';
 
 @Injectable()
 export class WeeklyPlanAutomationService implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -84,9 +78,8 @@ export class WeeklyPlanAutomationService implements OnApplicationBootstrap, OnAp
         const lastFinished = week.workouts
           .filter((w) => w.dateScheduled.toISOString().slice(0, 10) === lastDate)
           .every((w) => ['done', 'partial', 'skipped'].includes(w.status));
-        const sunday = sundayCutoffPassed(week.weekStartDate, now, context.timeZone);
-        if (!lastFinished && !sunday) return undefined;
-        const reason = lastFinished ? 'last_workout' : 'sunday';
+        if (!lastFinished) return undefined;
+        const reason = 'last_workout';
         await tx.workout.updateMany({
           where: { weeklyGoalId, userId, status: 'scheduled', sportType: { not: 'other' } },
           data: { status: 'skipped' },
@@ -164,6 +157,7 @@ export class WeeklyPlanAutomationService implements OnApplicationBootstrap, OnAp
         });
         if (!history) return undefined; // Onboarding owns the first generation.
         const window = resumePlanningWindow(plan.user.availableDays, context.timeZone, now);
+        if (!window) return undefined;
         const target = new Date(window.weekStartDate);
         const existingWeek = await tx.weeklyGoal.findUnique({
           where: {

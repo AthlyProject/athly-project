@@ -26,12 +26,6 @@ export function localCalendar(now: Date, timeZone: string): { date: Date; hour: 
   };
 }
 
-export function sundayCutoffPassed(weekStart: Date, now: Date, timeZone: string): boolean {
-  const local = localCalendar(now, timeZone);
-  const sunday = addCalendarDays(weekStart, 6);
-  return local.date > sunday || (+local.date === +sunday && local.hour >= 23);
-}
-
 export const DEFAULT_AVAILABLE_DAYS = ['monday', 'tuesday', 'wednesday', 'friday', 'saturday'];
 const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
@@ -53,7 +47,7 @@ export function resumePlanningWindow(
   days: string[],
   timeZone: string,
   now = new Date(),
-): ResumePlanningWindow {
+): ResumePlanningWindow | null {
   const local = localCalendar(now, timeZone);
   const monday = mondayOf(local.date);
   const normalized = [
@@ -64,15 +58,12 @@ export function resumePlanningWindow(
     const date = addCalendarDays(monday, (DAY_KEYS.indexOf(day) + 6) % 7);
     return date >= local.date;
   });
-  const nextWeek = !remaining.length || sundayCutoffPassed(monday, now, timeZone);
+  // Opening the app only fills the current week; it never anticipates the next one.
+  if (!remaining.length) return null;
   return {
-    weekStartDate: addCalendarDays(monday, nextWeek ? 7 : 0)
-      .toISOString()
-      .slice(0, 10),
-    minTrainingDate: (nextWeek ? addCalendarDays(monday, 7) : local.date)
-      .toISOString()
-      .slice(0, 10),
-    availableDays: nextWeek ? available : remaining,
+    weekStartDate: monday.toISOString().slice(0, 10),
+    minTrainingDate: local.date.toISOString().slice(0, 10),
+    availableDays: remaining,
     timeZone,
   };
 }
@@ -87,8 +78,8 @@ export function resumeWindowAtExecution(window: ResumePlanningWindow, now = new 
   const availableDays = window.availableDays.filter(
     (day) => weekDates[(DAY_KEYS.indexOf(day) + 6) % 7] >= minTrainingDate,
   );
-  if (!availableDays.length || sundayCutoffPassed(monday, now, window.timeZone))
-    throw new ResumeWindowExpiredError();
+  // After local midnight on Monday, every date in the reserved week is in the past.
+  if (!availableDays.length) throw new ResumeWindowExpiredError();
   return {
     weekDates,
     weekStartDate: monday,
