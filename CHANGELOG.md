@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/AthlyProject/athly-project/compare/v1.1.1...v1.1.2) (2026-09-22)
+
+
+### Bug Fixes
+
+* load weekly automation flag from Secrets Manager ([145b105](https://github.com/AthlyProject/athly-project/commit/145b1057f9b84d5b40d93a3cd7995f59e31760f5))
+
 ## [1.1.1](https://github.com/AthlyProject/athly-project/compare/v1.1.0...v1.1.1) (2026-09-21)
 
 
