@@ -1,0 +1,94 @@
+name: Deploy Backend to AWS App Runner
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          allowed-account-ids: '730335545778'
+
+      - name: Locate backend, deploy main and wait for completion
+        shell: python
+        env:
+          AWS_PAGER: ''
+          PYTHONUNBUFFERED: '1'
+        run: |
+          import json
+          import os
+          import subprocess
+          import time
+
+          def aws(*args):
+              result = subprocess.run(
+                  ['aws', *args, '--output', 'json', '--no-cli-pager'],
+                  capture_output=True, text=True, timeout=90,
+              )
+              if result.returncode:
+                  raise SystemExit(result.stderr.strip())
+              return json.loads(result.stdout)
+
+          matches = []
+          for item in aws('apprunner', 'list-services')['ServiceSummaryList']:
+              service = aws('apprunner', 'describe-service', '--service-arn', item['ServiceArn'])['Service']
+              repo = service['SourceConfiguration'].get('CodeRepository', {})
+              if (repo.get('RepositoryUrl', '').removesuffix('.git').rstrip('/') ==
+                      'https://github.com/AthlyProject/athly-project'
+                      and repo.get('SourceDirectory', '').strip('/') == 'athly-backend'
+                      and repo.get('SourceCodeVersion', {}).get('Value') == 'main'):
+                  matches.append(service)
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one App Runner backend for athly-project/main; found {len(matches)}.')
+          service = matches[0]
+          arn = service['ServiceArn']
+          config = service['SourceConfiguration']['CodeRepository']['CodeConfiguration']
+          if config['ConfigurationSource'] != 'REPOSITORY':
+              raise SystemExit('Service ignores apprunner.yaml (ConfigurationSource is not REPOSITORY). No deployment started.')
+          print(f"Backend: {service['ServiceName']} ({arn})", flush=True)
+
+          # Wait for an automatic deployment/update already in progress before redeploying.
+          deadline = time.monotonic() + 10 * 60
+          while service['Status'] == 'OPERATION_IN_PROGRESS':
+              if time.monotonic() >= deadline:
+                  raise SystemExit('An existing App Runner operation is still running. No new deployment started.')
+              print('Waiting for the existing App Runner operation...', flush=True)
+              time.sleep(20)
+              service = aws('apprunner', 'describe-service', '--service-arn', arn)['Service']
+          if service['Status'] != 'RUNNING':
+              raise SystemExit(f"Backend is {service['Status']}; no deployment started.")
+
+          operation = aws('apprunner', 'start-deployment', '--service-arn', arn)['OperationId']
+          print(f'Deployment started: {operation}', flush=True)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"Backend: `{service['ServiceName']}`\n\nOperation: `{operation}`\n\n")
+          deadline = time.monotonic() + 25 * 60
+          while time.monotonic() < deadline:
+              operations = aws('apprunner', 'list-operations', '--service-arn', arn)['OperationSummaryList']
+              current = next((item for item in operations if item['Id'] == operation), None)
+              status = current['Status'] if current else 'PENDING'
+              print(f'Deployment {operation}: {status}', flush=True)
+              if status == 'SUCCEEDED':
+                  with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                      summary.write('Deployment: **SUCCEEDED**\n')
+                  break
+              if status in ('FAILED', 'ROLLBACK_IN_PROGRESS', 'ROLLBACK_FAILED', 'ROLLBACK_SUCCEEDED'):
+                  raise SystemExit(f'Deployment did not succeed: {status}. Inspect App Runner deployment logs.')
+              time.sleep(20)
+          else:
+              raise SystemExit('Timed out waiting for App Runner. The deployment may still be running.')
