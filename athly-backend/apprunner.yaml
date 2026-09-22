@@ -10,8 +10,6 @@ run:
   network:
     port: 4000
   env:
-    - name: WEEKLY_PLAN_AUTOMATION_ENABLED
-      value: "false"
     - name: NODE_ENV
       value: production
     - name: OTEL_SERVICE_NAME
@@ -41,6 +39,8 @@ run:
     - name: SWAGGER_DOCS_USER
       value: "athly"
   secrets:
+    - name: WEEKLY_PLAN_AUTOMATION_ENABLED
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:WEEKLY_PLAN_AUTOMATION_ENABLED::"
     - name: GEMINI_API_KEY
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:GEMINI_API_KEY::"
     - name: DATABASE_URL

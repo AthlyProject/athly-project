@@ -63,8 +63,13 @@ o endpoint async existente permite tentativa explícita para a mesma `weekStartD
 4. Publicar o iOS com o entitlement
    `com.apple.developer.healthkit.background-delivery`; o perfil de assinatura deve
    incluir essa capacidade. O projeto Xcode e `project.yml` estão atualizados.
-5. Habilitar `WEEKLY_PLAN_AUTOMATION_ENABLED=true` no ambiente desejado após validar.
-   O padrão em `.env.example` e `apprunner.yaml` é `false`.
+5. No App Runner, criar a chave `WEEKLY_PLAN_AUTOMATION_ENABLED` dentro do segredo
+   `prod/BackEnd/Athly`, com valor textual `true` para habilitar ou `false` para
+   desabilitar. O `apprunner.yaml` referencia essa chave em `run.secrets`.
+   Fazer um novo deploy do backend após alterar o valor: o App Runner carrega os
+   segredos durante o deploy. Criar a chave sem referenciá-la na configuração do
+   serviço não a disponibiliza ao backend. Em desenvolvimento local, configurar
+   a variável no ambiente; o padrão em `.env.example` e no código permanece `false`.
 
 Desabilitar a flag interrompe novos fechamentos automáticos e retomadas. Jobs já reservados
 continuam sendo enviados/processados. A flag não desfaz `skipped` nem semanas geradas.
