@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/AthlyProject/athly-project/compare/v1.1.2...v1.2.0) (2026-10-04)
+
+
+### Features
+
+* terms of use ([d468cd1](https://github.com/AthlyProject/athly-project/commit/d468cd18261345a2fcc509053a6c89611f870848))
+
 ## [1.1.2](https://github.com/AthlyProject/athly-project/compare/v1.1.1...v1.1.2) (2026-09-22)
 
 
