@@ -68,6 +68,10 @@ extension BackendErrorBody {
 /// mesmo `Localizable.xcstrings`. Um código sem entrada nesta tabela cai no `message` do
 /// servidor — só códigos que o app realmente mostra ao usuário precisam estar aqui.
 enum BackendErrorCode {
+    /// Login social que criaria uma conta nova sem aceite de Termos/Privacidade — o app pede o
+    /// aceite e reenvia o login (ver `APIError.legalConsentRequired`).
+    static let legalConsentRequired = "AUTH_LEGAL_CONSENT_REQUIRED"
+
     static func localizedMessage(for code: String) -> String? {
         switch code {
 
@@ -101,6 +105,8 @@ enum BackendErrorCode {
             return String(localized: "Defina uma senha ou vincule outra conta antes de desvincular esta.")
         case "AUTH_ADMIN_ACCESS_DENIED":
             return String(localized: "Acesso restrito.")
+        case legalConsentRequired:
+            return String(localized: "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta.")
         case "USER_NOT_FOUND":
             return String(localized: "Usuário não encontrado")
 
@@ -171,6 +177,10 @@ enum BackendErrorCode {
             return String(localized: "Senha deve conter letras maiúsculas, minúsculas e números")
         case "VALIDATION_CODE_MATCHES":
             return String(localized: "Código inválido")
+        case "VALIDATION_TERMS_ACCEPTED_EQUALS":
+            return String(localized: "Você precisa aceitar os Termos de Uso")
+        case "VALIDATION_PRIVACY_ACCEPTED_EQUALS":
+            return String(localized: "Você precisa aceitar a Política de Privacidade")
 
         default:
             return nil

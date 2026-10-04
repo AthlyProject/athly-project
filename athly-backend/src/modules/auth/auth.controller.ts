@@ -64,13 +64,13 @@ export class AuthController {
   @Post('google')
   @ApiOkResponse({ type: AuthPayload })
   async google(@Body() input: GoogleLoginDto): Promise<AuthPayload> {
-    return this.authService.loginWithGoogle(input.idToken);
+    return this.authService.loginWithGoogle(input.idToken, input);
   }
 
   @Post('apple')
   @ApiOkResponse({ type: AuthPayload })
   async apple(@Body() input: AppleLoginDto): Promise<AuthPayload> {
-    return this.authService.loginWithApple(input.identityToken, input.fullName);
+    return this.authService.loginWithApple(input.identityToken, input.fullName, input);
   }
 
   @Post('apple/link')

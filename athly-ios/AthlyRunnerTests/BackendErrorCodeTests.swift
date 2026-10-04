@@ -91,4 +91,15 @@ final class BackendErrorCodeTests: XCTestCase {
         XCTAssertEqual(BackendErrorCode.localizedMessage(for: "AUTH_REFRESH_TOKEN_INVALID"), expired)
         XCTAssertEqual(BackendErrorCode.localizedMessage(for: "AUTH_REFRESH_TOKEN_EXPIRED"), expired)
     }
+
+    func testLegalConsentCodesAreLocalized() {
+        // O código do backend tem que bater com a constante usada para detectar o erro no APIClient.
+        XCTAssertEqual(BackendErrorCode.legalConsentRequired, "AUTH_LEGAL_CONSENT_REQUIRED")
+        XCTAssertEqual(
+            APIError.legalConsentRequired.errorDescription,
+            String(localized: "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta.")
+        )
+        XCTAssertNotNil(BackendErrorCode.localizedMessage(for: "VALIDATION_TERMS_ACCEPTED_EQUALS"))
+        XCTAssertNotNil(BackendErrorCode.localizedMessage(for: "VALIDATION_PRIVACY_ACCEPTED_EQUALS"))
+    }
 }

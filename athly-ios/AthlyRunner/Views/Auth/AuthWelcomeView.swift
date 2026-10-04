@@ -167,11 +167,12 @@ struct AuthWelcomeView: View {
             }
             .buttonStyle(.plain)
 
-            Text("Ao continuar, você concorda com os Termos de Uso e Política de Privacidade")
+            Text("Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)")
                 .font(AthlyTheme.Typography.body(9))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 4)
+                .legalDocumentLinks()
         }
     }
 }
