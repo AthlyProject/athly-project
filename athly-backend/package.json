@@ -32,6 +32,7 @@
     "@as-integrations/express5": "^1.1.2",
     "@aws-sdk/client-ses": "^3.1037.0",
     "@aws-sdk/client-sqs": "^3.1121.0",
+    "@garmin/fitsdk": "21.217.0",
     "@google/genai": "^2.13.0",
     "@nestjs/apollo": "^13.2.4",
     "@nestjs/common": "^11.0.1",
@@ -102,6 +103,9 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@garmin/fitsdk/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

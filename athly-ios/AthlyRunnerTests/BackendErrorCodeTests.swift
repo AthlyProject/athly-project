@@ -18,6 +18,18 @@ final class BackendErrorCodeTests: XCTestCase {
         XCTAssertEqual(error.localizedText, String(localized: "Credenciais inválidas"))
     }
 
+    func testMapsGarminPairingCodes() throws {
+        let cases = [
+            ("CIQ_PAIRING_CODE_INVALID", "Código inválido ou expirado. Confira o código no relógio."),
+            ("CIQ_PAIRING_RATE_LIMITED", "Muitas tentativas. Aguarde alguns minutos e tente de novo."),
+            ("CIQ_DEVICE_LIMIT_REACHED", "Você já tem 5 relógios conectados. Desconecte um para continuar."),
+        ]
+        for (code, expected) in cases {
+            let error = try body(#"{ "statusCode": 400, "code": "\#(code)", "message": "texto do servidor" }"#)
+            XCTAssertEqual(error.localizedText, String(localized: String.LocalizationValue(expected)), code)
+        }
+    }
+
     func testFallsBackToServerMessageForUnknownCode() throws {
         let error = try body("""
         { "statusCode": 409, "code": "SOMETHING_NEW_FROM_THE_FUTURE", "message": "Mensagem do servidor" }

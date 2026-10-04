@@ -18,6 +18,7 @@ import { GoalsModule } from './modules/goals/goals.module';
 import { WaitlistModule } from './modules/waitlist/waitlist.module';
 import { EmailModule } from './modules/email/email.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ConnectIqModule } from './modules/connect-iq/connect-iq.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     GoalsModule,
     WaitlistModule,
     NotificationsModule,
+    ConnectIqModule,
   ],
   controllers: [AppController],
   providers: [AppService],

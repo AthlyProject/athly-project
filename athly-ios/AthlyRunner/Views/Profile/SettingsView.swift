@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var profile: UserProfile?
     @State private var remindersEnabled = true
     @State private var showCustomerCenter = false
+    /// Relógios Garmin pareados; nil enquanto carrega (ou sem rede).
+    @State private var garminDevices: [ConnectIqDevice]?
 
     private static let adminEmails: Set<String> = [
         "alexandrefonseca998@gmail.com",
@@ -73,7 +75,13 @@ struct SettingsView: View {
         .navigationTitle("Ajustes")
         .navigationBarTitleDisplayMode(.inline)
         .task { await loadProfileIfNeeded() }
-        .onAppear { remindersEnabled = NotificationService.shared.isEnabled }
+        .onAppear {
+            remindersEnabled = NotificationService.shared.isEnabled
+            // onAppear (e não .task): atualiza o status ao voltar da tela do relógio.
+            if FeatureFlags.garminWatchSync {
+                Task { garminDevices = try? await APIClient.shared.listConnectIqDevices() }
+            }
+        }
         .sheet(isPresented: $showCustomerCenter) {
             CustomerCenterView()
         }
@@ -168,6 +176,24 @@ struct SettingsView: View {
                 }
             }
             .buttonStyle(.plain)
+
+            if FeatureFlags.garminWatchSync {
+                AthlyRowDivider()
+
+                NavigationLink {
+                    GarminConnectView()
+                } label: {
+                    AthlyListRow(
+                        systemImage: "stopwatch.fill",
+                        tint: AthlyTheme.Color.primary,
+                        title: Text("Relógio Garmin"),
+                        subtitle: Text(garminSummary)
+                    ) {
+                        AthlyChevron()
+                    }
+                }
+                .buttonStyle(.plain)
+            }
 
             AthlyRowDivider()
 
@@ -303,6 +329,18 @@ struct SettingsView: View {
         return entitlementManager.isEntitled
             ? String(localized: "Sua assinatura é cobrada e gerenciada pela App Store.")
             : String(localized: "Assine para desbloquear todos os recursos do Athly.")
+    }
+
+    private var garminSummary: String {
+        guard let devices = garminDevices else {
+            return String(localized: "Treinos da Athly no seu relógio")
+        }
+        if devices.isEmpty {
+            return String(localized: "Não conectado")
+        }
+        return devices.contains(where: \.isActive)
+            ? String(localized: "Conectado")
+            : String(localized: "Aguardando o relógio…")
     }
 
     private var connectedAccountsSummary: String {

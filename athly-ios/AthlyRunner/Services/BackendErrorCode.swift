@@ -159,6 +159,15 @@ enum BackendErrorCode {
         case "AI_PLAN_GENERATION_FAILED":
             return String(localized: "Não foi possível gerar seu plano agora. Tente novamente.")
 
+        // MARK: Relógio Garmin
+
+        case "CIQ_PAIRING_CODE_INVALID":
+            return String(localized: "Código inválido ou expirado. Confira o código no relógio.")
+        case "CIQ_PAIRING_RATE_LIMITED":
+            return String(localized: "Muitas tentativas. Aguarde alguns minutos e tente de novo.")
+        case "CIQ_DEVICE_LIMIT_REACHED":
+            return String(localized: "Você já tem 5 relógios conectados. Desconecte um para continuar.")
+
         // MARK: Validação de payload
         //
         // Códigos derivados de campo + constraint do class-validator, ver

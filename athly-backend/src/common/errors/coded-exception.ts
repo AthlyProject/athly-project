@@ -3,9 +3,11 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   HttpStatus,
   InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ErrorCode } from './error-codes';
@@ -75,5 +77,20 @@ export class CodedInternalServerErrorException extends InternalServerErrorExcept
 export class CodedBadGatewayException extends BadGatewayException {
   constructor(code: ErrorCode, message: string) {
     super(body(HttpStatus.BAD_GATEWAY, 'Bad Gateway', code, message));
+  }
+}
+
+export class CodedTooManyRequestsException extends HttpException {
+  constructor(code: ErrorCode, message: string) {
+    super(
+      body(HttpStatus.TOO_MANY_REQUESTS, 'Too Many Requests', code, message),
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+}
+
+export class CodedServiceUnavailableException extends ServiceUnavailableException {
+  constructor(code: ErrorCode, message: string) {
+    super(body(HttpStatus.SERVICE_UNAVAILABLE, 'Service Unavailable', code, message));
   }
 }

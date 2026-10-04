@@ -17,3 +17,12 @@ athly-ios/.deriveddata/
 # Tooling de release na raiz (semantic-release + commitlint)
 /node_modules/
 .husky/_/
+
+# App Connect IQ (Garmin): builds e chave de assinatura do desenvolvedor (nunca commitar — todas as
+# versões da loja precisam da mesma chave; guarde um backup fora do repositório)
+athly-garmin/bin/
+athly-garmin/**/bin/
+athly-garmin/spike/fixtures/
+athly-garmin/spike/node_modules/
+*.der
+*.pem

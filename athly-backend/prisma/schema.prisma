@@ -131,6 +131,8 @@ model User {
   planGenerationJobs PlanGenerationJob[]
   pushDevices        PushDevice[]
   passwordResetCodes PasswordResetCode[]
+  connectIqDevices   ConnectIqDevice[]
+  connectIqPairings  ConnectIqPairing[]
 
   @@map("users")
 }
@@ -191,6 +193,8 @@ model Workout {
   feedback     WorkoutFeedback[]
   aiReasoning  AiReasoning?
 
+  // Manifesto do relógio Garmin: treinos do usuário numa janela de datas, a cada abertura do app.
+  @@index([userId, dateScheduled])
   @@map("workouts")
 }
 
@@ -461,4 +465,53 @@ model WaitlistEntry {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("waitlist_entries")
+}
+
+// Relógio Garmin pareado com o app Connect IQ da Athly. O token do relógio é guardado só como
+// hash (sha256); desparear apaga a linha e o token deixa de valer na hora.
+model ConnectIqDevice {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  tokenHash      String?   @unique @map("token_hash")
+  tokenIssuedAt  DateTime? @map("token_issued_at")
+  activatedAt    DateTime? @map("activated_at")
+  hardwareIdHash String?   @map("hardware_id_hash")
+  partNumber     String?   @map("part_number") @db.VarChar(32)
+  apiLevel       String?   @map("api_level") @db.VarChar(16)
+  appVersion     String?   @map("app_version") @db.VarChar(16)
+  pairedAt       DateTime  @default(now()) @map("paired_at")
+  lastSeenAt     DateTime? @map("last_seen_at")
+  lastSyncAt     DateTime? @map("last_sync_at")
+  lastSyncReport Json?     @map("last_sync_report")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pairing ConnectIqPairing?
+
+  @@index([userId])
+  @@map("connect_iq_devices")
+}
+
+// Código de pareamento mostrado no relógio (vale 10 min). Código e pollToken só como hash.
+model ConnectIqPairing {
+  id              String    @id @default(uuid())
+  codeHash        String    @unique @map("code_hash")
+  pollTokenHash   String    @unique @map("poll_token_hash")
+  hardwareIdHash  String?   @map("hardware_id_hash")
+  partNumber      String?   @map("part_number") @db.VarChar(32)
+  apiLevel        String?   @map("api_level") @db.VarChar(16)
+  appVersion      String?   @map("app_version") @db.VarChar(16)
+  expiresAt       DateTime  @map("expires_at")
+  claimedByUserId String?   @map("claimed_by_user_id")
+  claimedAt       DateTime? @map("claimed_at")
+  deviceId        String?   @unique @map("device_id")
+  consumedAt      DateTime? @map("consumed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  claimedBy User?            @relation(fields: [claimedByUserId], references: [id], onDelete: Cascade)
+  device    ConnectIqDevice? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("connect_iq_pairings")
 }

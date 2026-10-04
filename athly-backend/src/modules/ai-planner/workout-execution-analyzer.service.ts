@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { extractSegmentTree } from '../workouts/utils/extract-segment-tree';
+import { paceRangeOf } from '../workouts/utils/pace-range';
 import type { DetailedSessionDto, SegmentDto } from './dto/plan-from-health.dto';
 import { SegmentLabel } from './dto/plan-from-health.dto';
 
@@ -224,7 +226,7 @@ export class WorkoutExecutionAnalyzerService {
 
     // Fonte da verdade: a árvore de segments persistida com o treino. Os blocks
     // legados achatam a faixa de pace e perdem a estrutura de reps — só servem de fallback.
-    const tree = this.extractSegmentTree(workout.segments);
+    const tree = extractSegmentTree(workout.segments);
     const fromTree = tree ? this.summarizeFromTree(tree) : null;
 
     const legacyDistanceKm = blocks.reduce(
@@ -277,16 +279,6 @@ export class WorkoutExecutionAnalyzerService {
     if (typeof block?.durationMinutes === 'number' && block.durationMinutes > 0)
       return block.durationMinutes;
     return undefined;
-  }
-
-  /** Aceita tanto o envelope `{schemaVersion, sport, segments}` quanto um array puro. */
-  private extractSegmentTree(raw: unknown): any[] | null {
-    if (Array.isArray(raw)) return raw.length > 0 ? raw : null;
-    if (raw && typeof raw === 'object' && Array.isArray((raw as any).segments)) {
-      const segs = (raw as any).segments;
-      return segs.length > 0 ? segs : null;
-    }
-    return null;
   }
 
   private summarizeFromTree(segments: any[]): {
@@ -388,15 +380,7 @@ export class WorkoutExecutionAnalyzerService {
       if (firstDist?.value) repDistanceKm = firstDist.value / 1000;
     }
 
-    let targetPaceRange: { minSecPerKm: number; maxSecPerKm: number } | undefined;
-    if (paceHints.length > 0) {
-      const lo = Math.min(...paceHints);
-      const hi = Math.max(...paceHints);
-      targetPaceRange =
-        lo === hi
-          ? { minSecPerKm: lo - 10, maxSecPerKm: hi + 10 }
-          : { minSecPerKm: lo, maxSecPerKm: hi };
-    }
+    const targetPaceRange = paceRangeOf(paceHints);
 
     // Converte os trechos por distância usando o meio da faixa de pace, quando existir.
     if (mainDistanceMNoPace > 0 && targetPaceRange) {

@@ -277,6 +277,21 @@ actor APIClient {
         let _: EmptyResponse = try await delete("/notifications/devices/\(token)")
     }
 
+    // MARK: - Relógio Garmin (app Connect IQ)
+
+    func listConnectIqDevices() async throws -> [ConnectIqDevice] {
+        try await get("/connect-iq/devices")
+    }
+
+    /// Confirma o código mostrado no relógio; o relógio recebe o próprio token na consulta seguinte.
+    func claimConnectIqPairing(code: String) async throws -> ConnectIqDevice {
+        try await post("/connect-iq/pairings/claim", body: ClaimConnectIqPairingRequest(code: code))
+    }
+
+    func unpairConnectIqDevice(id: String) async throws {
+        let _: EmptyResponse = try await delete("/connect-iq/devices/\(id)")
+    }
+
     // MARK: - Assessment (questionário de onboarding)
 
     /// Envia o questionário de avaliação (mesmo payload do athly-frontend).

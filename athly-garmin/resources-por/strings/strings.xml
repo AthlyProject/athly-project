@@ -1,0 +1,42 @@
+<strings>
+    <string id="AppName" scope="glance">Athly</string>
+    <string id="GlanceEmpty" scope="glance">Abra para sincronizar</string>
+    <string id="Today" scope="glance">Hoje</string>
+    <string id="Tomorrow" scope="glance">Amanhã</string>
+    <string id="Sun" scope="glance">Dom</string>
+    <string id="Mon" scope="glance">Seg</string>
+    <string id="Tue" scope="glance">Ter</string>
+    <string id="Wed" scope="glance">Qua</string>
+    <string id="Thu" scope="glance">Qui</string>
+    <string id="Fri" scope="glance">Sex</string>
+    <string id="Sat" scope="glance">Sáb</string>
+
+    <string id="PairTitle">Conectar relógio</string>
+    <string id="PairInstructions">No app Athly, vá em Configurações > Relógio Garmin e digite:</string>
+    <string id="PairRequesting">Gerando código...</string>
+    <string id="PairExpires">Expira em $1$ min</string>
+    <string id="PairExpired">Código expirou. Toque para gerar outro.</string>
+
+    <string id="Syncing">Sincronizando...</string>
+    <string id="Downloading">Baixando $1$ de $2$</string>
+    <string id="SyncPartial">$1$ treino(s) não baixaram</string>
+    <string id="SyncNow">Sincronizar agora</string>
+    <string id="LastSync">Última: $1$</string>
+    <string id="NoWorkouts">Nenhum treino nos próximos 7 dias</string>
+    <string id="WorkoutMissing">Este treino não está mais no relógio. Sincronize de novo.</string>
+    <string id="TapToContinue">Toque para ver os treinos</string>
+    <string id="TapToRetry">Toque para tentar de novo</string>
+
+    <string id="Disconnect">Desconectar</string>
+    <string id="DisconnectTitle">Desconectar?</string>
+    <string id="Cancel">Cancelar</string>
+
+    <string id="ErrPhone">Abra o Garmin Connect no celular e tente de novo</string>
+    <string id="ErrTimeout">Sem resposta. Tente de novo.</string>
+    <string id="ErrSecure">Erro de conexão segura</string>
+    <string id="ErrServer">Athly indisponível. Tente mais tarde.</string>
+    <string id="ErrStorage">Memória de treinos cheia. Apague treinos antigos no relógio.</string>
+    <string id="ErrUnpaired">Relógio desconectado. Pareie de novo.</string>
+    <string id="ErrUnsupported">Este relógio não baixa treinos.</string>
+    <string id="ErrGeneric">Falha ao sincronizar ($1$)</string>
+</strings>

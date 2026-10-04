@@ -555,6 +555,41 @@ struct WorkoutFeedbackRequest: Encodable, Sendable {
 
 struct EmptyResponse: Decodable, Sendable {}
 
+// MARK: - Relógio Garmin (app Connect IQ)
+
+/// Relógio pareado com o app Connect IQ da Athly (`GET /connect-iq/devices`).
+struct ConnectIqDevice: Decodable, Identifiable, Sendable, Equatable {
+    let id: String
+    /// `pending` até o relógio buscar o token e sincronizar pela primeira vez; depois `active`.
+    let status: String
+    let partNumber: String?
+    let appVersion: String?
+    /// Datas ISO 8601 com milissegundos (o decoder padrão do app não aceita frações de segundo).
+    let pairedAt: String
+    let lastSeenAt: String?
+    let lastSyncAt: String?
+    let lastSync: ConnectIqLastSync?
+
+    var isActive: Bool { status == "active" }
+
+    var lastSyncDate: Date? {
+        lastSyncAt.flatMap { try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse($0) }
+    }
+}
+
+/// Resumo da última sincronização enviado pelo relógio.
+struct ConnectIqLastSync: Decodable, Sendable, Equatable {
+    let downloaded: Int
+    let removed: Int
+    let failed: Int
+    let storageFull: Bool
+    let syncedIds: [String]
+}
+
+struct ClaimConnectIqPairingRequest: Encodable, Sendable {
+    let code: String
+}
+
 // MARK: - Week (assembled on client)
 
 struct Week: Identifiable, Sendable {

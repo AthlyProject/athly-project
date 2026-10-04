@@ -1,5 +1,9 @@
 import { BadRequestException, NotFoundException, ValidationError } from '@nestjs/common';
-import { CodedBadRequestException, CodedNotFoundException } from './coded-exception';
+import {
+  CodedBadRequestException,
+  CodedNotFoundException,
+  CodedTooManyRequestsException,
+} from './coded-exception';
 import { ErrorCode } from './error-codes';
 import { validationExceptionFactory, ValidationErrorBody } from './validation-exception.factory';
 
@@ -39,6 +43,22 @@ describe('CodedException', () => {
     expect(
       new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found').message,
     ).toBe('Workout not found');
+  });
+
+  it('monta 429 no mesmo formato (o Nest não tem exceção pronta para isso)', () => {
+    const exception = new CodedTooManyRequestsException(
+      ErrorCode.CIQ_PAIRING_RATE_LIMITED,
+      'Muitas tentativas',
+    );
+
+    expect(exception.getStatus()).toBe(429);
+    expect(exception.getResponse()).toEqual({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      code: ErrorCode.CIQ_PAIRING_RATE_LIMITED,
+      message: 'Muitas tentativas',
+    });
+    expect(exception.message).toBe('Muitas tentativas');
   });
 });
 
