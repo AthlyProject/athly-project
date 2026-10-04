@@ -110,6 +110,12 @@ model User {
   // Laudo das últimas semanas do plano deletado — brifa a IA na criação do próximo plano (consume-once).
   lastTrainingReport    Json?     @map("last_training_report")
   lastTrainingReportAt  DateTime? @map("last_training_report_at")
+  // Aceite legal (Termos de Uso / Política de Privacidade): quando e qual versão de cada
+  // documento o usuário aceitou. Versão ≠ a atual (ver common/legal) → app pede novo aceite.
+  termsAcceptedAt       DateTime? @map("terms_accepted_at")
+  termsVersion          String?   @map("terms_version")
+  privacyAcceptedAt     DateTime? @map("privacy_accepted_at")
+  privacyVersion        String?   @map("privacy_version")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

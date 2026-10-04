@@ -7,11 +7,15 @@ struct RegisterView: View {
 
     @State private var email         = ""
     @State private var password      = ""
-    @State private var termsAccepted = false
-    @State private var showPassword  = false
+    @State private var termsAccepted   = false
+    @State private var privacyAccepted = false
+    @State private var showPassword    = false
+
+    /// Aceite obrigatório para qualquer forma de criar conta (email ou Apple).
+    private var legalAccepted: Bool { termsAccepted && privacyAccepted }
 
     private var isFormValid: Bool {
-        !email.isEmpty && password.count >= 8 && termsAccepted
+        !email.isEmpty && password.count >= 8 && legalAccepted
     }
 
     var body: some View {
@@ -78,8 +82,8 @@ struct RegisterView: View {
                     passwordSection
                         .padding(.bottom, 12)
 
-                    // Terms
-                    termsRow
+                    // Termos + Privacidade (dois aceites independentes)
+                    LegalConsentChecklist(termsAccepted: $termsAccepted, privacyAccepted: $privacyAccepted)
                         .padding(.bottom, 14)
 
                     // Error
@@ -124,7 +128,7 @@ struct RegisterView: View {
                         switch result {
                         case .success(let auth):
                             guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else { return }
-                            Task { await authViewModel.signInWithApple(credential: credential) }
+                            Task { await authViewModel.signInWithApple(credential: credential, legalConsent: true) }
                         case .failure(let error):
                             if (error as? ASAuthorizationError)?.code != .canceled {
                                 Task { @MainActor in authViewModel.errorMessage = error.localizedDescription }
@@ -134,6 +138,10 @@ struct RegisterView: View {
                     .signInWithAppleButtonStyle(.white)
                     .frame(height: 44)
                     .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
+                    // Cadastro via Apple também exige o aceite acima.
+                    .disabled(!legalAccepted)
+                    .allowsHitTesting(legalAccepted)
+                    .opacity(legalAccepted ? 1 : 0.55)
                     .padding(.bottom, 14)
 
                     // Footer
@@ -199,44 +207,7 @@ struct RegisterView: View {
         }
     }
 
-    // MARK: - Terms
-
-    private var termsRow: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Button { termsAccepted.toggle() } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(termsAccepted ? AthlyTheme.Color.primarySoft : .clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .stroke(
-                                    termsAccepted ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid,
-                                    lineWidth: 2
-                                )
-                        )
-                        .frame(width: 18, height: 18)
-                    if termsAccepted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(AthlyTheme.Color.primary)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 1)
-
-            termsText
-        }
-    }
-
     // MARK: - Helpers
-
-    private var termsText: some View {
-        (Text("Concordo com os ").foregroundColor(AthlyTheme.Color.textSecondary)
-        + Text("Termos de Uso e Política de Privacidade").foregroundColor(AthlyTheme.Color.primary)
-        + Text(" da Athly").foregroundColor(AthlyTheme.Color.textSecondary))
-        .font(AthlyTheme.Typography.body(10))
-    }
 
     private func authField<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 5) {

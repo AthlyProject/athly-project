@@ -8,6 +8,7 @@ import appleSignin from 'apple-signin-auth';
 import {
   CodedBadRequestException,
   CodedConflictException,
+  CodedForbiddenException,
   CodedUnauthorizedException,
 } from '../../common/errors/coded-exception';
 import { ErrorCode } from '../../common/errors/error-codes';
@@ -24,6 +25,14 @@ interface SocialIdentity {
   providerUserId: string;
   email?: string | null;
   name?: string | null;
+  /** O usuário aceitou explicitamente Termos + Privacidade antes deste login. */
+  legalConsent: boolean;
+}
+
+/** Aceite de Termos/Privacidade enviado (opcionalmente) junto do login social. */
+export interface SocialLegalConsent {
+  termsAccepted?: boolean;
+  privacyAccepted?: boolean;
 }
 
 @Injectable()
@@ -60,6 +69,8 @@ export class AuthService {
         email: input.email,
         name,
         password: hashedPassword,
+        // O DTO só passa na validação com os dois aceites = true.
+        ...this.usersService.legalConsentData(),
       },
     });
 
@@ -300,7 +311,7 @@ export class AuthService {
     };
   }
 
-  async loginWithGoogle(idToken: string) {
+  async loginWithGoogle(idToken: string, consent: SocialLegalConsent = {}) {
     const audience = this.config.get<string>('GOOGLE_IOS_CLIENT_ID');
     if (!audience) {
       throw new CodedUnauthorizedException(
@@ -337,12 +348,13 @@ export class AuthService {
       providerUserId: sub,
       email,
       name,
+      legalConsent: this.hasLegalConsent(consent),
     });
 
     return this.issueSession(user);
   }
 
-  async loginWithApple(identityToken: string, fullName?: string) {
+  async loginWithApple(identityToken: string, fullName?: string, consent: SocialLegalConsent = {}) {
     const audience = this.config.get<string>('APPLE_CLIENT_ID');
     if (!audience) {
       throw new CodedUnauthorizedException(
@@ -373,6 +385,7 @@ export class AuthService {
       providerUserId: payload.sub,
       email: payload.email,
       name: fullName,
+      legalConsent: this.hasLegalConsent(consent),
     });
 
     return this.issueSession(user);
@@ -504,12 +517,21 @@ export class AuthService {
     return user;
   }
 
+  private hasLegalConsent(consent: SocialLegalConsent): boolean {
+    return consent.termsAccepted === true && consent.privacyAccepted === true;
+  }
+
   /**
    * Resolve o usuário de um login social, na ordem: (1) já vinculado pelo id do provedor;
    * (2) mesmo email → vincula o provedor à conta existente (link-by-email); (3) cria uma
-   * conta nova sem senha, com username único e onboarding pendente.
+   * conta nova sem senha, com username único e onboarding pendente — só com aceite legal
+   * explícito; sem ele, responde AUTH_LEGAL_CONSENT_REQUIRED para o cliente pedir o aceite e
+   * reenviar o mesmo token.
+   *
+   * Em contas existentes, um aceite enviado junto é registrado (atualiza data/versão).
    */
   private async resolveSocialUser(identity: SocialIdentity): Promise<User> {
+    const consentData = identity.legalConsent ? this.usersService.legalConsentData() : {};
     // Objeto tipado com o id do provedor (evita chave computada que quebra os tipos do Prisma).
     const providerLink =
       identity.provider === 'google'
@@ -518,7 +540,9 @@ export class AuthService {
 
     const byProvider = await this.prisma.user.findFirst({ where: providerLink });
     if (byProvider) {
-      return byProvider;
+      return identity.legalConsent
+        ? this.prisma.user.update({ where: { id: byProvider.id }, data: consentData })
+        : byProvider;
     }
 
     if (identity.email) {
@@ -526,7 +550,7 @@ export class AuthService {
       if (byEmail) {
         return this.prisma.user.update({
           where: { id: byEmail.id },
-          data: providerLink,
+          data: { ...providerLink, ...consentData },
         });
       }
     }
@@ -539,6 +563,13 @@ export class AuthService {
       );
     }
 
+    if (!identity.legalConsent) {
+      throw new CodedForbiddenException(
+        ErrorCode.AUTH_LEGAL_CONSENT_REQUIRED,
+        'Aceite os Termos de Uso e a Política de Privacidade para criar sua conta.',
+      );
+    }
+
     const username = await this.generateUniqueUsername(identity.email);
     const user = await this.prisma.user.create({
       data: {
@@ -547,6 +578,7 @@ export class AuthService {
         name: identity.name?.trim() || identity.email.split('@')[0] || 'Atleta',
         password: null,
         ...providerLink,
+        ...consentData,
       },
     });
 

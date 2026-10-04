@@ -12,9 +12,18 @@ struct RootView: View {
         ZStack {
             Group {
                 if authViewModel.isAuthenticated {
-                    // Contas sociais nascem sem data de nascimento/peso/altura: completa o perfil
-                    // antes de entrar no app.
-                    if authViewModel.needsProfileCompletion {
+                    // Sem aceite registrado das versões vigentes dos Termos/Privacidade (contas
+                    // antigas ou documentos atualizados): bloqueia o app até o aceite.
+                    if authViewModel.needsLegalConsent {
+                        LegalConsentView(
+                            subtitle: "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade.",
+                            cancelTitle: "Sair da conta",
+                            onAccept: { await authViewModel.acceptLegalConsent() },
+                            onCancel: { authViewModel.logout() }
+                        )
+                    } else if authViewModel.needsProfileCompletion {
+                        // Contas sociais nascem sem data de nascimento/peso/altura: completa o
+                        // perfil antes de entrar no app.
                         ProfileCompletionView()
                     } else {
                         MainTabView()
@@ -34,6 +43,7 @@ struct RootView: View {
         .background(AthlyTheme.Color.backgroundDark.ignoresSafeArea())
         .animation(.easeInOut(duration: 0.35), value: authViewModel.isAuthenticated)
         .animation(.easeInOut(duration: 0.35), value: authViewModel.needsProfileCompletion)
+        .animation(.easeInOut(duration: 0.35), value: authViewModel.needsLegalConsent)
         .animation(.easeInOut(duration: 0.3), value: showLaunchSplash)
         .task {
             guard showLaunchSplash else { return }

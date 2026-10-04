@@ -1,10 +1,11 @@
-import { Controller, Get, Put, Delete, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from './models/user.model';
+import { LegalConsentDto } from '../auth/dto/legal-consent.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -33,6 +34,22 @@ export class UsersController {
     }
 
     return this.usersService.updateProfile(user.id, data, password);
+  }
+
+  /**
+   * Registra o aceite das versões vigentes dos Termos e da Política de Privacidade — usado por
+   * contas sem aceite registrado (anteriores a este controle) e quando um documento muda.
+   */
+  @Post('me/legal-consent')
+  @HttpCode(200)
+  @ApiOkResponse({ type: UserModel })
+  async acceptLegalConsent(
+    @CurrentUser() user: UserModel,
+    // Só valida o corpo (os dois aceites = true); o registro usa as versões vigentes do servidor.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Body() _input: LegalConsentDto,
+  ): Promise<UserModel> {
+    return this.usersService.acceptLegalConsent(user.id);
   }
 
   @Delete('me')

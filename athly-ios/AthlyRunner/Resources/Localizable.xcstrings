@@ -27,6 +27,7 @@
     },
     " da Athly" : {
       "comment" : "Last segment of the concatenated terms sentence.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -72,6 +73,230 @@
     },
     ":" : {
 
+    },
+    "Aceitar e continuar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzeptieren und fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept and continue"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceitar e continuar"
+          }
+        }
+      }
+    },
+    "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzeptiere die Nutzungsbedingungen und die Datenschutzrichtlinie, um dein Konto zu erstellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept the Terms of Use and Privacy Policy to create your account."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta."
+          }
+        }
+      }
+    },
+    "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)" : {
+      "comment" : "Welcome screen footer. Keep the markdown links and their URLs.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lies unsere [Nutzungsbedingungen](https://athlyproject.app/terms) und unsere [Datenschutzrichtlinie](https://athlyproject.app/privacy)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read our [Terms of Use](https://athlyproject.app/terms) and [Privacy Policy](https://athlyproject.app/privacy)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)"
+          }
+        }
+      }
+    },
+    "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly" : {
+      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe die [Datenschutzrichtlinie](https://athlyproject.app/privacy) von Athly gelesen und akzeptiere sie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and accept Athly's [Privacy Policy](https://athlyproject.app/privacy)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly"
+          }
+        }
+      }
+    },
+    "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly" : {
+      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe die [Nutzungsbedingungen](https://athlyproject.app/terms) von Athly gelesen und akzeptiere sie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and accept Athly's [Terms of Use](https://athlyproject.app/terms)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly"
+          }
+        }
+      }
+    },
+    "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um Athly weiter zu nutzen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To keep using Athly, please read and accept the Terms of Use and Privacy Policy."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade."
+          }
+        }
+      }
+    },
+    "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um dein Konto zu erstellen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To create your account, please read and accept the Terms of Use and Privacy Policy."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade."
+          }
+        }
+      }
+    },
+    "Termos e Privacidade" : {
+      "comment" : "Title of the legal consent screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bedingungen und Datenschutz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms and Privacy"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termos e Privacidade"
+          }
+        }
+      }
+    },
+    "Você precisa aceitar a Política de Privacidade" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst die Datenschutzrichtlinie akzeptieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You must accept the Privacy Policy"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você precisa aceitar a Política de Privacidade"
+          }
+        }
+      }
+    },
+    "Você precisa aceitar os Termos de Uso" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst die Nutzungsbedingungen akzeptieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You must accept the Terms of Use"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você precisa aceitar os Termos de Uso"
+          }
+        }
+      }
     },
     "·" : {
 
@@ -1423,6 +1648,7 @@
       }
     },
     "Ao continuar, você concorda com os Termos de Uso e Política de Privacidade" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2779,6 +3005,7 @@
     },
     "Concordo com os " : {
       "comment" : "First segment of a 3-part concatenated sentence ending in ' da Athly' — 'Concordo com os [Termos de Uso e Política de Privacidade] da Athly'.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -13058,6 +13285,7 @@
     },
     "Termos de Uso e Política de Privacidade" : {
       "comment" : "Middle (tappable/highlighted) segment of the concatenated terms sentence.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

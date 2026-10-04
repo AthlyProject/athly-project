@@ -161,6 +161,15 @@ struct LoginView: View {
         }
         .sheet(isPresented: $showRegister) { RegisterView() }
         .sheet(isPresented: $showForgotPassword) { ForgotPasswordView() }
+        // Login social de alguém sem conta: pede o aceite antes de criar a conta.
+        .sheet(item: $authViewModel.pendingSocialSignIn) { _ in
+            LegalConsentView(
+                subtitle: "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade.",
+                cancelTitle: "Cancelar",
+                onAccept: { await authViewModel.confirmPendingSocialSignIn() },
+                onCancel: { authViewModel.cancelPendingSocialSignIn() }
+            )
+        }
     }
 
     // MARK: - Sub-views

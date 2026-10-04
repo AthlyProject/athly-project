@@ -17,6 +17,12 @@ final class AuthViewModel: ObservableObject {
     /// Gate de completar perfil: contas criadas via login social não têm data de nascimento/peso/altura.
     /// `true` → mostra a etapa de completar perfil antes do questionário.
     @Published private(set) var needsProfileCompletion = false
+    /// Gate de aceite legal: conta sem aceite registrado (anterior a este controle) ou aceite de
+    /// uma versão antiga dos Termos/Privacidade. Bloqueia o app até o novo aceite.
+    @Published private(set) var needsLegalConsent = false
+    /// Login social pausado porque criaria uma conta nova sem aceite de Termos/Privacidade: a UI
+    /// mostra o aceite e chama `confirmPendingSocialSignIn()` (reenvia o mesmo token).
+    @Published var pendingSocialSignIn: PendingSocialSignIn?
 
     private let tokenKey = "athly_access_token"
     private let refreshKey = "athly_refresh_token"
@@ -134,6 +140,8 @@ final class AuthViewModel: ObservableObject {
             saveTokens(access: response.accessToken, refresh: response.refreshToken)
             assessmentCompleted = false
             needsProfileCompletion = true
+            // O cadastro por email já envia (e o backend registra) o aceite.
+            needsLegalConsent = false
             isAuthenticated = true
             postAuthChanged(true)
         } catch {
@@ -146,7 +154,8 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Login social
 
     /// Fluxo do Google: abre a folha do GoogleSignIn, troca o id_token no backend e entra.
-    func signInWithGoogle() async {
+    /// `legalConsent`: o usuário já aceitou Termos + Privacidade nesta tela.
+    func signInWithGoogle(legalConsent: Bool = false) async {
         errorMessage = nil
         guard let presenting = Self.topViewController() else {
             errorMessage = String(localized: "Não foi possível abrir o login do Google.")
@@ -159,8 +168,7 @@ final class AuthViewModel: ObservableObject {
             guard let idToken = result.user.idToken?.tokenString else {
                 throw AuthError.missingProviderToken
             }
-            let response = try await APIClient.shared.loginWithGoogle(idToken: idToken)
-            await completeSocialSignIn(response)
+            try await exchangeSocialToken(.google(idToken: idToken), legalConsent: legalConsent)
         } catch let error as GIDSignInError where error.code == .canceled {
             // Usuário cancelou — não é erro.
         } catch {
@@ -171,7 +179,7 @@ final class AuthViewModel: ObservableObject {
 
     /// Fluxo da Apple: recebe a credential do `SignInWithAppleButton`, troca o identity token no
     /// backend e entra. O nome só vem na primeira autorização; repassamos quando disponível.
-    func signInWithApple(credential: ASAuthorizationAppleIDCredential) async {
+    func signInWithApple(credential: ASAuthorizationAppleIDCredential, legalConsent: Bool = false) async {
         errorMessage = nil
         isLoading = true
         do {
@@ -182,15 +190,64 @@ final class AuthViewModel: ObservableObject {
             let fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
                 .compactMap { $0 }
                 .joined(separator: " ")
-            let response = try await APIClient.shared.loginWithApple(
-                identityToken: identityToken,
-                fullName: fullName.isEmpty ? nil : fullName
+            try await exchangeSocialToken(
+                .apple(identityToken: identityToken, fullName: fullName.isEmpty ? nil : fullName),
+                legalConsent: legalConsent
             )
-            await completeSocialSignIn(response)
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    /// Reenvia o login social pausado, agora com o aceite de Termos + Privacidade.
+    func confirmPendingSocialSignIn() async {
+        guard let pending = pendingSocialSignIn else { return }
+        pendingSocialSignIn = nil
+        errorMessage = nil
+        isLoading = true
+        do {
+            try await exchangeSocialToken(pending, legalConsent: true)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func cancelPendingSocialSignIn() {
+        pendingSocialSignIn = nil
+    }
+
+    /// Troca o token do provedor por uma sessão. Se o backend recusar por falta de aceite (conta
+    /// nova), guarda o token em `pendingSocialSignIn` para a UI pedir o aceite.
+    private func exchangeSocialToken(_ request: PendingSocialSignIn, legalConsent: Bool) async throws {
+        do {
+            let response: AuthResponse
+            switch request {
+            case .google(let idToken):
+                response = try await APIClient.shared.loginWithGoogle(idToken: idToken, legalConsent: legalConsent)
+            case .apple(let identityToken, let fullName):
+                response = try await APIClient.shared.loginWithApple(
+                    identityToken: identityToken,
+                    fullName: fullName,
+                    legalConsent: legalConsent
+                )
+            }
+            await completeSocialSignIn(response)
+        } catch APIError.legalConsentRequired where !legalConsent {
+            pendingSocialSignIn = request
+        }
+    }
+
+    /// Registra o aceite das versões vigentes (tela de aceite bloqueante do `RootView`).
+    func acceptLegalConsent() async {
+        errorMessage = nil
+        do {
+            let profile = try await APIClient.shared.acceptLegalConsent()
+            applyProfile(profile)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     /// Passo comum aos dois provedores: salva tokens, entra e carrega o perfil (que define os gates
@@ -211,6 +268,8 @@ final class AuthViewModel: ObservableObject {
         assessmentCompleted = profile.assessmentCompleted ?? true
         // Gate de completar perfil: contas sociais nascem sem peso/altura.
         needsProfileCompletion = profile.weight == nil || profile.height == nil
+        // Gate de aceite legal: backend antigo sem o campo não bloqueia (fail-open).
+        needsLegalConsent = profile.legalConsentRequired ?? false
     }
 
     /// Atualiza apenas o nome exibido. Para telas de *edição* de perfil, que não devem
@@ -275,6 +334,8 @@ final class AuthViewModel: ObservableObject {
         isAuthenticated = false
         assessmentCompleted = nil
         needsProfileCompletion = false
+        needsLegalConsent = false
+        pendingSocialSignIn = nil
         postAuthChanged(false)
     }
 
@@ -341,6 +402,19 @@ final class AuthViewModel: ObservableObject {
             top = presented
         }
         return top
+    }
+}
+
+/// Token de provedor social guardado enquanto o usuário aceita Termos + Privacidade.
+enum PendingSocialSignIn: Identifiable {
+    case google(idToken: String)
+    case apple(identityToken: String, fullName: String?)
+
+    var id: String {
+        switch self {
+        case .google(let idToken): return "google-\(idToken)"
+        case .apple(let identityToken, _): return "apple-\(identityToken)"
+        }
     }
 }
 

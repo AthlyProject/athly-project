@@ -58,6 +58,11 @@ actor APIClient {
         return (try? JSONDecoder().decode(BackendErrorBody.self, from: data))?.localizedText
     }
 
+    private static func backendCode(from data: Data) -> String? {
+        guard !data.isEmpty else { return nil }
+        return (try? JSONDecoder().decode(BackendErrorBody.self, from: data))?.code
+    }
+
     var isAuthenticated: Bool {
         accessToken != nil
     }
@@ -71,8 +76,10 @@ actor APIClient {
         return response
     }
 
+    /// O backend só cria a conta com o aceite explícito de Termos e Privacidade (registra data e
+    /// versão de cada documento).
     func register(email: String, password: String) async throws -> AuthResponse {
-        let body = RegisterRequest(email: email, password: password)
+        let body = RegisterRequest(email: email, password: password, termsAccepted: true, privacyAccepted: true)
         let response: AuthResponse = try await post("/auth/register", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
@@ -102,15 +109,24 @@ actor APIClient {
         return try await post("/auth/reset-password", body: body, authenticated: false)
     }
 
-    func loginWithGoogle(idToken: String) async throws -> AuthResponse {
-        let body = GoogleLoginRequest(idToken: idToken)
+    /// `legalConsent`: o usuário aceitou Termos + Privacidade. Obrigatório quando o login cria
+    /// uma conta nova — sem ele o backend responde `APIError.legalConsentRequired`.
+    func loginWithGoogle(idToken: String, legalConsent: Bool) async throws -> AuthResponse {
+        let consent = legalConsent ? true : nil
+        let body = GoogleLoginRequest(idToken: idToken, termsAccepted: consent, privacyAccepted: consent)
         let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
     }
 
-    func loginWithApple(identityToken: String, fullName: String?) async throws -> AuthResponse {
-        let body = AppleLoginRequest(identityToken: identityToken, fullName: fullName)
+    func loginWithApple(identityToken: String, fullName: String?, legalConsent: Bool) async throws -> AuthResponse {
+        let consent = legalConsent ? true : nil
+        let body = AppleLoginRequest(
+            identityToken: identityToken,
+            fullName: fullName,
+            termsAccepted: consent,
+            privacyAccepted: consent
+        )
         let response: AuthResponse = try await post("/auth/apple", body: body, authenticated: false)
         setTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
@@ -144,6 +160,11 @@ actor APIClient {
 
     func updateProfile(_ request: UpdateProfileRequest) async throws -> UserProfile {
         try await put("/users/profile", body: request)
+    }
+
+    /// Registra o aceite das versões vigentes dos Termos e da Política de Privacidade.
+    func acceptLegalConsent() async throws -> UserProfile {
+        try await post("/users/me/legal-consent", body: LegalConsentRequest(termsAccepted: true, privacyAccepted: true))
     }
 
     /// Exclui a conta do usuário e todos os dados relacionados no servidor.
@@ -466,6 +487,9 @@ actor APIClient {
         case 404:
             throw APIError.notFound
         default:
+            if Self.backendCode(from: data) == BackendErrorCode.legalConsentRequired {
+                throw APIError.legalConsentRequired
+            }
             let message = Self.backendMessage(from: data)
                 ?? String(data: data, encoding: .utf8)
                 ?? String(localized: "Unknown error")
@@ -522,6 +546,9 @@ actor APIClient {
             }
             throw APIError.unauthorized
         default:
+            if Self.backendCode(from: data) == BackendErrorCode.legalConsentRequired {
+                throw APIError.legalConsentRequired
+            }
             let message = Self.backendMessage(from: data)
                 ?? String(data: data, encoding: .utf8)
                 ?? String(localized: "Unknown error")
@@ -540,6 +567,13 @@ struct LoginRequest: Encodable {
 struct RegisterRequest: Encodable {
     let email: String
     let password: String
+    let termsAccepted: Bool
+    let privacyAccepted: Bool
+}
+
+struct LegalConsentRequest: Encodable {
+    let termsAccepted: Bool
+    let privacyAccepted: Bool
 }
 
 struct AuthResponse: Decodable {
@@ -566,13 +600,18 @@ struct MessageResponse: Decodable {
     let message: String
 }
 
+// Aceite legal opcional: `nil` não é enviado (login de conta existente).
 struct GoogleLoginRequest: Encodable {
     let idToken: String
+    var termsAccepted: Bool? = nil
+    var privacyAccepted: Bool? = nil
 }
 
 struct AppleLoginRequest: Encodable {
     let identityToken: String
     let fullName: String?
+    var termsAccepted: Bool? = nil
+    var privacyAccepted: Bool? = nil
 }
 
 struct RefreshRequest: Encodable {
@@ -665,6 +704,8 @@ struct UserProfile: Decodable {
     let appleLinked: Bool?
     let googleLinked: Bool?
     let hasPassword: Bool?
+    /// `true` → falta aceite (ou é de versão antiga) dos Termos/Privacidade: bloqueia o app.
+    let legalConsentRequired: Bool?
 }
 
 // MARK: - Errors
@@ -674,6 +715,8 @@ enum APIError: LocalizedError {
     case unauthorized
     case notFound
     case invalidResponse
+    /// Login social que criaria uma conta nova sem aceite de Termos/Privacidade.
+    case legalConsentRequired
     case serverError(Int, String)
 
     var errorDescription: String? {
@@ -682,6 +725,8 @@ enum APIError: LocalizedError {
         case .unauthorized: return String(localized: "Sessão expirada. Faça login novamente.")
         case .notFound: return String(localized: "Recurso não encontrado")
         case .invalidResponse: return String(localized: "Resposta inválida do servidor")
+        case .legalConsentRequired:
+            return BackendErrorCode.localizedMessage(for: BackendErrorCode.legalConsentRequired)
         case .serverError(let code, let msg): return String(localized: "Erro \(code):") + " " + msg
         }
     }

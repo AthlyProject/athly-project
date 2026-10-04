@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -6,6 +6,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
+import { LEGAL_DOCUMENT_VERSIONS } from '../../common/legal/legal-documents';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -278,5 +279,106 @@ describe('AuthService', () => {
       ).rejects.toThrow(BadRequestException);
       expect(prisma.passwordResetCode.findFirst).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('AuthService — legal consent', () => {
+  const consentData = {
+    termsAcceptedAt: expect.any(Date),
+    termsVersion: LEGAL_DOCUMENT_VERSIONS.terms,
+    privacyAcceptedAt: expect.any(Date),
+    privacyVersion: LEGAL_DOCUMENT_VERSIONS.privacy,
+  };
+
+  let service: AuthService;
+  let prisma: {
+    user: { create: jest.Mock; update: jest.Mock; findFirst: jest.Mock; findUnique: jest.Mock };
+    session: { create: jest.Mock };
+  };
+  let usersService: UsersService;
+  let verifyIdToken: jest.Mock;
+
+  beforeEach(() => {
+    prisma = {
+      user: {
+        create: jest.fn().mockImplementation(({ data }) => ({ id: 'new-user', ...data })),
+        update: jest.fn().mockImplementation(({ where, data }) => ({ id: where.id, ...data })),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      session: { create: jest.fn().mockResolvedValue({}) },
+    };
+    // UsersService real: o que interessa é o legalConsentData/toUserModel de verdade.
+    usersService = new UsersService(prisma as unknown as PrismaService);
+    jest.spyOn(usersService, 'findByEmail').mockResolvedValue(null);
+
+    service = new AuthService(
+      prisma as unknown as PrismaService,
+      usersService,
+      { sign: jest.fn().mockReturnValue('access-token') } as unknown as JwtService,
+      {
+        get: jest.fn((key: string, fallback?: string) =>
+          key === 'GOOGLE_IOS_CLIENT_ID' ? 'google-client-id' : fallback,
+        ),
+      } as unknown as ConfigService,
+      { sendWelcomeEmail: jest.fn().mockResolvedValue(undefined) } as unknown as EmailService,
+    );
+    verifyIdToken = jest.fn().mockResolvedValue({
+      getPayload: () => ({ sub: 'google-sub', email: 'new@example.com', name: 'New Athlete' }),
+    });
+    (service as unknown as { googleClient: { verifyIdToken: jest.Mock } }).googleClient = {
+      verifyIdToken,
+    };
+  });
+
+  it('records the accepted terms/privacy versions on email registration', async () => {
+    const result = await service.register({
+      email: 'new@example.com',
+      password: 'Passw0rd!',
+      termsAccepted: true,
+      privacyAccepted: true,
+    });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining(consentData),
+    });
+    expect(result.user.legalConsentRequired).toBe(false);
+  });
+
+  it('refuses to create a social account without explicit consent', async () => {
+    await expect(service.loginWithGoogle('id-token')).rejects.toThrow(ForbiddenException);
+    await expect(
+      service.loginWithGoogle('id-token', { termsAccepted: true }),
+    ).rejects.toMatchObject({
+      response: { code: 'AUTH_LEGAL_CONSENT_REQUIRED' },
+    });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('creates the social account with consent recorded when both documents are accepted', async () => {
+    const result = await service.loginWithGoogle('id-token', {
+      termsAccepted: true,
+      privacyAccepted: true,
+    });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ googleUserId: 'google-sub', ...consentData }),
+    });
+    expect(result.user.legalConsentRequired).toBe(false);
+  });
+
+  it('still logs in an existing social account without consent, flagging it as required', async () => {
+    prisma.user.findFirst.mockResolvedValue({
+      id: 'existing',
+      email: 'new@example.com',
+      googleUserId: 'google-sub',
+      termsVersion: null,
+      privacyVersion: null,
+    });
+
+    const result = await service.loginWithGoogle('id-token');
+
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(result.user.legalConsentRequired).toBe(true);
   });
 });

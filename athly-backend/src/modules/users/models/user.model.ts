@@ -56,4 +56,21 @@ export class UserModel {
 
   @ApiProperty()
   hasPassword: boolean;
+
+  // Aceite legal: data e versão aceitas de cada documento.
+  @ApiPropertyOptional()
+  termsAcceptedAt?: Date;
+
+  @ApiPropertyOptional()
+  termsVersion?: string;
+
+  @ApiPropertyOptional()
+  privacyAcceptedAt?: Date;
+
+  @ApiPropertyOptional()
+  privacyVersion?: string;
+
+  /** `true` → o app deve bloquear o uso até o usuário aceitar as versões vigentes. */
+  @ApiProperty()
+  legalConsentRequired: boolean;
 }

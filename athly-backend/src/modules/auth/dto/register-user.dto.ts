@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, MinLength, IsNotEmpty, Matches } from 'class-validator';
+import { LegalConsentDto } from './legal-consent.dto';
 
-export class RegisterUserDto {
+export class RegisterUserDto extends LegalConsentDto {
   @ApiProperty()
   @IsEmail({}, { message: 'Email inválido' })
   @IsNotEmpty({ message: 'Email é obrigatório' })

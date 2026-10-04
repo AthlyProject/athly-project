@@ -5,6 +5,7 @@ import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
 import { UserModel } from './models/user.model';
+import { LEGAL_DOCUMENT_VERSIONS } from '../../common/legal/legal-documents';
 
 @Injectable()
 export class UsersService {
@@ -77,6 +78,32 @@ export class UsersService {
     });
   }
 
+  /** Campos que registram o aceite das versões vigentes dos Termos e da Política de Privacidade. */
+  legalConsentData(acceptedAt: Date = new Date()) {
+    return {
+      termsAcceptedAt: acceptedAt,
+      termsVersion: LEGAL_DOCUMENT_VERSIONS.terms,
+      privacyAcceptedAt: acceptedAt,
+      privacyVersion: LEGAL_DOCUMENT_VERSIONS.privacy,
+    };
+  }
+
+  /** Falta aceite, ou o aceite registrado é de uma versão anterior de algum dos documentos. */
+  isLegalConsentRequired(user: Pick<User, 'termsVersion' | 'privacyVersion'>): boolean {
+    return (
+      user.termsVersion !== LEGAL_DOCUMENT_VERSIONS.terms ||
+      user.privacyVersion !== LEGAL_DOCUMENT_VERSIONS.privacy
+    );
+  }
+
+  async acceptLegalConsent(userId: string): Promise<UserModel> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: this.legalConsentData(),
+    });
+    return this.toUserModel(updated);
+  }
+
   toUserModel(user: User): UserModel {
     return {
       id: user.id,
@@ -97,6 +124,11 @@ export class UsersService {
       appleLinked: !!user.appleUserId,
       googleLinked: !!user.googleUserId,
       hasPassword: !!user.password,
+      termsAcceptedAt: user.termsAcceptedAt ?? undefined,
+      termsVersion: user.termsVersion ?? undefined,
+      privacyAcceptedAt: user.privacyAcceptedAt ?? undefined,
+      privacyVersion: user.privacyVersion ?? undefined,
+      legalConsentRequired: this.isLegalConsentRequired(user),
     };
   }
 }
