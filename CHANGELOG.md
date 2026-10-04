@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/AthlyProject/athly-project/compare/v1.2.0...v1.3.0) (2026-10-04)
+
+
+### Features
+
+* athly for garmin ([50d5a49](https://github.com/AthlyProject/athly-project/commit/50d5a493038989da5b648a8c67f471b8eaec9bc9))
+
 # [1.2.0](https://github.com/AthlyProject/athly-project/compare/v1.1.2...v1.2.0) (2026-10-04)
 
 
