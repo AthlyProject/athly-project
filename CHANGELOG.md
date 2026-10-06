@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/AthlyProject/athly-project/compare/v1.3.0...v1.3.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **api:** accept heart rate summaries in planner requests ([eaf3e46](https://github.com/AthlyProject/athly-project/commit/eaf3e46412fae5f199866797e8a389cb91e946a1))
+
 # [1.3.0](https://github.com/AthlyProject/athly-project/compare/v1.2.0...v1.3.0) (2026-10-04)
 
 
