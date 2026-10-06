@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -148,6 +149,20 @@ export class DetailedSessionDto {
 }
 
 export class HealthRunItemDto {
+  @ApiPropertyOptional({ description: 'Measured whole-run average heart rate in bpm' })
+  @IsOptional()
+  @IsNumber()
+  @Min(30)
+  @Max(240)
+  avgHR?: number;
+
+  @ApiPropertyOptional({ description: 'Measured whole-run maximum heart rate in bpm' })
+  @IsOptional()
+  @IsNumber()
+  @Min(30)
+  @Max(240)
+  maxHR?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
