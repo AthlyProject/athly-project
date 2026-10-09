@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/AthlyProject/athly-project/compare/v1.3.1...v1.4.0) (2026-10-09)
+
+
+### Features
+
+* add heart rate guidance and improve iOS reliability ([065c487](https://github.com/AthlyProject/athly-project/commit/065c487cbf99a7307fc7d9dd998a524069db6d69))
+
 ## [1.3.1](https://github.com/AthlyProject/athly-project/compare/v1.3.0...v1.3.1) (2026-10-06)
 
 
