@@ -1,3 +1,4 @@
+import { mergeHeartRateRuns } from '../users/heart-rate-guidance';
 import { localCalendar } from './weekly-calendar';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -19,8 +20,29 @@ export class PlannerHealthContextService {
     if (Number.isNaN(capturedAt.getTime()) || capturedAt.getTime() > Date.now() + 5 * 60_000) {
       throw new BadRequestException('Data de sincronização inválida.');
     }
+    const existing = await this.prisma.plannerHealthContext.findUnique({ where: { userId } });
+    const previous = existing?.payload as unknown as PlanFromHealthDto | undefined;
+    if (existing && input.runs.length === 0 && !input.detailedSessions?.length) {
+      return { synced: true };
+    }
+    // An unreadable HR type is not evidence that a previously measured run had no HR.
+    const enriched = mergeHeartRateRuns(
+      previous?.runs ?? [],
+      previous?.detailedSessions ?? [],
+      input.runs,
+      input.detailedSessions ?? [],
+    );
+    const currentRuns = input.runs.map(
+      (run) =>
+        enriched.find(
+          (candidate) =>
+            (run.appleHealthWorkoutUUID &&
+              candidate.appleHealthWorkoutUUID === run.appleHealthWorkoutUUID.toLowerCase()) ||
+            +new Date(candidate.startDate) === +new Date(run.startDate),
+        ) ?? run,
+    );
     const payload = {
-      runs: [...input.runs]
+      runs: currentRuns
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))
         .slice(0, 20),
       detailedSessions: [...(input.detailedSessions ?? [])]
@@ -116,7 +138,7 @@ export class PlannerHealthContextService {
     const validLinks = new Set(linked.map((w) => w.id));
     return {
       weekStartDate: weekStartDate.toISOString().slice(0, 10),
-      runs: runs
+      runs: mergeHeartRateRuns(runs, [...sessions.values()])
         .filter((r) => localCalendar(new Date(r.startDate), timeZone).date < historyBeforeDate)
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))
         .slice(0, 20),

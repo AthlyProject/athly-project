@@ -13,8 +13,9 @@ final class HealthKitRunsViewModel: ObservableObject {
         case healthUnavailable
     }
 
-    @Published private(set) var state: State = .idle
-    @Published private(set) var linkedRunsById: [String: HealthKitRunItem] = [:]
+    @Published private(set) var revision = 0
+    @Published private(set) var state: State = .idle { didSet { revision += 1 } }
+    @Published private(set) var linkedRunsById: [String: HealthKitRunItem] = [:] { didSet { revision += 1 } }
     @Published private(set) var isRefreshing = false
     @Published private(set) var isLoadingMore = false
     @Published private(set) var isResolvingLinkedRuns = false
@@ -28,6 +29,9 @@ final class HealthKitRunsViewModel: ObservableObject {
 
     private let healthKitService: any HealthKitRunningWorkoutsProviding
     private let cache: any HealthKitRunsCaching
+    private var loadTask: Task<Void, Never>?
+    private var lastLoaded: Date?
+    private var resolvingIDs = Set<String>()
     private let pageSize: Int
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
 
@@ -83,8 +87,19 @@ final class HealthKitRunsViewModel: ObservableObject {
         return items.isEmpty && !isRefreshing && !isLoadingMore && !isResolvingLinkedRuns
     }
 
-    func loadWorkouts() async {
-        hydrateFromCacheIfNeeded()
+    func loadWorkouts(force: Bool = true) async {
+        if let loadTask { await loadTask.value; return }
+        if !force, let lastLoaded, Date().timeIntervalSince(lastLoaded) < 60 { return }
+        let task = Task { await self.performLoad() }
+        loadTask = task
+        await task.value
+        loadTask = nil
+    }
+
+    private func performLoad() async {
+        let session = await APIClient.shared.heartRateSessionIdentifier
+        await hydrateFromCacheIfNeeded()
+        guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
 
         guard healthKitService.isHealthDataAvailable else {
             if !hasKnownRuns {
@@ -102,12 +117,18 @@ final class HealthKitRunsViewModel: ObservableObject {
 
         do {
             try await healthKitService.requestReadAuthorization()
-            let items = try await healthKitService.fetchRunningWorkoutsPage(limit: pageSize, beforeEndDate: nil)
+            let items = try await healthKitService.fetchRunningWorkoutSummariesPage(limit: pageSize, beforeEndDate: nil)
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
             setRuns(Self.merged(existing: runs, incoming: items))
             removeLinkedRunsDuplicatedByMainList()
             canLoadMore = items.count == pageSize
             persistCache()
-            scheduleDiagnostics(for: items)
+            lastLoaded = Date()
+            isRefreshing = false
+            let enriched = try await healthKitService.enrichHeartRates(items)
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            setRuns(Self.merged(existing: runs, incoming: enriched))
+            persistCache()
         } catch let error as HealthKitError {
             switch error {
             case .notAvailable:
@@ -145,29 +166,34 @@ final class HealthKitRunsViewModel: ObservableObject {
         guard !requested.isEmpty else { return }
 
         let known = Set(runs.map(\.id)).union(linkedRunsById.keys)
-        let missing = requested.subtracting(known)
+        let missing = requested.subtracting(known).subtracting(resolvingIDs)
         guard !missing.isEmpty else { return }
 
+        resolvingIDs.formUnion(missing)
         isResolvingLinkedRuns = true
-        defer { isResolvingLinkedRuns = false }
+        defer {
+            resolvingIDs.subtract(missing)
+            isResolvingLinkedRuns = !resolvingIDs.isEmpty
+        }
+        let session = await APIClient.shared.heartRateSessionIdentifier
 
         let service = healthKitService
         let fetchedItems = await withTaskGroup(of: (String, HealthKitRunItem?).self) { group in
-            for uuid in missing {
-                group.addTask {
-                    (uuid, try? await service.fetchRunningWorkout(uuid: uuid))
-                }
+            let ids = Array(missing)
+            var next = 0
+            func enqueue(_ uuid: String) {
+                group.addTask { (uuid, try? await service.fetchRunningWorkout(uuid: uuid)) }
             }
-
+            while next < min(4, ids.count) { enqueue(ids[next]); next += 1 }
             var results: [(String, HealthKitRunItem)] = []
             for await (uuid, item) in group {
-                if let item {
-                    results.append((uuid, item))
-                }
+                if let item { results.append((uuid, item)) }
+                if next < ids.count { enqueue(ids[next]); next += 1 }
             }
             return results
         }
 
+        guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
         for (uuid, item) in fetchedItems {
             linkedRunsById[uuid] = item
         }
@@ -190,9 +216,11 @@ final class HealthKitRunsViewModel: ObservableObject {
 
         isLoadingMore = true
         defer { isLoadingMore = false }
+        let session = await APIClient.shared.heartRateSessionIdentifier
 
         do {
-            let items = try await healthKitService.fetchRunningWorkoutsPage(limit: pageSize, beforeEndDate: cursor)
+            let items = try await healthKitService.fetchRunningWorkoutSummariesPage(limit: pageSize, beforeEndDate: cursor)
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
             if items.isEmpty {
                 canLoadMore = false
                 return
@@ -200,6 +228,10 @@ final class HealthKitRunsViewModel: ObservableObject {
             setRuns(Self.merged(existing: runs, incoming: items))
             removeLinkedRunsDuplicatedByMainList()
             canLoadMore = items.count == pageSize
+            persistCache()
+            let enriched = try await healthKitService.enrichHeartRates(items)
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            setRuns(Self.merged(existing: runs, incoming: enriched))
             persistCache()
         } catch {
             // Pagination is best-effort; keep the visible cached/current list intact.
@@ -219,8 +251,8 @@ final class HealthKitRunsViewModel: ObservableObject {
         return index >= thresholdIndex
     }
 
-    private func hydrateFromCacheIfNeeded() {
-        guard !hasKnownRuns, let snapshot = cache.load() else { return }
+    private func hydrateFromCacheIfNeeded() async {
+        guard !hasKnownRuns, let snapshot = await cache.loadFromDisk() else { return }
         linkedRunsById = snapshot.linkedRunsById
         cacheUpdatedAt = snapshot.updatedAt
         canLoadMore = snapshot.runs.count >= pageSize
@@ -228,7 +260,9 @@ final class HealthKitRunsViewModel: ObservableObject {
     }
 
     private func setRuns(_ items: [HealthKitRunItem]) {
-        state = .loaded(Self.sorted(items))
+        let sorted = Self.sorted(items)
+        if case .loaded(let current) = state, current == sorted { return }
+        state = .loaded(sorted)
     }
 
     private func removeLinkedRunsDuplicatedByMainList() {
@@ -265,21 +299,6 @@ final class HealthKitRunsViewModel: ObservableObject {
     }
 
     #if DEBUG
-    private func scheduleDiagnostics(for items: [HealthKitRunItem]) {
-        let service = healthKitService
-        Task {
-            let df = ISO8601DateFormatter()
-            Self.diagLogger.debug("[HealthKitRunsView] fetchRunningWorkoutsPage(limit:\(self.pageSize), before:nil) retornou \(items.count) corrida(s)")
-            for item in items {
-                Self.diagLogger.debug("  [item] id=\(item.id) start=\(df.string(from: item.startDate)) distM=\(String(format: "%.0f", item.distanceMeters))")
-            }
-
-            let windowEnd = Date()
-            let windowStart = windowEnd.addingTimeInterval(-14 * 24 * 3600)
-            await service.diagnose(windowStart: windowStart, windowEnd: windowEnd, contextLabel: "HealthKitRunsView")
-        }
-    }
-
     func runZeppDiagnostic() async {
         guard !isRunningZeppDiagnostic else { return }
         guard healthKitService.isHealthDataAvailable else {
@@ -299,7 +318,5 @@ final class HealthKitRunsViewModel: ObservableObject {
             zeppDiagnosticMessage = String(localized: "Falha no diagnostico Zepp:") + " \(error.localizedDescription)"
         }
     }
-    #else
-    private func scheduleDiagnostics(for items: [HealthKitRunItem]) {}
     #endif
 }

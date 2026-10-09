@@ -46,10 +46,14 @@ enum PersonalRecordCalculator {
     }
 
     static func records(from sessions: [RunSession]) -> [PersonalRecord] {
+        records(from: sessions.map(RunSessionSnapshot.init))
+    }
+
+    static func records(from sessions: [RunSessionSnapshot]) -> [PersonalRecord] {
         distances.compactMap { distance in
             var best: PersonalRecord?
             for session in sessions {
-                guard session.distanceKm + toleranceKm >= distance.km else { continue }
+                guard (session.distanceMeters / 1000) + toleranceKm >= distance.km else { continue }
                 guard let attempt = bestTime(forKm: distance.km, in: session) else { continue }
                 if best == nil || attempt.seconds < (best?.durationSeconds ?? .infinity) {
                     best = PersonalRecord(
@@ -68,7 +72,7 @@ enum PersonalRecordCalculator {
 
     // MARK: - Private
 
-    private static func bestTime(forKm target: Double, in session: RunSession) -> (seconds: Double, estimated: Bool)? {
+    private static func bestTime(forKm target: Double, in session: RunSessionSnapshot) -> (seconds: Double, estimated: Bool)? {
         let segments: [(km: Double, seconds: Double)] = session.splits.compactMap { split in
             guard split.durationSeconds > 0, split.paceSecondsPerKm > 0 else { return nil }
             return (split.durationSeconds / split.paceSecondsPerKm, split.durationSeconds)
@@ -79,7 +83,7 @@ enum PersonalRecordCalculator {
             return (fastest, false)
         }
 
-        guard session.distanceKm + toleranceKm >= target, session.averagePaceSecondsPerKm > 0 else { return nil }
+        guard (session.distanceMeters / 1000) + toleranceKm >= target, session.averagePaceSecondsPerKm > 0 else { return nil }
         return (session.averagePaceSecondsPerKm * target, true)
     }
 

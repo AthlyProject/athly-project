@@ -25,7 +25,7 @@ struct AccountSettingsView: View {
                     AthlySectionLabel("Sessão")
                     AthlyListGroup {
                         Button {
-                            authViewModel.logout()
+                            Task { await authViewModel.logout() }
                         } label: {
                             AthlyListRow(
                                 systemImage: "rectangle.portrait.and.arrow.right",

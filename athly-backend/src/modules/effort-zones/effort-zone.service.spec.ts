@@ -51,4 +51,22 @@ describe('EffortZoneService — cache de zonas', () => {
     expect(prisma.userEffortZone.create).not.toHaveBeenCalled();
     expect(zones.vdotScore).toBe(30);
   });
+  it('never derives resting HR or HR zones from average exercise HR', () => {
+    const { service } = buildService();
+    const result = service.calculateFromRuns(
+      [{ ...freshRuns[0], averageHeartRate: 145, maxHeartRate: 180 }],
+      'apple_health',
+    );
+    expect(result.hrZones).toBeNull();
+    expect(result.restHeartRate).toBeNull();
+    expect(result.maxHeartRate).toBeNull();
+  });
+
+  it('does not expose the old HR table from a cached pace-zone record', () => {
+    const { service } = buildService();
+    const hrZones = Object.fromEntries(
+      [1, 2, 3, 4, 5].map((zone) => [`zone${zone}`, { min: 100, max: 150 }]),
+    );
+    expect(service.formatForPrompt({ ...cachedZone, hrZones }).formatted).not.toContain('bpm');
+  });
 });

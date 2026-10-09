@@ -34,3 +34,23 @@ extension WorkoutModel {
         }
     }
 }
+
+// Render the saved prescription; never recompute historical workouts from today's profile.
+extension SegmentTarget {
+    var heartRateTargetText: String? {
+        guard let zone = hrZone else { return nil }
+        var value = "Z\(zone)"
+        if let min = hrMinBpm, let max = hrMaxBpm {
+            value += " (\(min)–\(max) bpm)"
+        }
+        if hrIsEstimated == true { value += " · " + String(localized: "Estimada") }
+        return value
+    }
+
+    var effortTargetText: String? {
+        var parts: [String] = []
+        if let heartRateTargetText { parts.append(heartRateTargetText) }
+        if let rpe { parts.append("RPE \(rpe)/10") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+}

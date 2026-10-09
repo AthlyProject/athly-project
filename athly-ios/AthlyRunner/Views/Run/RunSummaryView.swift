@@ -173,21 +173,21 @@ struct RunSummaryView: View {
                     onComplete: { _, _ in
                         let healthKitUUID = viewModel.lastSavedHealthKitUUID
                         let result = viewModel.lastRunResult
+                        let outcome: WorkoutCompletionOutcome
                         if let result {
-                            await planVM.completeWorkoutWithRunResult(
+                            outcome = await planVM.completeWorkoutWithRunResult(
                                 workout,
                                 result: result,
                                 healthKitUUID: healthKitUUID
                             )
                         } else {
-                            await planVM.completeWorkout(workout)
+                            outcome = await planVM.completeWorkout(workout)
                         }
-                        viewModel.pendingWorkout = nil
-                        viewModel.showWorkoutFeedback = false
-                        if let message = planVM.errorMessage {
-                            return .failure(message)
+                        if case .success = outcome {
+                            viewModel.pendingWorkout = nil
+                            viewModel.showWorkoutFeedback = false
                         }
-                        return .success
+                        return outcome
                     },
                     onDismiss: {
                         viewModel.pendingWorkout = nil
@@ -698,11 +698,8 @@ enum RunSummaryFormatting {
         } else if let max = target.paceSecPerKmMax {
             parts.append("\(String(localized: "Ritmo")) <= \(pace(Double(max)))/km")
         }
-        if let zone = target.hrZone {
-            parts.append("Z\(zone)")
-        }
-        if let rpe = target.rpe {
-            parts.append("RPE \(rpe)")
+        if let effort = target.effortTargetText {
+            parts.append(effort)
         }
         return parts
     }

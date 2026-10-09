@@ -1,7 +1,7 @@
 import Foundation
 import CoreLocation
 
-enum HealthKitSyncStatus: String, Codable {
+enum HealthKitSyncStatus: String, Codable, Sendable {
     case notRequested
     case pending
     case synced
@@ -9,7 +9,7 @@ enum HealthKitSyncStatus: String, Codable {
     case unavailable
 }
 
-enum HealthKitRouteSyncStatus: String, Codable {
+enum HealthKitRouteSyncStatus: String, Codable, Sendable {
     case attached
     case localOnly
     case replacementCreated
@@ -61,8 +61,8 @@ final class RunSession: Identifiable, Codable {
     var backendId: String?
     var synced: Bool
 
-    init(sportType: String = "running") {
-        self.id = UUID()
+    init(id: UUID = UUID(), sportType: String = "running") {
+        self.id = id
         self.startDate = Date()
         self.endDate = nil
         self.distanceMeters = 0
@@ -117,5 +117,99 @@ final class RunSession: Identifiable, Codable {
         let minutes = Int(averagePaceSecondsPerKm) / 60
         let seconds = Int(averagePaceSecondsPerKm) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+struct RunSessionSnapshot: Codable, Sendable {
+    let id: UUID
+    let startDate: Date
+    let endDate: Date?
+    let distanceMeters: Double
+    let durationSeconds: Double
+    let averagePaceSecondsPerKm: Double
+    let elevationGainMeters: Double
+    let caloriesBurned: Double
+    let status: String
+    let sportType: String
+    let routePoints: [RoutePoint]
+    let splits: [Split]
+    let segmentRecords: [SegmentRecord]?
+    let workoutSegmentation: WorkoutSegmentationResult?
+    let pauseIntervals: [SplitCalculator.PauseInterval]?
+    let athlyWorkoutId: String?
+    let healthKitWorkoutUUID: String?
+    let healthKitSyncStatus: HealthKitSyncStatus?
+    let healthKitSyncError: String?
+    let healthKitRouteSyncStatus: HealthKitRouteSyncStatus?
+    let importFormat: WorkoutImportFormat?
+    let importFingerprint: String?
+    let importedHeartRateSamples: [ActivityHeartRateSample]?
+    let importedLaps: [ActivityLap]?
+    let totalDurationSeconds: Double?
+    let isIndoor: Bool?
+    let backendId: String?
+    let synced: Bool
+
+    init(_ session: RunSession) {
+        self.id = session.id
+        self.startDate = session.startDate
+        self.endDate = session.endDate
+        self.distanceMeters = session.distanceMeters
+        self.durationSeconds = session.durationSeconds
+        self.averagePaceSecondsPerKm = session.averagePaceSecondsPerKm
+        self.elevationGainMeters = session.elevationGainMeters
+        self.caloriesBurned = session.caloriesBurned
+        self.status = session.status
+        self.sportType = session.sportType
+        self.routePoints = session.routePoints
+        self.splits = session.splits
+        self.segmentRecords = session.segmentRecords
+        self.workoutSegmentation = session.workoutSegmentation
+        self.pauseIntervals = session.pauseIntervals
+        self.athlyWorkoutId = session.athlyWorkoutId
+        self.healthKitWorkoutUUID = session.healthKitWorkoutUUID
+        self.healthKitSyncStatus = session.healthKitSyncStatus
+        self.healthKitSyncError = session.healthKitSyncError
+        self.healthKitRouteSyncStatus = session.healthKitRouteSyncStatus
+        self.importFormat = session.importFormat
+        self.importFingerprint = session.importFingerprint
+        self.importedHeartRateSamples = session.importedHeartRateSamples
+        self.importedLaps = session.importedLaps
+        self.totalDurationSeconds = session.totalDurationSeconds
+        self.isIndoor = session.isIndoor
+        self.backendId = session.backendId
+        self.synced = session.synced
+    }
+
+    @MainActor func restore() -> RunSession {
+        let session = RunSession(id: id, sportType: sportType)
+        session.startDate = startDate
+        session.endDate = endDate
+        session.distanceMeters = distanceMeters
+        session.durationSeconds = durationSeconds
+        session.averagePaceSecondsPerKm = averagePaceSecondsPerKm
+        session.elevationGainMeters = elevationGainMeters
+        session.caloriesBurned = caloriesBurned
+        session.status = status
+        session.sportType = sportType
+        session.routePoints = routePoints
+        session.splits = splits
+        session.segmentRecords = segmentRecords
+        session.workoutSegmentation = workoutSegmentation
+        session.pauseIntervals = pauseIntervals
+        session.athlyWorkoutId = athlyWorkoutId
+        session.healthKitWorkoutUUID = healthKitWorkoutUUID
+        session.healthKitSyncStatus = healthKitSyncStatus
+        session.healthKitSyncError = healthKitSyncError
+        session.healthKitRouteSyncStatus = healthKitRouteSyncStatus
+        session.importFormat = importFormat
+        session.importFingerprint = importFingerprint
+        session.importedHeartRateSamples = importedHeartRateSamples
+        session.importedLaps = importedLaps
+        session.totalDurationSeconds = totalDurationSeconds
+        session.isIndoor = isIndoor
+        session.backendId = backendId
+        session.synced = synced
+        return session
     }
 }

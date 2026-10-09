@@ -88,7 +88,12 @@ final class DetectedRunViewModel: ObservableObject {
         errorMessage = nil
         defer { isSubmitting = false }
 
+        await runStore.loadIfNeeded()
         runStore.upsert(healthRun: run, detail: routeDetail)
+        do { try await runStore.flush() } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
         DetectedRunAckStore.shared.acknowledge(healthKitUUID: run.id)
         return true
     }

@@ -13,6 +13,7 @@ struct EditProfileView: View {
     @State private var heightCm: Int?
     @State private var restingHeartRate: Int?
     @State private var maxHeartRate: Int?
+    @State private var birthDate: Date?
     @State private var isSaving = false
     @State private var errorMessage: String?
 
@@ -66,6 +67,21 @@ struct EditProfileView: View {
                             AthlyStepperField(value: $weightKg, unit: "kg", defaultValue: 70, range: 30...250)
                         }
 
+                        field("Data de nascimento") {
+                            if birthDate != nil {
+                                DatePicker("Data de nascimento", selection: Binding(
+                                    get: { birthDate ?? Date() },
+                                    set: { birthDate = $0 }
+                                ), in: ...Date(), displayedComponents: .date)
+                                .labelsHidden()
+                                .tint(AthlyTheme.Color.primary)
+                            } else {
+                                Button("Informar data de nascimento") {
+                                    birthDate = Calendar.current.date(byAdding: .year, value: -25, to: Date())
+                                }
+                            }
+                        }
+
                         field("Altura") {
                             AthlyStepperField(value: $heightCm, unit: "cm", defaultValue: 175, range: 100...250)
                         }
@@ -76,16 +92,27 @@ struct EditProfileView: View {
                                     value: $restingHeartRate,
                                     unit: String(localized: "rep"),
                                     defaultValue: 60,
-                                    range: 30...120,
+                                    range: 20...150,
                                     accessibilityName: String(localized: "Frequência cardíaca de repouso")
                                 )
                                 AthlyStepperField(
                                     value: $maxHeartRate,
                                     unit: String(localized: "máx"),
                                     defaultValue: 190,
-                                    range: 120...230,
+                                    range: 100...240,
                                     accessibilityName: String(localized: "Frequência cardíaca máxima")
                                 )
+                            }
+                            Text("Valores informados por você têm prioridade. Use o automático para ler o repouso do Apple Health e estimar a FC máxima pela idade.")
+                                .font(.footnote)
+                                .foregroundStyle(AthlyTheme.Color.textSecondary)
+                            if restingHeartRate != nil {
+                                Button("Usar FC de repouso automática") { restingHeartRate = nil }
+                                    .font(.subheadline)
+                            }
+                            if maxHeartRate != nil {
+                                Button("Usar FC máxima estimada pela idade") { maxHeartRate = nil }
+                                    .font(.subheadline)
                             }
                         }
 
@@ -203,6 +230,7 @@ struct EditProfileView: View {
         heightCm = profile?.height.map { Int($0.rounded()) }
         restingHeartRate = profile?.restingHeartRate
         maxHeartRate = profile?.maxHeartRate
+        birthDate = profile?.dateOfBirth.flatMap { Self.birthDateFormatter.date(from: String($0.prefix(10))) }
     }
 
     private func save() async {
@@ -222,9 +250,12 @@ struct EditProfileView: View {
             name: trimmedName,
             weight: weightKg.map(Double.init),
             height: heightCm.map(Double.init),
+            dateOfBirth: birthDate.map { Self.birthDateFormatter.string(from: $0) },
             gender: gender.isEmpty ? nil : gender,
             restingHeartRate: restingHeartRate,
-            maxHeartRate: maxHeartRate
+            maxHeartRate: maxHeartRate,
+            clearRestingHeartRate: restingHeartRate == nil && profile?.restingHeartRate != nil,
+            clearMaxHeartRate: maxHeartRate == nil && profile?.maxHeartRate != nil
         )
 
         do {
@@ -244,6 +275,14 @@ struct EditProfileView: View {
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    private static let birthDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     private var initials: String {
         let letters = trimmedName

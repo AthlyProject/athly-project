@@ -1,7 +1,6 @@
 import Foundation
 
 extension Notification.Name {
-    static let athlyTokensRefreshed = Notification.Name("athlyTokensRefreshed")
     /// Emitida quando a sessão é definitivamente rejeitada pelo backend (401 e o refresh falhou).
     /// O `AuthViewModel` escuta para deslogar e redirecionar para a tela de login.
     static let athlySessionExpired = Notification.Name("athlySessionExpired")
@@ -25,26 +24,67 @@ actor APIClient {
 
     private var accessToken: String?
     private var refreshToken: String?
-    private var isRefreshing = false
+    private var refreshTask: Task<Void, Error>?
+    private var sessionVersion = UUID()
+    private var expiryNotified = false
+    private var pendingPersistence: SessionTokens?
+    private let transport: @Sendable (URLRequest) async throws -> (Data, URLResponse)
+    private let persistTokens: @Sendable (SessionTokens) throws -> Void
+    private let deleteTokens: @Sendable () -> Void
+    private let recordValidationFailure: @Sendable ([String: String]) -> Void
 
-    private init() {}
+    init(
+        transport: @escaping @Sendable (URLRequest) async throws -> (Data, URLResponse) = {
+            try await URLSession.shared.data(for: $0)
+        },
+        persistTokens: @escaping @Sendable (SessionTokens) throws -> Void = SessionTokenStore.save,
+        deleteTokens: @escaping @Sendable () -> Void = SessionTokenStore.clear,
+        recordValidationFailure: @escaping @Sendable ([String: String]) -> Void = {
+            OTelClient.addEvent("api.validation_failed", attributes: $0)
+        }
+    ) {
+        self.transport = transport
+        self.persistTokens = persistTokens
+        self.deleteTokens = deleteTokens
+        self.recordValidationFailure = recordValidationFailure
+    }
 
     // MARK: - Auth
 
+    /// Instala uma sessão restaurada ou recém-criada; invalida renovações da sessão anterior.
     func setTokens(access: String, refresh: String) {
-        self.accessToken = access
-        self.refreshToken = refresh
+        refreshTask?.cancel()
+        refreshTask = nil
+        sessionVersion = UUID()
+        expiryNotified = false
+        pendingPersistence = nil
+        accessToken = access
+        refreshToken = refresh
     }
 
-    func clearTokens() {
+    @discardableResult
+    func clearTokens(ifVersion version: UUID? = nil) -> Bool {
+        if let version, version != sessionVersion { return false }
+        refreshTask?.cancel()
+        refreshTask = nil
+        sessionVersion = UUID()
         accessToken = nil
         refreshToken = nil
+        pendingPersistence = nil
+        deleteTokens()
+        return true
     }
 
-    /// Avisa que a sessão morreu de vez (401 + refresh falhou). Ponto único para o app reagir
-    /// (logout + redirect ao login), independente de o chamador engolir o erro lançado.
-    private func notifySessionExpired() {
-        NotificationCenter.default.post(name: .athlySessionExpired, object: nil)
+    private func installLoginTokens(access: String, refresh: String) throws {
+        try persistTokens(SessionTokens(accessToken: access, refreshToken: refresh))
+        setTokens(access: access, refresh: refresh)
+    }
+
+    private func notifySessionExpired(version: UUID) {
+        guard sessionVersion == version, !expiryNotified else { return }
+        expiryNotified = true
+        NotificationCenter.default.post(name: .athlySessionExpired, object: nil,
+                                        userInfo: ["sessionVersion": version])
     }
 
     /// Traduz o erro do backend para o idioma do app.
@@ -67,12 +107,15 @@ actor APIClient {
         accessToken != nil
     }
 
+    /// Binds a HealthKit capture to the session that started it, including before upload.
+    var heartRateSessionIdentifier: UUID { sessionVersion }
+
     // MARK: - Auth Endpoints
 
     func login(email: String, password: String) async throws -> AuthResponse {
         let body = LoginRequest(email: email, password: password)
         let response: AuthResponse = try await post("/auth/login", body: body, authenticated: false)
-        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        try installLoginTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
     }
 
@@ -81,7 +124,7 @@ actor APIClient {
     func register(email: String, password: String) async throws -> AuthResponse {
         let body = RegisterRequest(email: email, password: password, termsAccepted: true, privacyAccepted: true)
         let response: AuthResponse = try await post("/auth/register", body: body, authenticated: false)
-        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        try installLoginTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
     }
 
@@ -115,7 +158,7 @@ actor APIClient {
         let consent = legalConsent ? true : nil
         let body = GoogleLoginRequest(idToken: idToken, termsAccepted: consent, privacyAccepted: consent)
         let response: AuthResponse = try await post("/auth/google", body: body, authenticated: false)
-        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        try installLoginTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
     }
 
@@ -128,7 +171,7 @@ actor APIClient {
             privacyAccepted: consent
         )
         let response: AuthResponse = try await post("/auth/apple", body: body, authenticated: false)
-        setTokens(access: response.accessToken, refresh: response.refreshToken)
+        try installLoginTokens(access: response.accessToken, refresh: response.refreshToken)
         return response
     }
 
@@ -165,6 +208,17 @@ actor APIClient {
     /// Registra o aceite das versões vigentes dos Termos e da Política de Privacidade.
     func acceptLegalConsent() async throws -> UserProfile {
         try await post("/users/me/legal-consent", body: LegalConsentRequest(termsAccepted: true, privacyAccepted: true))
+    }
+
+    func getHeartRateZones(session: UUID) async throws -> HeartRateZones {
+        guard session == sessionVersion else { throw CancellationError() }
+        return try await get("/users/me/heart-rate-zones")
+    }
+
+    func syncHeartRateHealth(_ snapshot: HeartRateHealthSnapshot, session: UUID) async throws -> HeartRateZones {
+        guard session == sessionVersion else { throw CancellationError() }
+        try Task.checkCancellation()
+        return try await put("/users/me/heart-rate-health", body: HeartRateHealthRequest(snapshot))
     }
 
     /// Exclui a conta do usuário e todos os dados relacionados no servidor.
@@ -221,7 +275,9 @@ actor APIClient {
         return try await patchWithBody("/workouts/\(workoutId)/skip", body: WorkoutPlanningContextRequest(planningContext: context))
     }
 
-    func syncPlannerHealthContext(_ context: PlannerHealthContextPayload) async throws {
+    func syncPlannerHealthContext(_ context: PlannerHealthContextPayload, session expectedSession: UUID? = nil) async throws {
+        if let expectedSession { guard expectedSession == sessionVersion else { throw CancellationError() } }
+        try Task.checkCancellation()
         struct Response: Decodable { let synced: Bool }
         let _: Response = try await post("/ai-planner/health-context", body: context)
     }
@@ -339,38 +395,111 @@ actor APIClient {
 
     // MARK: - Token Refresh
 
-    private func refreshTokens() async throws {
-        guard let currentRefresh = refreshToken else {
-            throw APIError.unauthorized
+    private func refreshTokens(version: UUID) async throws {
+        if let refreshTask {
+            return try await refreshTask.value
         }
+        let task = Task {
+            defer { if sessionVersion == version { refreshTask = nil } }
+            try await performRefresh(version: version)
+        }
+        refreshTask = task
+        try await task.value
+    }
 
-        let body = RefreshRequest(refreshToken: currentRefresh)
-        guard let url = URL(string: baseURL + "/auth/refresh") else {
-            throw APIError.invalidURL
-        }
+    private func performRefresh(version: UUID) async throws {
+        guard let currentRefresh = refreshToken else { throw APIError.unauthorized }
+        guard let url = URL(string: baseURL + "/auth/refresh") else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
+        request.httpBody = try JSONEncoder().encode(RefreshRequest(refreshToken: currentRefresh))
         request.timeoutInterval = 30
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.unauthorized
+        let (data, response) = try await send(request, version: version)
+        guard sessionVersion == version else { throw CancellationError() }
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        if http.statusCode == 401 { throw APIError.unauthorized }
+        guard (200...299).contains(http.statusCode) else {
+            throw APIError.serverError(http.statusCode, Self.backendMessage(from: data) ?? HTTPURLResponse.localizedString(forStatusCode: http.statusCode))
         }
-
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let refreshResponse = try decoder.decode(RefreshResponse.self, from: data)
+        let tokens = try decoder.decode(SessionTokens.self, from: data)
+        // Guarda o par novo em memória mesmo se o Keychain estiver temporariamente indisponível.
+        // A próxima requisição tenta persistir novamente antes de usar a sessão.
+        accessToken = tokens.accessToken
+        refreshToken = tokens.refreshToken
+        pendingPersistence = tokens
+        try flushPendingTokens()
+    }
 
-        setTokens(access: refreshResponse.accessToken, refresh: refreshResponse.refreshToken)
+    private func flushPendingTokens() throws {
+        if let tokens = pendingPersistence {
+            try persistTokens(tokens)
+            pendingPersistence = nil
+        }
+    }
 
-        let userInfo: [String: String] = [
-            "accessToken": refreshResponse.accessToken,
-            "refreshToken": refreshResponse.refreshToken
-        ]
-        NotificationCenter.default.post(name: .athlyTokensRefreshed, object: nil, userInfo: userInfo)
+    private func send(_ request: URLRequest, version: UUID?) async throws -> (Data, URLResponse) {
+        do {
+            let result = try await transport(request)
+            if let version, version != sessionVersion { throw CancellationError() }
+            try Task.checkCancellation()
+            if let response = result.1 as? HTTPURLResponse, response.statusCode == 400,
+               let body = try? JSONDecoder().decode(BackendErrorBody.self, from: result.0),
+               let attributes = body.validationAttributes(method: request.httpMethod ?? "GET",
+                                                          path: request.url?.path ?? "",
+                                                          statusCode: response.statusCode) {
+                recordValidationFailure(attributes)
+            }
+            return result
+        } catch {
+            if let version, version != sessionVersion { throw CancellationError() }
+            throw error
+        }
+    }
+
+    /// Um único caminho de autenticação para respostas obrigatórias e opcionais.
+    private func authenticatedData(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let version = sessionVersion
+        let authenticated = request.value(forHTTPHeaderField: "Authorization") != nil
+        if authenticated { try flushPendingTokens() }
+        let (data, response) = try await send(request, version: authenticated ? version : nil)
+        if authenticated, version != sessionVersion { throw CancellationError() }
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        guard http.statusCode == 401 else { return (data, http) }
+        guard authenticated else {
+            throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
+        }
+
+        do {
+            // Uma resposta atrasada do token antigo aproveita o refresh já concluído.
+            if request.value(forHTTPHeaderField: "Authorization") == accessToken.map({ "Bearer \($0)" }) {
+                try await refreshTokens(version: version)
+            }
+        } catch APIError.unauthorized {
+            guard version == sessionVersion else { throw CancellationError() }
+            notifySessionExpired(version: version)
+            throw APIError.unauthorized
+        }
+        guard version == sessionVersion else { throw CancellationError() }
+        try Task.checkCancellation()
+        try flushPendingTokens()
+        guard let token = accessToken else { throw APIError.unauthorized }
+        var retry = request
+        retry.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let (retryData, retryResponse) = try await send(retry, version: version)
+        guard version == sessionVersion else { throw CancellationError() }
+        try Task.checkCancellation()
+        guard let retryHTTP = retryResponse as? HTTPURLResponse else { throw APIError.invalidResponse }
+        if retryHTTP.statusCode == 401 {
+            notifySessionExpired(version: version)
+            throw APIError.unauthorized
+        }
+        return (retryData, retryHTTP)
     }
 
     // MARK: - HTTP
@@ -437,11 +566,7 @@ actor APIClient {
     }
 
     private func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
-        }
+        let (data, httpResponse) = try await authenticatedData(for: request)
 
         switch httpResponse.statusCode {
         case 200...299:
@@ -466,39 +591,6 @@ actor APIClient {
                 print("[APIClient] Response snippet: \(raw.prefix(800))...")
                 throw error
             }
-        case 401:
-            // Requisições não autenticadas (login/registro/apple/google) não têm Authorization:
-            // não tentam refresh nem sinalizam "sessão expirada" — mostram o motivo real do backend
-            // (ex.: "Token da Apple inválido", "Login com Apple não está configurado").
-            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
-            }
-            if !isRefreshing {
-                isRefreshing = true
-                defer { isRefreshing = false }
-                do {
-                    try await refreshTokens()
-                    var retryRequest = request
-                    if let token = accessToken {
-                        retryRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    }
-                    let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
-                    guard let retryHttp = retryResponse as? HTTPURLResponse else {
-                        throw APIError.invalidResponse
-                    }
-                    if (200...299).contains(retryHttp.statusCode) {
-                        let decoder = JSONDecoder()
-                        decoder.keyDecodingStrategy = .convertFromSnakeCase
-                        decoder.dateDecodingStrategy = .iso8601
-                        let decodableData = retryData.isEmpty ? Data("null".utf8) : retryData
-                        return try decoder.decode(T.self, from: decodableData)
-                    }
-                } catch {
-                    notifySessionExpired()
-                    throw APIError.unauthorized
-                }
-            }
-            throw APIError.unauthorized
         case 404:
             throw APIError.notFound
         default:
@@ -514,11 +606,7 @@ actor APIClient {
 
     /// Versão do execute que retorna nil em vez de throw para 404 e resposta vazia.
     private func executeOptional<T: Decodable>(_ request: URLRequest) async throws -> T? {
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
-        }
+        let (data, httpResponse) = try await authenticatedData(for: request)
 
         switch httpResponse.statusCode {
         case 200...299:
@@ -529,37 +617,6 @@ actor APIClient {
             return try? decoder.decode(T.self, from: data)
         case 404:
             return nil
-        case 401:
-            guard request.value(forHTTPHeaderField: "Authorization") != nil else {
-                throw APIError.serverError(401, Self.backendMessage(from: data) ?? String(localized: "Não autorizado"))
-            }
-            if !isRefreshing {
-                isRefreshing = true
-                defer { isRefreshing = false }
-                do {
-                    try await refreshTokens()
-                    var retryRequest = request
-                    if let token = accessToken {
-                        retryRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    }
-                    let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
-                    guard let retryHttp = retryResponse as? HTTPURLResponse else {
-                        throw APIError.invalidResponse
-                    }
-                    if (200...299).contains(retryHttp.statusCode) {
-                        if retryData.isEmpty { return nil }
-                        let decoder = JSONDecoder()
-                        decoder.keyDecodingStrategy = .convertFromSnakeCase
-                        decoder.dateDecodingStrategy = .iso8601
-                        return try? decoder.decode(T.self, from: retryData)
-                    }
-                    if retryHttp.statusCode == 404 { return nil }
-                } catch {
-                    notifySessionExpired()
-                    throw APIError.unauthorized
-                }
-            }
-            throw APIError.unauthorized
         default:
             if Self.backendCode(from: data) == BackendErrorCode.legalConsentRequired {
                 throw APIError.legalConsentRequired
@@ -742,7 +799,11 @@ enum APIError: LocalizedError {
         case .invalidResponse: return String(localized: "Resposta inválida do servidor")
         case .legalConsentRequired:
             return BackendErrorCode.localizedMessage(for: BackendErrorCode.legalConsentRequired)
-        case .serverError(let code, let msg): return String(localized: "Erro \(code):") + " " + msg
+        case .serverError(_, let msg):
+            let message = msg.trimmingCharacters(in: .whitespacesAndNewlines)
+            return message.isEmpty
+                ? String(localized: "Não foi possível concluir esta ação. Tente novamente mais tarde.")
+                : message
         }
     }
 }

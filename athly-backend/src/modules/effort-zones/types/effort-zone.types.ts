@@ -41,6 +41,7 @@ export interface RunDataForZones {
 }
 
 export interface FormattedZones {
+  heartRate?: import('../../users/heart-rate-guidance').GuidedHeartRateZones;
   formatted: string;
   vdotScore: number | null;
 }

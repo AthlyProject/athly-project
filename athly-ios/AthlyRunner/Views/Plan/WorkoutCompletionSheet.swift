@@ -832,7 +832,7 @@ struct WorkoutCompletionSheet: View {
                 Self.diagLogger.debug("  [inWindow] id=\(r.id) start=\(df.string(from: r.startDate))")
             }
 
-            let orphanIds = Set(RunWorkoutLinkStore.shared.allOrphanCandidates(healthKitUUIDs: inWindow.map { $0.id }))
+            let orphanIds = Set(RunWorkoutLinkStore.shared.completionCandidates(healthKitUUIDs: inWindow.map { $0.id }, workoutId: workout.id))
             let linkedOut = inWindow.filter { !orphanIds.contains($0.id) }
             if !linkedOut.isEmpty {
                 for r in linkedOut {

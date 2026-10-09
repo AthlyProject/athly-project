@@ -15,6 +15,16 @@ final class NotificationService {
     /// Limite de notificações pendentes (iOS permite no máx. 64; ficamos bem abaixo).
     private let maxScheduled = 12
     private var remoteDeviceToken: String?
+    private var scheduleVersion = 0
+    private var scheduleTask: Task<Void, Never>?
+    private var lastSchedule: [ReminderIdentity]?
+    private struct ReminderIdentity: Equatable {
+        let id: String
+        let title: String
+        let date: Date
+        let timeZone: String
+        let locale: String
+    }
 
     /// Default: ligado (a permissão do sistema ainda gate o agendamento de fato).
     var isEnabled: Bool {
@@ -83,12 +93,25 @@ final class NotificationService {
 
     /// Cancela os lembretes e reagenda para os próximos treinos agendados (futuros).
     func reschedule(workouts: [WorkoutModel]) async {
-        let center = UNUserNotificationCenter.current()
-        cancelAll()
-        guard isEnabled else { return }
+        scheduleVersion += 1
+        let version = scheduleVersion
+        let previous = scheduleTask
+        let task = Task {
+            await previous?.value
+            guard version == scheduleVersion else { return }
+            await applySchedule(workouts: workouts, version: version)
+        }
+        scheduleTask = task
+        await task.value
+        if version == scheduleVersion { scheduleTask = nil }
+    }
 
+    private func applySchedule(workouts: [WorkoutModel], version: Int) async {
+        let center = UNUserNotificationCenter.current()
+        guard isEnabled else { center.removeAllPendingNotificationRequests(); lastSchedule = nil; return }
         let status = await center.notificationSettings().authorizationStatus
-        guard status == .authorized || status == .provisional else { return }
+        guard version == scheduleVersion else { return }
+        guard status == .authorized || status == .provisional else { lastSchedule = nil; return }
 
         let now = Date()
         let calendar = Calendar.current
@@ -101,8 +124,15 @@ final class NotificationService {
         }
         pending.sort { $0.date < $1.date }
         let upcoming = pending.prefix(maxScheduled)
+        let desired = upcoming.map { ReminderIdentity(id: $0.workout.id, title: $0.workout.title, date: $0.date,
+                                                      timeZone: calendar.timeZone.identifier, locale: Locale.current.identifier) }
+        guard desired != lastSchedule else { return }
+        center.removeAllPendingNotificationRequests()
+        lastSchedule = nil
+        var succeeded = true
 
         for (workout, fireDate) in upcoming {
+            guard version == scheduleVersion else { return }
             let content = UNMutableNotificationContent()
             content.title = String(localized: "Treino de hoje")
             content.body = workout.title
@@ -115,12 +145,23 @@ final class NotificationService {
                 content: content,
                 trigger: trigger
             )
-            try? await center.add(request)
+            do { try await center.add(request) } catch { succeeded = false }
         }
+        if succeeded, version == scheduleVersion { lastSchedule = desired }
     }
 
     func cancelAll() {
+        scheduleVersion += 1
+        lastSchedule = nil
+        let version = scheduleVersion
+        let previous = scheduleTask
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        scheduleTask = Task {
+            await previous?.value
+            guard version == scheduleVersion else { return }
+            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+            scheduleTask = nil
+        }
     }
 
     private func reminderDate(for workout: WorkoutModel, calendar: Calendar) -> Date? {

@@ -164,6 +164,16 @@ struct SettingsView: View {
     private var integrationsGroup: some View {
         AthlyListGroup {
             NavigationLink {
+                HeartRateSettingsView()
+            } label: {
+                AthlyListRow(systemImage: "heart.text.clipboard", tint: AthlyTheme.Color.primary,
+                             title: Text("Frequência cardíaca"),
+                             subtitle: Text("Dados, zonas e guia de esforço")) {
+                    AthlyChevron()
+                }
+            }
+            Divider().overlay(AthlyTheme.Color.borderDark)
+            NavigationLink {
                 HealthKitRunsView(showsPlanTab: false)
             } label: {
                 AthlyListRow(
@@ -294,7 +304,7 @@ struct SettingsView: View {
 
     private var logoutButton: some View {
         AthlyWideButton {
-            authViewModel.logout()
+            Task { await authViewModel.logout() }
         } label: {
             Image(systemName: "rectangle.portrait.and.arrow.right")
                 .font(.system(size: 13, weight: .semibold))

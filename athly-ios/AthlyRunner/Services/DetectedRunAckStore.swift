@@ -17,6 +17,7 @@ final class DetectedRunAckStore: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "com.athly.detectedrunackstore", qos: .utility)
     private let fileURL: URL
+    private lazy var persistence = SnapshotFile<[String: Date]>(url: fileURL)
     private var cache: [String: Date] = [:]
 
     private init() {
@@ -49,7 +50,7 @@ final class DetectedRunAckStore: @unchecked Sendable {
     func clear() {
         queue.sync {
             cache = [:]
-            try? FileManager.default.removeItem(at: fileURL)
+            persistence.clear()
         }
     }
 
@@ -67,10 +68,6 @@ final class DetectedRunAckStore: @unchecked Sendable {
 
     /// Must be called from inside `queue.sync` (or from `init`, before any concurrent access).
     private func persistLocked() {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        if let data = try? encoder.encode(cache) {
-            try? data.write(to: fileURL, options: .atomic)
-        }
+        persistence.save(cache)
     }
 }

@@ -280,35 +280,45 @@ export class AuthService {
   }
 
   async refreshSession(refreshToken: string) {
-    const session = await this.prisma.session.findUnique({
-      where: { refreshToken },
-      include: { user: true },
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.session.findUnique({
+        where: { refreshToken },
+        include: { user: true },
+      });
+      if (!session) {
+        throw new CodedUnauthorizedException(
+          ErrorCode.AUTH_REFRESH_TOKEN_INVALID,
+          'Refresh token inválido',
+        );
+      }
+      const now = new Date();
+      if (session.expiresAt <= now) {
+        throw new CodedUnauthorizedException(
+          ErrorCode.AUTH_REFRESH_TOKEN_EXPIRED,
+          'Refresh token expirado',
+        );
+      }
+
+      const accessToken = this.signAccessToken(session.user);
+      const newRefreshToken = `${randomUUID()}-${randomBytes(24).toString('hex')}`;
+      // Conditional rotation preserves the session on failure and permits only one winner.
+      const rotated = await tx.session.updateMany({
+        where: { id: session.id, refreshToken, expiresAt: { gt: now } },
+        data: {
+          refreshToken: newRefreshToken,
+          expiresAt: this.calculateExpiry(
+            this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN', '365d'),
+          ),
+        },
+      });
+      if (!rotated.count) {
+        throw new CodedUnauthorizedException(
+          ErrorCode.AUTH_REFRESH_TOKEN_INVALID,
+          'Refresh token inválido',
+        );
+      }
+      return { accessToken, refreshToken: newRefreshToken };
     });
-
-    if (!session) {
-      throw new CodedUnauthorizedException(
-        ErrorCode.AUTH_REFRESH_TOKEN_INVALID,
-        'Refresh token inválido',
-      );
-    }
-
-    if (session.expiresAt < new Date()) {
-      await this.prisma.session.delete({ where: { id: session.id } });
-      throw new CodedUnauthorizedException(
-        ErrorCode.AUTH_REFRESH_TOKEN_EXPIRED,
-        'Refresh token expirado',
-      );
-    }
-
-    await this.prisma.session.delete({ where: { id: session.id } });
-
-    const newAccessToken = this.signAccessToken(session.user);
-    const newRefreshToken = await this.createSession(session.user);
-
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-    };
   }
 
   async loginWithGoogle(idToken: string, consent: SocialLegalConsent = {}) {
@@ -638,7 +648,7 @@ export class AuthService {
 
   private async createSession(user: User) {
     const refreshToken = `${randomUUID()}-${randomBytes(24).toString('hex')}`;
-    const expiresIn = this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN', '7d');
+    const expiresIn = this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN', '365d');
     const expiresAt = this.calculateExpiry(expiresIn);
 
     await this.prisma.session.create({
@@ -656,7 +666,7 @@ export class AuthService {
     const now = new Date();
     const match = value.match(/^(\d+)([smhd])$/);
     if (!match) {
-      now.setDate(now.getDate() + 7);
+      now.setDate(now.getDate() + 365);
       return now;
     }
 

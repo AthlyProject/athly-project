@@ -102,6 +102,9 @@ model User {
   comfortPaceSeconds   Int?      @map("comfort_pace_seconds")
   restingHeartRate     Int?      @map("resting_heart_rate")
   maxHeartRate         Int?      @map("max_heart_rate")
+  appleHealthRestingHeartRate Int? @map("apple_health_resting_heart_rate")
+  appleHealthRestingHeartRateMeasuredAt DateTime? @map("apple_health_resting_heart_rate_measured_at")
+  appleHealthHeartRateCapturedAt DateTime? @map("apple_health_heart_rate_captured_at")
   // Assinatura (RevenueCat). Atualizado via webhook; entitlement = trial (createdAt+14d) OU assinatura ativa.
   subscriptionStatus    String?   @map("subscription_status")        // active | expired | trial | cancelled | null
   subscriptionExpiresAt DateTime? @map("subscription_expires_at")

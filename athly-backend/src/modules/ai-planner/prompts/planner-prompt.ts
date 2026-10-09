@@ -1,3 +1,4 @@
+import { heartRatePrescriptionPrompt } from '../heart-rate-prescription';
 import type { AiPlannerInput, PreviousWeekAnalysis } from '../types/planner.types';
 import type { FormattedZones } from '../../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './goal-parser-prompt';
@@ -562,6 +563,7 @@ Dias de treino do atleta: ${daysList}
 </context>
 
 ${effortZones.formatted}
+${heartRatePrescriptionPrompt(effortZones.heartRate)}
 
 ${detailedSessionsSection}
 
@@ -588,7 +590,7 @@ ${SEGMENT_RECIPES}
 - Treinos SOMENTE nos dias: ${daysList}. Todos os outros dias = descanso.
 ${dateConstraintBullet}
 - Mantenha todas as distâncias conservadoras (1–6 km) já que não há dados de linha de base.
-- Use RPE (escala 1–10) para guia de esforço, pois não há histórico de frequência cardíaca.
+- Siga training_guidance para os targets de RPE e FC.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 8.
 - trend deve ser "maintaining" (sem histórico para determinar).
@@ -693,7 +695,9 @@ export function buildPlannerPrompt(
     minTrainingDate,
   } = input;
   const restDays = 7 - trainingDays;
-  const hrCtx = avgHR ? `${avgHR} bpm` : 'não disponível — prescreva esforço por RPE (escala 1–10)';
+  const hrCtx = avgHR
+    ? `${avgHR} bpm (histórico observado; prescrição segue training_guidance)`
+    : 'não disponível';
   const daysList = formatAvailableDays(availableDays);
 
   const previousWeekSection = previousWeekAnalysis
@@ -765,6 +769,7 @@ ${dateConstraintsSection}
 </task>
 
 ${effortZones.formatted}
+${heartRatePrescriptionPrompt(effortZones.heartRate)}
 
 ${detailedSessionsSection}
 ${laudoNoteSection}
@@ -783,7 +788,7 @@ ${SEGMENT_RECIPES}
 ${dateConstraintBullet}
 - Nunca ultrapasse o volume máximo calculado em <deterministic_guardrails>. Se necessário, use menos dias de treino do que a disponibilidade máxima.
 - Sessões de intervalos devem incluir warmup de pelo menos 8 min (480s) ou 1 km, e cooldown de pelo menos 5 min ou 500 m — mesmos mínimos dos segmentos warmup/cooldown.
-- Se dados de FC não estiverem disponíveis, use target.rpe (1–10) em vez de target.hrZone.
+- Siga training_guidance: RPE obrigatório e FC apenas quando habilitada pelo backend.
 - weekPlan deve conter EXATAMENTE 7 entradas, uma por dia de ${weekDates[0]} a ${weekDates[6]}.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 9.

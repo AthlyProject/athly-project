@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HeartRateModule } from '../users/heart-rate.module';
 import { AiPlannerController } from './ai-planner.controller';
 import { AiPlannerService } from './ai-planner.service';
 import { GeminiService } from './gemini.service';
@@ -14,7 +15,7 @@ import { PlannerHealthContextService } from './planner-health-context.service';
 import { WeeklyPlanAutomationService } from './weekly-plan-automation.service';
 
 @Module({
-  imports: [EffortZoneModule, BillingModule, TrainingReportModule],
+  imports: [EffortZoneModule, BillingModule, TrainingReportModule, HeartRateModule],
   controllers: [AiPlannerController],
   providers: [
     AiPlannerService,

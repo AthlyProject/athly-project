@@ -1,10 +1,13 @@
 // OpenTelemetry endpoint (OTLP HTTP base URL — without /v1/traces suffix).
+// Disabled by default. To enable, configure a running collector in the gitignored
+// Config/OTel.User.xcconfig file using one of the examples below.
 //
 // Local dev (iOS Simulator → docker on the same Mac):
-//   OTEL_ENDPOINT = http://localhost:4318
+//   OTEL_ENDPOINT = http:$(OTEL_SLASH)$(OTEL_SLASH)localhost:4318
 //
 // Local dev (physical device on the same network):
-//   OTEL_ENDPOINT = http://192.168.X.X:4318   (run: ifconfig en0 | grep 'inet ')
+//   OTEL_ENDPOINT = http:$(OTEL_SLASH)$(OTEL_SLASH)192.168.X.X:4318
+// localhost on a physical device points to the device itself, not the Mac.
 //
 // Production (Grafana Cloud) — override in OTel.User.xcconfig (gitignored):
 //   OTEL_ENDPOINT = https:$(OTEL_SLASH)$(OTEL_SLASH)otlp-gateway-prod-eu-west-0.grafana.net/otlp
@@ -13,7 +16,7 @@
 // silently truncated to "http:" (host lost → OTLP export fails with -1003).
 // Build the "//" via this helper var so no literal "//" appears in the value.
 OTEL_SLASH = /
-OTEL_ENDPOINT = http:$(OTEL_SLASH)$(OTEL_SLASH)localhost:4318
+OTEL_ENDPOINT =
 
 // Grafana Cloud API key (base64 of "instanceID:apiToken").
 // Leave empty for local dev. Set in OTel.User.xcconfig for production.

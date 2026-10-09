@@ -509,28 +509,6 @@ final class WorkoutDetailFetcher: @unchecked Sendable {
     }
 
     private func fetchHeartRateSamples(for workout: HKWorkout) async throws -> [HKQuantitySample] {
-        guard let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
-            return []
-        }
-        let predicate = HKQuery.predicateForSamples(
-            withStart: workout.startDate,
-            end: workout.endDate,
-            options: .strictStartDate
-        )
-        return try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: hrType,
-                predicate: predicate,
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
-            ) { _, samples, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
-            }
-            self.store.execute(query)
-        }
+        try await HealthKitService().fetchRunHeartRateSamples(for: workout)
     }
 }

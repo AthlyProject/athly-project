@@ -458,3 +458,189 @@ private final class FakeHealthKitRunningWorkoutsProvider: HealthKitRunningWorkou
 
     func diagnoseZeppWorkouts(limit: Int) async {}
 }
+
+@MainActor
+final class NavigationPerformanceTests: XCTestCase {
+    private func workout(_ id: String, date: String, sport: String = "running") throws -> WorkoutModel {
+        let object: [String: Any] = ["id": id, "date": date, "title": "Run", "status": "scheduled",
+                                    "sportType": sport, "blocks": [], "weeklyGoalId": "week"]
+        return try JSONDecoder().decode(WorkoutModel.self, from: JSONSerialization.data(withJSONObject: object))
+    }
+
+    func testDateOnlyParserPreservesDayAcrossTimeZonesAndSupportsLegacyISO() throws {
+        for name in ["America/Sao_Paulo", "Pacific/Auckland", "Asia/Tokyo"] {
+            let zone = try XCTUnwrap(TimeZone(identifier: name))
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = zone
+            let date = try XCTUnwrap(WorkoutDateParser.date(from: "2026-10-05", timeZone: zone))
+            XCTAssertEqual(calendar.component(.day, from: date), 5)
+            XCTAssertEqual(calendar.component(.hour, from: date), 0)
+        }
+        XCTAssertEqual(WorkoutDateParser.date(from: "2026-10-05T12:00:00.000Z"),
+                       WorkoutDateParser.date(from: "2026-10-05T12:00:00Z"))
+        XCTAssertNil(WorkoutDateParser.date(from: "not-a-date"))
+    }
+
+    func testIndexUpdatesAfterWorkoutMovesAndExcludesRestFromCalendar() throws {
+        let vm = TrainingPlanViewModel()
+        let original = try workout("run", date: "2026-10-05")
+        vm.allWorkouts = [original, try workout("rest", date: "2026-10-05", sport: "other")]
+        XCTAssertEqual(vm.workouts(on: original.parsedDate).map(\.id), ["run"])
+        let moved = try workout("run", date: "2026-10-06")
+        vm.allWorkouts = [moved]
+        XCTAssertTrue(vm.workouts(on: original.parsedDate).isEmpty)
+        XCTAssertEqual(vm.workouts(on: moved.parsedDate).map(\.id), ["run"])
+        XCTAssertEqual(vm.workout(id: "run")?.date, "2026-10-06")
+    }
+
+    func testCalendarLookupsWith365Workouts() throws {
+        let calendar = Calendar.current
+        let base = try XCTUnwrap(WorkoutDateParser.date(from: "2026-10-05"))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let vm = TrainingPlanViewModel()
+        vm.allWorkouts = try (0..<365).map { offset in
+            try workout(String(offset), date: formatter.string(from: calendar.date(byAdding: .day, value: -offset, to: base)!))
+        }
+        let days = (0..<7).map { calendar.date(byAdding: .day, value: -$0, to: base)! }
+        measure {
+            var total = 0
+            for _ in 0..<4 { for day in days { total += vm.workouts(on: day).count } }
+            XCTAssertEqual(total, 28)
+        }
+    }
+
+    func testAutomaticLoadsShareRequestsAndRespectFreshnessButExplicitRefreshDoesNot() async {
+        TrainingPlanCache.shared.clear()
+        let gate = PerformanceTestGate()
+        var reads = 0
+        let vm = TrainingPlanViewModel(loadDependencies: PlanLoadDependencies(plan: {
+            reads += 1
+            await gate.wait()
+            return nil
+        }, notify: { _ in }))
+        let first = Task { await vm.loadIfNeeded() }
+        let second = Task { await vm.loadIfNeeded() }
+        for _ in 0..<500 where reads == 0 { await Task.yield() }
+        await gate.open()
+        await first.value
+        await second.value
+        XCTAssertEqual(reads, 1)
+        await vm.loadIfNeeded()
+        XCTAssertEqual(reads, 1)
+        await vm.loadData()
+        XCTAssertEqual(reads, 2)
+        vm.invalidateDataLoad()
+        await vm.loadIfNeeded()
+        XCTAssertEqual(reads, 3)
+        TrainingPlanCache.shared.clear()
+    }
+
+    func testSnapshotWritesCoalesceAndClearCannotBeUndoneByOlderWrites() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("cache.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let file = SnapshotFile<[Int]>(url: url)
+        for i in 0..<200 { file.save(Array(repeating: i, count: 100)) }
+        file.clear()
+        try await file.flush()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        file.save([999])
+        try await file.flush()
+        let restored = try await SnapshotFile<[Int]>(url: url).load()
+        XCTAssertEqual(restored, [999])
+    }
+
+    func testRunHydrationMergesEarlyChangesAndPersistsAnImmutableCompatibleSnapshot() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("runs.json")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let original = RunSession()
+        original.distanceMeters = 5000
+        original.routePoints = [RoutePoint(latitude: -23, longitude: -46, altitude: 5, timestamp: Date())]
+        let initial = SnapshotFile<[RunSessionSnapshot]>(url: url)
+        initial.save([RunSessionSnapshot(original)])
+        try await initial.flush()
+        let store = RunStore(fileURL: url)
+        let early = RunSession()
+        early.distanceMeters = 1000
+        store.add(early)
+        try await store.flush()
+        XCTAssertEqual(store.sessions.count, 2)
+        let snapshot = RunSessionSnapshot(original)
+        original.distanceMeters = 99
+        XCTAssertEqual(snapshot.distanceMeters, 5000)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let restored = try decoder.decode([RunSession].self, from: Data(contentsOf: url))
+        XCTAssertEqual(restored.count, 2)
+        XCTAssertEqual(restored.first { $0.id == original.id }?.routePoints.count, 1)
+        let revision = store.revision
+        early.distanceMeters = 2000
+        store.update(early)
+        XCTAssertGreaterThan(store.revision, revision)
+        try await store.flush()
+    }
+
+    func testUnreadableHistoryIsNotOverwrittenAndWriteFailuresAreReported() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("runs.json")
+        let corrupt = Data("corrupt-history".utf8)
+        try corrupt.write(to: url)
+        let store = RunStore(fileURL: url)
+        store.add(RunSession())
+        do { try await store.flush(); XCTFail("Must not overwrite unreadable history") } catch {}
+        XCTAssertEqual(try Data(contentsOf: url), corrupt)
+        let blocked = SnapshotFile<[Int]>(url: url.appendingPathComponent("child.json"))
+        blocked.save([1])
+        do { try await blocked.flush(); XCTFail("Must surface write error") } catch {}
+    }
+
+    func testHealthSummariesAppearBeforeHeartRateEnrichmentCompletes() async {
+        let service = ProgressiveHealthProvider()
+        let vm = HealthKitRunsViewModel(healthKitService: service, cache: MemoryHealthKitRunsCache())
+        let loading = Task { await vm.loadWorkouts() }
+        for _ in 0..<1000 where vm.runs.isEmpty { await Task.yield() }
+        XCTAssertEqual(vm.runs.map(\.id), ["summary"])
+        XCTAssertNil(vm.runs.first?.avgHR)
+        XCTAssertFalse(vm.isInitialLoading)
+        await service.gate.open()
+        await loading.value
+        XCTAssertEqual(vm.runs.first?.avgHR, 150)
+    }
+}
+
+private actor PerformanceTestGate {
+    private var opened = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    func wait() async {
+        if opened { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+    func open() {
+        opened = true
+        let waiting = waiters
+        waiters = []
+        for waiter in waiting { waiter.resume() }
+    }
+}
+
+private final class ProgressiveHealthProvider: HealthKitRunningWorkoutsProviding, Sendable {
+    let gate = PerformanceTestGate()
+    var isHealthDataAvailable: Bool { true }
+    func requestReadAuthorization() async throws {}
+    func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot { .fullyAuthorized }
+    func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem] { [] }
+    func fetchRunningWorkoutsPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem] { [] }
+    func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem? { nil }
+    func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async {}
+    func diagnoseZeppWorkouts(limit: Int) async {}
+    func fetchRunningWorkoutSummariesPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem] {
+        [HealthKitRunItem(id: "summary", startDate: Date(), endDate: Date(), durationSeconds: 1800,
+                         distanceMeters: 5000, averagePaceSecondsPerKm: 360, activeEnergyBurned: 300, elevationGainMeters: 0)]
+    }
+    func enrichHeartRates(_ items: [HealthKitRunItem]) async throws -> [HealthKitRunItem] {
+        await gate.wait()
+        return items.map { item in var enriched = item; enriched.avgHR = 150; return enriched }
+    }
+}

@@ -3,6 +3,7 @@ import MapKit
 import UIKit
 
 struct RunStartView: View {
+    @Environment(\.isAppTabActive) private var isTabActive
     @EnvironmentObject var locationManager: LocationManager
     @StateObject private var viewModel: RunViewModel
     @Binding var isRunInProgress: Bool
@@ -62,6 +63,19 @@ struct RunStartView: View {
                 pendingWorkout = nil
             }
         }
+        .onChange(of: pendingWorkout?.id) { _ in
+            if let workout = pendingWorkout {
+                viewModel.pendingWorkout = workout
+                pendingWorkout = nil
+            }
+        }
+        .onChange(of: isTabActive) { active in
+            if active && !viewModel.isActive && !viewModel.showSummary && locationManager.hasPermission {
+                locationManager.startTracking()
+            } else if !active && !viewModel.isActive {
+                locationManager.stopTracking()
+            }
+        }
         .onChange(of: viewModel.isActive) { active in
             isRunInProgress = active || viewModel.showSummary
         }
@@ -110,7 +124,7 @@ struct RunStartView: View {
         }
         .onAppear {
             // Request location early so map can show user position
-            if locationManager.hasPermission {
+            if isTabActive && locationManager.hasPermission {
                 locationManager.startTracking()
             }
         }

@@ -13,14 +13,36 @@ protocol HealthKitRunningWorkoutsProviding: AnyObject, Sendable {
     func requestWriteAuthorization() async throws -> HealthKitWriteAuthorizationSnapshot
     func fetchLatestRunningWorkouts(limit: Int) async throws -> [HealthKitRunItem]
     func fetchRunningWorkoutsPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem]
+    func fetchRunningWorkoutSummariesPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem]
+    func enrichHeartRates(_ items: [HealthKitRunItem]) async throws -> [HealthKitRunItem]
     func fetchRunningWorkout(uuid: String) async throws -> HealthKitRunItem?
     func diagnose(windowStart: Date, windowEnd: Date, contextLabel: String) async
     func diagnoseZeppWorkouts(limit: Int) async
 }
 
+extension HealthKitRunningWorkoutsProviding {
+    func fetchRunningWorkoutSummariesPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem] {
+        try await fetchRunningWorkoutsPage(limit: limit, beforeEndDate: beforeEndDate)
+    }
+    func enrichHeartRates(_ items: [HealthKitRunItem]) async throws -> [HealthKitRunItem] { items }
+}
+
+/// Shares concurrent reads only, never keeps health data across authorization changes.
+private actor HealthReadPool {
+    static let shared = HealthReadPool()
+    private var pending: [String: Task<[HealthKitRunItem], Error>] = [:]
+    func read(_ key: String, operation: @escaping @Sendable () async throws -> [HealthKitRunItem]) async throws -> [HealthKitRunItem] {
+        if let task = pending[key] { return try await task.value }
+        let task = Task { try await operation() }
+        pending[key] = task
+        defer { pending[key] = nil }
+        return try await task.value
+    }
+}
+
 /// Serviço para leitura e escrita de corridas no Health Store.
 /// @unchecked Sendable: HKHealthStore não é Sendable; uso é isolado a chamadas async do próprio tipo.
-final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Sendable {
+final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealthProviding, @unchecked Sendable {
 
     private let store = HKHealthStore()
 
@@ -74,6 +96,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         HKHealthStore.isHealthDataAvailable()
     }
 
+
+
     /// Solicita apenas permissão de leitura para listar corridas existentes + HR para análise detalhada.
     /// HealthKit não expõe status de permissão de leitura por tipo; chamar novamente é seguro e
     /// permite que novos tipos adicionados pelo app sejam solicitados quando necessário.
@@ -84,11 +108,42 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         var typesToRead: Set<HKObjectType> = [
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
+            HKQuantityType(.restingHeartRate),
         ]
         if let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) {
             typesToRead.insert(hrType)
         }
         try await store.requestAuthorization(toShare: [], read: typesToRead)
+    }
+
+    func requestHeartRateReadAuthorization() async throws {
+        guard isHealthDataAvailable else { throw HealthKitError.notAvailable }
+        try await requestReadAuthorization()
+    }
+
+    func fetchRestingHeartRate() async throws -> HeartRateHealthSnapshot? {
+        guard isHealthDataAvailable else { throw HealthKitError.notAvailable }
+        let capturedAt = Date()
+        let cutoff = capturedAt.addingTimeInterval(-30 * 24 * 60 * 60)
+        let predicate = HKQuery.predicateForSamples(withStart: cutoff, end: capturedAt, options: [.strictStartDate, .strictEndDate])
+        let samples: [HKQuantitySample] = try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(sampleType: HKQuantityType(.restingHeartRate), predicate: predicate,
+                                      limit: HKObjectQueryNoLimit,
+                                      sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)]) { _, samples, error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume(returning: samples as? [HKQuantitySample] ?? []) }
+            }
+            store.execute(query)
+        }
+        try Task.checkCancellation()
+        // A query with no read permission also returns no samples; do not infer denial.
+        for sample in samples {
+            let value = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+            guard value.isFinite, (20...150).contains(value) else { continue }
+            return HeartRateHealthSnapshot(restingHeartRate: Int(value.rounded()),
+                                           measuredAt: sample.endDate, capturedAt: capturedAt)
+        }
+        return nil
     }
 
     /// Estado atual de escrita. O HealthKit permite consultar escrita por tipo,
@@ -378,21 +433,54 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
 
     /// Busca uma página de corridas terminadas antes de `beforeEndDate`.
     func fetchRunningWorkoutsPage(limit: Int = 20, beforeEndDate: Date? = nil) async throws -> [HealthKitRunItem] {
-        let workouts = try await fetchLatestRawRunningWorkouts(limit: limit, beforeEndDate: beforeEndDate)
-        return workouts.map { self.map($0) }
+        let items = try await fetchRunningWorkoutSummariesPage(limit: limit, beforeEndDate: beforeEndDate)
+        return try await enrichHeartRates(items)
+    }
+
+    func fetchRunningWorkoutSummariesPage(limit: Int, beforeEndDate: Date?) async throws -> [HealthKitRunItem] {
+        let key = "page-\(limit)-\(beforeEndDate?.timeIntervalSince1970 ?? 0)"
+        return try await HealthReadPool.shared.read(key) {
+            try await self.fetchLatestRawRunningWorkouts(limit: limit, beforeEndDate: beforeEndDate).map { self.map($0) }
+        }
+    }
+
+    func enrichHeartRates(_ items: [HealthKitRunItem]) async throws -> [HealthKitRunItem] {
+        try await withThrowingTaskGroup(of: (Int, HealthKitRunItem).self) { group in
+            var next = 0
+            var results = items
+            func enqueue(_ index: Int) {
+                group.addTask {
+                    try Task.checkCancellation()
+                    return (index, try await self.fetchRunningWorkout(uuid: items[index].id) ?? items[index])
+                }
+            }
+            while next < min(4, items.count) { enqueue(next); next += 1 }
+            while let (index, item) = try await group.next() {
+                results[index] = item
+                if next < items.count { enqueue(next); next += 1 }
+            }
+            return results
+        }
     }
 
     /// Busca uma corrida específica pelo UUID do HKWorkout.
     /// Usa o mesmo critério da listagem (`isRunningWorkoutCandidate`) para que treinos
     /// aceitos na lista (ex.: Zepp/Amazfit gravados como `.other`) também resolvam por UUID.
     func fetchRunningWorkout(uuid workoutUUID: String) async throws -> HealthKitRunItem? {
+        try await HealthReadPool.shared.read("run-" + workoutUUID.lowercased()) {
+            if let item = await self.readRunningWorkout(uuid: workoutUUID) { return [item] }
+            return []
+        }.first
+    }
+
+    private func readRunningWorkout(uuid workoutUUID: String) async -> HealthKitRunItem? {
         guard isHealthDataAvailable,
               let uuid = UUID(uuidString: workoutUUID),
               let workout = await fetchWorkout(uuid: uuid),
               isRunningWorkoutCandidate(workout) else {
             return nil
         }
-        return map(workout)
+        return await mapWithHeartRate(workout)
     }
 
     /// Busca os últimos `HKWorkout` brutos (sem mapeamento). Usado pelo `WorkoutDetailFetcher`
@@ -958,6 +1046,47 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
         }
     }
 
+    /// Only samples linked to this workout or recorded by its exact source qualify.
+    /// A phone-only run must not inherit unrelated HR samples from its time window.
+    func fetchRunHeartRateSamples(for workout: HKWorkout) async throws -> [HKQuantitySample] {
+        let type = HKQuantityType(.heartRate)
+        func query(_ predicate: NSPredicate) async throws -> [HKQuantitySample] {
+            try await withCheckedThrowingContinuation { continuation in
+                let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit,
+                                          sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]) { _, samples, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: samples as? [HKQuantitySample] ?? []) }
+                }
+                store.execute(query)
+            }
+        }
+        let window = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate,
+                                                options: [.strictStartDate, .strictEndDate])
+        let linked = try await query(NSCompoundPredicate(andPredicateWithSubpredicates: [window, HKQuery.predicateForObjects(from: workout)]))
+        let candidates: [HKQuantitySample]
+        if linked.isEmpty {
+            candidates = try await query(NSCompoundPredicate(andPredicateWithSubpredicates: [
+                window, HKQuery.predicateForObjects(from: workout.sourceRevision.source)
+            ]))
+        } else { candidates = linked }
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        return candidates.filter {
+            let bpm = $0.quantity.doubleValue(for: unit)
+            return bpm.isFinite && (30...240).contains(bpm)
+        }
+    }
+
+    private func mapWithHeartRate(_ workout: HKWorkout) async -> HealthKitRunItem {
+        var item = map(workout)
+        if let samples = try? await fetchRunHeartRateSamples(for: workout), !samples.isEmpty {
+            let unit = HKUnit.count().unitDivided(by: .minute())
+            let values = samples.map { $0.quantity.doubleValue(for: unit) }
+            item.avgHR = values.reduce(0, +) / Double(values.count)
+            item.maxHR = values.max()
+        }
+        return item
+    }
+
     private func map(_ workout: HKWorkout) -> HealthKitRunItem {
         let distanceMeters = workout.totalDistance?.doubleValue(for: .meter()) ?? 0
         let activeDuration = workout.metadata?["activeDurationSeconds"] as? Double ?? workout.duration
@@ -1234,9 +1363,6 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
                     session.healthKitSyncStatus = .synced
                     session.healthKitSyncError = nil
                     runStore.update(session)
-                    if let workoutId = session.athlyWorkoutId {
-                        RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
-                    }
                     return uuid
                 }
             }
@@ -1252,9 +1378,6 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, @unchecked Send
             session.healthKitSyncError = nil
             runStore.update(session)
 
-            if let workoutId = session.athlyWorkoutId {
-                RunWorkoutLinkStore.shared.link(healthKitUUID: uuid, athlyWorkoutId: workoutId)
-            }
             return uuid
         } catch {
             if let healthKitError = error as? HealthKitError,

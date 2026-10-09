@@ -1,6 +1,6 @@
 import Foundation
 
-struct Split: Identifiable, Codable {
+struct Split: Identifiable, Codable, Sendable {
     let id: UUID
     let kilometer: Int
     let durationSeconds: Double

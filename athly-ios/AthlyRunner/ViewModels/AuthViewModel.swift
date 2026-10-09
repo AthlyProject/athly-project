@@ -24,27 +24,9 @@ final class AuthViewModel: ObservableObject {
     /// mostra o aceite e chama `confirmPendingSocialSignIn()` (reenvia o mesmo token).
     @Published var pendingSocialSignIn: PendingSocialSignIn?
 
-    private let tokenKey = "athly_access_token"
-    private let refreshKey = "athly_refresh_token"
-
     init() {
-        migrateTokensFromUserDefaultsIfNeeded()
-        loadSavedTokens()
-        observeTokenRefresh()
         observeSessionExpiry()
-    }
-
-    private func observeTokenRefresh() {
-        NotificationCenter.default.addObserver(
-            forName: .athlyTokensRefreshed,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self,
-                  let accessToken = notification.userInfo?["accessToken"] as? String,
-                  let refreshToken = notification.userInfo?["refreshToken"] as? String else { return }
-            self.saveTokens(access: accessToken, refresh: refreshToken)
-        }
+        loadSavedTokens()
     }
 
     /// Sessão rejeitada pelo backend (401 irrecuperável, emitido pelo `APIClient`): desloga e
@@ -55,10 +37,14 @@ final class AuthViewModel: ObservableObject {
             forName: .athlySessionExpired,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            guard let self, self.isAuthenticated else { return }
-            self.errorMessage = String(localized: "Sua sessão expirou. Faça login novamente.")
-            self.logout()
+        ) { [weak self] notification in
+            guard let version = notification.userInfo?["sessionVersion"] as? UUID else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if await self.clearLocalSession(expectedVersion: version) {
+                    self.errorMessage = String(localized: "Sua sessão expirou. Faça login novamente.")
+                }
+            }
         }
     }
 
@@ -67,8 +53,7 @@ final class AuthViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.login(email: email, password: password)
-            saveTokens(access: response.accessToken, refresh: response.refreshToken)
+            _ = try await APIClient.shared.login(email: email, password: password)
             isAuthenticated = true
             postAuthChanged(true)
             await refreshUserName()
@@ -136,8 +121,7 @@ final class AuthViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let response = try await APIClient.shared.register(email: email, password: password)
-            saveTokens(access: response.accessToken, refresh: response.refreshToken)
+            _ = try await APIClient.shared.register(email: email, password: password)
             assessmentCompleted = false
             needsProfileCompletion = true
             // O cadastro por email já envia (e o backend registra) o aceite.
@@ -222,18 +206,17 @@ final class AuthViewModel: ObservableObject {
     /// nova), guarda o token em `pendingSocialSignIn` para a UI pedir o aceite.
     private func exchangeSocialToken(_ request: PendingSocialSignIn, legalConsent: Bool) async throws {
         do {
-            let response: AuthResponse
             switch request {
             case .google(let idToken):
-                response = try await APIClient.shared.loginWithGoogle(idToken: idToken, legalConsent: legalConsent)
+                _ = try await APIClient.shared.loginWithGoogle(idToken: idToken, legalConsent: legalConsent)
             case .apple(let identityToken, let fullName):
-                response = try await APIClient.shared.loginWithApple(
+                _ = try await APIClient.shared.loginWithApple(
                     identityToken: identityToken,
                     fullName: fullName,
                     legalConsent: legalConsent
                 )
             }
-            await completeSocialSignIn(response)
+            await completeSocialSignIn()
         } catch APIError.legalConsentRequired where !legalConsent {
             pendingSocialSignIn = request
         }
@@ -250,10 +233,9 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// Passo comum aos dois provedores: salva tokens, entra e carrega o perfil (que define os gates
+    /// Passo comum aos dois provedores: entra e carrega o perfil (que define os gates
     /// de completar perfil e de questionário).
-    private func completeSocialSignIn(_ response: AuthResponse) async {
-        saveTokens(access: response.accessToken, refresh: response.refreshToken)
+    private func completeSocialSignIn() async {
         isAuthenticated = true
         postAuthChanged(true)
         await refreshUserName()
@@ -295,8 +277,8 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func logout() {
-        clearLocalSession()
+    func logout() async {
+        await clearLocalSession()
     }
 
     func refreshUserName() async {
@@ -313,7 +295,7 @@ final class AuthViewModel: ObservableObject {
     func deleteAccount() async -> Bool {
         do {
             try await APIClient.shared.deleteAccount()
-            clearLocalSession()
+            await clearLocalSession()
             return true
         } catch {
             errorMessage = error.localizedDescription
@@ -321,46 +303,51 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    private func clearLocalSession() {
-        KeychainHelper.delete(tokenKey)
-        KeychainHelper.delete(refreshKey)
+    @discardableResult
+    private func clearLocalSession(expectedVersion: UUID? = nil) async -> Bool {
+        guard await APIClient.shared.clearTokens(ifVersion: expectedVersion) else { return false }
         TrainingPlanCache.shared.clear()
         HealthKitRunsCache.shared.clear()
         AchievementStore.shared.clear()
         DetectedRunAckStore.shared.clear()
-        Task {
-            await APIClient.shared.clearTokens()
-        }
         isAuthenticated = false
         assessmentCompleted = nil
         needsProfileCompletion = false
         needsLegalConsent = false
         pendingSocialSignIn = nil
         postAuthChanged(false)
-    }
-
-    private func saveTokens(access: String, refresh: String) {
-        KeychainHelper.save(access, for: tokenKey)
-        KeychainHelper.save(refresh, for: refreshKey)
+        return true
     }
 
     private func loadSavedTokens() {
-        guard let access = KeychainHelper.read(tokenKey),
-              let refresh = KeychainHelper.read(refreshKey) else {
+        let restoreInterval = PerformanceTrace.signposter.beginInterval("SessionRestore")
+        let tokens: SessionTokens
+        do {
+            guard let saved = try SessionTokenStore.load() else {
+                hasFinishedInitialSessionRestore = true
+                PerformanceTrace.signposter.endInterval("SessionRestore", restoreInterval)
+                return
+            }
+            tokens = saved
+        } catch {
+            // Não apaga credenciais se o Keychain estiver indisponível.
+            errorMessage = error.localizedDescription
             hasFinishedInitialSessionRestore = true
+            PerformanceTrace.signposter.endInterval("SessionRestore", restoreInterval)
             return
         }
         Task {
-            await APIClient.shared.setTokens(access: access, refresh: refresh)
+            defer { PerformanceTrace.signposter.endInterval("SessionRestore", restoreInterval) }
+            await APIClient.shared.setTokens(access: tokens.accessToken, refresh: tokens.refreshToken)
             do {
                 let profile = try await APIClient.shared.getUserProfile()
                 isAuthenticated = true
                 postAuthChanged(true)
                 applyProfile(profile)
             } catch APIError.unauthorized {
-                // Token expired and refresh also failed — wipe local session so
-                // RootView shows AuthWelcomeView as soon as the splash dismisses.
-                clearLocalSession()
+                // A notificação de expiração limpa apenas a versão rejeitada da sessão.
+            } catch is CancellationError {
+                // Logout/troca de conta durante a restauração.
             } catch {
                 // Network error: assume still authenticated (offline mode).
                 isAuthenticated = true
@@ -376,19 +363,6 @@ final class AuthViewModel: ObservableObject {
         NotificationCenter.default.post(
             name: .athlyAuthChanged, object: nil, userInfo: ["authenticated": authenticated]
         )
-    }
-
-    /// Migração única: tokens legados em UserDefaults → Keychain (e limpa o UserDefaults).
-    private func migrateTokensFromUserDefaultsIfNeeded() {
-        let defaults = UserDefaults.standard
-        guard let access = defaults.string(forKey: tokenKey),
-              let refresh = defaults.string(forKey: refreshKey) else {
-            return
-        }
-        KeychainHelper.save(access, for: tokenKey)
-        KeychainHelper.save(refresh, for: refreshKey)
-        defaults.removeObject(forKey: tokenKey)
-        defaults.removeObject(forKey: refreshKey)
     }
 
     /// View controller ativo para apresentar a folha do GoogleSignIn.

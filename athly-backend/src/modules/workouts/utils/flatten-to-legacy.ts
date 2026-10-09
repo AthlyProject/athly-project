@@ -36,31 +36,46 @@ const formatEnd = (end: EndCondition | undefined): string => {
 };
 
 const describeSegment = (s: Segment): string => {
-  const target = isRunTarget(s.target)
-    ? s.target.paceSecPerKmMin
-      ? ` @ pace ${formatPace(s.target.paceSecPerKmMin)}${
-          s.target.paceSecPerKmMax ? `-${formatPace(s.target.paceSecPerKmMax)}` : ''
-        }/km`
-      : s.target.rpe
-        ? ` (RPE ${s.target.rpe})`
-        : ''
-    : '';
+  if (s.kind === 'set' && s.children) {
+    return `${s.repetitions ?? 1}× (${s.children.map(describeSegment).filter(Boolean).join(' + ')})`;
+  }
+  const hints: string[] = [];
+  if (isRunTarget(s.target)) {
+    const t = s.target;
+    if (t.paceSecPerKmMin)
+      hints.push(
+        `pace ${formatPace(t.paceSecPerKmMin)}${t.paceSecPerKmMax ? `-${formatPace(t.paceSecPerKmMax)}` : ''}/km`,
+      );
+    if (t.hrZone)
+      hints.push(
+        `Z${t.hrZone}${t.hrMinBpm && t.hrMaxBpm ? ` (${t.hrMinBpm}–${t.hrMaxBpm} bpm)` : ''}${t.hrIsEstimated ? ' (estimada por falta de dados de FC máxima no Apple Health)' : ''}`,
+      );
+    if (t.rpe) hints.push(`RPE ${t.rpe}/10`);
+  }
+  const target = hints.length ? ` · ${hints.join(' · ')}` : '';
   const end = formatEnd(s.end);
   if (s.kind === 'recovery') return `recovery ${end}${target}`;
   if (s.kind === 'rest') return `descanso ${end}`;
   return `${end}${target}`.trim();
 };
 
-const accumulate = (seg: Segment, mult: number, acc: LegacyAccumulator): void => {
+const accumulate = (
+  seg: Segment,
+  mult: number,
+  acc: LegacyAccumulator,
+  includeProse = true,
+): void => {
   if (seg.kind === 'set' && seg.children) {
     const reps = seg.repetitions ?? 1;
     const childrenSummary = seg.children.map(describeSegment).filter(Boolean).join(' + ');
-    if (childrenSummary) acc.prose.push(`${reps}× (${childrenSummary})`);
+    if (includeProse && childrenSummary) acc.prose.push(`${reps}× (${childrenSummary})`);
     for (const child of seg.children) {
-      accumulate(child, mult * reps, acc);
+      accumulate(child, mult * reps, acc, false);
     }
     return;
   }
+
+  if (includeProse) acc.prose.push(describeSegment(seg));
 
   if (seg.end?.by === 'distanceM') acc.distanceM += seg.end.value * mult;
   if (seg.end?.by === 'durationSec') acc.durationSec += seg.end.value * mult;

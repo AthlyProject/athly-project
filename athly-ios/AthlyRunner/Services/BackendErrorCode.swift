@@ -13,6 +13,7 @@ struct BackendErrorBody: Decodable {
 
     struct FieldError: Decodable {
         let field: String?
+        let constraint: String?
         let code: String?
         let message: String?
     }
@@ -33,9 +34,13 @@ enum BackendErrorMessage: Decodable {
     }
 
     var text: String {
+        values.joined(separator: "\n")
+    }
+
+    var values: [String] {
         switch self {
-        case .single(let value): return value
-        case .multiple(let values): return values.joined(separator: "\n")
+        case .single(let value): return [value]
+        case .multiple(let values): return values
         }
     }
 }
@@ -46,19 +51,96 @@ extension BackendErrorBody {
     /// Ordem: erros de validação campo a campo → código de negócio → texto do servidor. O
     /// fallback importa: um código novo no backend não pode virar tela em branco no app.
     var localizedText: String? {
+        if hasUnknownProperties {
+            return String(localized: "Não foi possível concluir esta ação devido a uma incompatibilidade com o servidor. Tente novamente mais tarde.")
+        }
         if let fieldErrors = errors, !fieldErrors.isEmpty {
             let lines = fieldErrors.compactMap { fieldError -> String? in
                 fieldError.code.flatMap(BackendErrorCode.localizedMessage) ?? fieldError.message
             }
-            if !lines.isEmpty { return lines.joined(separator: "\n") }
+            if let summary = Self.summary(lines) { return summary }
         }
 
         if let localized = code.flatMap(BackendErrorCode.localizedMessage) {
             return localized
         }
 
-        let fallback = message?.text
+        if isValidationFailure { return Self.summary(message?.values ?? []) }
+        let fallback = message?.text.trimmingCharacters(in: .whitespacesAndNewlines)
         return (fallback?.isEmpty == false) ? fallback : nil
+    }
+
+    private var isValidationFailure: Bool {
+        if code == "VALIDATION_FAILED" || errors?.isEmpty == false || hasUnknownProperties { return true }
+        if case .multiple = message { return true }
+        return false
+    }
+
+    private var hasUnknownProperties: Bool {
+        if errors?.contains(where: {
+            $0.constraint == "whitelistValidation" || $0.code?.hasSuffix("_WHITELIST_VALIDATION") == true
+        }) == true { return true }
+        // Older Nest responses only contain messages, sometimes prefixed with array paths.
+        let lines = (message?.values ?? []) + (errors?.compactMap(\.message) ?? [])
+        return lines.contains {
+            $0.range(of: #"(?:^|[.\s])property\s+\S+\s+should not exist\s*$"#,
+                     options: .regularExpression) != nil
+        }
+    }
+
+    private static func summary(_ values: [String]) -> String? {
+        var seen = Set<String>()
+        let lines = values.flatMap { $0.components(separatedBy: .newlines) }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+        return lines.isEmpty ? nil : lines.prefix(3).joined(separator: "\n")
+    }
+
+    /// Only structural metadata goes to telemetry; messages can contain submitted values.
+    func validationAttributes(method: String, path: String, statusCode: Int) -> [String: String]? {
+        guard statusCode == 400, isValidationFailure else { return nil }
+        func identifiers(_ values: [String]) -> String {
+            Array(Set(values.filter {
+                $0.count <= 120 && $0.range(of: #"^[A-Za-z_][A-Za-z0-9_.]*$"#,
+                                            options: .regularExpression) != nil
+            })).sorted().prefix(12).joined(separator: ",")
+        }
+        let fieldErrors = errors ?? []
+        let fields = fieldErrors.compactMap(\.field).map {
+            $0.split(separator: ".").filter { Int($0) == nil }.joined(separator: ".")
+        }
+        return [
+            "http.request.method": method,
+            "http.route": Self.normalizedRoute(path),
+            "http.response.status_code": String(statusCode),
+            "validation.code": "VALIDATION_FAILED",
+            "validation.error_count": String(fieldErrors.isEmpty ? message?.values.count ?? 0 : fieldErrors.count),
+            "validation.codes": identifiers(fieldErrors.compactMap(\.code)),
+            "validation.fields": identifiers(fields),
+            "validation.constraints": identifiers(fieldErrors.compactMap(\.constraint)),
+            "validation.unknown_properties": String(hasUnknownProperties),
+        ]
+    }
+
+    private static func normalizedRoute(_ path: String) -> String {
+        // Explicit templates avoid leaking IDs, query strings or unexpected URL contents.
+        let routes = [
+            "/ai-planner/health-context", "/ai-planner/plan-from-health", "/ai-planner/plan-from-health/async",
+            "/ai-planner/resume", "/ai-planner/plan-from-health/generations/latest",
+            "/ai-planner/plan-from-health/generations/:id",
+            "/workouts/today", "/workouts/training-plan/:id", "/workouts/:id",
+            "/workouts/:id/complete", "/workouts/:id/skip", "/workouts/:id/uncomplete", "/workouts/:id/feedback",
+            "/training-plans/me", "/training-plans/:id", "/weekly-goals/training-plan/:id", "/weekly-goals/:id/admin-report",
+            "/users/me", "/users/profile", "/users/me/heart-rate-health", "/users/me/heart-rate-zones", "/goals/active",
+            "/auth/login", "/auth/register", "/auth/refresh", "/auth/google", "/auth/apple",
+            "/auth/forgot-password", "/auth/verify-reset-code", "/auth/reset-password",
+            "/auth/apple/link", "/auth/google/link",
+        ]
+        let parts = path.split(separator: "/")
+        return routes.first { route in
+            let template = route.split(separator: "/")
+            return parts.count == template.count && zip(parts, template).allSatisfy { $1 == ":id" || $0 == $1 }
+        } ?? "/unknown"
     }
 }
 
@@ -109,6 +191,10 @@ enum BackendErrorCode {
             return String(localized: "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta.")
         case "USER_NOT_FOUND":
             return String(localized: "Usuário não encontrado")
+        case "HEART_RATE_RANGE_INVALID":
+            return String(localized: "Revise a FC de repouso e a FC máxima: os valores precisam formar cinco zonas válidas.")
+        case "HEART_RATE_HEALTH_INVALID":
+            return String(localized: "Dados de frequência cardíaca inválidos ou desatualizados.")
 
         // MARK: Assinatura
 
@@ -124,6 +210,10 @@ enum BackendErrorCode {
 
         // MARK: Treinos
 
+        case "WORKOUT_DATE_OCCUPIED":
+            return String(localized: "Já existe um treino neste dia. Escolha um dia vazio.")
+        case "WORKOUT_NOT_RESCHEDULABLE":
+            return String(localized: "Só é possível reagendar treinos agendados.")
         case "WORKOUT_NOT_FOUND":
             return String(localized: "Treino não encontrado")
         case "WORKOUT_FEEDBACK_FAILED":

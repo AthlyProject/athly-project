@@ -14,13 +14,24 @@ enum OTelClient {
     // Call once at app launch, before any network activity.
     static func start() {
         guard
-            let endpointStr = Bundle.main.object(forInfoDictionaryKey: "OTEL_ENDPOINT") as? String,
+            let endpointStr = (Bundle.main.object(forInfoDictionaryKey: "OTEL_ENDPOINT") as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
             !endpointStr.isEmpty,
             let baseURL = URL(string: endpointStr),
+            let scheme = baseURL.scheme?.lowercased(),
+            ["http", "https"].contains(scheme),
             // Bail out on a host-less endpoint (e.g. "http:" from an xcconfig "//" comment
             // truncation) — otherwise the exporter posts to "http://v1/traces" and spams -1003.
-            baseURL.host?.isEmpty == false
+            let host = baseURL.host?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".")),
+            !host.isEmpty
         else { return }
+
+        #if !targetEnvironment(simulator)
+        // A local collector runs on the developer's Mac, not on the physical iPhone.
+        guard host != "localhost", !host.hasSuffix(".localhost"),
+              !host.hasPrefix("127."), host != "::1", host != "[::1]"
+        else { return }
+        #endif
 
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
         let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
@@ -38,8 +49,9 @@ enum OTelClient {
             headers.append(("Authorization", "Basic \(apiKey)"))
         }
 
+        let traceEndpoint = baseURL.appendingPathComponent("v1/traces")
         let traceExporter = OtlpHttpTraceExporter(
-            endpoint: baseURL.appendingPathComponent("v1/traces"),
+            endpoint: traceEndpoint,
             envVarHeaders: headers.isEmpty ? nil : headers
         )
         let tracerProvider = TracerProviderBuilder()
@@ -48,9 +60,11 @@ enum OTelClient {
             .build()
         OpenTelemetry.registerTracerProvider(tracerProvider: tracerProvider)
 
-        // Auto-instrument all URLSession calls
+        // Export requests must not create more spans and keep the export cycle alive.
         urlSessionInstrumentation = URLSessionInstrumentation(
-            configuration: URLSessionInstrumentationConfiguration()
+            configuration: URLSessionInstrumentationConfiguration(
+                shouldInstrument: { request in request.url != traceEndpoint }
+            )
         )
     }
 

@@ -19,7 +19,7 @@ struct RootView: View {
                             subtitle: "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade.",
                             cancelTitle: "Sair da conta",
                             onAccept: { await authViewModel.acceptLegalConsent() },
-                            onCancel: { authViewModel.logout() }
+                            onCancel: { Task { await authViewModel.logout() } }
                         )
                     } else if authViewModel.needsProfileCompletion {
                         // Contas sociais nascem sem data de nascimento/peso/altura: completa o

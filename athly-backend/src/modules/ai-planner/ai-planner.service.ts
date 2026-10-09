@@ -1,3 +1,5 @@
+import { HeartRateHealthService } from '../users/heart-rate-health.service';
+import { measuredHeartRate, weightedHeartRate } from '../users/heart-rate-guidance';
 import { serializeGenerationJob } from './generation-status';
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import {
@@ -50,7 +52,7 @@ import {
 } from './weekly-calendar';
 import { PlanGenerationJobsService } from './plan-generation-jobs.service';
 
-const PROMPT_VERSION = 'v3.1';
+const PROMPT_VERSION = 'v3.2-hr-guidance';
 const DETAILED_FIRST_GEN = 5;
 const DETAILED_MID_PLAN = 7;
 const HISTORICAL_FIRST_GEN = 20;
@@ -85,6 +87,7 @@ export class AiPlannerService {
     private readonly executionAnalyzer: WorkoutExecutionAnalyzerService,
     private readonly trainingReportService: TrainingReportService,
     private readonly generationJobs: PlanGenerationJobsService,
+    private readonly heartRateHealth: HeartRateHealthService,
   ) {}
 
   async planFromHealth(
@@ -117,6 +120,9 @@ export class AiPlannerService {
       : this.resolvePlanningWindow(input.weekStartDate, baseAvailableDays);
     const { weekDates, weekStartDate, weekEndDate, availableDays, trainingDays, minTrainingDate } =
       planningWindow;
+
+    const heartRate = await this.heartRateHealth.resolve(userId, input);
+    input = { ...input, runs: heartRate.runs.slice(0, HISTORICAL_FIRST_GEN) };
 
     const trainingPlan = await this.resolveTrainingPlan(
       userId,
@@ -152,8 +158,8 @@ export class AiPlannerService {
       ...input.runs.map((r) => ({
         distanceMeters: r.distanceMeters,
         durationSeconds: r.durationSeconds,
-        averageHeartRate: null,
-        maxHeartRate: null,
+        averageHeartRate: r.avgHR ?? null,
+        maxHeartRate: r.maxHR ?? null,
       })),
       ...this.bestSubEffortsFromSessions(input.detailedSessions ?? []),
     ];
@@ -162,6 +168,8 @@ export class AiPlannerService {
       runsForZones,
       'apple_health',
     );
+
+    effortZones.heartRate = heartRate.zones;
 
     const detailedSessionsForMetrics = input.detailedSessions ?? [];
 
@@ -914,7 +922,7 @@ export class AiPlannerService {
         distanceKm,
         durationMin,
         avgPace: paceStr,
-        avgHR: null,
+        avgHR: measuredHeartRate(r.avgHR) ? Math.round(r.avgHR) : null,
         elevationGain: r.elevationGainMeters ?? null,
       };
     });
@@ -933,7 +941,7 @@ export class AiPlannerService {
       runSummaries,
       avgDistKm,
       avgPace,
-      avgHR: null,
+      avgHR: weightedHeartRate(validRuns),
       maxDistKm,
       totalDistKm,
       weekDates,

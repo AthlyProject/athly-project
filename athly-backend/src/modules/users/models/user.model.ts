@@ -38,11 +38,11 @@ export class UserModel {
   @ApiPropertyOptional()
   fitnessLevel?: string;
 
-  @ApiPropertyOptional()
-  restingHeartRate?: number;
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  restingHeartRate?: number | null;
 
-  @ApiPropertyOptional()
-  maxHeartRate?: number;
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  maxHeartRate?: number | null;
 
   @ApiProperty()
   assessmentCompleted: boolean;

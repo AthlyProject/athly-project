@@ -11,6 +11,11 @@ struct WorkoutDetailView: View {
     /// aí esta tela é fechada e o treino reaparece como agendado na lista.
     var onUnlink: (() async -> Bool)? = nil
 
+    @EnvironmentObject private var planVM: TrainingPlanViewModel
+    private var currentWorkout: WorkoutModel {
+        planVM.workout(id: workout.id) ?? workout
+    }
+
     @Environment(\.dismiss) private var dismiss
     @State private var showUnlinkConfirmation = false
 
@@ -18,24 +23,24 @@ struct WorkoutDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: AthlyTheme.Spacing.md) {
                 headerSection
-                if let desc = workout.description, !desc.isEmpty {
+                if let desc = currentWorkout.description, !desc.isEmpty {
                     descriptionSection(desc)
                 }
-                if let ws = workout.segments, !ws.segments.isEmpty {
+                if let ws = currentWorkout.segments, !ws.segments.isEmpty {
                     segmentsSection(ws)
-                } else if !workout.blocks.isEmpty {
+                } else if !currentWorkout.blocks.isEmpty {
                     blocksSection
                 } else {
                     noBlocksCard
                 }
-                if (workout.status == .done || workout.status == .partial),
-                   let distM = workout.actualDistanceMeters,
-                   let durSec = workout.actualDurationSeconds {
+                if (currentWorkout.status == .done || currentWorkout.status == .partial),
+                   let distM = currentWorkout.actualDistanceMeters,
+                   let durSec = currentWorkout.actualDurationSeconds {
                     runSummarySection(distanceM: distM, durationSec: durSec)
                 }
-                if workout.canStartNow, let onStart {
+                if currentWorkout.canStartNow, let onStart {
                     Button {
-                        onStart(workout)
+                        onStart(currentWorkout)
                     } label: {
                         HStack {
                             Image(systemName: "figure.run")
@@ -45,8 +50,8 @@ struct WorkoutDetailView: View {
                     .buttonStyle(AthlyGradientButtonStyle())
                     .padding(.top, 8)
                 }
-                if workout.status == .scheduled, let onComplete {
-                    if workout.canStartNow {
+                if currentWorkout.status == .scheduled, let onComplete {
+                    if currentWorkout.canStartNow {
                         Button {
                             onComplete()
                         } label: {
@@ -69,7 +74,7 @@ struct WorkoutDetailView: View {
                         .padding(.top, 8)
                     }
                 }
-                if workout.status == .scheduled, let onSkip {
+                if currentWorkout.status == .scheduled, let onSkip {
                     Button {
                         onSkip()
                     } label: {
@@ -81,8 +86,8 @@ struct WorkoutDetailView: View {
                     .buttonStyle(AthlyGhostButtonStyle())
                     .padding(.top, 8)
                 }
-                if workout.sportType == .running,
-                   (workout.status == .done || workout.status == .partial),
+                if currentWorkout.sportType == .running,
+                   (currentWorkout.status == .done || currentWorkout.status == .partial),
                    let onComplete {
                     Button {
                         onComplete()
@@ -96,7 +101,7 @@ struct WorkoutDetailView: View {
                     .padding(.top, 8)
                 }
                 // Sem filtro por modalidade: qualquer treino pode ter sido concluído por engano.
-                if (workout.status == .done || workout.status == .partial), onUnlink != nil {
+                if (currentWorkout.status == .done || currentWorkout.status == .partial), onUnlink != nil {
                     Button(role: .destructive) {
                         showUnlinkConfirmation = true
                     } label: {
@@ -113,7 +118,7 @@ struct WorkoutDetailView: View {
         }
         .athlyTabBarContentClearance()
         .background(AthlyTheme.Color.backgroundDark)
-        .navigationTitle(workout.title)
+        .navigationTitle(currentWorkout.title)
         .navigationBarTitleDisplayMode(.inline)
         .alert("Desvincular corrida?", isPresented: $showUnlinkConfirmation) {
             Button("Cancelar", role: .cancel) {}
@@ -129,7 +134,7 @@ struct WorkoutDetailView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if workout.isGoalAttempt == true {
+            if currentWorkout.isGoalAttempt == true {
                 HStack(spacing: 6) {
                     Text("🎯")
                     Text("Treino-alvo")
@@ -144,14 +149,14 @@ struct WorkoutDetailView: View {
                 .clipShape(Capsule())
             }
             HStack {
-                SportBadgeView(sport: workout.sportType)
+                SportBadgeView(sport: currentWorkout.sportType)
                 Spacer()
-                StatusBadgeView(status: workout.status)
+                StatusBadgeView(status: currentWorkout.status)
             }
-            Text(workout.parsedDate.formatted(date: .long, time: .omitted))
+            Text(currentWorkout.parsedDate.formatted(date: .long, time: .omitted))
                 .font(AthlyTheme.Typography.body(15))
                 .foregroundStyle(AthlyTheme.Color.textSecondary)
-            if let intensity = workout.intensity {
+            if let intensity = currentWorkout.intensity {
                 HStack(spacing: 8) {
                     Image(systemName: "star.fill")
                         .font(.system(size: 8))
@@ -271,7 +276,7 @@ struct WorkoutDetailView: View {
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                 .padding(.horizontal, 4)
 
-            ForEach(Array(workout.blocks.enumerated()), id: \.offset) { index, block in
+            ForEach(Array(currentWorkout.blocks.enumerated()), id: \.offset) { index, block in
                 BlockCardView(block: block, index: index + 1)
             }
         }
@@ -392,8 +397,8 @@ private struct SegmentNodeView: View {
                     .font(AthlyTheme.Typography.body(12))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
             }
-            if let zone = t.hrZone {
-                Label("Zona \(zone)", systemImage: "heart.fill")
+            if let effort = t.effortTargetText {
+                Label(effort, systemImage: t.hrZone == nil ? "gauge.with.dots.needle.50percent" : "heart.fill")
                     .font(AthlyTheme.Typography.body(12))
                     .foregroundStyle(AthlyTheme.Color.textTertiary)
             }

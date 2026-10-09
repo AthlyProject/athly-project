@@ -157,6 +157,9 @@ struct SegmentTarget: Codable, Sendable {
     let paceSecPerKmMax: Int?
     let hrZone: Int?
     let rpe: Int?
+    var hrMinBpm: Int? = nil
+    var hrMaxBpm: Int? = nil
+    var hrIsEstimated: Bool? = nil
     // cycling
     let powerWattsMin: Int?
     let powerWattsMax: Int?
@@ -226,15 +229,7 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let appleHealthWorkoutUUID: String?
 
     var parsedDate: Date {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let d = formatter.date(from: date) { return d }
-        formatter.formatOptions = [.withInternetDateTime]
-        if let d = formatter.date(from: date) { return d }
-        // fallback: date-only
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        return df.date(from: date) ?? Date()
+        WorkoutDateParser.date(from: date) ?? Date()
     }
 
     func isOnDay(_ day: Date, calendar: Calendar = .current) -> Bool {
@@ -336,15 +331,11 @@ struct WeeklyGoalResponse: Codable, Identifiable, Sendable {
     let previousWeekAnalysis: PreviousWeekAnalysis?
 
     var parsedStartDate: Date {
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        return df.date(from: String(weekStartDate.prefix(10))) ?? Date()
+        WorkoutDateParser.date(from: String(weekStartDate.prefix(10))) ?? Date()
     }
 
     var parsedEndDate: Date {
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        return df.date(from: String(weekEndDate.prefix(10))) ?? Date()
+        WorkoutDateParser.date(from: String(weekEndDate.prefix(10))) ?? Date()
     }
 }
 
@@ -373,6 +364,8 @@ struct HealthRunPayload: Encodable, Sendable {
     let averagePaceSecondsPerKm: Double
     let activeEnergyBurned: Double
     let elevationGainMeters: Double?
+    let avgHR: Double?
+    let maxHR: Double?
 
     init(from item: HealthKitRunItem) {
         let iso = ISO8601DateFormatter()
@@ -384,6 +377,8 @@ struct HealthRunPayload: Encodable, Sendable {
         self.averagePaceSecondsPerKm = item.averagePaceSecondsPerKm
         self.activeEnergyBurned = item.activeEnergyBurned
         self.elevationGainMeters = item.elevationGainMeters
+        self.avgHR = item.avgHR
+        self.maxHR = item.maxHR
     }
 }
 
@@ -506,6 +501,8 @@ struct UpdateProfileRequest: Encodable, Sendable {
     let gender: String?
     let restingHeartRate: Int?
     let maxHeartRate: Int?
+    let clearRestingHeartRate: Bool
+    let clearMaxHeartRate: Bool
 
     init(
         name: String? = nil,
@@ -515,7 +512,9 @@ struct UpdateProfileRequest: Encodable, Sendable {
         availableDays: [String]? = nil,
         gender: String? = nil,
         restingHeartRate: Int? = nil,
-        maxHeartRate: Int? = nil
+        maxHeartRate: Int? = nil,
+        clearRestingHeartRate: Bool = false,
+        clearMaxHeartRate: Bool = false
     ) {
         self.name = name
         self.weight = weight
@@ -525,13 +524,15 @@ struct UpdateProfileRequest: Encodable, Sendable {
         self.gender = gender
         self.restingHeartRate = restingHeartRate
         self.maxHeartRate = maxHeartRate
+        self.clearRestingHeartRate = clearRestingHeartRate
+        self.clearMaxHeartRate = clearMaxHeartRate
     }
 
     private enum CodingKeys: String, CodingKey {
         case name, weight, height, dateOfBirth, availableDays, gender, restingHeartRate, maxHeartRate
     }
 
-    // Campos nulos ficam fora do corpo: o PUT é parcial e o backend só toca no que veio.
+    // Omissão preserva os campos. Só a ação explícita de voltar ao automático envia null.
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(name, forKey: .name)
@@ -540,8 +541,10 @@ struct UpdateProfileRequest: Encodable, Sendable {
         try container.encodeIfPresent(dateOfBirth, forKey: .dateOfBirth)
         try container.encodeIfPresent(availableDays, forKey: .availableDays)
         try container.encodeIfPresent(gender, forKey: .gender)
-        try container.encodeIfPresent(restingHeartRate, forKey: .restingHeartRate)
-        try container.encodeIfPresent(maxHeartRate, forKey: .maxHeartRate)
+        if clearRestingHeartRate { try container.encodeNil(forKey: .restingHeartRate) }
+        else { try container.encodeIfPresent(restingHeartRate, forKey: .restingHeartRate) }
+        if clearMaxHeartRate { try container.encodeNil(forKey: .maxHeartRate) }
+        else { try container.encodeIfPresent(maxHeartRate, forKey: .maxHeartRate) }
     }
 }
 
@@ -634,4 +637,65 @@ struct ResumePlanResponse: Decodable, Sendable {
     let weekStartDate: String?
     let generation: AiPlannerGenerationStatusResponse?
     let started: Bool
+}
+
+/// Bounded, thread-safe parsing cache. Date-only values are local calendar days, not UTC instants.
+final class WorkoutDateParser: @unchecked Sendable {
+    private static let shared = WorkoutDateParser()
+    private let lock = NSLock()
+    private let cache = NSCache<NSString, NSDate>()
+    private let day = DateFormatter()
+    private let fractional = ISO8601DateFormatter()
+    private let internet = ISO8601DateFormatter()
+
+    private init() {
+        cache.countLimit = 4096
+        day.calendar = Calendar(identifier: .gregorian)
+        day.locale = Locale(identifier: "en_US_POSIX")
+        day.dateFormat = "yyyy-MM-dd"
+        day.isLenient = false
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        internet.formatOptions = [.withInternetDateTime]
+    }
+
+    static func date(from value: String, timeZone: TimeZone = .current) -> Date? {
+        let parser = shared
+        parser.lock.lock()
+        defer { parser.lock.unlock() }
+        let key = "\(timeZone.identifier)|\(value)" as NSString
+        if let cached = parser.cache.object(forKey: key) { return cached as Date }
+        let result: Date?
+        if value.count == 10 {
+            parser.day.timeZone = timeZone
+            result = parser.day.date(from: value)
+        } else {
+            result = parser.fractional.date(from: value) ?? parser.internet.date(from: value)
+        }
+        if let result { parser.cache.setObject(result as NSDate, forKey: key) }
+        return result
+    }
+}
+
+struct WorkoutIndex {
+    var byID: [String: WorkoutModel] = [:]
+    var byDay: [Date: [WorkoutModel]] = [:]
+    var byGoal: [String: [WorkoutModel]] = [:]
+    var thisWeek: [WorkoutModel] = []
+    var streak = 0
+
+    init(_ workouts: [WorkoutModel] = [], now: Date = Date(), calendar: Calendar = .current) {
+        var weekCalendar = calendar
+        weekCalendar.firstWeekday = 2
+        let interval = weekCalendar.dateInterval(of: .weekOfYear, for: now)
+        let dated = workouts.map { ($0, $0.parsedDate) }.sorted { $0.1 < $1.1 }
+        for (workout, date) in dated {
+            byID[workout.id] = workout
+            if let goal = workout.weeklyGoalId { byGoal[goal, default: []].append(workout) }
+            guard workout.sportType != .other else { continue }
+            byDay[calendar.startOfDay(for: date), default: []].append(workout)
+            if let interval, interval.contains(date) { thisWeek.append(workout) }
+        }
+        streak = StreakCalculator.currentStreak(entries: dated.filter { $0.0.sportType != .other }
+            .map { (date: $0.1, status: $0.0.status) }, now: now)
+    }
 }

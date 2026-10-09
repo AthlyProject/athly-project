@@ -6,6 +6,10 @@ struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var runStore: RunStore
     @EnvironmentObject var planVM: TrainingPlanViewModel
+    @Environment(\.isAppTabActive) private var isTabActive
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var heartRateZones = HeartRateZonesViewModel()
+    @State private var isProfileVisible = false
 
     @State private var userProfile: UserProfile?
     @State private var selectedDays: Set<String> = []
@@ -15,6 +19,12 @@ struct ProfileView: View {
     @State private var showDaysSaved = false
     @State private var showEditProfile = false
     @State private var records: [PersonalRecord] = []
+    @State private var totalDistance = 0.0
+    @State private var totalTime = 0.0
+    @State private var totalElevation = 0.0
+    @State private var recentDistance = 0.0
+    @State private var statsKey: String?
+    @State private var lastProfileLoaded: Date?
 
     private var allRuns: [RunSession] { runStore.sortedSessions }
 
@@ -65,6 +75,10 @@ struct ProfileView: View {
 
                         statsGrid
 
+                        if heartRateZones.zones?.shouldShowInProfile == true {
+                            HeartRateZonesCard(model: heartRateZones) { showEditProfile = true }
+                        }
+
                         if let goal = goalSnapshot {
                             AthlySectionLabel("Meta ativa")
                             goalCard(goal)
@@ -99,15 +113,52 @@ struct ProfileView: View {
                     .accessibilityLabel(Text("Ajustes"))
                 }
             }
-            .task {
+            .task(id: isTabActive) {
+                guard isTabActive else { heartRateZones.cancel(); return }
+                await runStore.loadIfNeeded()
                 await loadProfile()
+                await heartRateZones.refreshIfNeeded()
                 await planVM.loadActiveGoalIfNeeded()
             }
-            .onAppear { refreshRecords() }
-            .onChange(of: runStore.sessions.count) { _ in refreshRecords() }
+            .onChange(of: scenePhase) { phase in
+                // Returning from the HealthKit authorization sheet must not cancel its sync.
+                if phase == .active, isTabActive, isProfileVisible, !heartRateZones.isLoading {
+                    Task { await heartRateZones.refresh() }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .athlyAuthChanged)) { _ in
+                heartRateZones.cancel(clear: true)
+            }
+            .onDisappear { isProfileVisible = false; heartRateZones.cancel() }
+            .onAppear { isProfileVisible = true }
+            .task(id: "\(isTabActive)-\(runStore.revision)-\(planVM.workoutsRevision)") {
+                guard isTabActive else { return }
+                let key = "\(runStore.revision)-\(Calendar.current.startOfDay(for: Date()))"
+                guard statsKey != key else { return }
+                let snapshots = runStore.sessions.map(RunSessionSnapshot.init)
+                let revision = runStore.revision
+                let cutoff = Calendar.current.date(byAdding: .day, value: -28, to: Date()) ?? Date()
+                let result = await Task.detached(priority: .utility) {
+                    let totals = snapshots.reduce(into: (distance: 0.0, duration: 0.0, elevation: 0.0, recent: 0.0)) { sum, run in
+                        sum.distance += run.distanceMeters / 1000
+                        sum.duration += run.durationSeconds
+                        sum.elevation += run.elevationGainMeters
+                        if run.startDate >= cutoff { sum.recent += run.distanceMeters / 1000 }
+                    }
+                    return (PersonalRecordCalculator.records(from: snapshots), totals)
+                }.value
+                guard !Task.isCancelled, revision == runStore.revision else { return }
+                statsKey = key
+                records = result.0
+                totalDistance = result.1.distance
+                totalTime = result.1.duration
+                totalElevation = result.1.elevation
+                recentDistance = result.1.recent
+            }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(profile: userProfile) { updated in
                     applyProfile(updated)
+                    Task { await heartRateZones.refresh(syncHealth: false) }
                 }
             }
         }
@@ -478,8 +529,13 @@ struct ProfileView: View {
     // MARK: - Ações
 
     private func loadProfile() async {
+        guard !hasUnsavedDays else { return }
+        if let lastProfileLoaded, Date().timeIntervalSince(lastProfileLoaded) < 60 { return }
+        let session = await APIClient.shared.heartRateSessionIdentifier
         do {
-            applyProfile(try await APIClient.shared.getUserProfile())
+            let profile = try await APIClient.shared.getUserProfile()
+            guard !Task.isCancelled, session == (await APIClient.shared.heartRateSessionIdentifier), !hasUnsavedDays else { return }
+            applyProfile(profile)
         } catch {
             // Silencioso: as estatísticas continuam saindo do RunStore local.
         }
@@ -487,6 +543,7 @@ struct ProfileView: View {
 
     private func applyProfile(_ profile: UserProfile) {
         userProfile = profile
+        lastProfileLoaded = Date()
         // Mantém o nome exibido no restante do app (ex.: saudação do Dashboard) em dia.
         authViewModel.updateDisplayName(profile.name)
         let days = Set(profile.availableDays ?? [])
@@ -516,9 +573,6 @@ struct ProfileView: View {
         isSavingDays = false
     }
 
-    private func refreshRecords() {
-        records = PersonalRecordCalculator.records(from: allRuns)
-    }
 
     // MARK: - Derivados
 
@@ -593,26 +647,13 @@ struct ProfileView: View {
         return (min(current, total), max(total, 1))
     }
 
-    private var totalDistance: Double {
-        allRuns.reduce(0) { $0 + $1.distanceKm }
-    }
-
-    private var totalTime: Double {
-        allRuns.reduce(0) { $0 + $1.durationSeconds }
-    }
-
-    private var totalElevation: Double {
-        allRuns.reduce(0) { $0 + $1.elevationGainMeters }
-    }
-
     private var averagePace: Double {
         guard totalDistance > 0 else { return 0 }
         return totalTime / totalDistance
     }
 
     private var lastFourWeeksSummary: String {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -28, to: Date()) ?? Date()
-        let distance = allRuns.filter { $0.startDate >= cutoff }.reduce(0) { $0 + $1.distanceKm }
+        let distance = recentDistance
         guard distance > 0 else {
             return String(localized: "Nenhuma corrida nas últimas 4 semanas")
         }

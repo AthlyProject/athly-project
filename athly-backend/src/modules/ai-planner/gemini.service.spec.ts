@@ -5,11 +5,11 @@ const gemini = new GeminiService({ get: () => 'test-key' } as any);
 const runSegments = (complete: boolean) =>
   complete
     ? [
-        { id: 'wu', kind: 'warmup', end: { by: 'durationSec', value: 600 } },
-        { id: 'main', kind: 'work', end: { by: 'distanceM', value: 5000 } },
-        { id: 'cd', kind: 'cooldown', end: { by: 'durationSec', value: 300 } },
+        { id: 'wu', kind: 'warmup', target: { rpe: 3 }, end: { by: 'durationSec', value: 600 } },
+        { id: 'main', kind: 'work', target: { rpe: 4 }, end: { by: 'distanceM', value: 5000 } },
+        { id: 'cd', kind: 'cooldown', target: { rpe: 2 }, end: { by: 'durationSec', value: 300 } },
       ]
-    : [{ id: 'main', kind: 'work', end: { by: 'distanceM', value: 5000 } }]; // degenerado: bloco único
+    : [{ id: 'main', kind: 'work', target: { rpe: 4 }, end: { by: 'distanceM', value: 5000 } }]; // degenerado: bloco único
 
 const runDay = (date: string, complete: boolean) => ({
   date,

@@ -47,7 +47,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>O Athly usa a camera para criar fotos com a marca d'agua dos resultados do seu treino.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>O Athly le treinos de corrida do Apple Health para exibir suas atividades na tela de integracao.</string>
+	<string>O Athly lê corridas e frequência cardíaca do Apple Health para exibir suas atividades e calcular suas zonas de frequência cardíaca.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>O Athly salva suas corridas no Apple Health para manter seu historico de atividades atualizado.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

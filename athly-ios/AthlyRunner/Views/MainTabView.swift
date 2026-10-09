@@ -3,7 +3,6 @@ import UIKit
 
 struct MainTabView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
-    @EnvironmentObject var locationManager: LocationManager
     @EnvironmentObject var runStore: RunStore
     @State private var selectedTab: AppTab = .dashboard
     @State private var isRunInProgress = false
@@ -14,28 +13,31 @@ struct MainTabView: View {
     @State private var isDetecting = false
 
     var body: some View {
-        Group {
-            switch selectedTab {
-            case .dashboard:
-                DashboardView(
-                    selectedTab: $selectedTab,
-                    pendingWorkout: $pendingWorkout,
-                    onOpenPlanCalendar: {
-                        withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .plan }
-                    }
-                )
-            case .plan:
-                PlanView(onStartWorkout: { workout in
-                    pendingWorkout = workout
-                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .run }
-                })
-            case .run:
-                RunStartView(isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
-            case .history:
-                HistoryView()
-            case .profile:
-                ProfileView()
-            }
+        TabView(selection: $selectedTab) {
+            DashboardView(selectedTab: $selectedTab, pendingWorkout: $pendingWorkout,
+                          onOpenPlanCalendar: { selectedTab = .plan })
+                .environment(\.isAppTabActive, selectedTab == .dashboard)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.dashboard)
+            PlanView(onStartWorkout: { workout in
+                pendingWorkout = workout
+                selectedTab = .run
+            })
+                .environment(\.isAppTabActive, selectedTab == .plan)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.plan)
+            RunStartView(isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
+                .environment(\.isAppTabActive, selectedTab == .run)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.run)
+            HistoryView()
+                .environment(\.isAppTabActive, selectedTab == .history)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.history)
+            ProfileView()
+                .environment(\.isAppTabActive, selectedTab == .profile)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(AppTab.profile)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !isRunInProgress {
@@ -79,6 +81,14 @@ struct MainTabView: View {
             }
         }
         .ignoresSafeArea(.keyboard)
+        .alert("Erro", isPresented: Binding(
+            get: { planVM.errorMessage != nil },
+            set: { if !$0 { planVM.errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { planVM.errorMessage = nil }
+        } message: {
+            Text(planVM.errorMessage ?? "")
+        }
         .fullScreenCover(item: $detectedRun) { run in
             DetectedRunView(
                 run: run,
@@ -90,9 +100,24 @@ struct MainTabView: View {
             .environmentObject(planVM)
             .environmentObject(runStore)
         }
-        .task { await detectUnclaimedRun() }
+        .onChange(of: planVM.confirmedWorkoutsRevision) { _ in
+            runStore.reconcileConfirmedWorkouts(planVM.allWorkouts)
+        }
+        .task {
+            await LocalStoresBootstrap.prepare()
+            await runStore.loadIfNeeded()
+            if planVM.confirmedWorkoutsRevision > 0 { runStore.reconcileConfirmedWorkouts(planVM.allWorkouts) }
+            await detectUnclaimedRun()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            planVM.refreshCalendar()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name.NSSystemTimeZoneDidChange)) { _ in
+            planVM.refreshCalendar()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            Task { await detectUnclaimedRun() }
+            planVM.refreshCalendar()
+            Task { await planVM.loadIfNeeded(); await detectUnclaimedRun() }
         }
     }
 
@@ -106,11 +131,22 @@ struct MainTabView: View {
 
         // O caminho "vincular a um treino" precisa do plano carregado para ter candidatos.
         if planVM.allWorkouts.isEmpty {
-            await planVM.loadData(reportErrors: false)
+            await planVM.loadData(reportErrors: false, force: false)
         }
 
         guard let run = await DetectedRunService.detect(localSessions: runStore.sessions) else { return }
         guard !isRunInProgress, detectedRun == nil else { return }
         detectedRun = run
+    }
+}
+
+private struct AppTabActiveKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var isAppTabActive: Bool {
+        get { self[AppTabActiveKey.self] }
+        set { self[AppTabActiveKey.self] = newValue }
     }
 }

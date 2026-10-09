@@ -416,12 +416,55 @@
     "%@ min" : {
 
     },
+    "%@–%@ bpm" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@–%2$@ bpm"
+          }
+        }
+      }
+    },
     "%@, %@" : {
       "localizations" : {
         "pt-BR" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@ bpm" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ bpm"
+          }
+        }
+      }
+    },
+    "%@: %lld bpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %lld bpm"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %lld bpm"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %lld bpm"
           }
         }
       }
@@ -556,6 +599,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld semanas"
+          }
+        }
+      }
+    },
+    "%lld–%lld bpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld–%lld bpm"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld–%lld bpm"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld–%lld bpm"
+          }
+        }
+      }
+    },
+    "%lld%% abaixo da distância planejada." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% unter der geplanten Distanz."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% below the planned distance."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% abaixo da distância planejada."
           }
         }
       }
@@ -878,6 +967,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A atividade não contém eventos de bloco nem uma reconstrução utilizável."
+          }
+        }
+      }
+    },
+    "A conclusão deste treino já está em andamento. Aguarde." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Trainingsabschluss wird bereits verarbeitet. Bitte warte."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This workout is already being completed. Please wait."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A conclusão deste treino já está em andamento. Aguarde."
           }
         }
       }
@@ -1485,6 +1597,29 @@
         }
       }
     },
+    "Ainda faltam dados para usar zonas de FC nos treinos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es fehlen noch Daten, um Herzfrequenzzonen im Training zu verwenden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More data is needed to use heart rate zones in workouts."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ainda faltam dados para usar zonas de FC nos treinos."
+          }
+        }
+      }
+    },
     "Ajustes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1852,6 +1987,29 @@
         }
       }
     },
+    "Apple Saúde" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Saúde"
+          }
+        }
+      }
+    },
     "Apple vinculada" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2093,6 +2251,29 @@
         }
       }
     },
+    "Athly detectou" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly hat erkannt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly detected"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly detectou"
+          }
+        }
+      }
+    },
     "Athly Founder" : {
       "comment" : "Product/tier name, kept identical across languages.",
       "extractionState" : "stale",
@@ -2207,6 +2388,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Atleta"
+          }
+        }
+      }
+    },
+    "Atualizando zonas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zonen werden aktualisiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updating zones"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualizando zonas"
           }
         }
       }
@@ -2629,6 +2833,29 @@
         }
       }
     },
+    "Calendário" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalender"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendário"
+          }
+        }
+      }
+    },
     "Calorias" : {
       "comment" : "Stat label",
       "extractionState" : "stale",
@@ -2910,6 +3137,29 @@
     },
     "Compartilhar .txt" : {
 
+    },
+    "Complete os dados abaixo para calcular suas zonas." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vervollständige die folgenden Angaben, um deine Zonen zu berechnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete the details below to calculate your zones."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete os dados abaixo para calcular suas zonas."
+          }
+        }
+      }
     },
     "Concluído" : {
       "comment" : "Used for both a completed workout day tag and a completed plan status",
@@ -3460,6 +3710,29 @@
         }
       }
     },
+    "Corri por conta própria" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich bin auf eigene Faust gelaufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I ran on my own"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corri por conta própria"
+          }
+        }
+      }
+    },
     "Corrida" : {
       "comment" : "Generic run label used in several run cards/headers",
       "localizations" : {
@@ -3479,6 +3752,98 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Corrida"
+          }
+        }
+      }
+    },
+    "Corrida ao ar livre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outdoor-Lauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outdoor run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida ao ar livre"
+          }
+        }
+      }
+    },
+    "Corrida da manhã" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morgenlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida da manhã"
+          }
+        }
+      }
+    },
+    "Corrida da noite" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abendlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Evening run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida da noite"
+          }
+        }
+      }
+    },
+    "Corrida da tarde" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachmittagslauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afternoon run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida da tarde"
           }
         }
       }
@@ -3875,6 +4240,52 @@
         }
       }
     },
+    "Dados de frequência cardíaca inválidos ou desatualizados." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültige oder veraltete Herzfrequenzdaten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid or outdated heart rate data."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dados de frequência cardíaca inválidos ou desatualizados."
+          }
+        }
+      }
+    },
+    "Dados, zonas e guia de esforço" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daten, Zonen und Belastungssteuerung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data, zones and effort guidance"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dados, zonas e guia de esforço"
+          }
+        }
+      }
+    },
     "Data de nascimento" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4152,6 +4563,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Detalhes"
+          }
+        }
+      }
+    },
+    "Detectada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erkannt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detected"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detectada"
           }
         }
       }
@@ -4502,6 +4936,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Duração"
+          }
+        }
+      }
+    },
+    "Editar dados de frequência cardíaca" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herzfrequenzdaten bearbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit heart rate details"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar dados de frequência cardíaca"
           }
         }
       }
@@ -5093,6 +5550,52 @@
         }
       }
     },
+    "Escolha o treino planejado no calendário." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle das geplante Training im Kalender."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the planned workout from the calendar."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha o treino planejado no calendário."
+          }
+        }
+      }
+    },
+    "Escolha outro dia na faixa acima para ver os treinos planejados." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle oben einen anderen Tag, um die geplanten Trainings zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick another day in the strip above to see its planned workouts."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha outro dia na faixa acima para ver os treinos planejados."
+          }
+        }
+      }
+    },
     "Escolha um arquivo FIT, TCX ou GPX válido." : {
       "comment" : "WorkoutImportError.unsupportedFormat — user picked a file that isn't one of the supported activity formats.",
       "extractionState" : "stale",
@@ -5376,6 +5879,29 @@
         }
       }
     },
+    "Este treino estava no seu plano?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "War dieses Training in deinem Plan?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was this workout in your plan?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este treino estava no seu plano?"
+          }
+        }
+      }
+    },
     "Este treino não possui uma estrutura de blocos para reconstruir." : {
       "comment" : "Fallback reason when a workout has no prescribed block structure at all to reconstruct against.",
       "extractionState" : "stale",
@@ -5396,6 +5922,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Este treino não possui uma estrutura de blocos para reconstruir."
+          }
+        }
+      }
+    },
+    "Estimada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geschätzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimada"
+          }
+        }
+      }
+    },
+    "Estimado pela idade" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anhand des Alters geschätzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated from age"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimado pela idade"
           }
         }
       }
@@ -5768,6 +6340,29 @@
         }
       }
     },
+    "Falta uma FC de repouso informada ou uma amostra do Apple Health dos últimos 30 dias." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib deinen Ruhepuls ein oder synchronisiere einen Apple Health-Wert aus den letzten 30 Tagen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a resting heart rate or sync an Apple Health sample from the last 30 days."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta uma FC de repouso informada ou uma amostra do Apple Health dos últimos 30 dias."
+          }
+        }
+      }
+    },
     "Fazer Avaliação" : {
       "localizations" : {
         "de" : {
@@ -5786,6 +6381,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fazer Avaliação"
+          }
+        }
+      }
+    },
+    "FC de repouso" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruhepuls"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resting heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC de repouso"
           }
         }
       }
@@ -5810,6 +6428,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "FC maxima"
+          }
+        }
+      }
+    },
+    "FC máxima" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximale Herzfrequenz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC máxima"
           }
         }
       }
@@ -5926,6 +6567,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Final"
+          }
+        }
+      }
+    },
+    "Fora do plano — mas todo quilômetro conta pra sua evolução." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Außerhalb des Plans — aber jeder Kilometer zählt für deinen Fortschritt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outside the plan — but every kilometre counts toward your progress."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fora do plano — mas todo quilômetro conta pra sua evolução."
           }
         }
       }
@@ -6445,6 +7109,29 @@
         }
       }
     },
+    "Ignorar esta atividade" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Aktivität ignorieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore this activity"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar esta atividade"
+          }
+        }
+      }
+    },
     "Igual" : {
       "comment" : "Volume change: maintain.",
       "extractionState" : "stale",
@@ -6515,6 +7202,52 @@
         }
       }
     },
+    "Informado por você" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von dir eingegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entered by you"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informado por você"
+          }
+        }
+      }
+    },
+    "Informar data de nascimento" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geburtsdatum eingeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter date of birth"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informar data de nascimento"
+          }
+        }
+      }
+    },
     "Informe seu email e enviaremos um código para redefinir sua senha" : {
 
     },
@@ -6537,6 +7270,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Informe seu nome completo."
+          }
+        }
+      }
+    },
+    "Informe sua FC máxima ou sua data de nascimento. A estimativa pela idade está disponível para adultos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib deine maximale Herzfrequenz oder dein Geburtsdatum ein. Altersschätzungen sind für Erwachsene verfügbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your maximum heart rate or date of birth. Age-based estimates are available for adults."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informe sua FC máxima ou sua data de nascimento. A estimativa pela idade está disponível para adultos."
           }
         }
       }
@@ -6721,6 +7477,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Integrações"
+          }
+        }
+      }
+    },
+    "Intensa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensa"
           }
         }
       }
@@ -6953,6 +7732,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Já existe um plano para esta semana. Exclua a semana atual e seus treinos antes de gerar de novo."
+          }
+        }
+      }
+    },
+    "Já existe um treino neste dia. Escolha um dia vazio." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An diesem Tag gibt es bereits ein Training. Wähle einen freien Tag."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is already a workout on this day. Choose an empty day."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já existe um treino neste dia. Escolha um dia vazio."
           }
         }
       }
@@ -7218,6 +8020,29 @@
         }
       }
     },
+    "Leve" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leicht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leve"
+          }
+        }
+      }
+    },
     "Libere o acesso à câmera nos Ajustes para tirar a foto com a marca d'água — ou escolha uma foto da galeria." : {
       "localizations" : {
         "de" : {
@@ -7260,6 +8085,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Live Activities desativadas"
+          }
+        }
+      }
+    },
+    "livre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "frei"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "free"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "livre"
           }
         }
       }
@@ -7682,6 +8530,75 @@
         }
       }
     },
+    "Meta cumprida — %lld%% abaixo da distância planejada." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel erreicht — %lld%% unter der geplanten Distanz."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal met — %lld%% below the planned distance."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta cumprida — %lld%% abaixo da distância planejada."
+          }
+        }
+      }
+    },
+    "Meta cumprida — %lld%% acima da distância planejada." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel erreicht — %lld%% über der geplanten Distanz."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal met — %lld%% above the planned distance."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta cumprida — %lld%% acima da distância planejada."
+          }
+        }
+      }
+    },
+    "Meta cumprida — distância planejada atingida." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel erreicht — geplante Distanz erreicht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal met — planned distance reached."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta cumprida — distância planejada atingida."
+          }
+        }
+      }
+    },
     "Meta da semana" : {
       "comment" : "Fallback label for the weekly goal insight banner in the calendar",
       "extractionState" : "stale",
@@ -7805,6 +8722,29 @@
     "Modelo: %@" : {
 
     },
+    "Moderada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mäßig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moderada"
+          }
+        }
+      }
+    },
     "Moderado" : {
       "localizations" : {
         "de" : {
@@ -7823,6 +8763,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moderado"
+          }
+        }
+      }
+    },
+    "Muito intensa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sehr intensiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very hard"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muito intensa"
+          }
+        }
+      }
+    },
+    "Muito leve" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sehr leicht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very light"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muito leve"
           }
         }
       }
@@ -7944,6 +8930,29 @@
         }
       }
     },
+    "Não foi possível acessar sua sessão salva. Tente novamente." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf deine gespeicherte Sitzung konnte nicht zugegriffen werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not access your saved session. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível acessar sua sessão salva. Tente novamente."
+          }
+        }
+      }
+    },
     "Não foi possível anexar a rota à corrida original: %@" : {
       "comment" : "HealthKitError.routeAttachmentFailed — %@ is a dynamic diagnostic/system error reason appended after the colon.",
       "extractionState" : "stale",
@@ -7987,6 +8996,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Não foi possível atualizar a corrida original"
+          }
+        }
+      }
+    },
+    "Não foi possível atualizar suas zonas. Tente novamente." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Zonen konnten nicht aktualisiert werden. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not update your zones. Try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível atualizar suas zonas. Tente novamente."
           }
         }
       }
@@ -8056,6 +9088,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nao foi possivel concluir a compra. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível concluir esta ação devido a uma incompatibilidade com o servidor. Tente novamente mais tarde." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This action could not be completed because of an incompatibility with the server. Please try again later."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível concluir esta ação devido a uma incompatibilidade com o servidor. Tente novamente mais tarde."
+          }
+        }
+      }
+    },
+    "Não foi possível concluir esta ação. Tente novamente mais tarde." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This action could not be completed. Please try again later."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível concluir esta ação. Tente novamente mais tarde."
           }
         }
       }
@@ -8272,6 +9338,29 @@
         }
       }
     },
+    "Não foi possível ler o Apple Health. Tente sincronizar novamente." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health konnte nicht gelesen werden. Versuche erneut zu synchronisieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read Apple Health. Try syncing again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível ler o Apple Health. Tente sincronizar novamente."
+          }
+        }
+      }
+    },
     "Não foi possível obter as credenciais da Apple." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8484,6 +9573,29 @@
         }
       }
     },
+    "Não há uma corrida com FC medida nos últimos 30 dias. As zonas ficam ocultas no perfil e não são usadas nos novos treinos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In den letzten 30 Tagen gab es keinen Lauf mit gemessener Herzfrequenz. Zonen werden im Profil ausgeblendet und für neue Trainings nicht verwendet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No run with measured heart rate in the last 30 days. Zones are hidden from your profile and are not used for new workouts."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não há uma corrida com FC medida nos últimos 30 dias. As zonas ficam ocultas no perfil e não são usadas nos novos treinos."
+          }
+        }
+      }
+    },
     "Não tem conta?" : {
       "localizations" : {
         "de" : {
@@ -8689,6 +9801,29 @@
     "Nenhuma corrida registrada." : {
 
     },
+    "Nenhuma FC de repouso disponível no Apple Health nos últimos 30 dias. Verifique os dados e o acesso no app Saúde, ou informe um valor no perfil." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Apple Health ist kein Ruhepuls aus den letzten 30 Tagen verfügbar. Prüfe die Daten und den Zugriff in der Health-App oder gib einen Wert in deinem Profil ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No resting heart rate is available in Apple Health for the last 30 days. Check your data and access in the Health app, or enter a value in your profile."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma FC de repouso disponível no Apple Health nos últimos 30 dias. Verifique os dados e o acesso no app Saúde, ou informe um valor no perfil."
+          }
+        }
+      }
+    },
     "Nenhuma semana disponível" : {
 
     },
@@ -8849,6 +9984,29 @@
         }
       }
     },
+    "Nova atividade encontrada" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue Aktivität gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New activity found"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova atividade encontrada"
+          }
+        }
+      }
+    },
     "Nova senha" : {
 
     },
@@ -8895,6 +10053,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "O Apple Health não está disponível neste dispositivo (por exemplo, no simulador)."
+          }
+        }
+      }
+    },
+    "O Apple Health não forneceu dados suficientes para definir sua FC máxima. Usamos uma estimativa baseada na sua idade." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health hat nicht genügend Daten bereitgestellt, um deine maximale Herzfrequenz zu bestimmen. Wir verwenden eine Schätzung anhand deines Alters."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health did not provide enough data to determine your maximum heart rate. We use an estimate based on your age."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Apple Health não forneceu dados suficientes para definir sua FC máxima. Usamos uma estimativa baseada na sua idade."
           }
         }
       }
@@ -9203,6 +10384,29 @@
         }
       }
     },
+    "O servidor não confirmou a conclusão do treino. Tente novamente." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Server hat den Trainingsabschluss nicht bestätigt. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server did not confirm the workout completion. Please try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O servidor não confirmou a conclusão do treino. Tente novamente."
+          }
+        }
+      }
+    },
     "O treino volta para agendado e você poderá assinalar outra corrida. As métricas e o feedback enviados serão apagados." : {
 
     },
@@ -9272,6 +10476,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Operação cancelada."
+          }
+        }
+      }
+    },
+    "Origem indisponível" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelle nicht verfügbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source unavailable"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origem indisponível"
           }
         }
       }
@@ -9551,6 +10778,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pace médio /km"
+          }
+        }
+      }
+    },
+    "Pace real" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tatsächliche Pace"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actual pace"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pace real"
           }
         }
       }
@@ -10078,6 +11328,29 @@
         }
       }
     },
+    "Planejado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geplant"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planned"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planejado"
+          }
+        }
+      }
+    },
     "Plano" : {
       "comment" : "Plan tab navigation title",
       "extractionState" : "stale",
@@ -10379,6 +11652,29 @@
         }
       }
     },
+    "Prescrição" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorgabe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prescription"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prescrição"
+          }
+        }
+      }
+    },
     "Prescrito" : {
       "comment" : "Badge label meaning this run came from a planned/prescribed workout",
       "extractionState" : "stale",
@@ -10644,6 +11940,29 @@
         }
       }
     },
+    "Próxima semana" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste Woche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next week"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Próxima semana"
+          }
+        }
+      }
+    },
     "Próximo treino" : {
       "localizations" : {
         "de" : {
@@ -10846,6 +12165,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rascunho"
+          }
+        }
+      }
+    },
+    "Reagendando treino…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training wird verschoben…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rescheduling workout…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reagendando treino…"
+          }
+        }
+      }
+    },
+    "Realizado" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tatsächlich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actual"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Realizado"
           }
         }
       }
@@ -11293,6 +12658,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "RevenueCat nao esta configurado nesta build."
+          }
+        }
+      }
+    },
+    "Revise a FC de repouso e a FC máxima: os valores precisam formar cinco zonas válidas." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe deinen Ruhepuls und deine maximale Herzfrequenz: Die Werte müssen fünf gültige Zonen ergeben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your resting and maximum heart rates: the values must form five valid zones."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revise a FC de repouso e a FC máxima: os valores precisam formar cinco zonas válidas."
           }
         }
       }
@@ -11954,6 +13342,29 @@
     "Sem prompt log para esta semana" : {
 
     },
+    "Sem treino planejado neste dia" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Training für diesen Tag geplant"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No workout planned for this day"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem treino planejado neste dia"
+          }
+        }
+      }
+    },
     "Semana" : {
 
     },
@@ -12000,6 +13411,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Semana %lld/%lld"
+          }
+        }
+      }
+    },
+    "Semana anterior" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorherige Woche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous week"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana anterior"
           }
         }
       }
@@ -12469,6 +13903,29 @@
         }
       }
     },
+    "Seus treinos usam esforço percebido (RPE)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Trainings verwenden das subjektive Belastungsempfinden (RPE)."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your workouts use perceived exertion (RPE)."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus treinos usam esforço percebido (RPE)."
+          }
+        }
+      }
+    },
     "Sex" : {
       "comment" : "Calendar weekday header abbreviation (Friday)",
       "extractionState" : "stale",
@@ -12635,6 +14092,29 @@
         }
       }
     },
+    "Sincronizar com Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit Apple Health synchronisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync with Apple Health"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar com Apple Health"
+          }
+        }
+      }
+    },
     "Site oficial" : {
       "localizations" : {
         "de" : {
@@ -12653,6 +14133,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Site oficial"
+          }
+        }
+      }
+    },
+    "Só é possível reagendar treinos agendados." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur geplante Trainings können verschoben werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only scheduled workouts can be rescheduled."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Só é possível reagendar treinos agendados."
           }
         }
       }
@@ -12838,6 +14341,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sua assinatura é cobrada e gerenciada pela App Store."
+          }
+        }
+      }
+    },
+    "Sua corrida do Apple Saúde foi atribuída ao treino %@." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Apple-Health-Lauf wurde dem Training %@ zugeordnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Apple Health run was assigned to the workout %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua corrida do Apple Saúde foi atribuída ao treino %@."
           }
         }
       }
@@ -13611,6 +15137,29 @@
         }
       }
     },
+    "Treino vinculado!" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training verknüpft!"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workout linked!"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treino vinculado!"
+          }
+        }
+      }
+    },
     "Treino-alvo" : {
       "localizations" : {
         "de" : {
@@ -13891,6 +15440,52 @@
         }
       }
     },
+    "Usar FC de repouso automática" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatischen Ruhepuls verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use automatic resting heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar FC de repouso automática"
+          }
+        }
+      }
+    },
+    "Usar FC máxima estimada pela idade" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anhand des Alters geschätzte maximale Herzfrequenz verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use maximum heart rate estimated from age"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar FC máxima estimada pela idade"
+          }
+        }
+      }
+    },
     "Usar mesmo assim" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -13956,6 +15551,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usuário não encontrado"
+          }
+        }
+      }
+    },
+    "Valores informados por você têm prioridade. Use o automático para ler o repouso do Apple Health e estimar a FC máxima pela idade." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine eingegebenen Werte haben Vorrang. Nutze automatische Werte, um den Ruhepuls aus Apple Health zu lesen und die maximale Herzfrequenz anhand deines Alters zu schätzen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Values you enter take priority. Use automatic values to read resting heart rate from Apple Health and estimate maximum heart rate from your age."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valores informados por você têm prioridade. Use o automático para ler o repouso do Apple Health e estimar a FC máxima pela idade."
+          }
+        }
+      }
+    },
+    "Ver treino no plano" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training im Plan ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View workout in plan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver treino no plano"
           }
         }
       }
@@ -14096,6 +15737,52 @@
         }
       }
     },
+    "vinculado ao plano" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mit dem Plan verknüpft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "linked to the plan"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vinculado ao plano"
+          }
+        }
+      }
+    },
+    "Vincular a um treino" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit einem Training verknüpfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link to a workout"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular a um treino"
+          }
+        }
+      }
+    },
     "Vincular conta Apple" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14137,6 +15824,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vincular conta Google"
+          }
+        }
+      }
+    },
+    "Vincular treino" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Training verknüpfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link workout"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincular treino"
+          }
+        }
+      }
+    },
+    "Vincule a um treino planejado ou marque como corrida livre." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpfe es mit einem geplanten Training oder markiere es als freien Lauf."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link it to a planned workout or mark it as a free run."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vincule a um treino planejado ou marque como corrida livre."
           }
         }
       }
@@ -14305,6 +16038,29 @@
         }
       }
     },
+    "Voltar ao início" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück zum Start"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to home"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voltar ao início"
+          }
+        }
+      }
+    },
     "Volume" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14347,6 +16103,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Workload adaptado pela IA"
+          }
+        }
+      }
+    },
+    "Z%@ · %@" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Z%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Z%lld · %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Z%lld · %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Z%lld · %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Z%lld · %@"
           }
         }
       }
@@ -14397,807 +16186,48 @@
         }
       }
     },
-    "Athly detectou" : {
+    "Zonas de frequência cardíaca" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Athly hat erkannt"
+            "value" : "Herzfrequenzzonen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Athly detected"
+            "value" : "Heart rate zones"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Athly detectou"
+            "value" : "Zonas de frequência cardíaca"
           }
         }
       }
     },
-    "Nova atividade encontrada" : {
+    "Zonas estimadas" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Neue Aktivität gefunden"
+            "value" : "Geschätzte Zonen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New activity found"
+            "value" : "Estimated zones"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nova atividade encontrada"
-          }
-        }
-      }
-    },
-    "Corrida ao ar livre" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Outdoor-Lauf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Outdoor run"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida ao ar livre"
-          }
-        }
-      }
-    },
-    "Apple Saúde" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Health"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Health"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apple Saúde"
-          }
-        }
-      }
-    },
-    "Detectada" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erkannt"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Detected"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Detectada"
-          }
-        }
-      }
-    },
-    "Este treino estava no seu plano?" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "War dieses Training in deinem Plan?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Was this workout in your plan?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este treino estava no seu plano?"
-          }
-        }
-      }
-    },
-    "Vincule a um treino planejado ou marque como corrida livre." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verknüpfe es mit einem geplanten Training oder markiere es als freien Lauf."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Link it to a planned workout or mark it as a free run."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincule a um treino planejado ou marque como corrida livre."
-          }
-        }
-      }
-    },
-    "Corri por conta própria" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ich bin auf eigene Faust gelaufen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I ran on my own"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corri por conta própria"
-          }
-        }
-      }
-    },
-    "Fora do plano — mas todo quilômetro conta pra sua evolução." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Außerhalb des Plans — aber jeder Kilometer zählt für deinen Fortschritt."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Outside the plan — but every kilometre counts toward your progress."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fora do plano — mas todo quilômetro conta pra sua evolução."
-          }
-        }
-      }
-    },
-    "Vincular a um treino" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mit einem Training verknüpfen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Link to a workout"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincular a um treino"
-          }
-        }
-      }
-    },
-    "Escolha o treino planejado no calendário." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle das geplante Training im Kalender."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick the planned workout from the calendar."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolha o treino planejado no calendário."
-          }
-        }
-      }
-    },
-    "Ignorar esta atividade" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diese Aktivität ignorieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ignore this activity"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ignorar esta atividade"
-          }
-        }
-      }
-    },
-    "Corrida da manhã" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Morgenlauf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Morning run"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida da manhã"
-          }
-        }
-      }
-    },
-    "Corrida da tarde" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nachmittagslauf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Afternoon run"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida da tarde"
-          }
-        }
-      }
-    },
-    "Corrida da noite" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abendlauf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Evening run"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida da noite"
-          }
-        }
-      }
-    },
-    "Calendário" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kalender"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calendar"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Calendário"
-          }
-        }
-      }
-    },
-    "Semana anterior" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vorherige Woche"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Previous week"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Semana anterior"
-          }
-        }
-      }
-    },
-    "Próxima semana" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nächste Woche"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next week"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Próxima semana"
-          }
-        }
-      }
-    },
-    "Sem treino planejado neste dia" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kein Training für diesen Tag geplant"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No workout planned for this day"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sem treino planejado neste dia"
-          }
-        }
-      }
-    },
-    "Escolha outro dia na faixa acima para ver os treinos planejados." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle oben einen anderen Tag, um die geplanten Trainings zu sehen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick another day in the strip above to see its planned workouts."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolha outro dia na faixa acima para ver os treinos planejados."
-          }
-        }
-      }
-    },
-    "Vincular treino" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Training verknüpfen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Link workout"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vincular treino"
-          }
-        }
-      }
-    },
-    "Treino vinculado!" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Training verknüpft!"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workout linked!"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Treino vinculado!"
-          }
-        }
-      }
-    },
-    "Sua corrida do Apple Saúde foi atribuída ao treino %@." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Apple-Health-Lauf wurde dem Training %@ zugeordnet."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Apple Health run was assigned to the workout %@."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sua corrida do Apple Saúde foi atribuída ao treino %@."
-          }
-        }
-      }
-    },
-    "Planejado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geplant"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planned"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planejado"
-          }
-        }
-      }
-    },
-    "Realizado" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tatsächlich"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actual"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Realizado"
-          }
-        }
-      }
-    },
-    "Pace real" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tatsächliche Pace"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actual pace"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pace real"
-          }
-        }
-      }
-    },
-    "Prescrição" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vorgabe"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prescription"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prescrição"
-          }
-        }
-      }
-    },
-    "livre" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "frei"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "free"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "livre"
-          }
-        }
-      }
-    },
-    "vinculado ao plano" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "mit dem Plan verknüpft"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "linked to the plan"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vinculado ao plano"
-          }
-        }
-      }
-    },
-    "Meta cumprida — distância planejada atingida." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ziel erreicht — geplante Distanz erreicht."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Goal met — planned distance reached."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meta cumprida — distância planejada atingida."
-          }
-        }
-      }
-    },
-    "Meta cumprida — %lld%% acima da distância planejada." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ziel erreicht — %lld%% über der geplanten Distanz."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Goal met — %lld%% above the planned distance."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meta cumprida — %lld%% acima da distância planejada."
-          }
-        }
-      }
-    },
-    "Meta cumprida — %lld%% abaixo da distância planejada." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ziel erreicht — %lld%% unter der geplanten Distanz."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Goal met — %lld%% below the planned distance."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meta cumprida — %lld%% abaixo da distância planejada."
-          }
-        }
-      }
-    },
-    "%lld%% abaixo da distância planejada." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld%% unter der geplanten Distanz."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld%% below the planned distance."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld%% abaixo da distância planejada."
-          }
-        }
-      }
-    },
-    "Ver treino no plano" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Training im Plan ansehen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "View workout in plan"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver treino no plano"
-          }
-        }
-      }
-    },
-    "Voltar ao início" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurück zum Start"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Back to home"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voltar ao início"
+            "value" : "Zonas estimadas"
           }
         }
       }

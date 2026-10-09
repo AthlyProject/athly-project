@@ -6,13 +6,31 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from './models/user.model';
 import { LegalConsentDto } from '../auth/dto/legal-consent.dto';
+import { HeartRateHealthService } from './heart-rate-health.service';
+import { HeartRateHealthDto } from './dto/heart-rate-health.dto';
+import { HeartRateZonesModel } from './models/heart-rate-zones.model';
 
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly heartRateHealth: HeartRateHealthService,
+  ) {}
+
+  @Get('me/heart-rate-zones')
+  @ApiOkResponse({ type: HeartRateZonesModel })
+  heartRateZones(@CurrentUser() user: UserModel) {
+    return this.heartRateHealth.zones(user.id);
+  }
+
+  @Put('me/heart-rate-health')
+  @ApiOkResponse({ type: HeartRateZonesModel })
+  syncHeartRateHealth(@CurrentUser() user: UserModel, @Body() input: HeartRateHealthDto) {
+    return this.heartRateHealth.sync(user.id, input);
+  }
 
   @Get('me')
   @ApiOkResponse({ type: UserModel })

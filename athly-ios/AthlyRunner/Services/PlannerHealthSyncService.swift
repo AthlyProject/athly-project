@@ -18,6 +18,7 @@ final class PlannerHealthSyncService {
     private var observer: HKObserverQuery?
     private var uploadTask: Task<Void, Never>?
     private var needsAnotherSync = false
+    private var lastSuccessfulSync: Date?
     private var sessionVersion = 0
     private let logger = Logger(subsystem: "com.athly.runner", category: "PlannerHealthSync")
 
@@ -31,7 +32,7 @@ final class PlannerHealthSyncService {
                 guard error == nil else { completion(); return }
                 let delivery = HealthKitObserverCompletion(completion)
                 Task { @MainActor in
-                    await PlannerHealthSyncService.shared.sync()
+                    await PlannerHealthSyncService.shared.sync(force: true)
                     delivery.finish()
                 }
             }
@@ -44,19 +45,22 @@ final class PlannerHealthSyncService {
     }
 
     func cancel() {
+        lastSuccessfulSync = nil
         sessionVersion += 1
         uploadTask?.cancel()
         uploadTask = nil
         needsAnotherSync = false
     }
 
-    func sync() async {
+    func sync(force: Bool = false) async {
         guard await APIClient.shared.isAuthenticated else { return }
+        let apiSession = await APIClient.shared.heartRateSessionIdentifier
         if let uploadTask {
-            needsAnotherSync = true
+            if force { needsAnotherSync = true }
             await uploadTask.value
             return
         }
+        if !force, let lastSuccessfulSync, Date().timeIntervalSince(lastSuccessfulSync) < 60 { return }
         let version = sessionVersion
         let task = Task { [weak self] in
             guard let self else { return }
@@ -66,7 +70,11 @@ final class PlannerHealthSyncService {
                     let context = try await self.capture()
                     try Task.checkCancellation()
                     guard self.sessionVersion == version else { return }
-                    try await APIClient.shared.syncPlannerHealthContext(context)
+                    // Empty reads may mean permissions are unavailable. Keep the saved snapshot.
+                    if !context.runs.isEmpty {
+                        try await APIClient.shared.syncPlannerHealthContext(context, session: apiSession)
+                        if self.sessionVersion == version { self.lastSuccessfulSync = Date() }
+                    }
                 } catch {
                     // Do not upload an empty replacement when protected Health data/network is unavailable.
                     self.logger.info("Planner health sync deferred; will retry on the next delivery or foreground activation.")
@@ -83,13 +91,17 @@ final class PlannerHealthSyncService {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let capturedAt = formatter.string(from: Date())
-        let request = try await buildInput(detailedLimit: 7, requestAuthorization: false, requireCompleteRead: true)
+        let request = try await buildInput(detailedLimit: 7, requestAuthorization: false, requireCompleteRead: true, syncContext: false)
         return PlannerHealthContextPayload(runs: request.runs, detailedSessions: request.detailedSessions,
                                           timeZone: TimeZone.current.identifier, capturedAt: capturedAt)
     }
 
     func buildInput(detailedLimit: Int, requestAuthorization: Bool,
-                    suppliedRuns: [HealthKitRunItem]? = nil, requireCompleteRead: Bool = false) async throws -> PlanFromHealthRequest {
+                    suppliedRuns: [HealthKitRunItem]? = nil, requireCompleteRead: Bool = false,
+                    syncContext: Bool = true) async throws -> PlanFromHealthRequest {
+        await LocalStoresBootstrap.prepare()
+        let apiSession = await APIClient.shared.heartRateSessionIdentifier
+        let capturedAt = Date()
         let service: any HealthKitRunningWorkoutsProviding = {
             #if targetEnvironment(simulator)
             return MockHealthKitService()
@@ -106,13 +118,31 @@ final class PlannerHealthSyncService {
             }
             runs = try await service.fetchLatestRunningWorkouts(limit: 20)
         }
+        #if !targetEnvironment(simulator)
+        // Failure or an empty read leaves existing data intact and still allows RPE planning.
+        _ = try? await HeartRateHealthSync.sync(api: .shared, health: HealthKitService(), session: apiSession)
+        #endif
+        try Task.checkCancellation()
+        guard await APIClient.shared.heartRateSessionIdentifier == apiSession else { throw CancellationError() }
         var details: [DetailedSessionPayload] = []
         if !runs.isEmpty {
             do { details = try await detailedSessions(limit: detailedLimit) }
             catch { if requireCompleteRead { throw error } }
         }
-        return PlanFromHealthRequest(runs: runs.map { HealthRunPayload(from: $0) },
-                                     detailedSessions: details.isEmpty ? nil : details, weekStartDate: nil)
+        try Task.checkCancellation()
+        guard await APIClient.shared.heartRateSessionIdentifier == apiSession else { throw CancellationError() }
+        let request = PlanFromHealthRequest(runs: runs.map { HealthRunPayload(from: $0) },
+                                            detailedSessions: details.isEmpty ? nil : details, weekStartDate: nil)
+        if syncContext && !request.runs.isEmpty {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let context = PlannerHealthContextPayload(runs: request.runs, detailedSessions: request.detailedSessions,
+                timeZone: TimeZone.current.identifier, capturedAt: formatter.string(from: capturedAt))
+            try? await APIClient.shared.syncPlannerHealthContext(context, session: apiSession)
+        }
+        try Task.checkCancellation()
+        guard await APIClient.shared.heartRateSessionIdentifier == apiSession else { throw CancellationError() }
+        return request
     }
 
     private func detailedSessions(limit: Int) async throws -> [DetailedSessionPayload] {

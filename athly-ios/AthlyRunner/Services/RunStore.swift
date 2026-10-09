@@ -3,21 +3,34 @@ import Foundation
 @MainActor
 final class RunStore: ObservableObject {
     @Published private(set) var sessions: [RunSession] = []
+    @Published private(set) var revision = 0
+    @Published private(set) var isLoaded = false
+    @Published private(set) var persistenceError: String?
+    private var sorted: [RunSession] = []
+    private var loadTask: Task<Void, Never>?
+    private var changedBeforeLoad = Set<UUID>()
+    private var deletedBeforeLoad = Set<UUID>()
+    private let file: SnapshotFile<[RunSessionSnapshot]>
 
     private static let fileName = "run_sessions.json"
 
-    init() {
-        load()
+    private let storageURL: URL
+
+    init(fileURL: URL? = nil) {
+        storageURL = fileURL ?? Self.fileURL
+        file = SnapshotFile(url: storageURL)
     }
 
     // MARK: - Public API
 
     func add(_ session: RunSession) {
+        changedBeforeLoad.insert(session.id)
         sessions.insert(session, at: 0)
         save()
     }
 
     func update(_ session: RunSession) {
+        changedBeforeLoad.insert(session.id)
         if let index = sessions.firstIndex(where: { $0.id == session.id }) {
             sessions[index] = session
             save()
@@ -25,6 +38,7 @@ final class RunStore: ObservableObject {
     }
 
     func delete(_ session: RunSession) {
+        deletedBeforeLoad.insert(session.id)
         sessions.removeAll { $0.id == session.id }
         save()
     }
@@ -37,10 +51,26 @@ final class RunStore: ObservableObject {
         guard !indices.isEmpty else { return }
         for index in indices {
             let session = sessions[index]
+            changedBeforeLoad.insert(session.id)
             session.athlyWorkoutId = nil
             sessions[index] = session // reatribui para disparar o @Published (RunSession é classe)
         }
         save()
+    }
+
+    /// Repair tentative associations from older app versions without deleting recorded runs.
+    func reconcileConfirmedWorkouts(_ workouts: [WorkoutModel]) {
+        let byId = Dictionary(workouts.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        var changed = false
+        for session in sessions {
+            guard let id = session.athlyWorkoutId, let workout = byId[id],
+                  workout.status != .done && workout.status != .partial else { continue }
+            session.athlyWorkoutId = nil
+            changedBeforeLoad.insert(session.id)
+            changed = true
+        }
+        if changed { save() }
+
     }
 
     /// Idempotently persists an imported activity. Exact fingerprints win; a fuzzy match lets
@@ -50,7 +80,11 @@ final class RunStore: ObservableObject {
         imported workout: ImportedWorkout,
         athlyWorkoutId: String?,
         healthSummary: HealthKitRunItem? = nil,
-        segmentation: WorkoutSegmentationResult? = nil
+        segmentation: WorkoutSegmentationResult? = nil,
+        confirmWorkoutLink: Bool = true,
+        preparedResult: RunResult? = nil,
+        preparedPoints: [RoutePoint]? = nil,
+        preparedSplits: [Split]? = nil
     ) -> RunSession {
         let existing = sessions.first { session in
             if let linkedWorkoutId = session.athlyWorkoutId,
@@ -74,7 +108,7 @@ final class RunStore: ObservableObject {
         session.caloriesBurned = healthCalories > 0 ? healthCalories : workout.caloriesBurned
         session.status = "completed"
         session.sportType = "running"
-        session.athlyWorkoutId = athlyWorkoutId ?? session.athlyWorkoutId
+        if confirmWorkoutLink { session.athlyWorkoutId = athlyWorkoutId ?? session.athlyWorkoutId }
         session.importFingerprint = workout.fingerprint
         session.importFormat = richerFormat(current: session.importFormat, candidate: workout.format)
         session.isIndoor = workout.isIndoor
@@ -85,8 +119,8 @@ final class RunStore: ObservableObject {
         }
 
         if workout.route.count > session.routePoints.count {
-            session.routePoints = workout.route.map(RoutePoint.init(location:))
-            session.splits = workout.runResult.splits.map {
+            session.routePoints = preparedPoints ?? workout.route.map(RoutePoint.init(location:))
+            session.splits = preparedSplits ?? (preparedResult ?? workout.runResult).splits.map {
                 Split(
                     kilometer: $0.kilometer,
                     durationSeconds: $0.durationSeconds,
@@ -106,6 +140,7 @@ final class RunStore: ObservableObject {
         if existing == nil {
             sessions.insert(session, at: 0)
         }
+        changedBeforeLoad.insert(session.id)
         save()
         return session
     }
@@ -167,8 +202,13 @@ final class RunStore: ObservableObject {
                 sessions[index] = session
             }
         }
+        changedBeforeLoad.insert(session.id)
         save()
         return session
+    }
+
+    func session(forImportedFingerprint fingerprint: String, workoutId: String) -> RunSession? {
+        sessions.first { $0.importFingerprint == fingerprint && ($0.athlyWorkoutId == nil || $0.athlyWorkoutId == workoutId) }
     }
 
     func importedSession(for workoutId: String) -> RunSession? {
@@ -180,7 +220,7 @@ final class RunStore: ObservableObject {
 
     /// Sessions sorted by startDate descending (most recent first).
     var sortedSessions: [RunSession] {
-        sessions.sorted { $0.startDate > $1.startDate }
+        sorted
     }
 
     private static func matches(session: RunSession, imported workout: ImportedWorkout) -> Bool {
@@ -222,26 +262,46 @@ final class RunStore: ObservableObject {
     }
 
     private func save() {
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(sessions)
-            try data.write(to: Self.fileURL, options: .atomic)
-        } catch {
-            print("[RunStore] Failed to save: \(error)")
-        }
+        sorted = sessions.sorted { $0.startDate > $1.startDate }
+        revision += 1
+        guard isLoaded else { return }
+        file.save(sessions.map(RunSessionSnapshot.init))
     }
 
-    private func load() {
-        let url = Self.fileURL
-        guard FileManager.default.fileExists(atPath: url.path) else { return }
+    func loadIfNeeded() async {
+        if let loadTask { await loadTask.value; return }
+        guard !isLoaded else { return }
+        let task = Task {
+            do {
+                let snapshots = try await file.load() ?? []
+                let existing = Set(sessions.map(\.id)).union(deletedBeforeLoad)
+                sessions.append(contentsOf: snapshots.filter { !existing.contains($0.id) }.map { $0.restore() })
+                isLoaded = true
+                sorted = sessions.sorted { $0.startDate > $1.startDate }
+                revision += 1
+                if !changedBeforeLoad.isEmpty || !deletedBeforeLoad.isEmpty { save() }
+                changedBeforeLoad.removeAll()
+                deletedBeforeLoad.removeAll()
+                persistenceError = nil
+            } catch {
+                // Never overwrite an unreadable history with an empty/partial in-memory list.
+                persistenceError = error.localizedDescription
+            }
+        }
+        loadTask = task
+        await task.value
+        loadTask = nil
+    }
+
+    func flush() async throws {
+        await loadIfNeeded()
+        guard isLoaded else { throw CocoaError(.fileReadUnknown) }
         do {
-            let data = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            sessions = try decoder.decode([RunSession].self, from: data)
+            try await file.flush()
+            persistenceError = nil
         } catch {
-            print("[RunStore] Failed to load: \(error)")
+            persistenceError = error.localizedDescription
+            throw error
         }
     }
 }

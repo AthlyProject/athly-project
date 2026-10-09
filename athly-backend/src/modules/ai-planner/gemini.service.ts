@@ -1,3 +1,5 @@
+import { assessHeartRatePrescription, snapshotHeartRateTargets } from './heart-rate-prescription';
+import type { GuidedHeartRateZones } from '../users/heart-rate-guidance';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -248,7 +250,12 @@ export class GeminiService {
       deterministicContext,
     );
 
-    return this.runWithStructureGate(prompt, guardrails, this.plannerModelName());
+    return this.runWithStructureGate(
+      prompt,
+      guardrails,
+      this.plannerModelName(),
+      effortZones.heartRate,
+    );
   }
 
   async generateAssessmentPlan(
@@ -272,7 +279,12 @@ export class GeminiService {
       minTrainingDate,
     );
 
-    return this.runWithStructureGate(prompt, undefined, this.plannerModelName());
+    return this.runWithStructureGate(
+      prompt,
+      undefined,
+      this.plannerModelName(),
+      effortZones.heartRate,
+    );
   }
 
   /**
@@ -286,6 +298,7 @@ export class GeminiService {
     basePrompt: string,
     guardrails: PlannerGuardrails | undefined,
     modelName: string,
+    heartRate?: GuidedHeartRateZones,
   ): Promise<PlannerExecution> {
     let best: { rawResponse: string; parsed: PlannerResults; degenerate: string[] } | null = null;
     let prompt = basePrompt;
@@ -325,9 +338,11 @@ export class GeminiService {
       const degenerate = [
         ...this.assessStructure(parsed.weekPlan),
         ...this.assessPlanQuality(parsed, guardrails),
+        ...assessHeartRatePrescription(parsed.weekPlan, heartRate),
       ];
       if (degenerate.length === 0) {
         this.finalizeSegments(parsed.weekPlan);
+        snapshotHeartRateTargets(parsed.weekPlan, heartRate);
         this.applyAnalysisOverride(parsed, guardrails);
         this.logger.log(this.formatUsageLog('weekly_plan', aggregateUsage));
         return { prompt, rawResponse, parsed, modelUsed: modelName, usage: aggregateUsage };

@@ -92,15 +92,17 @@ final class RunViewModel: ObservableObject {
     }
 
     func saveRun(runStore: RunStore) async {
-        guard let result = lastRunResult, !isSaved else { return }
+        guard let result = lastRunResult, !isSaved, !isSaving else { return }
 
         isSaving = true
         saveError = nil
         healthKitWriteDenied = false
         lastSavedHealthKitUUID = nil
 
+        await runStore.loadIfNeeded()
+
         // Save locally
-        let session = RunSession(sportType: "running")
+        let session = lastSavedSession ?? RunSession(sportType: "running")
         session.startDate = result.startDate
         session.endDate = result.endDate
         session.distanceMeters = result.distanceMeters
@@ -123,6 +125,8 @@ final class RunViewModel: ObservableObject {
         session.healthKitSyncStatus = healthKitService.isHealthDataAvailable ? .pending : .unavailable
         session.healthKitSyncError = nil
 
+        session.routePoints = []
+        session.splits = []
         for location in result.locations {
             let point = RoutePoint(location: location)
             session.routePoints.append(point)
@@ -138,8 +142,14 @@ final class RunViewModel: ObservableObject {
             session.splits.append(split)
         }
 
-        runStore.add(session)
+        if runStore.sessions.contains(where: { $0.id == session.id }) { runStore.update(session) }
+        else { runStore.add(session) }
         lastSavedSession = session
+        do { try await runStore.flush() } catch {
+            saveError = error.localizedDescription
+            isSaving = false
+            return
+        }
 
         // Save to HealthKit (best-effort; local history remains the fallback source of truth).
         if healthKitService.isHealthDataAvailable {
@@ -159,6 +169,11 @@ final class RunViewModel: ObservableObject {
             saveError = String(localized: "Corrida salva no Athly. Apple Health indisponível neste dispositivo.")
         }
 
+        do { try await runStore.flush() } catch {
+            saveError = error.localizedDescription
+            isSaving = false
+            return
+        }
         isSaving = false
         isSaved = true
 

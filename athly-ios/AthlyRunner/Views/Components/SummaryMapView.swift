@@ -21,6 +21,11 @@ struct SummaryMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
+        let previous = context.coordinator.coordinates
+        guard previous.count != coordinates.count || !zip(previous, coordinates).allSatisfy({
+            $0.latitude == $1.latitude && $0.longitude == $1.longitude
+        }) else { return }
+        context.coordinator.coordinates = coordinates
         mapView.removeOverlays(mapView.overlays)
         mapView.removeAnnotations(mapView.annotations)
 
@@ -48,6 +53,7 @@ struct SummaryMapView: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
+        var coordinates: [CLLocationCoordinate2D] = []
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)

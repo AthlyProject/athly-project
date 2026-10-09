@@ -9,6 +9,7 @@ final class AchievementStore: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "com.athly.achievementstore", qos: .utility)
     private let fileURL: URL
+    private lazy var persistence = SnapshotFile<[String]>(url: fileURL)
     private var achievedWorkoutIds: Set<String> = []
 
     private init() {
@@ -53,7 +54,7 @@ final class AchievementStore: @unchecked Sendable {
     func clear() {
         queue.sync {
             achievedWorkoutIds = []
-            try? FileManager.default.removeItem(at: fileURL)
+            persistence.clear()
         }
     }
 
@@ -68,8 +69,6 @@ final class AchievementStore: @unchecked Sendable {
 
     /// Must be called from inside `queue.sync`.
     private func persistLocked() {
-        if let data = try? JSONEncoder().encode(Array(achievedWorkoutIds)) {
-            try? data.write(to: fileURL, options: .atomic)
-        }
+        persistence.save(Array(achievedWorkoutIds))
     }
 }

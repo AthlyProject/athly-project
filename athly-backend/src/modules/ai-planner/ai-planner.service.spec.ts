@@ -17,6 +17,7 @@ const planner = new AiPlannerService(
   {} as any,
   {} as any,
   mockJobs,
+  {} as any,
 );
 const bestSubEfforts = (sessions: DetailedSessionDto[]): RunDataForZones[] =>
   (planner as any).bestSubEffortsFromSessions(sessions);
@@ -196,6 +197,7 @@ describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana 
       {} as any,
       {} as any,
       mockJobs,
+      {} as any,
     );
   const reserve = (svc: AiPlannerService) =>
     (svc as any).reserveWeeklyGoal('tp-1', new Date('2026-06-29'), new Date('2026-07-05'));
@@ -257,6 +259,7 @@ describe('AiPlannerService.startPlanFromHealthGeneration', () => {
       {} as any,
       {} as any,
       mockJobs,
+      {} as any,
     );
     return { service, prisma };
   };
@@ -396,6 +399,7 @@ describe('AiPlannerService expired resumption', () => {
       {} as any,
       {} as any,
       mockJobs,
+      {} as any,
     );
     await expect(
       service.planFromHealth('user', { runs: [] }, 'job', 'owner', {

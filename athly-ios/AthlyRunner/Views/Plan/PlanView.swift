@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PlanView: View {
+    @Environment(\.isAppTabActive) private var isTabActive
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var entitlementManager: EntitlementManager
     @EnvironmentObject var runStore: RunStore
@@ -47,6 +48,12 @@ struct PlanView: View {
                                 .padding(.top, 8)
                         }
 
+                        if planVM.isRescheduling {
+                            ProgressView("Reagendando treino…")
+                                .tint(AthlyTheme.Color.primary)
+                                .padding(.vertical, 8)
+                        }
+
                         if planVM.isGeneratingInBackground {
                             generatingBanner
                                 .padding(.horizontal, AthlyTheme.Spacing.sm)
@@ -65,7 +72,10 @@ struct PlanView: View {
             }
             .navigationTitle("Plano")
             .toolbar(.hidden, for: .navigationBar)
-            .task { await planVM.loadData() }
+            .task(id: isTabActive) {
+                guard isTabActive else { return }
+                await planVM.loadIfNeeded()
+            }
             .fullScreenCover(isPresented: $showAssessment) {
                 AssessmentView {
                     authVM.markAssessmentCompleted()
@@ -101,11 +111,6 @@ struct PlanView: View {
                 }
             } message: { _ in
                 Text("O treino volta para agendado e você poderá assinalar outra corrida. As métricas e o feedback enviados serão apagados.")
-            }
-            .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
-                Button("OK") { planVM.errorMessage = nil }
-            } message: {
-                Text(planVM.errorMessage ?? "")
             }
         }
     }
@@ -202,8 +207,10 @@ struct PlanView: View {
 
             HStack(spacing: 2) {
                 ForEach(weekDays, id: \.self) { day in
-                    weekCell(day)
-                        .onTapGesture { onSelectDay(day) }
+                    dropTarget(day) {
+                        weekCell(day)
+                            .onTapGesture { onSelectDay(day) }
+                    }
                 }
             }
         }
@@ -276,80 +283,93 @@ struct PlanView: View {
         let isPast = day < calendar.startOfDay(for: Date())
         let dayWorkouts = workouts(on: day)
         let allDone = !dayWorkouts.isEmpty && dayWorkouts.allSatisfy { $0.status == .done }
-        let isDropTarget = dropTargetDay == day
+        return dropTarget(day) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 7) {
+                    Text(dayHeaderLabel(day))
+                        .font(AthlyTheme.Typography.semibold(11))
+                        .foregroundStyle(
+                            isToday ? AthlyTheme.Color.primary
+                            : isPast ? AthlyTheme.Color.textTertiary
+                            : AthlyTheme.Color.textSecondary
+                        )
 
-        return VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 7) {
-                Text(dayHeaderLabel(day))
-                    .font(AthlyTheme.Typography.semibold(11))
-                    .foregroundStyle(
-                        isToday ? AthlyTheme.Color.primary
-                        : isPast ? AthlyTheme.Color.textTertiary
-                        : AthlyTheme.Color.textSecondary
-                    )
+                    if allDone {
+                        tag("Concluído", color: AthlyTheme.Color.success,
+                            bg: AthlyTheme.Color.success.opacity(0.10), border: AthlyTheme.Color.success.opacity(0.22))
+                    } else if isToday {
+                        tag("Hoje", color: AthlyTheme.Color.primary,
+                            bg: AthlyTheme.Color.primarySoft, border: AthlyTheme.Color.primaryBorder)
+                    }
 
-                if allDone {
-                    tag("Concluído", color: AthlyTheme.Color.success,
-                        bg: AthlyTheme.Color.success.opacity(0.10), border: AthlyTheme.Color.success.opacity(0.22))
-                } else if isToday {
-                    tag("Hoje", color: AthlyTheme.Color.primary,
-                        bg: AthlyTheme.Color.primarySoft, border: AthlyTheme.Color.primaryBorder)
+                    Spacer()
                 }
+                .padding(.horizontal, 4)
+                .padding(.top, 2)
 
-                Spacer()
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 2)
-
-            if dayWorkouts.isEmpty {
-                restSlot
-            } else {
-                ForEach(dayWorkouts) { workout in
-                    if workout.status == .scheduled {
-                        workoutRow(workout)
-                            .draggable(workout) {
-                                workoutRow(workout)
-                                    .frame(width: 260)
-                            }
-                    } else {
-                        workoutRow(workout)
+                if dayWorkouts.isEmpty {
+                    restSlot
+                } else {
+                    ForEach(dayWorkouts) { workout in
+                        if workout.status == .scheduled && !planVM.isRescheduling {
+                            workoutRow(workout)
+                                .draggable(workout) {
+                                    workoutCard(workout)
+                                        .frame(width: 260)
+                                }
+                        } else {
+                            workoutRow(workout)
+                        }
                     }
                 }
             }
-        }
-        .padding(2)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(isDropTarget ? AthlyTheme.Color.primarySoft : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(isDropTarget ? AthlyTheme.Color.primary : Color.clear, lineWidth: 1.5)
-        )
-        .animation(.easeInOut(duration: 0.15), value: isDropTarget)
-        .dropDestination(for: WorkoutModel.self) { items, _ in
-            guard let dragged = items.first else { return false }
-            guard !calendar.isDate(dragged.parsedDate, inSameDayAs: day) else { return false }
-            guard calendar.isDate(Self.weekStart(for: dragged.parsedDate), inSameDayAs: Self.weekStart(for: day)) else {
-                planVM.errorMessage = String(localized: "Só é possível reagendar treinos dentro da mesma semana.")
-                return false
-            }
-            // Envia só o dia (yyyy-MM-dd) no calendário local — o backend guarda a data,
-            // então serializar como timestamp UTC deslocava o dia em fusos a leste de UTC.
-            let dayString = Self.idFormatter.string(from: day)
-            Task { await planVM.rescheduleWorkout(dragged, toDay: dayString) }
-            return true
-        } isTargeted: { targeted in
-            if targeted {
-                dropTargetDay = day
-            } else if dropTargetDay == day {
-                dropTargetDay = nil
-            }
+            .padding(2)
         }
     }
 
+    /// A lista e o calendário superior usam exatamente a mesma validação e área de drop.
+    private func dropTarget<Content: View>(_ day: Date, @ViewBuilder content: () -> Content) -> some View {
+        let available = !planVM.isRescheduling && workouts(on: day).isEmpty
+        let targeted = available && dropTargetDay == day
+        return content()
+            .contentShape(Rectangle())
+            .background(RoundedRectangle(cornerRadius: 12).fill(targeted ? AthlyTheme.Color.primarySoft : Color.clear))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(targeted ? AthlyTheme.Color.primary : Color.clear, lineWidth: 1.5))
+            .animation(.easeInOut(duration: 0.15), value: targeted)
+            .dropDestination(for: WorkoutModel.self) { items, _ in
+                dropTargetDay = nil
+                guard !planVM.isRescheduling, items.count == 1, let dragged = items.first else { return false }
+                let decision = planVM.rescheduleDecision(workoutID: dragged.id, day: day)
+                guard decision == .allowed else {
+                    if let message = decision.message { planVM.errorMessage = message }
+                    return false
+                }
+                let dayString = Self.idFormatter.string(from: day)
+                Task { await planVM.rescheduleWorkout(dragged, toDay: dayString) }
+                return true
+            } isTargeted: { targeted in
+                if targeted && available { dropTargetDay = day }
+                else if dropTargetDay == day { dropTargetDay = nil }
+            }
+    }
+
+    @ViewBuilder
     private func workoutRow(_ workout: WorkoutModel) -> some View {
-        let isDone = workout.status == .done
+        if workout.status == .done || workout.status == .partial {
+            workoutLink(workout)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        workoutToUnlink = workout
+                    } label: {
+                        Label("Desvincular corrida", systemImage: "xmark.circle")
+                    }
+                }
+        } else {
+            workoutLink(workout)
+        }
+    }
+
+    private func workoutLink(_ workout: WorkoutModel) -> some View {
         return NavigationLink {
             WorkoutDetailView(
                 workout: workout,
@@ -359,7 +379,14 @@ struct PlanView: View {
                 onUnlink: { await planVM.uncompleteWorkout(workout, runStore: runStore) }
             )
         } label: {
-            HStack(spacing: 10) {
+            workoutCard(workout)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func workoutCard(_ workout: WorkoutModel) -> some View {
+        let isDone = workout.status == .done
+        return HStack(spacing: 10) {
                 Image(systemName: workout.sportType.sfSymbol)
                     .font(.system(size: 17, weight: .medium))
                     .foregroundStyle(workout.accentColor)
@@ -406,17 +433,6 @@ struct PlanView: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .opacity(isDone ? 0.55 : 1)
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            if workout.status == .done || workout.status == .partial {
-                Button(role: .destructive) {
-                    workoutToUnlink = workout
-                } label: {
-                    Label("Desvincular corrida", systemImage: "xmark.circle")
-                }
-            }
-        }
     }
 
     private var restSlot: some View {
@@ -567,9 +583,7 @@ struct PlanView: View {
     }
 
     private func workouts(on day: Date) -> [WorkoutModel] {
-        planVM.allWorkouts
-            .filter { $0.isOnDay(day) && $0.sportType != .other }
-            .sorted { $0.parsedDate < $1.parsedDate }
+        planVM.workouts(on: day)
     }
 
     private func dayID(_ day: Date) -> String {
@@ -596,6 +610,8 @@ struct PlanView: View {
 
     private static let idFormatter: DateFormatter = {
         let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()

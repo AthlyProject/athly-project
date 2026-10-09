@@ -40,9 +40,8 @@ struct FloatingTabBar: View {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 let isActive = selectedTab == tab
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = tab
-                    }
+                    PerformanceTrace.signposter.emitEvent("TabSelected")
+                    selectedTab = tab
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: tab.icon)

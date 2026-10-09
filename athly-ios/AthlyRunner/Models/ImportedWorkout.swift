@@ -221,7 +221,7 @@ struct ImportedWorkoutMatch: Equatable, Sendable {
     }
 }
 
-enum ImportedWorkoutHealthKitFallback: Sendable {
+enum ImportedWorkoutHealthKitFallback: Sendable, Equatable {
     /// Tenta enriquecer o workout existente e devolve uma decisão para a interface se falhar.
     case ask
     /// Mantém o workout original e usa os dados ricos somente dentro do Athly.

@@ -4,6 +4,7 @@ struct HealthKitRunsView: View {
     private let title: LocalizedStringKey
     private let showsPlanTab: Bool
 
+    @Environment(\.isAppTabActive) private var isTabActive
     @EnvironmentObject private var planVM: TrainingPlanViewModel
     @EnvironmentObject private var runStore: RunStore
 
@@ -16,6 +17,9 @@ struct HealthKitRunsView: View {
     }()
 
     @State private var selectedTab: HistoryTab
+    @State private var historyEntries: [RunHistoryEntry] = []
+    @State private var prescribedRuns: [PrescribedRun] = []
+    @State private var localByWorkout: [String: RunSession] = [:]
     @State private var workoutToRepair: WorkoutModel?
 
     init(title: LocalizedStringKey = "Corridas do Apple Health", showsPlanTab: Bool = true) {
@@ -142,7 +146,21 @@ struct HealthKitRunsView: View {
             }
             #endif
         }
-        .task { await loadData() }
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
+            await runStore.loadIfNeeded()
+            await loadData(force: false)
+        }
+        .task(id: "\(isTabActive)-\(runStore.revision)-\(planVM.workoutsRevision)-\(viewModel.revision)") {
+            guard isTabActive else { return }
+            var byWorkout: [String: RunSession] = [:]
+            for session in runStore.sortedSessions where session.status == "completed" {
+                if let id = session.athlyWorkoutId, byWorkout[id] == nil { byWorkout[id] = session }
+            }
+            localByWorkout = byWorkout
+            historyEntries = buildHistoryEntries
+            prescribedRuns = buildPrescribedRuns
+        }
         .sheet(item: $workoutToRepair) { workout in
             WorkoutCompletionSheet(
                 workout: workout,
@@ -305,7 +323,7 @@ struct HealthKitRunsView: View {
             || viewModel.isResolvingLinkedRuns
     }
 
-    private var prescribedRuns: [PrescribedRun] {
+    private var buildPrescribedRuns: [PrescribedRun] {
         var runsById: [String: HealthKitRunItem] = [:]
         for run in viewModel.allKnownRuns {
             runsById[run.id] = run
@@ -330,7 +348,7 @@ struct HealthKitRunsView: View {
         .sorted { $0.source.startDate > $1.source.startDate }
     }
 
-    private var historyEntries: [RunHistoryEntry] {
+    private var buildHistoryEntries: [RunHistoryEntry] {
         let healthRuns = viewModel.allKnownRuns
         guard showsPlanTab else {
             return healthRuns.map { .health($0) }
@@ -357,24 +375,21 @@ struct HealthKitRunsView: View {
     }
 
     private func localSession(for workout: WorkoutModel) -> RunSession? {
-        runStore.sessions
-            .filter { $0.athlyWorkoutId == workout.id && $0.status == "completed" }
-            .sorted { $0.startDate > $1.startDate }
-            .first
+        localByWorkout[workout.id]
     }
 
     private func isDuplicateLocalSession(_ session: RunSession, healthRuns: [HealthKitRunItem]) -> Bool {
         HealthKitRunMatch.isDuplicate(session: session, healthRuns: healthRuns)
     }
 
-    private func loadData() async {
+    private func loadData(force: Bool = true) async {
         if showsPlanTab {
-            async let planLoad: Void = planVM.loadData()
-            async let healthLoad: Void = viewModel.loadWorkouts()
+            async let planLoad: Void = planVM.loadData(force: force)
+            async let healthLoad: Void = viewModel.loadWorkouts(force: force)
             _ = await (planLoad, healthLoad)
             await viewModel.ensureRunItems(workoutUUIDs: linkedHealthKitUUIDs)
         } else {
-            await viewModel.loadWorkouts()
+            await viewModel.loadWorkouts(force: force)
         }
     }
 

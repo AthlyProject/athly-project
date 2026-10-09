@@ -5,7 +5,7 @@ import XCTest
 /// Testa a função pura `DetectedRunService.firstUnclaimed` — sem HealthKit.
 final class DetectedRunTests: XCTestCase {
 
-    private let now = Date(timeIntervalSince1970: 1_726_750_000) // 2024-09-19 ~13:26 UTC
+    private let now = Date(timeIntervalSince1970: 1_726_750_000) // 2024-09-19 12:46 UTC
 
     // MARK: - Fixtures
 
@@ -17,10 +17,9 @@ final class DetectedRunTests: XCTestCase {
         distanceMeters: Double = 8_400
     ) -> HealthKitRunItem {
         let calendar = Calendar.current
-        let dayStart = calendar.date(byAdding: .day, value: -startOffsetDays, to: calendar.startOfDay(for: now))!
-        let start = dayStart.addingTimeInterval(
-            startOffsetDays == 0 ? startOffsetSeconds + 12 * 3_600 : 9 * 3_600
-        )
+        // Keep today's fixture in the past in every simulator time zone.
+        let day = calendar.date(byAdding: .day, value: -startOffsetDays, to: now)!
+        let start = day.addingTimeInterval(startOffsetSeconds)
         return HealthKitRunItem(
             id: id,
             startDate: start,

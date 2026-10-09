@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DashboardView: View {
+    @Environment(\.isAppTabActive) private var isTabActive
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var runStore: RunStore
@@ -72,7 +73,10 @@ struct DashboardView: View {
             }
             .navigationTitle("Athly")
             .toolbar(.hidden, for: .navigationBar)
-            .task { await planVM.loadData() }
+            .task(id: isTabActive) {
+                guard isTabActive else { return }
+                await planVM.loadIfNeeded()
+            }
             .sheet(item: $workoutToComplete) { workout in
                 WorkoutCompletionSheet(
                     workout: workout,
@@ -88,11 +92,6 @@ struct DashboardView: View {
                     },
                     onDismiss: { workoutToComplete = nil }
                 )
-            }
-            .alert("Erro", isPresented: .constant(planVM.errorMessage != nil)) {
-                Button("OK") { planVM.errorMessage = nil }
-            } message: {
-                Text(planVM.errorMessage ?? "")
             }
         }
     }
@@ -370,9 +369,8 @@ struct DashboardView: View {
         return (0..<7).map { offset in
             let day = cal.date(byAdding: .day, value: offset, to: interval.start) ?? interval.start
             let isToday = cal.isDate(day, inSameDayAs: today)
-            let hasRun = recentRuns.contains { cal.isDate($0.startDate, inSameDayAs: day) }
-            let dayWorkouts = planVM.allWorkouts.filter { $0.isOnDay(day) && $0.sportType != .other }
-            let done = hasRun || dayWorkouts.contains { $0.status == .done }
+            let dayWorkouts = planVM.workouts(on: day)
+            let done = !dayWorkouts.isEmpty && dayWorkouts.allSatisfy { $0.status == .done }
             if done { return .done }
             if isToday { return .today }
             if dayWorkouts.isEmpty { return .rest }

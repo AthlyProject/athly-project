@@ -10,6 +10,8 @@ run:
   network:
     port: 4000
   env:
+    - name: REFRESH_TOKEN_EXPIRES_IN
+      value: "365d"
     - name: NODE_ENV
       value: production
     - name: OTEL_SERVICE_NAME

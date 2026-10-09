@@ -16,6 +16,9 @@ export interface RunTarget {
   paceSecPerKmMax?: number;
   hrZone?: 1 | 2 | 3 | 4 | 5;
   rpe?: number;
+  hrMinBpm?: number;
+  hrMaxBpm?: number;
+  hrIsEstimated?: boolean;
 }
 
 export interface CycleTarget {

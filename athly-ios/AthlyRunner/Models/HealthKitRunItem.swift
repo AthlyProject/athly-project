@@ -10,6 +10,8 @@ struct HealthKitRunItem: Identifiable, Codable, Equatable, Sendable {
     let averagePaceSecondsPerKm: Double
     let activeEnergyBurned: Double
     let elevationGainMeters: Double?
+    var avgHR: Double? = nil
+    var maxHR: Double? = nil
 
     var distanceKm: Double {
         distanceMeters / 1000.0

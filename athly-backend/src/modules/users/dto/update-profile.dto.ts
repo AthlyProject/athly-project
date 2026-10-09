@@ -67,19 +67,27 @@ export class UpdateProfileDto {
   @IsString()
   gender?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Manual override in bpm; null restores Apple Health.',
+  })
   @IsOptional()
   @IsInt()
   @Min(20)
   @Max(150)
-  restingHeartRate?: number;
+  restingHeartRate?: number | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    description: 'Manual override in bpm; null restores the age-based estimate.',
+  })
   @IsOptional()
   @IsInt()
   @Min(100)
   @Max(240)
-  maxHeartRate?: number;
+  maxHeartRate?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()

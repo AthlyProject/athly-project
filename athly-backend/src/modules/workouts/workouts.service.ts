@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  CodedConflictException,
   CodedInternalServerErrorException,
   CodedNotFoundException,
 } from '../../common/errors/coded-exception';
@@ -15,7 +16,7 @@ import { ErrorCode } from '../../common/errors/error-codes';
 import { WeeklyPlanAutomationService } from '../ai-planner/weekly-plan-automation.service';
 import { PlannerHealthContextService } from '../ai-planner/planner-health-context.service';
 import { WorkoutPlanningContextDto } from '../ai-planner/dto/planner-health-context.dto';
-import { mondayOf } from '../ai-planner/weekly-calendar';
+import { addCalendarDays, mondayOf } from '../ai-planner/weekly-calendar';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitWorkoutFeedbackDto } from './dto/submit-workout-feedback.dto';
 import { CompleteWorkoutDto } from './dto/complete-workout.dto';
@@ -364,6 +365,10 @@ export class WorkoutsService {
     input: UpdateWorkoutDto,
   ): Promise<WorkoutModel> {
     const updated = await this.prisma.$transaction(async (tx) => {
+      // Lock before reading availability so concurrent moves cannot claim the same day.
+      if (input.date !== undefined) {
+        await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      }
       await this.lockWeek(tx, userId, workoutId);
       const workout = await tx.workout.findFirst({
         where: { id: workoutId, userId },
@@ -383,6 +388,32 @@ export class WorkoutsService {
         const origin = week?.weekStartDate ?? workout.dateScheduled;
         if (Number.isNaN(date.getTime()) || +mondayOf(date) !== +mondayOf(origin)) {
           throw new BadRequestException('Só é possível reagendar treinos dentro da mesma semana.');
+        }
+
+        const day = addCalendarDays(date, 0);
+        if (+day !== +addCalendarDays(workout.dateScheduled, 0)) {
+          if (workout.status !== 'scheduled' || workout.sportType === 'other') {
+            throw new CodedConflictException(
+              ErrorCode.WORKOUT_NOT_RESCHEDULABLE,
+              'Só é possível reagendar treinos agendados.',
+            );
+          }
+          const occupied = await tx.workout.findFirst({
+            where: {
+              userId,
+              trainingPlanId: workout.trainingPlanId,
+              id: { not: workoutId },
+              sportType: { not: 'other' },
+              dateScheduled: { gte: day, lt: addCalendarDays(day, 1) },
+            },
+            select: { id: true },
+          });
+          if (occupied) {
+            throw new CodedConflictException(
+              ErrorCode.WORKOUT_DATE_OCCUPIED,
+              'Já existe um treino neste dia. Escolha um dia vazio.',
+            );
+          }
         }
       }
 
