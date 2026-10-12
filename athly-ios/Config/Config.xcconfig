@@ -14,9 +14,10 @@ REVENUECAT_API_KEY = appl_GoaAgGdMCiQKCbhahvSfRpwIBoV
 // Login com Google (SDK GoogleSignIn). Valores do OAuth client do tipo "iOS" no Google Cloud.
 // GOOGLE_IOS_CLIENT_ID:      1234567890-abc.apps.googleusercontent.com
 // GOOGLE_REVERSED_CLIENT_ID: o mesmo invertido -> com.googleusercontent.apps.1234567890-abc
-// Substitua pelos valores reais (podem ir no binário — não são segredos).
-GOOGLE_IOS_CLIENT_ID = REPLACE_WITH_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com
-GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.REPLACE_WITH_GOOGLE_IOS_CLIENT_ID
+// Cliente iOS do projeto Google Cloud gmp-demo-project-909909498, bundle com.athly.runner.
+// Estes identificadores são públicos e podem ir no binário.
+GOOGLE_IOS_CLIENT_ID = 40175575138-7hg95l3uog7q4fh1rql30lj6f2m8cj8j.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.40175575138-7hg95l3uog7q4fh1rql30lj6f2m8cj8j
 
 #include "OTel.xcconfig"
 
