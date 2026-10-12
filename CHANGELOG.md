@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/AthlyProject/athly-project/compare/v1.5.0...v1.5.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **ios:** configure Google OAuth client ([55572e0](https://github.com/AthlyProject/athly-project/commit/55572e000e1f88188da87dd17fceadab8153a579))
+
 # [1.5.0](https://github.com/AthlyProject/athly-project/compare/v1.4.0...v1.5.0) (2026-10-11)
 
 
