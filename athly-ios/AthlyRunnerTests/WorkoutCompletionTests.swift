@@ -138,7 +138,9 @@ final class WorkoutCompletionTests: XCTestCase {
             requests += 1
             if requests <= 2 { throw URLError(.timedOut) }
             return done
-        }, fetchHealthRun: { _ in XCTFail("Local-only import must not depend on HealthKit"); return nil }, links: links))
+        }, fetchHealthRun: { _ in XCTFail("Local-only import must not depend on HealthKit"); return nil },
+        prepareHealthAuthorization: { XCTFail("Local-only import must not request authorization") },
+        findEquivalentHealthRun: { _ in XCTFail("Local-only import must not query HealthKit"); return nil }, links: links))
         vm.allWorkouts = [pending]
         for _ in 0..<2 {
             assertFailure(await vm.completeWorkoutWithImportedData(pending, imported: imported,
@@ -166,7 +168,7 @@ final class WorkoutCompletionTests: XCTestCase {
             requests += 1
             XCTAssertNil(uuid)
             return done
-        }, fetchHealthRun: { _ in reads += 1; return nil }, links: links))
+        }, fetchHealthRun: { _ in reads += 1; return nil }, prepareHealthAuthorization: {}, links: links))
         vm.allWorkouts = [pending]
         guard case .healthKitFallbackRequired = await vm.completeWorkoutWithImportedData(pending,
             imported: imported, saveToHealthKit: true, fallback: .ask, runStore: runs) else { return XCTFail() }
@@ -177,6 +179,80 @@ final class WorkoutCompletionTests: XCTestCase {
         XCTAssertEqual(requests, 1)
         XCTAssertEqual(runs.sessions.count, 1)
         XCTAssertEqual(vm.allWorkouts.first?.status, .done)
+    }
+
+    func testImportPreparesBeforeLookingUpAndPreservesExistingUUIDOnRepeat() async throws {
+        let pending = try workout(), done = try workout(status: "done", uuid: "ABC")
+        var events: [String] = []
+        let vm = TrainingPlanViewModel(completionDependencies: WorkoutCompletionDependencies(request: { _, uuid, _, _, _ in
+            events.append("complete")
+            XCTAssertEqual(uuid, "ABC")
+            return done
+        }, fetchHealthRun: { uuid in
+            events.append("read")
+            XCTAssertEqual(uuid, "ABC")
+            return self.healthRun
+        }, prepareHealthAuthorization: { events.append("prepare") }, findEquivalentHealthRun: { _ in
+            events.append("match")
+            return "ABC"
+        }, links: links))
+        vm.allWorkouts = [pending]
+        for _ in 0..<2 {
+            guard case .success = await vm.completeWorkoutWithImportedData(pending, imported: imported,
+                saveToHealthKit: true, fallback: .ask, runStore: runs) else { return XCTFail() }
+        }
+        XCTAssertEqual(events, ["prepare", "match", "read", "complete", "prepare", "read", "complete"])
+        XCTAssertEqual(runs.sessions.count, 1)
+        XCTAssertEqual(runs.sessions.first?.healthKitWorkoutUUID, "ABC")
+        XCTAssertEqual(links.healthKitUUID(forAthlyWorkoutId: pending.id)?.uppercased(), "ABC")
+    }
+
+    func testImportAuthorizationFailureStopsBeforeLookupOrLocalMutation() async throws {
+        let pending = try workout()
+        let vm = TrainingPlanViewModel(completionDependencies: WorkoutCompletionDependencies(request: { _, _, _, _, _ in
+            XCTFail("Failed preparation must not complete the workout"); return pending
+        }, fetchHealthRun: { _ in XCTFail("Do not read before preparation"); return nil },
+        prepareHealthAuthorization: { throw HealthKitAuthorizationPreparationError.unknownStatus },
+        findEquivalentHealthRun: { _ in XCTFail("Do not match before preparation"); return nil }, links: links))
+        vm.allWorkouts = [pending]
+        assertFailure(await vm.completeWorkoutWithImportedData(pending, imported: imported,
+            saveToHealthKit: true, fallback: .ask, runStore: runs))
+        XCTAssertTrue(runs.sessions.isEmpty)
+        XCTAssertEqual(vm.allWorkouts.first?.status, .scheduled)
+    }
+
+    func testEquivalentLookupErrorDoesNotBecomeANewWorkout() async throws {
+        let pending = try workout()
+        let vm = TrainingPlanViewModel(completionDependencies: WorkoutCompletionDependencies(request: { _, _, _, _, _ in
+            XCTFail("Query failure must not complete the workout"); return pending
+        }, fetchHealthRun: { _ in XCTFail("No match was found"); return nil }, prepareHealthAuthorization: {},
+        findEquivalentHealthRun: { _ in throw NSError(domain: "HKErrorDomain", code: 6) }, links: links))
+        vm.allWorkouts = [pending]
+        assertFailure(await vm.completeWorkoutWithImportedData(pending, imported: imported,
+            saveToHealthKit: true, fallback: .ask, runStore: runs))
+        XCTAssertTrue(runs.sessions.isEmpty)
+        XCTAssertNil(links.healthKitUUID(forAthlyWorkoutId: pending.id))
+    }
+
+    func testLinkedLookupErrorPreservesLinkAndDoesNotOfferOrCreateCopy() async throws {
+        let pending = try workout()
+        links.link(healthKitUUID: "ABC", athlyWorkoutId: pending.id)
+        let session = runs.upsert(imported: imported, athlyWorkoutId: pending.id)
+        session.healthKitWorkoutUUID = "ABC"
+        runs.update(session)
+        let vm = TrainingPlanViewModel(completionDependencies: WorkoutCompletionDependencies(request: { _, _, _, _, _ in
+            XCTFail("Query failure must not complete the workout"); return pending
+        }, fetchHealthRun: { _ in throw NSError(domain: "HKErrorDomain", code: 6) }, prepareHealthAuthorization: {},
+        findEquivalentHealthRun: { _ in XCTFail("An existing link must be reused"); return nil }, links: links))
+        vm.allWorkouts = [pending]
+        for fallback in [ImportedWorkoutHealthKitFallback.ask, .createCopy] {
+            assertFailure(await vm.completeWorkoutWithImportedData(pending, imported: imported,
+                saveToHealthKit: true, fallback: fallback, runStore: runs))
+        }
+        XCTAssertEqual(runs.sessions.count, 1)
+        XCTAssertEqual(runs.sessions.first?.healthKitWorkoutUUID, "ABC")
+        XCTAssertEqual(links.healthKitUUID(forAthlyWorkoutId: pending.id)?.uppercased(), "ABC")
+        XCTAssertEqual(vm.allWorkouts.first?.status, .scheduled)
     }
 
     func testFreshServerStateRepairsLegacyLinksWithoutRemovingRecordedActivity() async throws {

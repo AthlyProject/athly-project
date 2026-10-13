@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C904BD91DA634809B184B811 /* HealthKitAuthorizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */; };
 		D7A3CB6FE5144DF7956BCE11 /* WorkoutCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */; };
 		0365DDE0D12FD9921E153C17 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771F104A20AD0B32E98D4010 /* HistoryView.swift */; };
 		09E7AF563A2725DBBB6D3163 /* OpenTelemetryProtocolExporterHTTP in Frameworks */ = {isa = PBXBuildFile; productRef = DFFD306993612933E53FC52A /* OpenTelemetryProtocolExporterHTTP */; };
@@ -217,6 +218,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitAuthorizationTests.swift; sourceTree = "<group>"; };
 		D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCompletionTests.swift; sourceTree = "<group>"; };
 		0192367746B3C25C781AE6AD /* AthlyWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyWebView.swift; sourceTree = "<group>"; };
 		03D63F8FA8D5D21765CDAAFA /* AthlyRunner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AthlyRunner.entitlements; sourceTree = "<group>"; };
@@ -565,6 +567,7 @@
 				B47FE14A1B57EC51BA14F484 /* WorkoutModelDateTests.swift */,
 				8CFEDC5A0FF613955F58ED12 /* WorkoutReschedulingTests.swift */,
 				D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */,
+				C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */,
 				423FFE7AAB42199A780B472F /* WorkoutSegmentationEngineTests.swift */,
 			);
 			path = AthlyRunnerTests;
@@ -961,6 +964,7 @@
 				53C502692C7CDF191D6001BB /* WorkoutModelDateTests.swift in Sources */,
 				4569825299AEE162C7EA06A9 /* WorkoutReschedulingTests.swift in Sources */,
 				D7A3CB6FE5144DF7956BCE11 /* WorkoutCompletionTests.swift in Sources */,
+				C904BD91DA634809B184B811 /* HealthKitAuthorizationTests.swift in Sources */,
 				ACD4680D762031EC32CB8267 /* WorkoutSegmentationEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

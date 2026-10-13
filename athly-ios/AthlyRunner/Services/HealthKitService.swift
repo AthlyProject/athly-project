@@ -52,13 +52,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
     /// Todos os tipos são pedidos juntos porque o HealthKit exige `workoutType()` no mesmo
     /// pedido de `workoutRoute()`. O usuário ainda pode autorizar cada categoria separadamente.
     static var writeAuthorizationTypes: Set<HKSampleType> {
-        [
-            HKObjectType.workoutType(),
-            HKSeriesType.workoutRoute(),
-            energyType,
-            distanceType,
-            heartRateType
-        ]
+        HealthKitAuthorizationRequest.current.share
     }
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
     private static let zeppDiagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "ZeppWorkout")
@@ -98,22 +92,12 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
 
 
 
-    /// Solicita apenas permissão de leitura para listar corridas existentes + HR para análise detalhada.
-    /// HealthKit não expõe status de permissão de leitura por tipo; chamar novamente é seguro e
-    /// permite que novos tipos adicionados pelo app sejam solicitados quando necessário.
+    /// Prepara a conexão conjunta. Recusar escrita não impede o uso das leituras autorizadas.
     func requestReadAuthorization() async throws {
         guard isHealthDataAvailable else {
             throw HealthKitError.notAvailable
         }
-        var typesToRead: Set<HKObjectType> = [
-            HKObjectType.workoutType(),
-            HKSeriesType.workoutRoute(),
-            HKQuantityType(.restingHeartRate),
-        ]
-        if let hrType = HKObjectType.quantityType(forIdentifier: .heartRate) {
-            typesToRead.insert(hrType)
-        }
-        try await store.requestAuthorization(toShare: [], read: typesToRead)
+        try await HealthKitAuthorizationCoordinator.shared.prepare()
     }
 
     func requestHeartRateReadAuthorization() async throws {
@@ -149,13 +133,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
     /// Estado atual de escrita. O HealthKit permite consultar escrita por tipo,
     /// ao contrário da leitura, cujo estado é deliberadamente privado.
     func writeAuthorizationSnapshot() -> HealthKitWriteAuthorizationSnapshot {
-        HealthKitWriteAuthorizationSnapshot(
-            workout: store.authorizationStatus(for: HKObjectType.workoutType()),
-            route: store.authorizationStatus(for: HKSeriesType.workoutRoute()),
-            distance: store.authorizationStatus(for: Self.distanceType),
-            energy: store.authorizationStatus(for: Self.energyType),
-            heartRate: store.authorizationStatus(for: Self.heartRateType)
-        )
+        HealthKitWriteAuthorizationSnapshot(store: store)
     }
 
     /// Solicita permissão de escrita com base no estado do próprio HealthKit.
@@ -168,30 +146,10 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
             throw HealthKitError.notAvailable
         }
 
-        let requestStatus = try await writeAuthorizationRequestStatus()
-        if requestStatus == .shouldRequest || requestStatus == .unknown {
-            try await store.requestAuthorization(toShare: Self.writeAuthorizationTypes, read: [])
-        }
-
-        let snapshot = writeAuthorizationSnapshot()
+        let snapshot = try await HealthKitAuthorizationCoordinator.shared.prepareForWriting()
         logWriteAuthorizationStatus(context: "requestWriteAuthorization", snapshot: snapshot)
 
-        guard snapshot.canWriteWorkout else {
-            throw HealthKitError.writeDenied
-        }
         return snapshot
-    }
-
-    private func writeAuthorizationRequestStatus() async throws -> HKAuthorizationRequestStatus {
-        try await withCheckedThrowingContinuation { continuation in
-            store.getRequestStatusForAuthorization(toShare: Self.writeAuthorizationTypes, read: []) { status, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: status)
-                }
-            }
-        }
     }
 
     private func isSharingAuthorized(_ type: HKObjectType) -> Bool {
@@ -468,15 +426,13 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
     /// aceitos na lista (ex.: Zepp/Amazfit gravados como `.other`) também resolvam por UUID.
     func fetchRunningWorkout(uuid workoutUUID: String) async throws -> HealthKitRunItem? {
         try await HealthReadPool.shared.read("run-" + workoutUUID.lowercased()) {
-            if let item = await self.readRunningWorkout(uuid: workoutUUID) { return [item] }
+            if let item = try await self.readRunningWorkout(uuid: workoutUUID) { return [item] }
             return []
         }.first
     }
 
-    private func readRunningWorkout(uuid workoutUUID: String) async -> HealthKitRunItem? {
-        guard isHealthDataAvailable,
-              let uuid = UUID(uuidString: workoutUUID),
-              let workout = await fetchWorkout(uuid: uuid),
+    private func readRunningWorkout(uuid workoutUUID: String) async throws -> HealthKitRunItem? {
+        guard let workout = try await fetchRawWorkout(uuid: workoutUUID),
               isRunningWorkoutCandidate(workout) else {
             return nil
         }
@@ -548,19 +504,20 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
         ).first
     }
 
-    /// Best-effort duplicate lookup used before importing a historical file. HealthKit objects
+    /// Duplicate lookup used before importing a historical file. Query errors must not mean absence.
+    /// HealthKit objects
     /// owned by Zepp/another app are reused, never modified.
-    func findEquivalentWorkout(for result: RunResult) async -> HKWorkout? {
-        guard isHealthDataAvailable else { return nil }
+    func findEquivalentWorkout(for result: RunResult) async throws -> HKWorkout? {
+        guard isHealthDataAvailable else { throw HealthKitError.notAvailable }
         let start = result.startDate.addingTimeInterval(-180)
         let end = result.endDate.addingTimeInterval(180)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
-        let workouts = (try? await queryWorkouts(
+        let workouts = try await queryWorkouts(
             sampleType: HKObjectType.workoutType(),
             predicate: predicate,
             limit: HKObjectQueryNoLimit,
             sortDescriptors: nil
-        )) ?? []
+        )
 
         if let fingerprint = result.importFingerprint,
            let exact = workouts.first(where: {
@@ -583,8 +540,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
 
     /// Busca o UUID de uma corrida equivalente sem criar ou modificar objetos no HealthKit.
     /// Usado pelo importador para preferir o registro Garmin/Zepp que já existe.
-    func findEquivalentWorkoutUUID(for imported: ImportedWorkout) async -> String? {
-        await findEquivalentWorkout(for: imported.runResult)?.uuid.uuidString
+    func findEquivalentWorkoutUUID(for imported: ImportedWorkout) async throws -> String? {
+        try await findEquivalentWorkout(for: imported.runResult)?.uuid.uuidString
     }
 
     /// Anexa a rota de um arquivo normalizado a um workout já salvo. A operação preserva o
@@ -594,8 +551,20 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
     /// antes de qualquer escrita e recusamos adicionar uma segunda rota.
     @discardableResult
     func attachImportedRoute(_ imported: ImportedWorkout, toWorkoutUUID workoutUUID: String) async throws -> String {
+        let started = Date()
+        do {
+            let uuid = try await performImportedRouteAttachment(imported, toWorkoutUUID: workoutUUID)
+            Self.writeLogger.notice("[RouteEnrichment] completed durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
+            return uuid
+        } catch {
+            let nsError = error as NSError
+            Self.writeLogger.error("[RouteEnrichment] failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
+            throw error
+        }
+    }
+
+    private func performImportedRouteAttachment(_ imported: ImportedWorkout, toWorkoutUUID workoutUUID: String) async throws -> String {
         guard imported.hasRoute else { throw HealthKitError.importedRouteMissing }
-        try await requestReadAuthorization()
         let authorization = try await requestWriteAuthorization()
         guard authorization.route == .sharingAuthorized else { throw HealthKitError.routeWriteDenied }
         guard let workout = try await fetchRawWorkout(uuid: workoutUUID) else {
@@ -614,7 +583,7 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
             throw HealthKitError.importedWorkoutMismatch(match.localizedSummary)
         }
 
-        if !(await fetchRoutes(for: workout)).isEmpty {
+        if !(try await queryRoutes(for: workout)).isEmpty {
             return workout.uuid.uuidString
         }
 
@@ -644,7 +613,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
         } catch let error as HealthKitError {
             throw error
         } catch {
-            Self.writeLogger.error("Failed to attach imported route: \(error.localizedDescription, privacy: .public)")
+            let nsError = error as NSError
+            Self.writeLogger.error("Failed to attach imported route: domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)")
             throw HealthKitError.routeAttachmentFailed(error.localizedDescription)
         }
     }
@@ -920,7 +890,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKWorkout] {
-        try await withCheckedThrowingContinuation { continuation in
+        let started = Date()
+        return try await withCheckedThrowingContinuation { continuation in
             let query = HKSampleQuery(
                 sampleType: sampleType,
                 predicate: predicate,
@@ -928,10 +899,14 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
                 sortDescriptors: sortDescriptors
             ) { _, samples, error in
                 if let error {
+                    let nsError = error as NSError
+                    Self.diagLogger.error("[WorkoutLookup] failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
                     continuation.resume(throwing: error)
                     return
                 }
-                continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+                let workouts = (samples as? [HKWorkout]) ?? []
+                Self.diagLogger.notice("[WorkoutLookup] count=\(workouts.count, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
+                continuation.resume(returning: workouts)
             }
             store.execute(query)
         }
@@ -1297,15 +1272,29 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
     }
 
     private func fetchRoutes(for workout: HKWorkout) async -> [HKWorkoutRoute] {
-        await withCheckedContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Never>) in
+        (try? await queryRoutes(for: workout)) ?? []
+    }
+
+    /// Enrichment must stop on a failed route query rather than adding a possible duplicate.
+    private func queryRoutes(for workout: HKWorkout) async throws -> [HKWorkoutRoute] {
+        let started = Date()
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[HKWorkoutRoute], Error>) in
             let predicate = HKQuery.predicateForObjects(from: workout)
             let query = HKAnchoredObjectQuery(
                 type: HKSeriesType.workoutRoute(),
                 predicate: predicate,
                 anchor: nil,
                 limit: HKObjectQueryNoLimit
-            ) { _, samples, _, _, _ in
-                cont.resume(returning: (samples as? [HKWorkoutRoute]) ?? [])
+            ) { _, samples, _, _, error in
+                if let error {
+                    let nsError = error as NSError
+                    Self.diagLogger.error("[RouteLookup] failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
+                    cont.resume(throwing: error)
+                } else {
+                    let routes = (samples as? [HKWorkoutRoute]) ?? []
+                    Self.diagLogger.notice("[RouteLookup] count=\(routes.count, privacy: .public) durationMs=\(Int(Date().timeIntervalSince(started) * 1000), privacy: .public)")
+                    cont.resume(returning: routes)
+                }
             }
             store.execute(query)
         }
@@ -1354,8 +1343,8 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
         runStore.update(session)
 
         do {
-            try? await requestReadAuthorization()
-            if let equivalent = await findEquivalentWorkout(for: result) {
+            try await requestReadAuthorization()
+            if let equivalent = try await findEquivalentWorkout(for: result) {
                 let uuid = equivalent.uuid.uuidString
                 let linkedWorkoutId = RunWorkoutLinkStore.shared.athlyWorkoutId(for: uuid)
                 if linkedWorkoutId == nil || linkedWorkoutId == session.athlyWorkoutId {

@@ -22,6 +22,8 @@ struct PlanLoadDependencies {
 }
 
 struct WorkoutCompletionDependencies {
+    var prepareHealthAuthorization: @MainActor () async throws -> Void
+    var findEquivalentHealthRun: @MainActor (ImportedWorkout) async throws -> String?
     var request: @MainActor (String, String?, Double?, Double?, DetailedSessionPayload?) async throws -> WorkoutModel = {
         try await APIClient.shared.completeWorkout(workoutId: $0, appleHealthWorkoutUUID: $1,
             actualDistanceMeters: $2, actualDurationSeconds: $3, executionDetails: $4)
@@ -36,9 +38,15 @@ struct WorkoutCompletionDependencies {
         try await APIClient.shared.completeWorkout(workoutId: $0, appleHealthWorkoutUUID: $1, actualDistanceMeters: $2, actualDurationSeconds: $3, executionDetails: $4)
     }, fetchHealthRun: @escaping @MainActor (String) async throws -> HealthKitRunItem? = {
         try await HealthKitService().fetchRunningWorkout(uuid: $0)
+    }, prepareHealthAuthorization: @escaping @MainActor () async throws -> Void = {
+        try await HealthKitService().requestReadAuthorization()
+    }, findEquivalentHealthRun: @escaping @MainActor (ImportedWorkout) async throws -> String? = {
+        try await HealthKitService().findEquivalentWorkoutUUID(for: $0)
     }, links: RunWorkoutLinkStore? = nil) {
         self.request = request
         self.fetchHealthRun = fetchHealthRun
+        self.prepareHealthAuthorization = prepareHealthAuthorization
+        self.findEquivalentHealthRun = findEquivalentHealthRun
         self.injectedLinks = links
     }
 }
@@ -574,17 +582,30 @@ final class TrainingPlanViewModel: ObservableObject {
         // Keeping the imported file locally must work even if HealthKit is unreadable.
         if localOnly { healthKitUUID = workout.appleHealthWorkoutUUID }
 
-        if healthKitUUID == nil, !localOnly {
-            healthKitUUID = await healthService.findEquivalentWorkoutUUID(for: imported)
-        }
-
         var healthSummary: HealthKitRunItem?
-        if let uuid = healthKitUUID, !localOnly {
-            healthSummary = try? await completionDependencies.fetchHealthRun(uuid)
-            if healthSummary == nil && fallback == .ask {
-                return .healthKitFallbackRequired(String(localized: "A corrida vinculada não foi encontrada no Apple Health."))
+        if !localOnly {
+            do {
+                try await completionDependencies.prepareHealthAuthorization()
+                try Task.checkCancellation()
+                if healthKitUUID == nil {
+                    healthKitUUID = try await completionDependencies.findEquivalentHealthRun(imported)
+                }
+                if let uuid = healthKitUUID {
+                    healthSummary = try await completionDependencies.fetchHealthRun(uuid)
+                    if healthSummary == nil && fallback == .ask {
+                        return .healthKitFallbackRequired(String(localized: "A corrida vinculada não foi encontrada no Apple Health."))
+                    }
+                    if healthSummary == nil { healthKitUUID = nil }
+                }
+                try Task.checkCancellation()
+            } catch is CancellationError {
+                return .failure(String(localized: "Operação cancelada."))
+            } catch {
+                let nsError = error as NSError
+                Self.segmentationLogger.error("[ImportedWorkoutLookup] failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)")
+                // A failed lookup is not evidence that creating a new workout is safe.
+                return .failure(error.localizedDescription)
             }
-            if healthSummary == nil { healthKitUUID = nil }
         }
         if let healthSummary {
             let match = ImportedWorkoutMatch.evaluate(
