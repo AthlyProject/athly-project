@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/AthlyProject/athly-project/compare/v1.5.1...v1.5.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **ios:** coordinate HealthKit authorization and preserve import errors ([5504a24](https://github.com/AthlyProject/athly-project/commit/5504a2401c955bfa52c1c4ce090fdf55a74b6c65))
+
 ## [1.5.1](https://github.com/AthlyProject/athly-project/compare/v1.5.0...v1.5.1) (2026-10-12)
 
 
