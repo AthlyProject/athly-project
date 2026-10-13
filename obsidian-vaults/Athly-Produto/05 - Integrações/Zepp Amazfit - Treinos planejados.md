@@ -6,6 +6,13 @@ created: 2026-07-14
 
 # Zepp/Amazfit — Treinos planejados
 
+> Atualização em 12/10/2026: a documentação oficial hoje descreve a
+> [Workout API](https://devopen.zepp.com/docs/data-apis/workout-api), incluindo
+> envio de treinos em janelas de sete dias. A conclusão abaixo é o registro da
+> pesquisa de julho e está superada quanto à ausência de endpoint documentado.
+> Acesso de parceiro e suporte no Active 3 Premium ainda não foram validados.
+> Veja [[Zepp Amazfit - API oficial de atividades]].
+
 ## Pergunta
 
 Conseguimos importar os treinos planejados gerados no Athly para o Zepp/Amazfit Active 3 Premium como treinos executáveis no relógio?

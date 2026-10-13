@@ -20,6 +20,7 @@ Documentação detalhada de integrações do Athly.
 ## Zepp/Amazfit
 
 - [[Zepp Amazfit - Treinos planejados]] — Viabilidade Athly → Active 3 Premium
+- [[Zepp Amazfit - API oficial de atividades]] — Pesquisa de 12/10/2026: OAuth, entrega FIT e acesso de parceiro
 
 ## IA (Geração de Planos)
 
