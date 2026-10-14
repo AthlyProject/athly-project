@@ -428,7 +428,7 @@ Receitas canônicas — adapte distâncias, paces e durações aos dados do atle
 "segments": [
   { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
   { "id": "set-main", "kind": "set", "label": "6×400m", "repetitions": 6, "children": [
-    { "id": "work", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280, "paceSecPerKmMax": 295 } },
+    { "id": "work", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 278, "paceSecPerKmMax": 298 } },
     { "id": "rec", "kind": "recovery", "label": "Recuperação", "end": { "by": "durationSec", "value": 90 }, "target": { "rpe": 3 } }
   ] },
   { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
@@ -437,7 +437,7 @@ Receitas canônicas — adapte distâncias, paces e durações aos dados do atle
 (2) Tempo run 20min em limiar:
 "segments": [
   { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
-  { "id": "tempo", "kind": "work", "label": "Tempo run", "end": { "by": "durationSec", "value": 1200 }, "target": { "paceSecPerKmMin": 330, "paceSecPerKmMax": 345, "rpe": 7 } },
+  { "id": "tempo", "kind": "work", "label": "Tempo run", "end": { "by": "durationSec", "value": 1200 }, "target": { "paceSecPerKmMin": 328, "paceSecPerKmMax": 348, "rpe": 7 } },
   { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
 ]
 
@@ -478,6 +478,7 @@ const SEGMENT_CONSTRAINTS_PLANNER = `
 - Em sessões de intervalo: ENVOLVA as repetições em um nó "set" com repetitions correto e children = [work, recovery]. NÃO descreva o intervalo em texto.
 - Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".
 - Preencha target.paceSecPerKmMin/Max a partir das zonas de pace personalizadas (converta M:SS para segundos: 5:00 → 300, 4:50 → 290). As zonas são a referência primária; NÃO invente números fora de uma âncora real (zona OU pace real observado).
+- LARGURA DA FAIXA DE PACE: paceSecPerKmMax − paceSecPerKmMin deve ser de pelo menos 20 s/km (ou 6% do pace, o que for maior) — inclusive em tiros e treinos de potência. O pace do GPS oscila ±5–10 s/km, então uma faixa de 10 s (ex.: 5:10–5:20) é impossível de seguir no relógio. Centralize a faixa no pace alvo (alvo 5:15 → 5:05–5:25).
 - CALIBRAÇÃO PELO DESEMPENHO REAL: se o "executionAnalysis.mainPace" (bloco principal) ou "meanRepPace" (tiros) em <recentSessionsDetail> for MAIS RÁPIDO do que a zona correspondente sugere, a estimativa de VDOT está subestimando o atleta — prescreva pela capacidade real observada: tempo/limiar ≈ mainPace de tempo runs recentes; intervalos ≈ meanRepPace recente; easy ≈ 60–90s/km mais lento que o pace de limiar observado. NUNCA prescreva um treino de qualidade mais lento do que o atleta já demonstrou correr confortavelmente.
 - ATLETA ADERENTE E COMPETITIVO: se a semana anterior teve aderência >= 90%, fadiga média <= 5/10, sem overreach, e os tiros recentes foram mais rápidos do que a zona de intervalo/repetição, use 95–100% do "Volume máximo planejado desta semana" e prescreva o treino-chave no lado agressivo, porém controlado, da capacidade observada. Progrida UMA variável por vez: aumente distância dos tiros, OU número de repetições, OU aperte levemente o pace; NUNCA aumente distância, repetições e pace ao mesmo tempo.
 - ESPECIFICIDADE DO OBJETIVO: quando a tentativa do objetivo ainda não for viável por falta de sustentação, não responda com esforços muito fáceis só porque o pace contínuo recente está longe do alvo. Escolha treinos que aproximem progressivamente o atleta da demanda específica do objetivo: para metas curtas, aumente gradualmente a duração/distância dos tiros em ritmo próximo ao alvo; para metas médias/longas, aumente blocos de ritmo controlado, tempo/limiar e volume fácil. Se o atleta já executou repetições curtas bem mais rápidas que o ritmo-alvo com RPE controlado, prefira alongar as repetições ou reduzir a recuperação antes de tornar o pace conservador demais.

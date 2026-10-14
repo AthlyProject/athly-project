@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { RunTarget, Segment, SegmentKind } from '../../workouts/types/segment.types';
 import { extractSegmentTree } from '../../workouts/utils/extract-segment-tree';
-import { paceRangeOf } from '../../workouts/utils/pace-range';
+import { paceRangeOf, widenPaceRange } from '../../workouts/utils/pace-range';
 import { validateSegmentTree } from '../../workouts/utils/validate-segments';
 import {
   ENCODER_VERSION,
@@ -117,10 +117,12 @@ const targetOf = (
       : undefined;
   if (typeof target?.rpe === 'number' && target.rpe > 0) notes.push(`RPE ${target.rpe}`);
 
-  const pace = paceRangeOf(
+  const raw = paceRangeOf(
     [target?.paceSecPerKmMin, target?.paceSecPerKmMax].filter(isPlausiblePace),
     SINGLE_PACE_PAD_SEC,
   );
+  // Treinos antigos podem ter faixas de 10 s — inviáveis de seguir com o pace do GPS.
+  const pace = raw && widenPaceRange(raw);
   if (pace) {
     if (zone) notes.unshift(`Z${zone}`);
     return {

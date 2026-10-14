@@ -30,6 +30,7 @@ import {
   validateSegmentTree,
   isStructurallyCompleteRun,
 } from '../workouts/utils/validate-segments';
+import { widenSegmentPaceTargets } from '../workouts/utils/pace-range';
 
 export interface PlannerExecution {
   prompt: string;
@@ -444,7 +445,8 @@ export class GeminiService {
   /**
    * Defensive final pass on an accepted plan: warns on missing reasoning and zeroes
    * any still-invalid tree (only reachable for non-gated "other" days) so the iOS
-   * legacy `blocks` renderer can take over for that single day.
+   * legacy `blocks` renderer can take over for that single day. Also widens pace
+   * ranges too tight to follow with GPS pace (e.g. 5:10–5:20).
    */
   private finalizeSegments(weekPlan: WorkoutDay[]): void {
     for (const day of weekPlan) {
@@ -457,7 +459,9 @@ export class GeminiService {
           `Workout "${day.title}" on ${day.date} returned an invalid segments tree (${result.reason}); falling back to legacy blocks for this day.`,
         );
         day.segments = [];
+        continue;
       }
+      if (day.sportType === 'running') widenSegmentPaceTargets(day.segments);
     }
   }
 

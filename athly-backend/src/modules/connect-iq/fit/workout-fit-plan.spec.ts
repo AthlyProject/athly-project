@@ -87,8 +87,9 @@ describe('buildFitPlan', () => {
             durationValue: 40_000,
             targetType: 'speed',
             targetValue: 0,
-            customTargetValueLow: 3390,
-            customTargetValueHigh: 3571,
+            // 280–295 (15 s) alargada para 277–298 (20 s)
+            customTargetValueLow: 3356,
+            customTargetValueHigh: 3610,
           },
           {
             wktStepName: 'Recuperação',
@@ -120,7 +121,17 @@ describe('buildFitPlan', () => {
 
   it('acolchoa pace único quando só o máximo vem preenchido', () => {
     const [step] = stepsOf([work({ paceSecPerKmMax: 360 })]);
-    expect(step).toMatchObject({ customTargetValueLow: 2703, customTargetValueHigh: 2857 });
+    // ±10 s daria 20 s; em 6:00/km o mínimo é 6% (22 s) → 349–371 s/km
+    expect(step).toMatchObject({ customTargetValueLow: 2695, customTargetValueHigh: 2865 });
+  });
+
+  it('alarga faixa de 10 s, inviável de seguir com o pace do GPS', () => {
+    const [step] = stepsOf([work({ paceSecPerKmMin: 310, paceSecPerKmMax: 320 })]);
+    // 5:10–5:20 → 5:05–5:25 (305–325 s/km)
+    expect(step).toMatchObject({
+      customTargetValueLow: Math.round(1_000_000 / 325),
+      customTargetValueHigh: Math.round(1_000_000 / 305),
+    });
   });
 
   it('corrige limites invertidos (mínimo maior que o máximo)', () => {

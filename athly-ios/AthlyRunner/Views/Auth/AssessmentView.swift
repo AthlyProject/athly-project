@@ -422,17 +422,19 @@ private extension AssessmentView {
 
 private extension AssessmentView {
     struct ObjectiveCard {
-        let emoji: String; let title: String; let subtitle: String
-        let value: String; let emojiBg: Color
+        let icon: String; let iconColor: Color; let title: String; let subtitle: String
+        let value: String; let iconBg: Color
     }
 
     static let objectiveCards: [ObjectiveCard] = [
-        .init(emoji: "🎯", title: String(localized: "Objetivo pessoal"),
+        .init(icon: "target", iconColor: Color(hex: "#0EA5E9"),
+              title: String(localized: "Objetivo pessoal"),
               subtitle: String(localized: "Definido por mim mesmo"),
-              value: "personal", emojiBg: Color(hex: "#0EA5E9").opacity(0.10)),
-        .init(emoji: "📈", title: String(localized: "Melhorar fitness e endurance"),
+              value: "personal", iconBg: Color(hex: "#0EA5E9").opacity(0.10)),
+        .init(icon: "chart.line.uptrend.xyaxis", iconColor: Color(hex: "#10B981"),
+              title: String(localized: "Melhorar fitness e endurance"),
               subtitle: String(localized: "Evoluir sem meta específica"),
-              value: "fitness",  emojiBg: Color(hex: "#10B981").opacity(0.10)),
+              value: "fitness",  iconBg: Color(hex: "#10B981").opacity(0.10)),
     ]
 
     var step6: some View {
@@ -452,9 +454,11 @@ private extension AssessmentView {
                     HStack(spacing: 12) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(card.emojiBg)
+                                .fill(card.iconBg)
                                 .frame(width: 44, height: 44)
-                            Text(card.emoji).font(.system(size: 22))
+                            Image(systemName: card.icon)
+                                .font(.system(size: 19, weight: .semibold))
+                                .foregroundStyle(card.iconColor)
                         }
                         VStack(alignment: .leading, spacing: 3) {
                             Text(card.title)
@@ -490,15 +494,15 @@ private extension AssessmentView {
 
 private extension AssessmentView {
     struct DistanceItem {
-        let emoji: String; let label: String; let description: String; let value: String
+        let icon: String; let label: String; let description: String; let value: String
     }
 
     static let distanceItems: [DistanceItem] = [
-        .init(emoji: "🏃", label: "5K",       description: String(localized: "5 quilômetros"),       value: "5k"),
-        .init(emoji: "🏃", label: "10K",      description: String(localized: "10 quilômetros"),      value: "10k"),
-        .init(emoji: "🏅", label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
-        .init(emoji: "🏆", label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
-        .init(emoji: "⚡", label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
+        .init(icon: "flag",       label: "5K",       description: String(localized: "5 quilômetros"),       value: "5k"),
+        .init(icon: "figure.run", label: "10K",      description: String(localized: "10 quilômetros"),      value: "10k"),
+        .init(icon: "rosette",    label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
+        .init(icon: "trophy",     label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
+        .init(icon: "bolt.fill",  label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
     ]
 
     var stepDistancia: some View {
@@ -510,8 +514,10 @@ private extension AssessmentView {
                 let sel = objectiveDistance == item.value
                 Button { objectiveDistance = item.value } label: {
                     VStack(spacing: 6) {
-                        Text(item.emoji)
-                            .font(.system(size: 28))
+                        Image(systemName: item.icon)
+                            .font(.system(size: 24, weight: .regular))
+                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
+                            .frame(height: 30)
                         Text(item.label)
                             .font(AthlyTheme.Typography.semibold(16))
                             .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
@@ -539,16 +545,18 @@ private extension AssessmentView {
 
 private extension AssessmentView {
     struct ObjectiveTypeItem {
-        let emoji: String; let title: String; let description: String; let value: String; let emojiBg: Color
+        let icon: String; let iconColor: Color; let title: String; let description: String; let value: String; let iconBg: Color
     }
 
     static let objectiveTypeItems: [ObjectiveTypeItem] = [
-        .init(emoji: "🤖", title: String(localized: "Workload adaptado pela IA"),
+        .init(icon: "cpu", iconColor: Color(hex: "#7C3AED"),
+              title: String(localized: "Workload adaptado pela IA"),
               description: String(localized: "A IA define a carga com base na sua evolução"),
-              value: "workload", emojiBg: Color(hex: "#7C3AED").opacity(0.10)),
-        .init(emoji: "⏱️", title: String(localized: "Tempo alvo"),
+              value: "workload", iconBg: Color(hex: "#7C3AED").opacity(0.10)),
+        .init(icon: "stopwatch", iconColor: Color(hex: "#F59E0B"),
+              title: String(localized: "Tempo alvo"),
               description: String(localized: "Defina um tempo e a IA cria um plano para você bater"),
-              value: "target_time", emojiBg: Color(hex: "#F59E0B").opacity(0.10)),
+              value: "target_time", iconBg: Color(hex: "#F59E0B").opacity(0.10)),
     ]
 
     var stepTipo: some View {
@@ -560,9 +568,11 @@ private extension AssessmentView {
                         HStack(spacing: 12) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(item.emojiBg)
+                                    .fill(item.iconBg)
                                     .frame(width: 44, height: 44)
-                                Text(item.emoji).font(.system(size: 22))
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 19, weight: .semibold))
+                                    .foregroundStyle(item.iconColor)
                             }
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(item.title)
