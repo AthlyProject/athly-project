@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/AthlyProject/athly-project/compare/v1.5.2...v1.5.3) (2026-10-14)
+
+
+### Bug Fixes
+
+* set wider target training ([1f4ced9](https://github.com/AthlyProject/athly-project/commit/1f4ced9671e69ea4dbccd065b7b525d42f5a3d2a))
+
 ## [1.5.2](https://github.com/AthlyProject/athly-project/compare/v1.5.1...v1.5.2) (2026-10-13)
 
 
