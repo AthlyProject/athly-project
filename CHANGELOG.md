@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/AthlyProject/athly-project/compare/v1.7.0...v1.8.0) (2026-10-15)
+
+
+### Features
+
+* garmin field ([2eee0d7](https://github.com/AthlyProject/athly-project/commit/2eee0d7a23a2c9f21797b22ba9af51ce67662cda))
+
 # [1.7.0](https://github.com/AthlyProject/athly-project/compare/v1.6.0...v1.7.0) (2026-10-15)
 
 
