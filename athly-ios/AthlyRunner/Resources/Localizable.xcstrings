@@ -74,6 +74,29 @@
     ":" : {
 
     },
+    "Abra a corrida no relógio" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne den Lauf auf der Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the run on the watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra a corrida no relógio"
+          }
+        }
+      }
+    },
     "Aceitar e continuar" : {
       "localizations" : {
         "de" : {
@@ -114,6 +137,144 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta."
+          }
+        }
+      }
+    },
+    "Adicione o campo a uma tela da corrida" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge das Feld einer Lauf-Datenseite hinzu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the field to a run data screen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicione o campo a uma tela da corrida"
+          }
+        }
+      }
+    },
+    "Campo de dados Athly" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly-Datenfeld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly data field"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campo de dados Athly"
+          }
+        }
+      }
+    },
+    "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit dem Datenfeld kommt dein Lauf wenige Minuten nach dem Speichern auf der Uhr bei Athly an (mit dem Handy in der Nähe) und erscheint, damit du ihn einem Training zuordnen kannst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the data field, your run reaches Athly a few minutes after you save it on the watch (with your phone nearby) and shows up for you to link to a workout."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino."
+          }
+        }
+      }
+    },
+    "Conectado · envia suas corridas" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden · sendet deine Läufe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · sends your runs"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado · envia suas corridas"
+          }
+        }
+      }
+    },
+    "Corrida no Garmin" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lauf mit Garmin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garmin run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida no Garmin"
+          }
+        }
+      }
+    },
+    "Instale o campo de dados Athly" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installiere das Athly-Datenfeld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install the Athly data field"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instale o campo de dados Athly"
           }
         }
       }
@@ -187,6 +348,75 @@
         }
       }
     },
+    "No relógio: Corrida › Configurações › Telas de dados" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf der Uhr: Laufen › Einstellungen › Datenseiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the watch: Run › Settings › Data Screens"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No relógio: Corrida › Configurações › Telas de dados"
+          }
+        }
+      }
+    },
+    "O campo de dados deixa de enviar suas corridas para a Athly." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Datenfeld sendet deine Läufe nicht mehr an Athly."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The data field stops sending your runs to Athly."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O campo de dados deixa de enviar suas corridas para a Athly."
+          }
+        }
+      }
+    },
+    "O campo mostra um código: digite abaixo" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Feld zeigt einen Code: Gib ihn unten ein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The field shows a code: enter it below"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O campo mostra um código: digite abaixo"
+          }
+        }
+      }
+    },
     "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade." : {
       "localizations" : {
         "de" : {
@@ -227,6 +457,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade."
+          }
+        }
+      }
+    },
+    "Rota e resultado de cada tiro" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strecke und Ergebnis jedes Intervalls"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route and result of each rep"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rota e resultado de cada tiro"
+          }
+        }
+      }
+    },
+    "Sua corrida do Garmin foi atribuída ao treino %@." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Garmin-Lauf wurde dem Training %@ zugeordnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Garmin run was assigned to the workout %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua corrida do Garmin foi atribuída ao treino %@."
           }
         }
       }
