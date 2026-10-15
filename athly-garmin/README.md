@@ -21,8 +21,9 @@ App iOS ──POST /connect-iq/pairings/claim {código}──► backend   (pare
   baixar treino FIT em background.
 - **Limites**: no máximo 7 treinos do app no relógio (a memória de treinos é pequena e dividida
   com os treinos do próprio atleta). No iPhone, o Garmin Connect precisa estar rodando.
-- Corridas feitas com esses treinos voltam para a Athly pelo fluxo atual (Garmin Connect → Apple
-  Health → detecção de corrida no app).
+- Corridas feitas com esses treinos voltam para a Athly pelo campo de dados (`field/`, com rota e
+  resultado de cada passo) ou, sem ele, pelo Garmin Connect → Apple Health (sem rota). Nos dois
+  casos o app abre o pop-up de corrida detectada.
 
 ## Estrutura
 
@@ -33,6 +34,7 @@ App iOS ──POST /connect-iq/pairings/claim {código}──► backend   (pare
 | `test/` | Testes unitários Monkey C (`(:test)`) |
 | `resources*/` | Textos em inglês (padrão), português (`resources-por`) e alemão (`resources-deu`) |
 | `spike/` | Phase 0: fixtures FIT, servidor de teste e app de spike para medir os relógios reais |
+| `field/` | Campo de dados (outro app Connect IQ): grava e envia a corrida feita — ver abaixo |
 
 Backend: `athly-backend/src/modules/connect-iq/`. App iOS: `athly-ios/AthlyRunner/Views/Profile/GarminConnectView.swift`.
 
@@ -110,6 +112,52 @@ para `GARMIN/APPS` (relógios usam MTP: no Mac, use o [OpenMTP](https://openmtp.
 ```bash
 monkeyc -f monkey.jungle -d fr970 -o bin/athly-fr970.prg -y ~/.garmin/athly_ciq.der
 ```
+
+## Campo de dados (`field/`)
+
+App Connect IQ separado (tipo `datafield`, API mínima 5.0.0, mesmos relógios). O atleta adiciona o
+campo a uma tela da atividade Corrida; ele roda dentro do player de treino nativo.
+
+```
+Campo (compute 1 Hz) ── GPS a cada 2 s → blocos de 400 pontos (13 B cada) no Storage
+                     ── onWorkoutStepComplete / onTimerLap → uma volta por passo
+                     ── onTimerReset → cabeçalho + fila (máx. 3 corridas)
+Background (onActivityCompleted ao salvar + a cada 5 min enquanto houver fila)
+   POST /connect-iq/activities              cabeçalho → resposta diz quais blocos já chegaram
+   POST /connect-iq/activities/:id/parts    um bloco por request, em base64
+App iOS: GET /connect-iq/activities → pop-up de corrida detectada → vincular / corrida livre / ignorar
+   POST /connect-iq/activities/:id/resolve
+```
+
+- **Tela**: pace médio de 30 s. Com alvo de velocidade no passo, o rótulo mostra a faixa e o fundo
+  fica verde (dentro), vermelho (lento) ou azul (rápido). Sem pareamento, mostra o código.
+- **Pareamento**: mesmo código de 8 dígitos do app de treinos, com `kind: "data_field"`; o campo
+  tem token próprio (o Connect IQ isola cada app). Logo depois chama `GET /connect-iq/device` para
+  ativar o dispositivo — senão o backend o apagaria em 24 h.
+- **Só envia corrida salva**: uma corrida descartada não dispara `onActivityCompleted` e sai da fila
+  em 6 h. Se o evento falhar em algum relógio, `Config.REQUIRE_COMPLETED_EVENT = false`. Antes de
+  iniciar uma corrida, o rótulo do campo mostra "A enviar: N" se ainda houver corrida na fila.
+- **No app**: com o campo pareado, a cópia da corrida no Apple Health espera até 2 h pela versão do
+  campo. Em Ajustes › Relógio Garmin, "último contato" mostra quando o campo falou com o backend.
+- **Formato da rota**: `source/TrackCodec.mc` ↔ `athly-backend/src/modules/connect-iq/activity/track-codec.ts`.
+  Mudar um exige mudar o outro.
+- No backend a rota fica no máximo 30 dias; o app não conclui treino sozinho.
+
+```bash
+cd athly-garmin
+make field-build DEVICE=fr970   # field/bin/field.prg (release) → copiar para GARMIN/APPS
+make field-iq                   # field/bin/field.iq para a Connect IQ Store
+connectiq &
+make field-test DEVICE=fr165    # testes unitários no simulador
+```
+
+No simulador, carregue um treino FIT e use **Simulation › FIT Data › Playback** com um FIT real
+para alimentar o `compute` (GPS, passos, pausas).
+
+Ainda a confirmar no relógio (junto com a Phase 0): o envio sai mesmo pelo `onActivityCompleted`;
+`onWorkoutStepComplete` chega em todos os passos, inclusive nas repetições; a unidade de
+`targetValueLow/High` para alvo de velocidade (`PaceMath` assume mm/s acima de 100); e se o campo é
+desenhado antes do início (é quando mostra o código).
 
 ## Phase 0 — spike nos relógios reais (antes de publicar)
 

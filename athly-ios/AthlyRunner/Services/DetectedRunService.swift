@@ -46,6 +46,11 @@ enum DetectedRunService {
     /// `WorkoutCompletionSheet` já usa para casar corrida e treino prescrito.
     static let windowDays = 2
 
+    /// Com o campo de dados pareado, a mesma corrida chega duas vezes: a cópia do Apple Health (o
+    /// Garmin Connect grava lá, sem rota) costuma chegar antes da versão do campo. Durante este
+    /// intervalo depois do fim da corrida, a cópia espera — a do campo tem rota e passos.
+    static let garminGraceInterval: TimeInterval = 2 * 3600
+
     private static let logger = Logger(subsystem: "com.athly.runner", category: "DetectedRun")
 
     /// Regra de detecção. Devolve a corrida **mais recente** ainda não reivindicada, ou `nil`.
@@ -81,8 +86,8 @@ enum DetectedRunService {
     enum GarminStatus: Equatable {
         /// Oferecer no pop-up, dispensando junto estas corridas equivalentes do Apple Health.
         case offer(matchingHealthKitUUIDs: [String])
-        /// O atleta já tratou a mesma corrida pelo Apple Health (vinculou, salvou ou ignorou) antes
-        /// de o relógio terminar o envio: não perguntar de novo.
+        /// O atleta já vinculou ou salvou a mesma corrida pelo Apple Health antes de o relógio
+        /// terminar o envio: não perguntar de novo.
         case alreadyHandled
     }
 
@@ -101,15 +106,20 @@ enum DetectedRunService {
                 healthDistanceMeters: run.distanceMeters
             ).isMatch
         }
+        // Ignorar a cópia do Health não conta: o atleta pode ter dispensado justamente porque
+        // esperava a versão do Garmin, com rota.
         let handledInHealth = matching.contains { run in
-            linkedUUIDs.contains(run.id)
-                || acknowledgedUUIDs.contains(run.id)
-                || HealthKitRunMatch.isAlreadyLocal(run: run, sessions: localSessions)
+            linkedUUIDs.contains(run.id) || HealthKitRunMatch.isAlreadyLocal(run: run, sessions: localSessions)
         }
         if handledInHealth || isAlreadyLocal(imported: imported, sessions: localSessions) {
             return .alreadyHandled
         }
         return .offer(matchingHealthKitUUIDs: matching.map(\.id))
+    }
+
+    /// `true` quando a corrida do Health deve esperar a versão do campo de dados.
+    static func shouldWaitForGarmin(run: HealthKitRunItem, hasDataField: Bool, now: Date = Date()) -> Bool {
+        hasDataField && now.timeIntervalSince(run.endDate) < garminGraceInterval
     }
 
     /// Mesmas tolerâncias de `HealthKitRunMatch`, na direção corrida importada × sessão local.
@@ -145,10 +155,20 @@ enum DetectedRunService {
             acknowledgedUUIDs: acknowledged,
             now: now
         )
-        if let detected {
-            logger.info("Corrida não reivindicada detectada: \(detected.id, privacy: .public)")
+        guard let detected else { return nil }
+        if shouldWaitForGarmin(run: detected, hasDataField: await hasActiveDataField(), now: now) {
+            logger.info("Corrida do Health aguardando o campo de dados: \(detected.id, privacy: .public)")
+            return nil
         }
-        return detected.map(DetectedRunCandidate.healthKit)
+        logger.info("Corrida não reivindicada detectada: \(detected.id, privacy: .public)")
+        return .healthKit(detected)
+    }
+
+    /// Só consultado quando há corrida do Health a oferecer. Na dúvida (sem rede), não espera.
+    @MainActor
+    private static func hasActiveDataField() async -> Bool {
+        guard let devices = try? await APIClient.shared.listConnectIqDevices() else { return false }
+        return devices.contains { $0.isDataField && $0.isActive }
     }
 
     @MainActor

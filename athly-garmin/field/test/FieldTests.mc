@@ -115,7 +115,9 @@ function uploadRulesNeedCompletedEventRightAfterFinish(logger as Logger) as Bool
     Test.assert(UploadRules.isConfirmed(finishedAt, finishedAt + 29 * 60));
     // Evento de outra atividade, bem depois: esta foi descartada.
     Test.assert(!UploadRules.isConfirmed(finishedAt, finishedAt + 31 * 60));
-    Test.assert(!UploadRules.isConfirmed(finishedAt, finishedAt - 120));
+    // O evento pode chegar um pouco antes do onTimerReset.
+    Test.assert(UploadRules.isConfirmed(finishedAt, finishedAt - 120));
+    Test.assert(!UploadRules.isConfirmed(finishedAt, finishedAt - 11 * 60));
     Test.assert(UploadRules.isAbandoned(finishedAt, finishedAt + 7 * 3600));
     Test.assert(!UploadRules.isAbandoned(finishedAt, finishedAt + 3600));
     return true;

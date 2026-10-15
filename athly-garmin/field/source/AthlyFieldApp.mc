@@ -9,8 +9,19 @@ import Toybox.WatchUi;
 // UploadService) também nasce daqui.
 (:background)
 class AthlyFieldApp extends Application.AppBase {
+    // Só existe no processo de primeiro plano.
+    private var _field as AthlyField?;
+
     function initialize() {
         AppBase.initialize();
+    }
+
+    // Campo fechado sem onTimerReset (atividade encerrada de outro jeito): não perde a corrida.
+    (:typecheck(disableBackgroundCheck))
+    function onStop(state as Dictionary?) as Void {
+        if (_field != null) {
+            (_field as AthlyField).finishRecording();
+        }
     }
 
     function getServiceDelegate() as [ System.ServiceDelegate ] {
@@ -24,8 +35,9 @@ class AthlyFieldApp extends Application.AppBase {
         Background.registerForActivityCompletedEvent();
         // Corrida de outro dia ainda na fila (celular estava longe): garante a nova tentativa.
         if (FieldStore.hasQueued() && Background.getTemporalEventRegisteredTime() == null) {
-            Background.registerForTemporalEvent(new Time.Duration(UploadRules.RETRY_INTERVAL_SEC));
+            UploadRules.scheduleRetries();
         }
-        return [new AthlyField()];
+        _field = new AthlyField();
+        return [_field as AthlyField];
     }
 }

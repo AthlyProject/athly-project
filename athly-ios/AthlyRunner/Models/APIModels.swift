@@ -582,6 +582,12 @@ struct ConnectIqDevice: Decodable, Identifiable, Sendable, Equatable {
     var lastSyncDate: Date? {
         lastSyncAt.flatMap { try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse($0) }
     }
+
+    /// Última chamada do relógio ao backend. Para o campo de dados é o último envio de corrida (ou a
+    /// confirmação do pareamento) — mostra se a corrida de hoje saiu do relógio.
+    var lastSeenDate: Date? {
+        lastSeenAt.flatMap { try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse($0) }
+    }
 }
 
 /// Resumo da última sincronização enviado pelo relógio.

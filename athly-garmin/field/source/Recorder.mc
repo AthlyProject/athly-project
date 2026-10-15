@@ -143,7 +143,9 @@ class Recorder {
         if (_hrMax != null && _hrMax >= 20) {
             header["hrMax"] = _hrMax;
         }
-        if (!FieldStore.enqueue(_id, header, now)) {
+        if (FieldStore.enqueue(_id, header, now)) {
+            UploadRules.scheduleRetries();
+        } else {
             FieldStore.discardBlocks(_id, parts);
         }
         reset();

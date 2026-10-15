@@ -72,6 +72,10 @@ class AthlyField extends WatchUi.DataField {
     }
 
     function onTimerReset() as Void {
+        finishRecording();
+    }
+
+    function finishRecording() as Void {
         _recorder.finish(Time.now().value());
         _pace.reset();
         _target = null;
@@ -99,6 +103,9 @@ class AthlyField extends WatchUi.DataField {
                         : pace > target[1] ? Graphics.COLOR_RED : Graphics.COLOR_DK_GREEN;
                     foreground = Graphics.COLOR_WHITE;
                 }
+            } else if (!_recorder.isActive() && FieldStore.hasQueued()) {
+                // Antes de começar: mostra que ainda há corrida esperando envio (celular longe?).
+                label = Lang.format(WatchUi.loadResource(Rez.Strings.PendingUploads) as String, [FieldStore.queue().size()]);
             } else {
                 label = WatchUi.loadResource(Rez.Strings.Pace30) as String;
             }

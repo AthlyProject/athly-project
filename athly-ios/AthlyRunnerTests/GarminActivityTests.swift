@@ -157,12 +157,33 @@ final class GarminActivityTests: XCTestCase {
         XCTAssertEqual(status(imported, health: [copy, other]), .offer(matchingHealthKitUUIDs: ["hk-copy"]))
     }
 
-    func testSkipsWhenTheHealthCopyWasAlreadyLinkedOrIgnored() throws {
+    func testSkipsWhenTheHealthCopyWasAlreadyLinked() throws {
         let imported = try decodeDetail().importedWorkout()
         let copy = healthRun(id: "hk-copy", from: imported)
 
         XCTAssertEqual(status(imported, health: [copy], linked: ["hk-copy"]), .alreadyHandled)
-        XCTAssertEqual(status(imported, health: [copy], acknowledged: ["hk-copy"]), .alreadyHandled)
+    }
+
+    func testIgnoringTheHealthCopyStillOffersTheGarminRun() throws {
+        let imported = try decodeDetail().importedWorkout()
+        let copy = healthRun(id: "hk-copy", from: imported)
+
+        XCTAssertEqual(
+            status(imported, health: [copy], acknowledged: ["hk-copy"]),
+            .offer(matchingHealthKitUUIDs: ["hk-copy"])
+        )
+    }
+
+    func testHealthCopyWaitsForTheDataFieldForTwoHours() throws {
+        let imported = try decodeDetail().importedWorkout()
+        let copy = healthRun(id: "hk-copy", from: imported)
+
+        XCTAssertTrue(DetectedRunService.shouldWaitForGarmin(
+            run: copy, hasDataField: true, now: copy.endDate.addingTimeInterval(30 * 60)))
+        XCTAssertFalse(DetectedRunService.shouldWaitForGarmin(
+            run: copy, hasDataField: true, now: copy.endDate.addingTimeInterval(3 * 3600)))
+        XCTAssertFalse(DetectedRunService.shouldWaitForGarmin(
+            run: copy, hasDataField: false, now: copy.endDate.addingTimeInterval(60)))
     }
 
     func testSkipsWhenTheRunIsAlreadyALocalSession() throws {

@@ -246,7 +246,13 @@ struct GarminConnectView: View {
             return (String(localized: "Aguardando o relógio…"), AthlyTheme.Color.warning)
         }
         if device.isDataField {
-            return ("● " + String(localized: "Conectado · envia suas corridas"), AthlyTheme.Color.success)
+            guard let lastSeen = device.lastSeenDate else {
+                return ("● " + String(localized: "Conectado · envia suas corridas"), AthlyTheme.Color.success)
+            }
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .short
+            let relative = formatter.localizedString(for: lastSeen, relativeTo: Date())
+            return ("● " + String(localized: "Conectado · último contato \(relative)"), AthlyTheme.Color.success)
         }
         if device.lastSync?.storageFull == true {
             return (String(localized: "Memória de treinos cheia no relógio"), AthlyTheme.Color.warning)

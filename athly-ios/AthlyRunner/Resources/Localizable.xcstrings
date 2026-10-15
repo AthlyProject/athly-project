@@ -233,6 +233,29 @@
         }
       }
     },
+    "Conectado · último contato %@" : {
+      "comment" : "Garmin data field (Connect IQ): last time the watch reached Athly, e.g. \"2 min ago\".",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden · letzter Kontakt %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · last contact %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado · último contato %@"
+          }
+        }
+      }
+    },
     "Corrida no Garmin" : {
       "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
       "localizations" : {

@@ -12,19 +12,31 @@ import Toybox.Time;
 module UploadRules {
     // Sem o evento "atividade concluída" até aqui, a corrida foi descartada no relógio.
     const UNCONFIRMED_TTL_SEC = 6 * 3600;
-    // O evento chega quando a atividade é salva; a corrida foi finalizada no onTimerReset, logo
-    // antes. A janela cobre o atleta que demora na tela de resumo.
-    const CONFIRM_WINDOW_SEC = 30 * 60;
-    // Nova tentativa enquanto houver corrida na fila (celular longe na hora de salvar).
-    const RETRY_INTERVAL_SEC = 10 * 60;
+    // O evento chega quando a atividade é salva, perto do onTimerReset que finaliza a corrida — a
+    // ordem entre os dois não é documentada. A janela cobre o evento um pouco antes e o atleta que
+    // demora na tela de resumo.
+    const CONFIRM_BEFORE_SEC = 10 * 60;
+    const CONFIRM_AFTER_SEC = 30 * 60;
+    // Envio enquanto houver corrida na fila: a primeira tentativa sai 5 min depois de salvar mesmo
+    // se o evento "atividade concluída" vier antes da corrida entrar na fila (ou nem vier).
+    const RETRY_INTERVAL_SEC = 5 * 60;
 
-    // Uma corrida finalizada é enviada se o evento "atividade concluída" veio logo depois dela.
+    // Uma corrida finalizada é enviada se o evento "atividade concluída" veio perto dela.
     function isConfirmed(finalizedAt as Number, completedAt as Number?) as Boolean {
         if (!Config.REQUIRE_COMPLETED_EVENT) {
             return true;
         }
-        return completedAt != null && completedAt >= finalizedAt - 60
-            && completedAt <= finalizedAt + CONFIRM_WINDOW_SEC;
+        return completedAt != null && completedAt >= finalizedAt - CONFIRM_BEFORE_SEC
+            && completedAt <= finalizedAt + CONFIRM_AFTER_SEC;
+    }
+
+    // Agenda as tentativas de envio (repetem a cada RETRY_INTERVAL_SEC até a fila esvaziar).
+    function scheduleRetries() as Void {
+        try {
+            Background.registerForTemporalEvent(new Time.Duration(RETRY_INTERVAL_SEC));
+        } catch (e) {
+            // Intervalo recusado (evento recente demais): o próximo evento ou campo aberto tenta.
+        }
     }
 
     function isAbandoned(finalizedAt as Number, now as Number) as Boolean {
@@ -198,11 +210,7 @@ class UploadService extends System.ServiceDelegate {
 
     function onDone(status as Number) as Void {
         if (FieldStore.hasQueued()) {
-            try {
-                Background.registerForTemporalEvent(new Time.Duration(UploadRules.RETRY_INTERVAL_SEC));
-            } catch (e) {
-                // Já registrado ou intervalo recusado: a próxima atividade concluída tenta de novo.
-            }
+            UploadRules.scheduleRetries();
         } else {
             Background.deleteTemporalEvent();
         }
