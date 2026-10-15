@@ -89,6 +89,7 @@
 		8CAB31A6115CBF42AAF8B919 /* JetBrainsMono-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D8A0D80B9E509A7F901A8F70 /* JetBrainsMono-BoldItalic.ttf */; };
 		8D70270AF89496E823380D41 /* SplitCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635633C0F34110CA8C89CC3C /* SplitCalculatorTests.swift */; };
 		9081DE151E19E9C08289FC5D /* HealthKitRunDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62628BB4457907915908EEFC /* HealthKitRunDetailView.swift */; };
+		16754951586D2B33891C38A4 /* GarminActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7D25EDF0BE775DF60DBC94 /* GarminActivity.swift */; };
 		90A87901FE81F1FE5D992E66 /* HealthKitRunItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */; };
 		91D05F2B82C92E34406EEA34 /* JetBrainsMono-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7896A65867D41081BF5D757E /* JetBrainsMono-ExtraBoldItalic.ttf */; };
 		91FB595473B0A1190AD51B44 /* JetBrainsMono-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D4BE4C6B408597205D5501BF /* JetBrainsMono-ExtraBold.ttf */; };
@@ -138,6 +139,7 @@
 		C82AE64B8FD7F3A94304050C /* JetBrainsMono-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8D726BA6BFB753A0885D6242 /* JetBrainsMono-SemiBoldItalic.ttf */; };
 		C837D7EBD56D38E4FA5A801A /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0FC1EC14354FF997BB5546E0 /* SpaceGrotesk-Regular.ttf */; };
 		C8DF168C25D2C7795855B872 /* DetectedRunTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711B76FD840F4E3AB98367C6 /* DetectedRunTests.swift */; };
+		A41C2E7F90B35D6C1E8F2A47 /* GarminActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52D3F8A01C46E7D2F903B58 /* GarminActivityTests.swift */; };
 		CA633EAF37259F2630ABAA45 /* DetectedRunViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92DEED5EA54EF12519401C67 /* DetectedRunViewModel.swift */; };
 		CB347AEC94C8EE217B294656 /* FITSwiftSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 0716E12671DA8B26DD766510 /* FITSwiftSDK */; };
 		CDA5F332B67001C3012D371F /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92E1532A4AC761644476855 /* LocationManager.swift */; };
@@ -285,6 +287,8 @@
 		6E55A3660DBE7A9713E988F8 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		6FDDFE35FC18F83F6B46C710 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		711B76FD840F4E3AB98367C6 /* DetectedRunTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectedRunTests.swift; sourceTree = "<group>"; };
+		B52D3F8A01C46E7D2F903B58 /* GarminActivityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarminActivityTests.swift; sourceTree = "<group>"; };
+		6B7D25EDF0BE775DF60DBC94 /* GarminActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GarminActivity.swift; sourceTree = "<group>"; };
 		73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitRunItem.swift; sourceTree = "<group>"; };
 		75C8C266EED9B982F852E4B4 /* ProfileComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileComponents.swift; sourceTree = "<group>"; };
 		76040706569D260F613A6C4A /* SportBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportBadgeView.swift; sourceTree = "<group>"; };
@@ -558,6 +562,7 @@
 				49D6B4348AB1FCA2EAE20BF8 /* HeartRateZonesTests.swift */,
 				A1BC4F973E7BDD7E5A136491 /* BackendErrorCodeTests.swift */,
 				711B76FD840F4E3AB98367C6 /* DetectedRunTests.swift */,
+				B52D3F8A01C46E7D2F903B58 /* GarminActivityTests.swift */,
 				FB9A999F3359D97185DDABC9 /* ElevationAccumulatorTests.swift */,
 				A7C141869FFE8AEC1CEBEADF /* GarminConnectViewModelTests.swift */,
 				61902AE684CF0EE1714075D5 /* PersonalRecordCalculatorTests.swift */,
@@ -688,6 +693,7 @@
 				A0A86898497E5883FABDFB8D /* HeartRateZones.swift */,
 				5391592348FF767D8574DE08 /* ActiveSegment.swift */,
 				6E55A3660DBE7A9713E988F8 /* APIModels.swift */,
+				6B7D25EDF0BE775DF60DBC94 /* GarminActivity.swift */,
 				73E247B0C8BB0FCEBD8B7763 /* HealthKitRunItem.swift */,
 				D17DD56FBA4BE072D20581DB /* ImportedWorkout.swift */,
 				A1FD217AB0DE86A175983B8C /* RoutePoint.swift */,
@@ -955,6 +961,7 @@
 				FB90A238C1BBEC9562D5602D /* HeartRateZonesTests.swift in Sources */,
 				103EF47A5A612BC861BFB541 /* BackendErrorCodeTests.swift in Sources */,
 				C8DF168C25D2C7795855B872 /* DetectedRunTests.swift in Sources */,
+				A41C2E7F90B35D6C1E8F2A47 /* GarminActivityTests.swift in Sources */,
 				B48FE1B2450E624E06AD80C1 /* ElevationAccumulatorTests.swift in Sources */,
 				C0575859E68453A338B9F9C5 /* GarminConnectViewModelTests.swift in Sources */,
 				F0ABC5A504FFD39DE52EB30A /* PersonalRecordCalculatorTests.swift in Sources */,
@@ -1021,6 +1028,7 @@
 				BA17E64500AF2DF4BF811E26 /* HapticService.swift in Sources */,
 				AF590C65CF8EA0F4178A6D0F /* HealthKitAuthorization.swift in Sources */,
 				9081DE151E19E9C08289FC5D /* HealthKitRunDetailView.swift in Sources */,
+				16754951586D2B33891C38A4 /* GarminActivity.swift in Sources */,
 				90A87901FE81F1FE5D992E66 /* HealthKitRunItem.swift in Sources */,
 				D9C336A5480626D122DAF5FF /* HealthKitRunsView.swift in Sources */,
 				A439736DB08A1F67171BC6A8 /* HealthKitRunsViewModel.swift in Sources */,

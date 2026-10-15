@@ -153,9 +153,10 @@ final class GarminConnectViewModelTests: XCTestCase {
     }
 }
 
-private func device(_ id: String, status: String = "active") -> ConnectIqDevice {
+private func device(_ id: String, status: String = "active", kind: String? = "watch_app") -> ConnectIqDevice {
     ConnectIqDevice(
         id: id,
+        kind: kind,
         status: status,
         partNumber: "006-B4432-00",
         appVersion: "1.0.0",

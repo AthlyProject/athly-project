@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -44,6 +45,14 @@ export class CreatePairingDto {
   @IsString()
   @MaxLength(64)
   uid?: string;
+
+  @ApiPropertyOptional({
+    enum: ['watch_app', 'data_field'],
+    description: 'Qual app da Athly pede o código; o app de relógio antigo não manda',
+  })
+  @IsOptional()
+  @IsIn(['watch_app', 'data_field'])
+  kind?: 'watch_app' | 'data_field';
 }
 
 export class PollPairingDto {

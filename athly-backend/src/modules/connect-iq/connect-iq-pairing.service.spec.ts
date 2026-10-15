@@ -44,6 +44,7 @@ describe('ConnectIqPairingService', () => {
     partNumber: '006-B4432-00',
     apiLevel: '5.2.0',
     appVersion: '1.0.0',
+    kind: 'watch_app',
     expiresAt: LATER,
     claimedByUserId: null,
     claimedAt: null,
@@ -95,8 +96,17 @@ describe('ConnectIqPairingService', () => {
           partNumber: '006-B4432-00',
           apiLevel: '5.2.0',
           appVersion: '1.0.0',
+          kind: 'watch_app',
           expiresAt: LATER,
         },
+      });
+    });
+
+    it('guarda o tipo do app que pediu o código (campo de dados)', async () => {
+      await service.createPairing({ uid: 'field-uid', kind: 'data_field' }, NOW);
+
+      expect(prisma.connectIqPairing.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ kind: 'data_field', hardwareIdHash: sha256('field-uid') }),
       });
     });
 
@@ -204,6 +214,17 @@ describe('ConnectIqPairingService', () => {
       }));
     });
 
+    it('cria o dispositivo com o tipo do app que pediu o código', async () => {
+      prisma.connectIqPairing.findUnique.mockResolvedValue(pairing({ kind: 'data_field' }));
+
+      const device = await service.claim('user-1', '48213907', NOW);
+
+      expect(prisma.connectIqDevice.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ kind: 'data_field' }),
+      });
+      expect(device.kind).toBe('data_field');
+    });
+
     it('vincula o relógio ao usuário e devolve o dispositivo pendente', async () => {
       const device = await service.claim('user-1', '4821-3907', NOW);
 
@@ -220,6 +241,7 @@ describe('ConnectIqPairingService', () => {
       });
       expect(device).toEqual({
         id: 'device-1',
+        kind: 'watch_app',
         status: 'pending',
         partNumber: '006-B4432-00',
         appVersion: '1.0.0',

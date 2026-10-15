@@ -233,7 +233,8 @@ final class RunStore: ObservableObject {
 
     private func richerFormat(current: WorkoutImportFormat?, candidate: WorkoutImportFormat) -> WorkoutImportFormat {
         guard let current else { return candidate }
-        let rank: [WorkoutImportFormat: Int] = [.gpx: 0, .tcx: 1, .fit: 2]
+        // O campo de dados grava um ponto a cada 2 s: menos denso que o FIT original do relógio.
+        let rank: [WorkoutImportFormat: Int] = [.gpx: 0, .tcx: 1, .connectIQ: 1, .fit: 2]
         return (rank[candidate] ?? 0) > (rank[current] ?? 0) ? candidate : current
     }
 

@@ -8,8 +8,8 @@ struct MainTabView: View {
     @State private var isRunInProgress = false
     @State private var pendingWorkout: WorkoutModel?
 
-    /// Corrida do Apple Health ainda não reivindicada, detectada ao abrir o app.
-    @State private var detectedRun: HealthKitRunItem?
+    /// Corrida ainda não reivindicada (Apple Health ou campo de dados do Garmin), detectada ao abrir o app.
+    @State private var detectedRun: DetectedRunCandidate?
     @State private var isDetecting = false
 
     var body: some View {
@@ -89,9 +89,9 @@ struct MainTabView: View {
         } message: {
             Text(planVM.errorMessage ?? "")
         }
-        .fullScreenCover(item: $detectedRun) { run in
+        .fullScreenCover(item: $detectedRun) { candidate in
             DetectedRunView(
-                run: run,
+                candidate: candidate,
                 onFinish: { detectedRun = nil },
                 onOpenPlan: {
                     withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .plan }
@@ -121,7 +121,7 @@ struct MainTabView: View {
         }
     }
 
-    /// Procura uma corrida do Apple Health que o Athly não iniciou nem vinculou.
+    /// Procura uma corrida (do Garmin ou do Apple Health) que o Athly não iniciou nem vinculou.
     /// Oportunista: nunca bloqueia a abertura do app e nunca mostra erro.
     private func detectUnclaimedRun() async {
         // Não interromper uma corrida em andamento, nem empilhar detecções/telas.

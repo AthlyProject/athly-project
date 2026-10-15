@@ -18,6 +18,7 @@ const LAST_SEEN_THROTTLE_MS = 5 * 60_000;
 export function toDeviceModel(device: ConnectIqDevice): ConnectIqDeviceModel {
   return {
     id: device.id,
+    kind: device.kind,
     status: device.activatedAt ? 'active' : 'pending',
     partNumber: device.partNumber,
     appVersion: device.appVersion,

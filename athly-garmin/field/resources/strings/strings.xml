@@ -1,0 +1,9 @@
+<strings>
+    <string id="AppName">Athly</string>
+    <!-- Rótulo curto: o campo pode ocupar 1/4 da tela. -->
+    <string id="Pace30">Pace 30s</string>
+    <string id="PairLabel">Pair in Athly app</string>
+    <string id="PairRequesting">Getting code</string>
+    <string id="PairNoPhone">No phone</string>
+    <string id="PairError">Pairing error</string>
+</strings>

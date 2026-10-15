@@ -37,6 +37,11 @@ export class ConnectIqDeviceModel {
   @ApiProperty()
   id: string;
   @ApiProperty({
+    enum: ['watch_app', 'data_field'],
+    description: '`watch_app` baixa os treinos; `data_field` envia as corridas',
+  })
+  kind: 'watch_app' | 'data_field';
+  @ApiProperty({
     enum: ['pending', 'active'],
     description: '`pending` até o relógio buscar o token e fazer a primeira chamada',
   })

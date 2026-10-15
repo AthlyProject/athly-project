@@ -5,8 +5,12 @@ enum WorkoutImportFormat: String, Codable, CaseIterable, Sendable {
     case fit
     case tcx
     case gpx
+    /// Enviada pelo campo de dados da Athly no Garmin (sem arquivo: rota a cada 2 s + passos).
+    case connectIQ = "connect_iq"
 
-    var displayName: String { rawValue.uppercased() }
+    var displayName: String {
+        self == .connectIQ ? "Garmin" : rawValue.uppercased()
+    }
 }
 
 struct ActivityHeartRateSample: Codable, Equatable, Sendable {

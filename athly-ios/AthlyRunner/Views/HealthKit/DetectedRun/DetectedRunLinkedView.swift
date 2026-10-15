@@ -4,6 +4,7 @@ import SwiftUI
 struct DetectedRunLinkedView: View {
     let run: HealthKitRunItem
     let workout: WorkoutModel?
+    var isFromGarmin = false
     let onOpenPlan: () -> Void
     let onDismiss: () -> Void
 
@@ -48,7 +49,10 @@ struct DetectedRunLinkedView: View {
                 .padding(.top, 14)
 
             if let workout {
-                Text("Sua corrida do Apple Saúde foi atribuída ao treino \(workout.title).")
+                // Dois Text (e não um ternário de String) para as duas frases continuarem traduzíveis.
+                (isFromGarmin
+                    ? Text("Sua corrida do Garmin foi atribuída ao treino \(workout.title).")
+                    : Text("Sua corrida do Apple Saúde foi atribuída ao treino \(workout.title)."))
                     .font(AthlyTheme.Typography.body(11))
                     .foregroundStyle(AthlyTheme.Color.textSecondary)
                     .multilineTextAlignment(.center)

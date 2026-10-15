@@ -1,0 +1,8 @@
+<strings>
+    <string id="AppName">Athly</string>
+    <string id="Pace30">Pace 30s</string>
+    <string id="PairLabel">Parear no app Athly</string>
+    <string id="PairRequesting">Pedindo código</string>
+    <string id="PairNoPhone">Sem celular</string>
+    <string id="PairError">Erro ao parear</string>
+</strings>

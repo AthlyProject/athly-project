@@ -72,6 +72,7 @@ export class ConnectIqPairingService {
             partNumber: input.partNumber ?? null,
             apiLevel: input.apiLevel ?? null,
             appVersion: input.appVersion ?? null,
+            kind: input.kind ?? 'watch_app',
             expiresAt,
           },
         });
@@ -160,6 +161,7 @@ export class ConnectIqPairingService {
       const device = await tx.connectIqDevice.create({
         data: {
           userId,
+          kind: pairing.kind,
           hardwareIdHash: pairing.hardwareIdHash,
           partNumber: pairing.partNumber,
           apiLevel: pairing.apiLevel,

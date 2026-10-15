@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Relógio Garmin (app Connect IQ da Athly): parear com o código mostrado no relógio, ver o status
-/// da sincronização e desconectar. Os treinos vão para Treino › Treinos no relógio.
+/// Relógio Garmin (apps Connect IQ da Athly): parear com o código mostrado no relógio, ver o status
+/// e desconectar. O app de treinos manda os treinos para Treino › Treinos no relógio; o campo de
+/// dados devolve a corrida feita (rota e resultado de cada passo). Os dois usam o mesmo código.
 struct GarminConnectView: View {
     @StateObject private var viewModel: GarminConnectViewModel
     @State private var deviceToUnpair: ConnectIqDevice?
@@ -41,6 +42,9 @@ struct GarminConnectView: View {
                     AthlySectionLabel("Como conectar")
                     stepsGroup
 
+                    AthlySectionLabel("Rota e resultado de cada tiro")
+                    fieldStepsGroup
+
                     AthlySectionLabel("Código do relógio")
                     codeGroup
 
@@ -59,6 +63,13 @@ struct GarminConnectView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 2)
                         .padding(.top, 8)
+
+                    Text("Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino.")
+                        .font(AthlyTheme.Typography.body(11))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 2)
                 }
                 .padding(AthlyTheme.Spacing.sm)
             }
@@ -83,8 +94,10 @@ struct GarminConnectView: View {
             Button("Desconectar", role: .destructive) {
                 Task { await viewModel.unpair(device) }
             }
-        } message: { _ in
-            Text("Os treinos da Athly saem do relógio na próxima vez que o app abrir nele.")
+        } message: { device in
+            device.isDataField
+                ? Text("O campo de dados deixa de enviar suas corridas para a Athly.")
+                : Text("Os treinos da Athly saem do relógio na próxima vez que o app abrir nele.")
         }
     }
 
@@ -104,9 +117,9 @@ struct GarminConnectView: View {
     private func deviceRow(_ device: ConnectIqDevice) -> some View {
         let status = statusLine(for: device)
         return AthlyListRow(
-            systemImage: "stopwatch.fill",
+            systemImage: device.isDataField ? "map.fill" : "stopwatch.fill",
             tint: AthlyTheme.Color.primary,
-            title: Text("Relógio Garmin"),
+            title: device.isDataField ? Text("Campo de dados Athly") : Text("Relógio Garmin"),
             subtitle: Text(status.text),
             subtitleColor: status.color
         ) {
@@ -162,6 +175,28 @@ struct GarminConnectView: View {
         }
     }
 
+    private var fieldStepsGroup: some View {
+        AthlyListGroup {
+            AthlyListRow(
+                systemImage: "1.circle.fill",
+                title: Text("Instale o campo de dados Athly"),
+                subtitle: Text("Pela Connect IQ Store, no celular")
+            )
+            AthlyRowDivider()
+            AthlyListRow(
+                systemImage: "2.circle.fill",
+                title: Text("Adicione o campo a uma tela da corrida"),
+                subtitle: Text("No relógio: Corrida › Configurações › Telas de dados")
+            )
+            AthlyRowDivider()
+            AthlyListRow(
+                systemImage: "3.circle.fill",
+                title: Text("Abra a corrida no relógio"),
+                subtitle: Text("O campo mostra um código: digite abaixo")
+            )
+        }
+    }
+
     private var codeGroup: some View {
         AthlyListGroup {
             TextField(
@@ -209,6 +244,9 @@ struct GarminConnectView: View {
     private func statusLine(for device: ConnectIqDevice) -> (text: String, color: Color) {
         guard device.isActive else {
             return (String(localized: "Aguardando o relógio…"), AthlyTheme.Color.warning)
+        }
+        if device.isDataField {
+            return ("● " + String(localized: "Conectado · envia suas corridas"), AthlyTheme.Color.success)
         }
         if device.lastSync?.storageFull == true {
             return (String(localized: "Memória de treinos cheia no relógio"), AthlyTheme.Color.warning)

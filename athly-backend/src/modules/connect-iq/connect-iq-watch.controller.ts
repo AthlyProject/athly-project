@@ -5,12 +5,14 @@ import {
   Get,
   Header,
   HttpCode,
+  Param,
   Post,
   Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ConnectIqActivitiesService } from './connect-iq-activities.service';
 import { ConnectIqDevicesService } from './connect-iq-devices.service';
 import type { CiqDeviceContext } from './connect-iq-devices.service';
 import { ConnectIqPairingService } from './connect-iq-pairing.service';
@@ -23,7 +25,12 @@ import {
   WatchDateQueryDto,
 } from './dto/connect-iq.dto';
 import { CiqEnvelopeFilter } from './filters/ciq-envelope.filter';
+import {
+  ConnectIqActivityHeaderDto,
+  ConnectIqActivityPartDto,
+} from './dto/connect-iq-activity.dto';
 import { DeviceTokenGuard } from './guards/device-token.guard';
+import { ConnectIqActivityUploadModel } from './models/connect-iq-activity.model';
 import {
   ConnectIqManifestModel,
   ConnectIqPairingModel,
@@ -42,6 +49,7 @@ export class ConnectIqWatchController {
     private readonly pairing: ConnectIqPairingService,
     private readonly devices: ConnectIqDevicesService,
     private readonly sync: ConnectIqSyncService,
+    private readonly activities: ConnectIqActivitiesService,
   ) {}
 
   @Post('pairings')
@@ -82,6 +90,47 @@ export class ConnectIqWatchController {
     @Body() report: SyncReportDto,
   ): Promise<Record<string, never>> {
     await this.devices.recordSyncReport(device, report);
+    return {};
+  }
+
+  /** Cabeçalho de uma corrida gravada pelo campo de dados; devolve os blocos já recebidos. */
+  @Post('activities')
+  @HttpCode(200)
+  @UseGuards(DeviceTokenGuard)
+  @Header('Cache-Control', 'no-store')
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ConnectIqActivityUploadModel })
+  activityHeader(
+    @CurrentCiqDevice() device: CiqDeviceContext,
+    @Body() header: ConnectIqActivityHeaderDto,
+  ): Promise<ConnectIqActivityUploadModel> {
+    return this.activities.receiveHeader(device, header);
+  }
+
+  /** Um bloco da rota (base64). */
+  @Post('activities/:clientId/parts')
+  @HttpCode(200)
+  @UseGuards(DeviceTokenGuard)
+  @Header('Cache-Control', 'no-store')
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ConnectIqActivityUploadModel })
+  activityPart(
+    @CurrentCiqDevice() device: CiqDeviceContext,
+    @Param('clientId') clientId: string,
+    @Body() part: ConnectIqActivityPartDto,
+  ): Promise<ConnectIqActivityUploadModel> {
+    return this.activities.receivePart(device, clientId, part);
+  }
+
+  /**
+   * Confirma o token logo depois do pareamento. O campo de dados só fala com o backend quando envia
+   * uma corrida; sem esta chamada o dispositivo ficaria pendente (e seria apagado em 24 h).
+   */
+  @Get('device')
+  @UseGuards(DeviceTokenGuard)
+  @Header('Cache-Control', 'no-store')
+  @ApiBearerAuth()
+  confirmDevice(): Record<string, never> {
     return {};
   }
 

@@ -348,6 +348,22 @@ actor APIClient {
         let _: EmptyResponse = try await delete("/connect-iq/devices/\(id)")
     }
 
+    /// Corridas enviadas pelo campo de dados que o atleta ainda não resolveu (últimos 7 dias).
+    func pendingGarminActivities() async throws -> [GarminActivitySummary] {
+        try await get("/connect-iq/activities")
+    }
+
+    func garminActivity(id: String) async throws -> GarminActivityDetail {
+        try await get("/connect-iq/activities/\(id)")
+    }
+
+    func resolveGarminActivity(id: String, resolution: GarminActivityResolution, workoutId: String? = nil) async throws {
+        let _: EmptyResponse = try await post(
+            "/connect-iq/activities/\(id)/resolve",
+            body: ResolveGarminActivityRequest(resolution: resolution, workoutId: workoutId)
+        )
+    }
+
     // MARK: - Assessment (questionário de onboarding)
 
     /// Envia o questionário de avaliação (mesmo payload do athly-frontend).

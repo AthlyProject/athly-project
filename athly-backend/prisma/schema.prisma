@@ -136,6 +136,7 @@ model User {
   passwordResetCodes PasswordResetCode[]
   connectIqDevices   ConnectIqDevice[]
   connectIqPairings  ConnectIqPairing[]
+  connectIqActivities ConnectIqActivity[]
 
   @@map("users")
 }
@@ -470,11 +471,19 @@ model WaitlistEntry {
   @@map("waitlist_entries")
 }
 
+// Qual app Connect IQ da Athly pareou: o app de relógio (baixa os treinos) ou o campo de dados
+// (envia as corridas). O Connect IQ isola cada app, então o mesmo relógio tem um registro por app.
+enum ConnectIqDeviceKind {
+  watch_app
+  data_field
+}
+
 // Relógio Garmin pareado com o app Connect IQ da Athly. O token do relógio é guardado só como
 // hash (sha256); desparear apaga a linha e o token deixa de valer na hora.
 model ConnectIqDevice {
-  id             String    @id @default(uuid())
-  userId         String    @map("user_id")
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  kind           ConnectIqDeviceKind @default(watch_app)
   tokenHash      String?   @unique @map("token_hash")
   tokenIssuedAt  DateTime? @map("token_issued_at")
   activatedAt    DateTime? @map("activated_at")
@@ -489,8 +498,9 @@ model ConnectIqDevice {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pairing ConnectIqPairing?
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pairing    ConnectIqPairing?
+  activities ConnectIqActivity[]
 
   @@index([userId])
   @@map("connect_iq_devices")
@@ -500,6 +510,7 @@ model ConnectIqDevice {
 model ConnectIqPairing {
   id              String    @id @default(uuid())
   codeHash        String    @unique @map("code_hash")
+  kind            ConnectIqDeviceKind @default(watch_app)
   pollTokenHash   String    @unique @map("poll_token_hash")
   hardwareIdHash  String?   @map("hardware_id_hash")
   partNumber      String?   @map("part_number") @db.VarChar(32)
@@ -517,4 +528,62 @@ model ConnectIqPairing {
 
   @@index([expiresAt])
   @@map("connect_iq_pairings")
+}
+
+enum ConnectIqActivityStatus {
+  receiving // partes da rota ainda chegando
+  ready // completa, esperando o atleta decidir no app
+  resolved // vinculada a um treino, salva como corrida livre ou ignorada
+}
+
+// Corrida gravada pelo campo de dados da Athly no relógio. Chega em partes (cabeçalho + blocos da
+// rota) e espera o atleta confirmar no app, como uma corrida detectada no Apple Health. A rota é
+// dado sensível: fica no máximo 30 dias (ver ConnectIqActivitiesService).
+model ConnectIqActivity {
+  id             String                  @id @default(uuid())
+  userId         String                  @map("user_id")
+  deviceId       String?                 @map("device_id")
+  /// Id gerado no relógio (início da atividade em segundos Unix); torna o reenvio idempotente.
+  clientId       String                  @map("client_id") @db.VarChar(32)
+  status         ConnectIqActivityStatus @default(receiving)
+  startedAt      DateTime                @map("started_at")
+  endedAt        DateTime                @map("ended_at")
+  /// Fuso do relógio na hora da corrida.
+  utcOffsetSec   Int                     @map("utc_offset_sec")
+  distanceMeters Float                   @map("distance_meters")
+  /// Tempo com o cronômetro rodando (sem pausas).
+  timerSeconds   Float                   @map("timer_seconds")
+  avgHeartRate   Int?                    @map("avg_heart_rate")
+  maxHeartRate   Int?                    @map("max_heart_rate")
+  /// Voltas/passos do treino: [{ index, start, end, distance, timer, hrAvg, hrMax, intensity }].
+  laps           Json
+  /// Pausas em segundos desde o início: [[início, fim], ...].
+  pauses         Json
+  partCount      Int                     @map("part_count")
+  resolution     String?                 @db.VarChar(16)
+  workoutId      String?                 @map("workout_id")
+  resolvedAt     DateTime?               @map("resolved_at")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+
+  user   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device ConnectIqDevice?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  parts  ConnectIqActivityPart[]
+
+  @@unique([userId, clientId])
+  @@index([userId, status, startedAt])
+  @@map("connect_iq_activities")
+}
+
+// Bloco binário da rota (pontos de 13 bytes; ver activity/track-codec.ts).
+model ConnectIqActivityPart {
+  activityId String   @map("activity_id")
+  seq        Int
+  data       Bytes
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  activity ConnectIqActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, seq])
+  @@map("connect_iq_activity_parts")
 }

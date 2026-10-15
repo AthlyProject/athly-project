@@ -1,9 +1,9 @@
 import Foundation
 import SwiftUI
 
-/// Estado do fluxo "nova atividade detectada": revelação da corrida lida do Apple Health,
-/// escolha entre corrida livre e vínculo com um treino planejado, e confirmação
-/// planejado × realizado.
+/// Estado do fluxo "nova atividade detectada": revelação da corrida (lida do Apple Health ou
+/// enviada pelo campo de dados do Garmin), escolha entre corrida livre e vínculo com um treino
+/// planejado, e confirmação planejado × realizado.
 @MainActor
 final class DetectedRunViewModel: ObservableObject {
     enum Step {
@@ -17,7 +17,10 @@ final class DetectedRunViewModel: ObservableObject {
         case linkToWorkout
     }
 
+    /// Resumo exibido. Numa corrida do Garmin é derivado do `ImportedWorkout`.
     let run: HealthKitRunItem
+    /// Presente quando a corrida veio do campo de dados do Garmin.
+    let garmin: GarminDetectedRun?
 
     @Published var step: Step = .reveal
     @Published var choice: Choice = .freeRun
@@ -36,7 +39,18 @@ final class DetectedRunViewModel: ObservableObject {
 
     init(run: HealthKitRunItem) {
         self.run = run
+        self.garmin = nil
         self.selectedDay = Calendar.current.startOfDay(for: run.startDate)
+    }
+
+    init(candidate: DetectedRunCandidate) {
+        self.run = candidate.summary
+        if case .garmin(let garmin) = candidate {
+            self.garmin = garmin
+        } else {
+            self.garmin = nil
+        }
+        self.selectedDay = Calendar.current.startOfDay(for: candidate.summary.startDate)
     }
 
     // MARK: - Carregamento
@@ -44,6 +58,10 @@ final class DetectedRunViewModel: ObservableObject {
     func loadDetail() async {
         isLoadingDetail = true
         defer { isLoadingDetail = false }
+        if let garmin {
+            routeDetail = garmin.imported.routeDetail
+            return
+        }
         #if targetEnvironment(simulator)
         routeDetail = nil
         #else
@@ -89,12 +107,16 @@ final class DetectedRunViewModel: ObservableObject {
         defer { isSubmitting = false }
 
         await runStore.loadIfNeeded()
-        runStore.upsert(healthRun: run, detail: routeDetail)
+        if let garmin {
+            runStore.upsert(imported: garmin.imported, athlyWorkoutId: nil)
+        } else {
+            runStore.upsert(healthRun: run, detail: routeDetail)
+        }
         do { try await runStore.flush() } catch {
             errorMessage = error.localizedDescription
             return false
         }
-        DetectedRunAckStore.shared.acknowledge(healthKitUUID: run.id)
+        acknowledge(resolution: .freeRun)
         return true
     }
 
@@ -110,14 +132,13 @@ final class DetectedRunViewModel: ObservableObject {
         errorMessage = nil
         defer { isSubmitting = false }
 
-        let outcome = await planVM.completeWorkoutSelection(
-            workout,
-            selection: .healthKit(run),
-            runStore: runStore
-        )
+        let outcome = await complete(workout, planVM: planVM, runStore: runStore)
 
         switch outcome {
         case .success:
+            // Corrida do Health vinculada já sai da detecção pelo `RunWorkoutLinkStore` (e volta se o
+            // treino for desvinculado); a do Garmin precisa ser encerrada no backend.
+            if garmin != nil { acknowledge(resolution: .linked, workoutId: workout.id) }
             linkedWorkout = planVM.allWorkouts.first { $0.id == workout.id } ?? workout
             isShowingLinkSheet = false
             step = .linked
@@ -130,6 +151,45 @@ final class DetectedRunViewModel: ObservableObject {
 
     /// "Ignorar esta atividade": não perguntar mais sobre esta corrida.
     func ignore() {
-        DetectedRunAckStore.shared.acknowledge(healthKitUUID: run.id)
+        acknowledge(resolution: .dismissed)
+    }
+
+    /// Corrida do Garmin segue o caminho de um FIT importado: reconstrói os segmentos, salva no
+    /// Apple Health e anexa a rota ao registro que o Garmin Connect tenha criado. Se esse registro
+    /// sumiu do Health, conclui só com os dados no Athly em vez de perguntar no meio do pop-up.
+    private func complete(
+        _ workout: WorkoutModel,
+        planVM: TrainingPlanViewModel,
+        runStore: RunStore
+    ) async -> WorkoutCompletionOutcome {
+        guard let garmin else {
+            return await planVM.completeWorkoutSelection(workout, selection: .healthKit(run), runStore: runStore)
+        }
+        let selection = WorkoutCompletionSelection.imported(garmin.imported, saveToHealthKit: true)
+        let outcome = await planVM.completeWorkoutSelection(workout, selection: selection, runStore: runStore)
+        guard case .healthKitFallbackRequired = outcome else { return outcome }
+        return await planVM.completeWorkoutSelection(
+            workout,
+            selection: selection,
+            fallback: .localOnly,
+            runStore: runStore
+        )
+    }
+
+    /// Marca a corrida como resolvida para não perguntar de novo. Numa corrida do Garmin também
+    /// avisa o backend e dispensa a cópia do Apple Health.
+    private func acknowledge(resolution: GarminActivityResolution, workoutId: String? = nil) {
+        guard let garmin else {
+            DetectedRunAckStore.shared.acknowledge(healthKitUUID: run.id)
+            return
+        }
+        DetectedRunAckStore.shared.acknowledge(healthKitUUID: garmin.ackKey)
+        for uuid in garmin.matchingHealthKitUUIDs {
+            DetectedRunAckStore.shared.acknowledge(healthKitUUID: uuid)
+        }
+        let activityId = garmin.activityId
+        Task {
+            try? await APIClient.shared.resolveGarminActivity(id: activityId, resolution: resolution, workoutId: workoutId)
+        }
     }
 }

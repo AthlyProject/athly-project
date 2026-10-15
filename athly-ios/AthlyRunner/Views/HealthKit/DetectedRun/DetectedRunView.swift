@@ -1,7 +1,8 @@
 import SwiftUI
 import CoreLocation
 
-/// S1 · Revelação de uma corrida do Apple Health que o Athly não iniciou.
+/// S1 · Revelação de uma corrida que o Athly não iniciou: do Apple Health ou enviada pelo campo de
+/// dados da Athly no Garmin.
 /// Pergunta "este treino estava no seu plano?" e encaminha para corrida livre ou vínculo.
 struct DetectedRunView: View {
     @StateObject private var viewModel: DetectedRunViewModel
@@ -20,6 +21,12 @@ struct DetectedRunView: View {
         self.onOpenPlan = onOpenPlan
     }
 
+    init(candidate: DetectedRunCandidate, onFinish: @escaping () -> Void, onOpenPlan: (() -> Void)? = nil) {
+        _viewModel = StateObject(wrappedValue: DetectedRunViewModel(candidate: candidate))
+        self.onFinish = onFinish
+        self.onOpenPlan = onOpenPlan
+    }
+
     var body: some View {
         ZStack {
             AthlyTheme.Color.backgroundDark
@@ -32,6 +39,7 @@ struct DetectedRunView: View {
                 DetectedRunLinkedView(
                     run: viewModel.run,
                     workout: viewModel.linkedWorkout,
+                    isFromGarmin: viewModel.garmin != nil,
                     onOpenPlan: {
                         onFinish()
                         onOpenPlan?()
@@ -201,12 +209,21 @@ struct DetectedRunView: View {
 
     private var sourceBadge: some View {
         HStack(spacing: 5) {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 9))
-                .foregroundStyle(Color(hex: "#FF4B5C"))
-            Text("Apple Saúde")
-                .font(AthlyTheme.Typography.semibold(9))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
+            if viewModel.garmin != nil {
+                Image(systemName: "applewatch.side.right")
+                    .font(.system(size: 9))
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                Text(verbatim: "Garmin")
+                    .font(AthlyTheme.Typography.semibold(9))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+            } else {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color(hex: "#FF4B5C"))
+                Text("Apple Saúde")
+                    .font(AthlyTheme.Typography.semibold(9))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+            }
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 4)

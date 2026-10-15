@@ -563,6 +563,9 @@ struct EmptyResponse: Decodable, Sendable {}
 /// Relógio pareado com o app Connect IQ da Athly (`GET /connect-iq/devices`).
 struct ConnectIqDevice: Decodable, Identifiable, Sendable, Equatable {
     let id: String
+    /// `watch_app` baixa os treinos; `data_field` (campo de dados) envia as corridas. Ausente em
+    /// backends antigos.
+    let kind: String?
     /// `pending` até o relógio buscar o token e sincronizar pela primeira vez; depois `active`.
     let status: String
     let partNumber: String?
@@ -574,6 +577,7 @@ struct ConnectIqDevice: Decodable, Identifiable, Sendable, Equatable {
     let lastSync: ConnectIqLastSync?
 
     var isActive: Bool { status == "active" }
+    var isDataField: Bool { kind == "data_field" }
 
     var lastSyncDate: Date? {
         lastSyncAt.flatMap { try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse($0) }

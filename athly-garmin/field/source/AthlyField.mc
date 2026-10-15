@@ -1,0 +1,166 @@
+import Toybox.Activity;
+import Toybox.Graphics;
+import Toybox.Lang;
+import Toybox.Time;
+import Toybox.WatchUi;
+
+// O campo na tela de corrida. Pareado: pace médio de 30 s, com fundo verde dentro da faixa do passo,
+// vermelho acima (lento) e azul abaixo (rápido); o rótulo mostra a faixa. Sem pareamento: o código
+// para digitar no app. Em qualquer caso grava a corrida (Recorder) — a rota sai do relógio só depois.
+class AthlyField extends WatchUi.DataField {
+    private var _recorder as Recorder = new Recorder();
+    private var _pace as PaceWindow = new PaceWindow(30);
+    private var _pairing as FieldPairing?;
+    // [rápido, lento] em s/km, do alvo de velocidade do passo atual.
+    private var _target as [Number, Number]? = null;
+
+    function initialize() {
+        DataField.initialize();
+        if (FieldStore.token() == null || !FieldStore.isTokenConfirmed()) {
+            _pairing = new FieldPairing();
+        }
+    }
+
+    function compute(info as Activity.Info) as Void {
+        var now = Time.now().value();
+        if (_pairing != null) {
+            var pairing = _pairing as FieldPairing;
+            pairing.tick(now);
+            if (pairing.isDone()) {
+                _pairing = null;
+            }
+        }
+        _recorder.compute(info, now);
+        if (info.timerState == Activity.TIMER_STATE_ON) {
+            _pace.add(info.timerTime, info.elapsedDistance);
+        }
+        if (_target == null && info.timerState == Activity.TIMER_STATE_ON) {
+            _target = stepTarget();
+        }
+    }
+
+    function onTimerStart() as Void {
+        _recorder.onTimerStart(Time.now().value());
+    }
+
+    function onTimerResume() as Void {
+        _recorder.onTimerResume(Time.now().value());
+    }
+
+    function onTimerPause() as Void {
+        _recorder.onTimerPause(Time.now().value());
+    }
+
+    function onTimerStop() as Void {
+        _recorder.onTimerPause(Time.now().value());
+    }
+
+    function onTimerLap() as Void {
+        _recorder.onTimerLap(Time.now().value());
+    }
+
+    function onWorkoutStarted() as Void {
+        _recorder.onWorkoutStarted(Time.now().value());
+        _pace.reset();
+        _target = stepTarget();
+    }
+
+    function onWorkoutStepComplete() as Void {
+        _recorder.onWorkoutStepComplete(Time.now().value());
+        _pace.reset();
+        _target = stepTarget();
+    }
+
+    function onTimerReset() as Void {
+        _recorder.finish(Time.now().value());
+        _pace.reset();
+        _target = null;
+    }
+
+    function onUpdate(dc as Graphics.Dc) as Void {
+        var background = getBackgroundColor();
+        var foreground = background == Graphics.COLOR_BLACK ? Graphics.COLOR_WHITE : Graphics.COLOR_BLACK;
+        var label;
+        var value;
+        var numeric = false;
+
+        if (_pairing != null && !(_pairing as FieldPairing).isPaired()) {
+            label = WatchUi.loadResource(Rez.Strings.PairLabel) as String;
+            value = pairingText(_pairing as FieldPairing);
+        } else {
+            var pace = _pace.secPerKm();
+            value = pace == null ? "--:--" : PaceMath.format(pace);
+            numeric = true;
+            if (_target != null) {
+                var target = _target as [Number, Number];
+                label = PaceMath.format(target[0]) + "-" + PaceMath.format(target[1]);
+                if (pace != null) {
+                    background = pace < target[0] ? Graphics.COLOR_BLUE
+                        : pace > target[1] ? Graphics.COLOR_RED : Graphics.COLOR_DK_GREEN;
+                    foreground = Graphics.COLOR_WHITE;
+                }
+            } else {
+                label = WatchUi.loadResource(Rez.Strings.Pace30) as String;
+            }
+        }
+
+        dc.setColor(foreground, background);
+        dc.clear();
+        var width = dc.getWidth();
+        var height = dc.getHeight();
+        dc.setColor(foreground, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(width / 2, height * 22 / 100, Graphics.FONT_XTINY, label,
+            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(width / 2, height * 62 / 100, fontFor(dc, value, numeric), value,
+            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+    }
+
+    private function pairingText(pairing as FieldPairing) as String {
+        if (pairing.state == FIELD_PAIRING_SHOWING) {
+            return pairing.displayCode();
+        }
+        if (pairing.state == FIELD_PAIRING_ERROR) {
+            return WatchUi.loadResource(
+                FieldApi.isPhoneError(pairing.errorStatus) ? Rez.Strings.PairNoPhone : Rez.Strings.PairError
+            ) as String;
+        }
+        return WatchUi.loadResource(Rez.Strings.PairRequesting) as String;
+    }
+
+    // Maior fonte em que o texto cabe em 90% da largura e 55% da altura do campo (o layout muda
+    // de 1 a 4+ campos por tela).
+    private function fontFor(dc as Graphics.Dc, text as String, numeric as Boolean) as Graphics.FontType {
+        var fonts = numeric
+            ? [Graphics.FONT_NUMBER_HOT, Graphics.FONT_NUMBER_MEDIUM, Graphics.FONT_NUMBER_MILD, Graphics.FONT_MEDIUM, Graphics.FONT_SMALL]
+            : [Graphics.FONT_MEDIUM, Graphics.FONT_SMALL, Graphics.FONT_TINY, Graphics.FONT_XTINY];
+        var maxWidth = dc.getWidth() * 9 / 10;
+        var maxHeight = dc.getHeight() * 55 / 100;
+        for (var i = 0; i < fonts.size(); i++) {
+            var size = dc.getTextDimensions(text, fonts[i]);
+            if (size[0] <= maxWidth && size[1] <= maxHeight) {
+                return fonts[i];
+            }
+        }
+        return Graphics.FONT_XTINY;
+    }
+
+    // Faixa de pace do passo atual, quando o alvo é velocidade (o FIT da Athly sempre usa).
+    private function stepTarget() as [Number, Number]? {
+        var info = Activity.getCurrentWorkoutStep();
+        if (info == null) {
+            return null;
+        }
+        var step = info.step;
+        if (step instanceof Activity.WorkoutIntervalStep) {
+            var interval = step as Activity.WorkoutIntervalStep;
+            var resting = info.intensity == Activity.WORKOUT_INTENSITY_REST
+                || info.intensity == Activity.WORKOUT_INTENSITY_RECOVERY;
+            step = resting ? interval.restStep : interval.activeStep;
+        }
+        var workoutStep = step as Activity.WorkoutStep;
+        if (workoutStep.targetType != Activity.WORKOUT_STEP_TARGET_SPEED) {
+            return null;
+        }
+        return PaceMath.paceRange(workoutStep.targetValueLow, workoutStep.targetValueHigh);
+    }
+}

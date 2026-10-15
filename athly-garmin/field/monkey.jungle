@@ -1,0 +1,5 @@
+project.manifest = manifest.xml
+
+# Testes (:test) entram só nos builds com --unit-test. O ícone é o mesmo do app de treinos.
+base.sourcePath = source;test
+base.resourcePath = resources;../resources/drawables
