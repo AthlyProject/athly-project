@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/AthlyProject/athly-project/compare/v1.5.3...v1.6.0) (2026-10-15)
+
+
+### Features
+
+* save garmin trainings and gps tracking ([6b0d99f](https://github.com/AthlyProject/athly-project/commit/6b0d99f4f65e49d2c1e065f97a929c23d4ffb16a))
+
 ## [1.5.3](https://github.com/AthlyProject/athly-project/compare/v1.5.2...v1.5.3) (2026-10-14)
 
 
