@@ -121,6 +121,8 @@ class Recorder {
         var parts = track.finish();
         if (_timerMs / 1000 < MIN_TIMER_SEC || _lastActive <= _start) {
             FieldStore.discardBlocks(_id, parts);
+            FieldStore.setLastEvent(FieldStore.EVENT_TOO_SHORT, _timerMs / 1000);
+            reset();
             return;
         }
         closeLap(_lastActive);
@@ -144,9 +146,11 @@ class Recorder {
             header["hrMax"] = _hrMax;
         }
         if (FieldStore.enqueue(_id, header, now)) {
+            FieldStore.setLastEvent(FieldStore.EVENT_QUEUED, parts);
             UploadRules.scheduleRetries();
         } else {
             FieldStore.discardBlocks(_id, parts);
+            FieldStore.setLastEvent(FieldStore.EVENT_NO_ROOM, 0);
         }
         reset();
     }

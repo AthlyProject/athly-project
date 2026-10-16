@@ -163,7 +163,8 @@ private func device(_ id: String, status: String = "active", kind: String? = "wa
         pairedAt: "2026-10-04T13:54:23.951Z",
         lastSeenAt: nil,
         lastSyncAt: nil,
-        lastSync: nil
+        lastSync: nil,
+        uploadsRuns: nil
     )
 }
 

@@ -113,6 +113,47 @@ para `GARMIN/APPS` (relógios usam MTP: no Mac, use o [OpenMTP](https://openmtp.
 monkeyc -f monkey.jungle -d fr970 -o bin/athly-fr970.prg -y ~/.garmin/athly_ciq.der
 ```
 
+## App único (`app/`) — substitui o app de treinos e o campo de dados
+
+Um só app Connect IQ (`watch-app`, **mesmo ID** do app de treinos 1.x: instalar por cima mantém o
+pareamento). Versão 2.x: o backend usa isso para saber que o relógio envia corridas
+(`ConnectIqDeviceModel.uploadsRuns`).
+
+```
+Menu: treinos da semana · Corrida livre · A enviar: N · Sincronizar · Lista de treinos Garmin · Desconectar
+Sync: GET /connect-iq/manifest → GET /connect-iq/workouts/:id/plan (JSON, por rev)
+      + FIT para Treino › Treinos só com a opção "Lista de treinos Garmin" ligada
+Treino: Player (WorkoutPlan.expand + Player) · RunSession (ActivityRecording + GPS + FC, 1 Hz)
+        → FIT normal no Garmin Connect, uma volta por passo · Recorder → RunQueue
+Salvar: UploadView envia na hora (POST /connect-iq/activities + parts, com workoutId)
+        sobrou fila → UploadService a cada 5 min
+```
+
+- **Tela da corrida**: pace médio de 30 s com fundo verde/vermelho/azul conforme a faixa do passo,
+  nome do passo ("400m forte 3/6"), faixa e quanto falta. Cima/baixo: FC, tempo e distância
+  totais, próximo passo.
+- **Botões**: START inicia; durante a corrida, START pausa e abre Retomar / Salvar / Descartar
+  (descartar pede dois toques). BACK/LAP avança o passo (obrigatório em passo aberto) ou marca
+  volta numa corrida livre.
+- **Avisos**: vibra na troca de passo, 5 s/50 m antes do fim do passo, e quando o pace de 30 s fica
+  fora da faixa por 10 s (dois toques: lento; um longo: rápido), repetindo a cada 30 s enquanto
+  continuar fora.
+- **Player da Garmin**: com a lista ligada, o treino também abre no player nativo — mas essa corrida
+  não é enviada à Athly (volta pelo Apple Health ou importando o FIT).
+
+```bash
+cd athly-garmin
+make app-build DEVICE=fr970   # app/bin/athly.prg → GARMIN/APPS (substitui o athly.prg antigo)
+make app-iq                   # app/bin/athly.iq para a Connect IQ Store
+connectiq &
+make app-test DEVICE=fr165    # testes unitários no simulador
+```
+
+No simulador: **Simulation › FIT Data › Playback** de um FIT real alimenta GPS, distância e FC para
+testar o player. Ainda a confirmar no relógio: mapeamento dos botões (touch × botões), alertas e
+memória nos modelos com 512 KB (FR255/FR255S). Depois do teste, `source/`, `test/`, `resources*` e
+`field/` podem ser apagados (Fase 6).
+
 ## Campo de dados (`field/`)
 
 App Connect IQ separado (tipo `datafield`, API mínima 5.0.0, mesmos relógios). O atleta adiciona o
@@ -138,8 +179,12 @@ App iOS: GET /connect-iq/activities → pop-up de corrida detectada → vincular
   false`; uma descartada aparece no app para ignorar). Com `true`, só as confirmadas pelo
   `onActivityCompleted` — desligado porque corridas salvas não chegaram no relógio de teste.
 - **Enviar agora**: abrir a atividade Corrida sem iniciar faz o campo enviar a fila na hora. O rótulo
-  mostra "A enviar: N" e o valor, "Enviando", "Sem celular" ou "Erro <status>"; ao terminar,
-  "Enviado à Athly". Fora isso, o segundo plano tenta a cada 5 min enquanto houver fila.
+  mostra "A enviar: N" e o valor, "Enviando", "Sem celular" ou "Erro <status>". Fora isso, o
+  segundo plano tenta a cada 5 min enquanto houver fila.
+- **Diagnóstico**: com a fila vazia, antes de iniciar, o rótulo mostra o que houve com a última
+  corrida (24 h): "Enviado 19:42", "Corrida curta" (< 60 s), "Relógio sem espaço", "Recusada <status>"
+  ou "Corrida perdida"; sem nada recente, a versão ("Athly 1.0.2") — subir `Config.APP_VERSION` a
+  cada build instalado.
 - **No app**: com o campo pareado, a cópia da corrida no Apple Health espera até 2 h pela versão do
   campo. Em Ajustes › Relógio Garmin, "último contato" mostra quando o campo falou com o backend.
 - **Formato da rota**: `source/TrackCodec.mc` ↔ `athly-backend/src/modules/connect-iq/activity/track-codec.ts`.

@@ -4,9 +4,14 @@
     <!-- Corridas na fila do relógio, mostrado antes de iniciar a corrida. -->
     <string id="PendingUploads">A enviar: $1$</string>
     <string id="Uploading">Enviando</string>
-    <string id="UploadSent">Enviado à Athly</string>
     <!-- Status HTTP ou código do runtime: ajuda a diagnosticar pelo README. -->
     <string id="UploadError">Erro $1$</string>
+    <!-- Última corrida (mostrado antes de iniciar a próxima). -->
+    <string id="LastSent">Enviado $1$</string>
+    <string id="LastTooShort">Corrida curta</string>
+    <string id="LastNoRoom">Relógio sem espaço</string>
+    <string id="LastRejected">Recusada $1$</string>
+    <string id="LastLost">Corrida perdida</string>
     <string id="PairLabel">Parear no app Athly</string>
     <string id="PairRequesting">Pedindo código</string>
     <string id="PairNoPhone">Sem celular</string>

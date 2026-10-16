@@ -15,6 +15,9 @@ struct GarminActivitySummary: Decodable, Identifiable, Sendable, Equatable {
     let timerSeconds: Double
     let avgHeartRate: Int?
     let maxHeartRate: Int?
+    /// Treino da Athly que o app executou no relógio (sugestão de vínculo); nil numa corrida livre
+    /// ou vinda do campo de dados.
+    let plannedWorkoutId: String?
 }
 
 /// Detalhe com a rota, as voltas (passos do treino) e as pausas. Espelha `ConnectIqActivityDetailModel`.

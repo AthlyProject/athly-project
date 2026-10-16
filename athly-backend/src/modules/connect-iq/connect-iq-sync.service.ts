@@ -7,6 +7,7 @@ import { addCalendarDays, localCalendar } from '../ai-planner/weekly-calendar';
 import { encodeWorkoutFit, fitSerialNumber } from './fit/fit-file';
 import { MAX_WORKOUT_NAME_LENGTH } from './fit/fit.constants';
 import { buildFitPlan, fitPlanRevision, FitWorkoutPlan } from './fit/workout-fit-plan';
+import { toWatchPlan, WatchPlan } from './fit/workout-watch-plan';
 import { ConnectIqManifestModel } from './models/connect-iq.model';
 
 export const MANIFEST_VERSION = 1;
@@ -69,6 +70,29 @@ export class ConnectIqSyncService {
     today?: string,
     now = new Date(),
   ): Promise<Uint8Array> {
+    const entry = await this.entry(userId, workoutId, today, now);
+    return encodeWorkoutFit(entry.plan, {
+      serialNumber: fitSerialNumber(entry.workout.id),
+      timeCreated: now,
+    });
+  }
+
+  /** O mesmo treino como plano JSON, para o player do app Athly no relógio. */
+  async workoutPlan(
+    userId: string,
+    workoutId: string,
+    today?: string,
+    now = new Date(),
+  ): Promise<WatchPlan> {
+    return toWatchPlan((await this.entry(userId, workoutId, today, now)).plan);
+  }
+
+  private async entry(
+    userId: string,
+    workoutId: string,
+    today: string | undefined,
+    now: Date,
+  ): Promise<ManifestEntry> {
     const day = await this.resolveToday(userId, today, now);
     const entry = (await this.entries(userId, day)).find(({ workout }) => workout.id === workoutId);
     if (!entry) {
@@ -77,10 +101,7 @@ export class ConnectIqSyncService {
         'Treino indisponível para o relógio.',
       );
     }
-    return encodeWorkoutFit(entry.plan, {
-      serialNumber: fitSerialNumber(entry.workout.id),
-      timeCreated: now,
-    });
+    return entry;
   }
 
   /**

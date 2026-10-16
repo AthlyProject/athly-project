@@ -1,7 +1,7 @@
 DEVICE ?= fr57042mm
 KEY ?= $(HOME)/.garmin/athly_ciq.der
 
-.PHONY: build iq field-build field-iq field-test
+.PHONY: build iq field-build field-iq field-test app-build app-iq app-test
 
 # Compila o .prg (release) para um relógio: make build DEVICE=fr970
 build:
@@ -25,3 +25,16 @@ field-iq:
 field-test:
 	cd field && monkeyc -f monkey.jungle -d $(DEVICE) -o bin/test.prg -y $(KEY) --unit-test
 	@cd field && out="$$(monkeydo bin/test.prg $(DEVICE) -t 2>&1)"; echo "$$out"; echo "$$out" | grep -q '^PASSED'
+
+# App único (app/): roda o treino, grava e envia para a Athly. Mesmo ID do app de treinos 1.x.
+# make app-build DEVICE=fr970 → app/bin/athly.prg, copiar para GARMIN/APPS no lugar do athly.prg antigo
+app-build:
+	cd app && monkeyc -f monkey.jungle -d $(DEVICE) -o bin/athly.prg -y $(KEY) -r
+
+app-iq:
+	cd app && monkeyc -f monkey.jungle -e -r -o bin/athly.iq -y $(KEY)
+
+# Testes unitários do app no simulador (abra antes com `connectiq &`)
+app-test:
+	cd app && monkeyc -f monkey.jungle -d $(DEVICE) -o bin/test.prg -y $(KEY) --unit-test
+	@cd app && out="$$(monkeydo bin/test.prg $(DEVICE) -t 2>&1)"; echo "$$out"; echo "$$out" | grep -q '^PASSED'

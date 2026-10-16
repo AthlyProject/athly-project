@@ -15,10 +15,21 @@ export interface CiqDeviceContext {
 /** `lastSeenAt` só é regravado depois deste intervalo — evita um UPDATE por request. */
 const LAST_SEEN_THROTTLE_MS = 5 * 60_000;
 
+/** Primeira versão do app de relógio que grava e envia as corridas (o app único). */
+export const WATCH_APP_UPLOADS_FROM_MAJOR = 2;
+
+/** O dispositivo manda corridas para a Athly: o campo de dados, ou o app de relógio 2.x+. */
+export function uploadsRuns(device: Pick<ConnectIqDevice, 'kind' | 'appVersion'>): boolean {
+  if (device.kind === 'data_field') return true;
+  const major = Number.parseInt(device.appVersion?.split('.')[0] ?? '', 10);
+  return Number.isFinite(major) && major >= WATCH_APP_UPLOADS_FROM_MAJOR;
+}
+
 export function toDeviceModel(device: ConnectIqDevice): ConnectIqDeviceModel {
   return {
     id: device.id,
     kind: device.kind,
+    uploadsRuns: uploadsRuns(device),
     status: device.activatedAt ? 'active' : 'pending',
     partNumber: device.partNumber,
     appVersion: device.appVersion,

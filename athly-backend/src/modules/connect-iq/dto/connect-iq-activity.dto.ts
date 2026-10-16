@@ -164,6 +164,13 @@ export class ConnectIqActivityHeaderDto {
   @IsString()
   @MaxLength(16)
   appVersion?: string;
+
+  @ApiPropertyOptional({
+    description: 'Treino da Athly que o app executou no relógio; ausente numa corrida livre',
+  })
+  @IsOptional()
+  @IsUUID()
+  workoutId?: string;
 }
 
 export class ConnectIqActivityPartDto {

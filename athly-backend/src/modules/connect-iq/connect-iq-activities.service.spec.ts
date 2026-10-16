@@ -91,6 +91,7 @@ describe('ConnectIqActivitiesService', () => {
         utcOffsetSec: -10800,
         partCount: 2,
         pauses: [[1200, 1250]],
+        plannedWorkoutId: null,
       });
       expect(call.create.status).toBeUndefined();
       expect(call.create.laps[0]).toEqual({
@@ -103,6 +104,15 @@ describe('ConnectIqActivitiesService', () => {
         hrMax: undefined,
         intensity: 2,
       });
+    });
+
+    it('guarda o treino que o app executou no relógio', async () => {
+      const workoutId = '0c6b2a1e-7f4e-4b8e-9a51-3f1a2b3c4d5e';
+      await service.receiveHeader(DEVICE, header({ workoutId }), NOW);
+
+      expect(prisma.connectIqActivity.upsert.mock.calls[0][0].create.plannedWorkoutId).toBe(
+        workoutId,
+      );
     });
 
     it('apaga corridas com mais de 30 dias do usuário', async () => {

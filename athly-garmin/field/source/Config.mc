@@ -11,7 +11,7 @@ module Config {
 
     // Aparece no campo antes de iniciar a corrida: é como saber qual build está no relógio.
     // Subir a cada build instalado.
-    const APP_VERSION = "1.0.1";
+    const APP_VERSION = "1.0.2";
 
     // true: só envia corridas confirmadas pelo evento "atividade concluída" (uma corrida descartada
     // não dispara o evento). Desligado porque, no relógio de teste, corridas salvas não chegaram:

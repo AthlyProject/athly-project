@@ -48,7 +48,10 @@ struct DetectedRunView: View {
                 )
             }
         }
-        .task { await viewModel.loadDetail() }
+        .task {
+            viewModel.preselectPlannedWorkout(from: planVM.allWorkouts)
+            await viewModel.loadDetail()
+        }
         .sheet(isPresented: $viewModel.isShowingLinkSheet) {
             DetectedRunLinkSheet(viewModel: viewModel)
                 .environmentObject(planVM)

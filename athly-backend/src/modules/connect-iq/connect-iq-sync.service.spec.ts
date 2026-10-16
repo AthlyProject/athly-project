@@ -172,4 +172,31 @@ describe('ConnectIqSyncService', () => {
       });
     });
   });
+
+  describe('workoutPlan', () => {
+    it('devolve o plano com o mesmo rev e nome do manifesto', async () => {
+      const run = workout('2026-10-07');
+      prisma.workout.findMany.mockResolvedValue([run]);
+
+      const manifest = await service.manifest('user-1', '2026-10-07', NOW);
+      const plan = await service.workoutPlan('user-1', run.id, '2026-10-07', NOW);
+
+      expect(plan.rev).toBe(manifest.workouts[0].rev);
+      expect(plan.name).toBe(manifest.workouts[0].name);
+      expect(plan.steps).toHaveLength(manifest.workouts[0].steps);
+      expect(plan.steps).toContainEqual(expect.objectContaining({ times: expect.any(Number) }));
+    });
+
+    it('responde 404 codificado para treino fora do manifesto', async () => {
+      prisma.workout.findMany.mockResolvedValue([workout('2026-10-07')]);
+
+      const error = await service
+        .workoutPlan('user-1', '3f2a9c1e-0000-4000-8000-999999999999', '2026-10-07', NOW)
+        .catch((e: HttpException) => e);
+
+      expect((error as HttpException).getResponse()).toMatchObject({
+        code: ErrorCode.CIQ_WORKOUT_NOT_AVAILABLE,
+      });
+    });
+  });
 });

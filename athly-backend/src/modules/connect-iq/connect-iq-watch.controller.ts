@@ -6,6 +6,7 @@ import {
   Header,
   HttpCode,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseFilters,
@@ -31,6 +32,7 @@ import {
 } from './dto/connect-iq-activity.dto';
 import { DeviceTokenGuard } from './guards/device-token.guard';
 import { ConnectIqActivityUploadModel } from './models/connect-iq-activity.model';
+import type { WatchPlan } from './fit/workout-watch-plan';
 import {
   ConnectIqManifestModel,
   ConnectIqPairingModel,
@@ -78,6 +80,23 @@ export class ConnectIqWatchController {
     @Query() query: WatchDateQueryDto,
   ): Promise<ConnectIqManifestModel> {
     return this.sync.manifest(device.userId, query.today);
+  }
+
+  /**
+   * Plano do treino para o player do app no relógio (os mesmos passos do FIT). Rota JSON: erros no
+   * envelope, como o manifesto; o download FIT fica em ConnectIqFitController.
+   */
+  @Get('workouts/:workoutId/plan')
+  @UseGuards(DeviceTokenGuard)
+  @Header('Cache-Control', 'no-store')
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'Plano: { rev, name, steps: [passo | { repeatFrom, times }] }' })
+  workoutPlan(
+    @CurrentCiqDevice() device: CiqDeviceContext,
+    @Param('workoutId', ParseUUIDPipe) workoutId: string,
+    @Query() query: WatchDateQueryDto,
+  ): Promise<WatchPlan> {
+    return this.sync.workoutPlan(device.userId, workoutId, query.today);
   }
 
   @Post('sync-reports')

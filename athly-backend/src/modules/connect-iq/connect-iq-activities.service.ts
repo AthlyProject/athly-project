@@ -62,6 +62,7 @@ function toSummary(activity: ConnectIqActivity): ConnectIqActivitySummaryModel {
     timerSeconds: activity.timerSeconds,
     avgHeartRate: activity.avgHeartRate,
     maxHeartRate: activity.maxHeartRate,
+    plannedWorkoutId: activity.plannedWorkoutId,
   };
 }
 
@@ -116,6 +117,7 @@ export class ConnectIqActivitiesService {
       ) as unknown as Prisma.InputJsonValue,
       pauses: pausePairs(header.pauses) as unknown as Prisma.InputJsonValue,
       partCount: header.parts,
+      plannedWorkoutId: header.workoutId ?? null,
       ...(header.parts === 0 ? { status: 'ready' as const } : {}),
     };
     const activity = await this.prisma.connectIqActivity.upsert({

@@ -27,6 +27,8 @@ struct GarminDetectedRun: Sendable {
     /// A mesma corrida no Apple Health (o Garmin Connect também grava lá, sem rota). É dispensada
     /// junto, para o pop-up não perguntar duas vezes pela mesma corrida.
     let matchingHealthKitUUIDs: [String]
+    /// Treino que o app Athly executou no relógio: o pop-up já abre com ele escolhido.
+    var plannedWorkoutId: String? = nil
 
     /// Chave no `DetectedRunAckStore` — guarda a decisão mesmo se o backend estiver fora.
     var ackKey: String { Self.ackKey(activityId) }
@@ -156,7 +158,7 @@ enum DetectedRunService {
             now: now
         )
         guard let detected else { return nil }
-        if shouldWaitForGarmin(run: detected, hasDataField: await hasActiveDataField(), now: now) {
+        if shouldWaitForGarmin(run: detected, hasDataField: await hasActiveRunUploader(), now: now) {
             logger.info("Corrida do Health aguardando o campo de dados: \(detected.id, privacy: .public)")
             return nil
         }
@@ -164,11 +166,12 @@ enum DetectedRunService {
         return .healthKit(detected)
     }
 
-    /// Só consultado quando há corrida do Health a oferecer. Na dúvida (sem rede), não espera.
+    /// Há um relógio que envia corridas (app Athly 2.x ou campo de dados). Só consultado quando há
+    /// corrida do Health a oferecer. Na dúvida (sem rede), não espera.
     @MainActor
-    private static func hasActiveDataField() async -> Bool {
+    private static func hasActiveRunUploader() async -> Bool {
         guard let devices = try? await APIClient.shared.listConnectIqDevices() else { return false }
-        return devices.contains { $0.isDataField && $0.isActive }
+        return devices.contains { $0.uploadsRunsToAthly && $0.isActive }
     }
 
     @MainActor
@@ -239,7 +242,8 @@ enum DetectedRunService {
                         averageHeartRate: summary.avgHeartRate,
                         maximumHeartRate: summary.maxHeartRate
                     ),
-                    matchingHealthKitUUIDs: matching
+                    matchingHealthKitUUIDs: matching,
+                    plannedWorkoutId: summary.plannedWorkoutId
                 )
             }
         }

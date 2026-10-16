@@ -560,6 +560,8 @@ model ConnectIqActivity {
   /// Pausas em segundos desde o início: [[início, fim], ...].
   pauses         Json
   partCount      Int                     @map("part_count")
+  /// Treino que o app Athly executou no relógio (o atleta ainda confirma no app).
+  plannedWorkoutId String?               @map("planned_workout_id")
   resolution     String?                 @db.VarChar(16)
   workoutId      String?                 @map("workout_id")
   resolvedAt     DateTime?               @map("resolved_at")

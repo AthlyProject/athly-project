@@ -42,6 +42,10 @@ export class ConnectIqDeviceModel {
   })
   kind: 'watch_app' | 'data_field';
   @ApiProperty({
+    description: 'Envia as corridas feitas para a Athly (campo de dados ou app 2.x+)',
+  })
+  uploadsRuns: boolean;
+  @ApiProperty({
     enum: ['pending', 'active'],
     description: '`pending` até o relógio buscar o token e fazer a primeira chamada',
   })

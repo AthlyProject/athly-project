@@ -75,6 +75,18 @@ final class DetectedRunViewModel: ObservableObject {
         return Int(avg.rounded())
     }
 
+    /// Corrida feita com um treino no app Athly do relógio: já escolhe esse treino para vincular.
+    /// Só antes de o atleta mexer na escolha, e só se o treino ainda estiver pendente.
+    func preselectPlannedWorkout(from workouts: [WorkoutModel]) {
+        guard selectedWorkout == nil,
+              let plannedId = garmin?.plannedWorkoutId,
+              let workout = workouts.first(where: { $0.id == plannedId && $0.status == .scheduled })
+        else { return }
+        selectedWorkout = workout
+        selectedDay = Calendar.current.startOfDay(for: workout.parsedDate)
+        choice = .linkToWorkout
+    }
+
     // MARK: - Candidatos a vínculo
 
     /// Treinos de corrida ainda pendentes, agrupados por dia — origem das opções do calendário.

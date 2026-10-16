@@ -86,8 +86,7 @@ class Uploader {
         }
         var body = data as Dictionary;
         if (body["complete"] == true) {
-            FieldStore.remove(_id);
-            next();
+            sent();
             return;
         }
         var header = FieldStore.header(_id) as Dictionary;
@@ -112,8 +111,7 @@ class Uploader {
             return;
         }
         if ((data as Dictionary)["complete"] == true) {
-            FieldStore.remove(_id);
-            next();
+            sent();
             return;
         }
         _missing = _missing.slice(1, null);
@@ -179,7 +177,14 @@ class Uploader {
         );
     }
 
+    private function sent() as Void {
+        FieldStore.remove(_id);
+        FieldStore.setLastEvent(FieldStore.EVENT_SENT, 0);
+        next();
+    }
+
     private function fail(status as Number) as Void {
+        FieldStore.setLastEvent(status == 400 || status == 404 ? FieldStore.EVENT_REJECTED : FieldStore.EVENT_FAILED, status);
         if (status == 401) {
             // Despareado no app: o campo volta a mostrar o código. A corrida fica guardada.
             FieldStore.setToken(null);

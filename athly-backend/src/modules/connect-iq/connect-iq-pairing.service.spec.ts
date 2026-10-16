@@ -242,6 +242,7 @@ describe('ConnectIqPairingService', () => {
       expect(device).toEqual({
         id: 'device-1',
         kind: 'watch_app',
+        uploadsRuns: false,
         status: 'pending',
         partNumber: '006-B4432-00',
         appVersion: '1.0.0',

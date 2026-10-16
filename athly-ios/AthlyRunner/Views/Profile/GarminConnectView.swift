@@ -26,7 +26,7 @@ struct GarminConnectView: View {
 
             ScrollView {
                 VStack(spacing: 6) {
-                    Text("Leve os treinos da Athly para o seu Garmin. Eles aparecem em Treino › Treinos no relógio e rodam no player de treino da própria Garmin.")
+                    Text("Leve os treinos da Athly para o seu Garmin. Corra com o app Athly no relógio: ele mostra o pace de cada tiro, grava a corrida e envia a rota e o resultado de cada passo de volta para a Athly.")
                         .font(AthlyTheme.Typography.body(12))
                         .foregroundStyle(AthlyTheme.Color.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -42,8 +42,12 @@ struct GarminConnectView: View {
                     AthlySectionLabel("Como conectar")
                     stepsGroup
 
-                    AthlySectionLabel("Rota e resultado de cada tiro")
-                    fieldStepsGroup
+                    // O campo de dados foi substituído pelo app único; a seção só fica para quem
+                    // ainda tem um pareado.
+                    if hasDataField {
+                        AthlySectionLabel("Rota e resultado de cada tiro")
+                        fieldStepsGroup
+                    }
 
                     AthlySectionLabel("Código do relógio")
                     codeGroup
@@ -64,7 +68,7 @@ struct GarminConnectView: View {
                         .padding(.horizontal, 2)
                         .padding(.top, 8)
 
-                    Text("Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino.")
+                    Text("Depois de salvar a corrida no app Athly do relógio (com o celular por perto), ela aparece aqui para você confirmar o treino.")
                         .font(AthlyTheme.Typography.body(11))
                         .foregroundStyle(AthlyTheme.Color.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -173,6 +177,10 @@ struct GarminConnectView: View {
                 title: Text("Digite o código abaixo")
             )
         }
+    }
+
+    private var hasDataField: Bool {
+        viewModel.devices.contains { $0.isDataField }
     }
 
     private var fieldStepsGroup: some View {

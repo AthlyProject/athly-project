@@ -578,6 +578,9 @@ struct ConnectIqDevice: Decodable, Identifiable, Sendable, Equatable {
 
     var isActive: Bool { status == "active" }
     var isDataField: Bool { kind == "data_field" }
+    /// Envia as corridas feitas para a Athly (app 2.x ou campo de dados). Ausente em backends antigos.
+    let uploadsRuns: Bool?
+    var uploadsRunsToAthly: Bool { uploadsRuns ?? isDataField }
 
     var lastSyncDate: Date? {
         lastSyncAt.flatMap { try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse($0) }

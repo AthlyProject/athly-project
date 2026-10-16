@@ -2,6 +2,7 @@ import Toybox.Activity;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Time;
+import Toybox.Time.Gregorian;
 import Toybox.WatchUi;
 
 // O campo na tela de corrida. Pareado: pace médio de 30 s, com fundo verde dentro da faixa do passo,
@@ -121,11 +122,11 @@ class AthlyField extends WatchUi.DataField {
                     value = progress;
                     numeric = false;
                 }
-            } else if (!_recorder.isActive() && _uploadStatus == UploadRules.UPLOAD_OK) {
-                label = WatchUi.loadResource(Rez.Strings.UploadSent) as String;
             } else if (!_recorder.isActive()) {
-                // Antes de iniciar, sem nada na fila: mostra a versão (confirma o build instalado).
-                label = "Athly " + Config.APP_VERSION;
+                // Antes de iniciar, sem nada na fila: o que aconteceu com a última corrida, ou a
+                // versão (confirma o build instalado).
+                var last = lastRunText();
+                label = last != null ? last : "Athly " + Config.APP_VERSION;
             } else {
                 label = WatchUi.loadResource(Rez.Strings.Pace30) as String;
             }
@@ -162,6 +163,13 @@ class AthlyField extends WatchUi.DataField {
             return WatchUi.loadResource(Rez.Strings.Uploading) as String;
         }
         var status = _uploadStatus;
+        if (status == null) {
+            // Sem tentativa nesta abertura: mostra a falha do envio em segundo plano, se houver.
+            var event = FieldStore.lastEvent();
+            if (event != null && event[0] == FieldStore.EVENT_FAILED) {
+                status = event[2] as Number;
+            }
+        }
         if (status == null || status == UploadRules.UPLOAD_OK || status == UploadRules.UPLOAD_NOTHING_TO_SEND) {
             return null;
         }
@@ -169,6 +177,34 @@ class AthlyField extends WatchUi.DataField {
             return WatchUi.loadResource(Rez.Strings.PairNoPhone) as String;
         }
         return Lang.format(WatchUi.loadResource(Rez.Strings.UploadError) as String, [status]);
+    }
+
+    // Última corrida nas últimas 24 h: "Enviado 19:42", "Corrida curta"... ou null.
+    private function lastRunText() as String? {
+        var event = FieldStore.lastEvent();
+        if (event == null || event.size() < 3 || Time.now().value() - (event[1] as Number) > 24 * 3600) {
+            return null;
+        }
+        var kind = event[0] as Number;
+        if (kind == FieldStore.EVENT_SENT) {
+            var at = Gregorian.info(new Time.Moment(event[1] as Number), Time.FORMAT_SHORT);
+            return Lang.format(WatchUi.loadResource(Rez.Strings.LastSent) as String,
+                [Lang.format("$1$:$2$", [at.hour, (at.min as Number).format("%02d")])]);
+        }
+        if (kind == FieldStore.EVENT_TOO_SHORT) {
+            return WatchUi.loadResource(Rez.Strings.LastTooShort) as String;
+        }
+        if (kind == FieldStore.EVENT_NO_ROOM) {
+            return WatchUi.loadResource(Rez.Strings.LastNoRoom) as String;
+        }
+        if (kind == FieldStore.EVENT_REJECTED) {
+            return Lang.format(WatchUi.loadResource(Rez.Strings.LastRejected) as String, [event[2]]);
+        }
+        // Na fila mas a fila está vazia: a corrida sumiu do Storage sem envio.
+        if (kind == FieldStore.EVENT_QUEUED) {
+            return WatchUi.loadResource(Rez.Strings.LastLost) as String;
+        }
+        return null;
     }
 
     private function pairingText(pairing as FieldPairing) as String {

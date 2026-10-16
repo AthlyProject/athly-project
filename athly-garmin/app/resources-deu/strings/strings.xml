@@ -1,0 +1,72 @@
+<strings>
+    <string id="AppName" scope="glance">Athly</string>
+    <string id="GlanceEmpty" scope="glance">Zum Synchronisieren öffnen</string>
+    <string id="Today" scope="glance">Heute</string>
+    <string id="Tomorrow" scope="glance">Morgen</string>
+    <string id="Sun" scope="glance">So</string>
+    <string id="Mon" scope="glance">Mo</string>
+    <string id="Tue" scope="glance">Di</string>
+    <string id="Wed" scope="glance">Mi</string>
+    <string id="Thu" scope="glance">Do</string>
+    <string id="Fri" scope="glance">Fr</string>
+    <string id="Sat" scope="glance">Sa</string>
+
+    <string id="PairTitle">Uhr verbinden</string>
+    <string id="PairInstructions">In der Athly-App unter Einstellungen > Garmin-Uhr eingeben:</string>
+    <string id="PairRequesting">Code wird erstellt...</string>
+    <string id="PairExpires">Läuft in $1$ Min. ab</string>
+    <string id="PairExpired">Code abgelaufen. Tippen für neuen Code.</string>
+
+    <string id="Syncing">Synchronisiere...</string>
+    <string id="Downloading">Lade $1$ von $2$</string>
+    <string id="SyncPartial">$1$ Training(s) nicht geladen</string>
+    <string id="SyncNow">Jetzt synchronisieren</string>
+    <string id="LastSync">Zuletzt: $1$</string>
+    <string id="NoWorkouts">Keine Trainings in den nächsten 7 Tagen</string>
+    <string id="WorkoutMissing">Dieses Training ist nicht mehr auf der Uhr. Erneut synchronisieren.</string>
+    <string id="TapToContinue">Tippen für Trainings</string>
+    <string id="TapToRetry">Tippen zum Wiederholen</string>
+
+    <string id="Disconnect">Trennen</string>
+    <string id="DisconnectTitle">Trennen?</string>
+    <string id="Cancel">Abbrechen</string>
+
+    <string id="ErrPhone">Öffne Garmin Connect auf dem Handy und versuche es erneut</string>
+    <string id="ErrTimeout">Keine Antwort. Erneut versuchen.</string>
+    <string id="ErrSecure">Fehler bei sicherer Verbindung</string>
+    <string id="ErrServer">Athly nicht erreichbar. Später erneut versuchen.</string>
+    <string id="ErrStorage">Trainingsspeicher voll. Alte Trainings auf der Uhr löschen.</string>
+    <string id="ErrUnpaired">Uhr getrennt. Bitte neu verbinden.</string>
+    <string id="ErrUnsupported">Diese Uhr kann keine Trainings laden.</string>
+    <string id="ErrGeneric">Synchronisierung fehlgeschlagen ($1$)</string>
+    <!-- App único: player, gravação e envio. -->
+    <string id="FreeRun">Freier Lauf</string>
+    <string id="ToSend">Zu senden: $1$</string>
+    <string id="ToSendTitle">Läufe zu senden</string>
+    <string id="NativeList">Garmin-Trainingsliste</string>
+    <string id="NativeListHint">Auch unter Training</string>
+    <string id="StartWithAthly">Mit Athly laufen</string>
+    <string id="StartWithAthlyHint">Zeichnet auf und sendet</string>
+    <string id="OpenInGarmin">Garmin-Player</string>
+    <string id="OpenInGarminHint">Nicht an Athly</string>
+    <string id="GpsSearching">GPS...</string>
+    <string id="GpsReady">GPS bereit</string>
+    <string id="PressStart">START zum Starten</string>
+    <string id="WorkoutDone">Training fertig</string>
+    <string id="Paused">Pausiert</string>
+    <string id="Pace30">Pace 30s</string>
+    <string id="HeartRate">Herzfrequenz</string>
+    <string id="NextStep">Nächster:</string>
+    <string id="LapToContinue">Runde für weiter</string>
+    <string id="Resume">Fortsetzen</string>
+    <string id="Save">Speichern</string>
+    <string id="Discard">Verwerfen</string>
+    <string id="DiscardConfirm">Nochmals tippen</string>
+    <string id="RunSaved">Lauf gespeichert</string>
+    <string id="RunTooShort">Lauf zu kurz</string>
+    <string id="RunNoRoom">Uhrspeicher voll</string>
+    <string id="Uploading">Senden an Athly...</string>
+    <string id="UploadSent">An Athly gesendet</string>
+    <string id="UploadLater">Kein Handy: später</string>
+    <string id="UploadError">Sendefehler $1$</string>
+</strings>

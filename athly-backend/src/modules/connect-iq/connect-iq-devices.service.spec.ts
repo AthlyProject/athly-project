@@ -1,7 +1,7 @@
 import { ExecutionContext, HttpException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { ErrorCode } from '../../common/errors/error-codes';
-import { ConnectIqDevicesService } from './connect-iq-devices.service';
+import { ConnectIqDevicesService, uploadsRuns } from './connect-iq-devices.service';
 import { DeviceTokenGuard } from './guards/device-token.guard';
 import { sha256 } from './utils/secrets';
 
@@ -212,4 +212,18 @@ describe('DeviceTokenGuard', () => {
       expect(devices.authenticate).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('uploadsRuns', () => {
+  it('campo de dados e app de relógio 2.x+ enviam corridas', () => {
+    expect(uploadsRuns({ kind: 'data_field', appVersion: '1.0.2' })).toBe(true);
+    expect(uploadsRuns({ kind: 'watch_app', appVersion: '2.0.0' })).toBe(true);
+    expect(uploadsRuns({ kind: 'watch_app', appVersion: '10.1.0' })).toBe(true);
+  });
+
+  it('app de treinos antigo ou sem versão não envia', () => {
+    expect(uploadsRuns({ kind: 'watch_app', appVersion: '1.0.0' })).toBe(false);
+    expect(uploadsRuns({ kind: 'watch_app', appVersion: null })).toBe(false);
+    expect(uploadsRuns({ kind: 'watch_app', appVersion: 'beta' })).toBe(false);
+  });
 });

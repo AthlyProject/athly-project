@@ -74,6 +74,52 @@
     ":" : {
 
     },
+    "Depois de salvar a corrida no app Athly do relógio (com o celular por perto), ela aparece aqui para você confirmar o treino." : {
+      "comment" : "Garmin watch screen: single Athly watch app (runs, records and uploads the workout).",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nachdem du den Lauf in der Athly-App auf der Uhr gespeichert hast (mit dem Handy in der Nähe), erscheint er hier, damit du das Training bestätigst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After you save the run in the Athly app on the watch (with your phone nearby), it shows up here for you to confirm the workout."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depois de salvar a corrida no app Athly do relógio (com o celular por perto), ela aparece aqui para você confirmar o treino."
+          }
+        }
+      }
+    },
+    "Leve os treinos da Athly para o seu Garmin. Corra com o app Athly no relógio: ele mostra o pace de cada tiro, grava a corrida e envia a rota e o resultado de cada passo de volta para a Athly." : {
+      "comment" : "Garmin watch screen: single Athly watch app (runs, records and uploads the workout).",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring deine Athly-Trainings auf deine Garmin. Lauf mit der Athly-App auf der Uhr: Sie zeigt die Pace jedes Intervalls, zeichnet den Lauf auf und sendet Strecke und Ergebnis jedes Schritts an Athly."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take your Athly workouts to your Garmin. Run with the Athly app on the watch: it shows the pace for each rep, records the run and sends the route and each step's result back to Athly."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leve os treinos da Athly para o seu Garmin. Corra com o app Athly no relógio: ele mostra o pace de cada tiro, grava a corrida e envia a rota e o resultado de cada passo de volta para a Athly."
+          }
+        }
+      }
+    },
     "·" : {
 
     },

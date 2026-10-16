@@ -197,4 +197,78 @@ final class GarminActivityTests: XCTestCase {
 
         XCTAssertEqual(status(imported, sessions: [session]), .alreadyHandled)
     }
+
+    // MARK: - Treino executado no app do relógio
+
+    private func workout(id: String, status: WorkoutStatus = .scheduled) -> WorkoutModel {
+        WorkoutModel(
+            id: id,
+            date: "2026-10-14",
+            sportType: .running,
+            title: "Intervalado",
+            description: nil,
+            blocks: [],
+            segments: nil,
+            status: status,
+            trainingPlanId: "plan-1",
+            weeklyGoalId: "week-1",
+            intensity: 7,
+            isGoalAttempt: false,
+            actualDistanceMeters: nil,
+            actualDurationSeconds: nil,
+            stravaActivityId: nil,
+            appleHealthWorkoutUUID: nil
+        )
+    }
+
+    @MainActor
+    private func viewModel(plannedWorkoutId: String?) throws -> DetectedRunViewModel {
+        let imported = try decodeDetail().importedWorkout()
+        let garmin = GarminDetectedRun(
+            activityId: "a1",
+            imported: imported,
+            summary: imported.detectedRunSummary(id: "garmin:a1", averageHeartRate: nil, maximumHeartRate: nil),
+            matchingHealthKitUUIDs: [],
+            plannedWorkoutId: plannedWorkoutId
+        )
+        return DetectedRunViewModel(candidate: .garmin(garmin))
+    }
+
+    @MainActor
+    func testPreselectsTheWorkoutRunOnTheWatch() throws {
+        let model = try viewModel(plannedWorkoutId: "w2")
+        model.preselectPlannedWorkout(from: [workout(id: "w1"), workout(id: "w2")])
+
+        XCTAssertEqual(model.selectedWorkout?.id, "w2")
+        XCTAssertEqual(model.choice, .linkToWorkout)
+    }
+
+    @MainActor
+    func testDoesNotPreselectDoneWorkoutOrFreeRun() throws {
+        let done = try viewModel(plannedWorkoutId: "w1")
+        done.preselectPlannedWorkout(from: [workout(id: "w1", status: .done)])
+        XCTAssertNil(done.selectedWorkout)
+        XCTAssertEqual(done.choice, .freeRun)
+
+        let free = try viewModel(plannedWorkoutId: nil)
+        free.preselectPlannedWorkout(from: [workout(id: "w1")])
+        XCTAssertNil(free.selectedWorkout)
+    }
+
+    func testDecodesPlannedWorkoutAndRunUploader() throws {
+        let summary = try JSONDecoder().decode(GarminActivitySummary.self, from: Data("""
+        { "id": "a1", "startedAt": "2026-10-14T09:00:00.000Z", "endedAt": "2026-10-14T09:45:00.000Z",
+          "utcOffsetSec": 0, "distanceMeters": 1, "timerSeconds": 1, "avgHeartRate": null,
+          "maxHeartRate": null, "plannedWorkoutId": "w2" }
+        """.utf8))
+        XCTAssertEqual(summary.plannedWorkoutId, "w2")
+
+        let device = try JSONDecoder().decode(ConnectIqDevice.self, from: Data("""
+        { "id": "d1", "kind": "watch_app", "uploadsRuns": true, "status": "active", "partNumber": null,
+          "appVersion": "2.0.0", "pairedAt": "2026-10-16T10:00:00.000Z", "lastSeenAt": null,
+          "lastSyncAt": null, "lastSync": null }
+        """.utf8))
+        XCTAssertTrue(device.uploadsRunsToAthly)
+        XCTAssertFalse(device.isDataField)
+    }
 }

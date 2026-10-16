@@ -1,5 +1,6 @@
 import Toybox.Application;
 import Toybox.Lang;
+import Toybox.Time;
 
 // Tudo o que o campo guarda no Storage. Cada corrida finalizada vira:
 //   "h<id>"     cabeçalho já no formato do POST /connect-iq/activities
@@ -10,6 +11,23 @@ import Toybox.Lang;
 module FieldStore {
     // Corridas guardadas à espera de envio; a mais antiga sai para caber uma nova.
     const MAX_QUEUED = 3;
+
+    // Último acontecimento com uma corrida, mostrado no campo antes de iniciar a próxima.
+    const EVENT_QUEUED = 1;
+    const EVENT_TOO_SHORT = 2;
+    const EVENT_NO_ROOM = 3;
+    const EVENT_SENT = 4;
+    const EVENT_REJECTED = 5;
+    const EVENT_FAILED = 6;
+
+    // [evento, momento, status HTTP/runtime ou 0].
+    function lastEvent() as Array? {
+        return Application.Storage.getValue("ev") as Array?;
+    }
+
+    function setLastEvent(event as Number, status as Number) as Void {
+        put("ev", [event, Time.now().value(), status] as Application.Storage.ValueType);
+    }
 
     function token() as String? {
         return Application.Storage.getValue("tok") as String?;

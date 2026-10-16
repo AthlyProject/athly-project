@@ -25,6 +25,12 @@ export class ConnectIqActivitySummaryModel {
   avgHeartRate: number | null;
   @ApiPropertyOptional({ type: Number, nullable: true })
   maxHeartRate: number | null;
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Treino que o app Athly executou no relógio (sugestão de vínculo)',
+  })
+  plannedWorkoutId: string | null;
 }
 
 export class ConnectIqActivityLapModel {
