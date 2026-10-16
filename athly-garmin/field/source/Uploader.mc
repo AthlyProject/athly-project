@@ -21,11 +21,17 @@ module UploadRules {
     // se o evento "atividade concluída" vier antes da corrida entrar na fila (ou nem vier).
     const RETRY_INTERVAL_SEC = 5 * 60;
 
-    // Uma corrida finalizada é enviada se o evento "atividade concluída" veio perto dela.
+    // Resultado de um envio (os demais valores são o status HTTP ou o código de erro do runtime).
+    const UPLOAD_OK = 0;
+    const UPLOAD_NOTHING_TO_SEND = 1;
+
+    // Uma corrida finalizada pode ir para o backend (ver Config.REQUIRE_COMPLETED_EVENT).
     function isConfirmed(finalizedAt as Number, completedAt as Number?) as Boolean {
-        if (!Config.REQUIRE_COMPLETED_EVENT) {
-            return true;
-        }
+        return !Config.REQUIRE_COMPLETED_EVENT || completedNear(finalizedAt, completedAt);
+    }
+
+    // O evento "atividade concluída" veio perto da finalização da corrida.
+    function completedNear(finalizedAt as Number, completedAt as Number?) as Boolean {
         return completedAt != null && completedAt >= finalizedAt - CONFIRM_BEFORE_SEC
             && completedAt <= finalizedAt + CONFIRM_AFTER_SEC;
     }
@@ -49,8 +55,6 @@ module UploadRules {
 // que já tem, então um envio interrompido continua de onde parou na próxima tentativa.
 (:background)
 class Uploader {
-    const OK = 0;
-    const NOTHING_TO_SEND = 1;
 
     private var _done as Method(status as Number) as Void;
     private var _token as String = "";
@@ -64,7 +68,7 @@ class Uploader {
     function start() as Void {
         var token = FieldStore.token();
         if (token == null) {
-            _done.invoke(NOTHING_TO_SEND);
+            _done.invoke(UploadRules.UPLOAD_NOTHING_TO_SEND);
             return;
         }
         _token = token;
@@ -136,7 +140,7 @@ class Uploader {
                 FieldStore.remove(id);
             }
         }
-        _done.invoke(OK);
+        _done.invoke(UploadRules.UPLOAD_OK);
     }
 
     private function sendHeader(header as Dictionary) as Void {

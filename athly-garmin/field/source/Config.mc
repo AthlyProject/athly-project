@@ -9,10 +9,13 @@ module Config {
     (:debug) const API_BASE = "http://localhost:4000";
     (:release) const API_BASE = "https://api.athlyproject.app";
 
-    const APP_VERSION = "1.0.0";
+    // Aparece no campo antes de iniciar a corrida: é como saber qual build está no relógio.
+    // Subir a cada build instalado.
+    const APP_VERSION = "1.0.1";
 
-    // Só envia corridas confirmadas pelo evento "atividade concluída" — uma corrida descartada no
-    // relógio não chega a disparar o evento. Se o spike mostrar que o evento falha em algum relógio,
-    // desligar aqui faz o envio acontecer pelo evento temporal.
-    const REQUIRE_COMPLETED_EVENT = true;
+    // true: só envia corridas confirmadas pelo evento "atividade concluída" (uma corrida descartada
+    // não dispara o evento). Desligado porque, no relógio de teste, corridas salvas não chegaram:
+    // sem a confirmação toda corrida com 60 s+ de cronômetro é enviada, e uma descartada aparece
+    // no app para o atleta ignorar — melhor que perder corrida. Religar depois de confirmar o evento.
+    const REQUIRE_COMPLETED_EVENT = false;
 }

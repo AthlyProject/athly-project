@@ -108,18 +108,25 @@ function lapStatsSkipsEmptyLap(logger as Logger) as Boolean {
 }
 
 (:test)
-function uploadRulesNeedCompletedEventRightAfterFinish(logger as Logger) as Boolean {
+function uploadRulesMatchCompletedEventNearFinish(logger as Logger) as Boolean {
     var finishedAt = 1000000;
-    Test.assert(!UploadRules.isConfirmed(finishedAt, null));
-    Test.assert(UploadRules.isConfirmed(finishedAt, finishedAt + 5));
-    Test.assert(UploadRules.isConfirmed(finishedAt, finishedAt + 29 * 60));
+    Test.assert(!UploadRules.completedNear(finishedAt, null));
+    Test.assert(UploadRules.completedNear(finishedAt, finishedAt + 5));
+    Test.assert(UploadRules.completedNear(finishedAt, finishedAt + 29 * 60));
     // Evento de outra atividade, bem depois: esta foi descartada.
-    Test.assert(!UploadRules.isConfirmed(finishedAt, finishedAt + 31 * 60));
+    Test.assert(!UploadRules.completedNear(finishedAt, finishedAt + 31 * 60));
     // O evento pode chegar um pouco antes do onTimerReset.
-    Test.assert(UploadRules.isConfirmed(finishedAt, finishedAt - 120));
-    Test.assert(!UploadRules.isConfirmed(finishedAt, finishedAt - 11 * 60));
+    Test.assert(UploadRules.completedNear(finishedAt, finishedAt - 120));
+    Test.assert(!UploadRules.completedNear(finishedAt, finishedAt - 11 * 60));
     Test.assert(UploadRules.isAbandoned(finishedAt, finishedAt + 7 * 3600));
     Test.assert(!UploadRules.isAbandoned(finishedAt, finishedAt + 3600));
+    return true;
+}
+
+(:test)
+function uploadRulesSendEveryRunWhileEventIsOptional(logger as Logger) as Boolean {
+    // Config.REQUIRE_COMPLETED_EVENT = false: corrida sem o evento também vai.
+    Test.assertEqual(UploadRules.isConfirmed(1000000, null), !Config.REQUIRE_COMPLETED_EVENT);
     return true;
 }
 

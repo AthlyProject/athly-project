@@ -74,529 +74,6 @@
     ":" : {
 
     },
-    "Abra a corrida no relógio" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffne den Lauf auf der Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open the run on the watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abra a corrida no relógio"
-          }
-        }
-      }
-    },
-    "Aceitar e continuar" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Akzeptieren und fortfahren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accept and continue"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aceitar e continuar"
-          }
-        }
-      }
-    },
-    "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Akzeptiere die Nutzungsbedingungen und die Datenschutzrichtlinie, um dein Konto zu erstellen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accept the Terms of Use and Privacy Policy to create your account."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta."
-          }
-        }
-      }
-    },
-    "Adicione o campo a uma tela da corrida" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Füge das Feld einer Lauf-Datenseite hinzu"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the field to a run data screen"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adicione o campo a uma tela da corrida"
-          }
-        }
-      }
-    },
-    "Campo de dados Athly" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athly-Datenfeld"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athly data field"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Campo de dados Athly"
-          }
-        }
-      }
-    },
-    "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino." : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mit dem Datenfeld kommt dein Lauf wenige Minuten nach dem Speichern auf der Uhr bei Athly an (mit dem Handy in der Nähe) und erscheint, damit du ihn einem Training zuordnen kannst."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "With the data field, your run reaches Athly a few minutes after you save it on the watch (with your phone nearby) and shows up for you to link to a workout."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino."
-          }
-        }
-      }
-    },
-    "Conectado · envia suas corridas" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbunden · sendet deine Läufe"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connected · sends your runs"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado · envia suas corridas"
-          }
-        }
-      }
-    },
-    "Conectado · último contato %@" : {
-      "comment" : "Garmin data field (Connect IQ): last time the watch reached Athly, e.g. \"2 min ago\".",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbunden · letzter Kontakt %@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connected · last contact %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado · último contato %@"
-          }
-        }
-      }
-    },
-    "Corrida no Garmin" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lauf mit Garmin"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garmin run"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Corrida no Garmin"
-          }
-        }
-      }
-    },
-    "Instale o campo de dados Athly" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installiere das Athly-Datenfeld"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Install the Athly data field"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instale o campo de dados Athly"
-          }
-        }
-      }
-    },
-    "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)" : {
-      "comment" : "Welcome screen footer. Keep the markdown links and their URLs.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lies unsere [Nutzungsbedingungen](https://athlyproject.app/terms) und unsere [Datenschutzrichtlinie](https://athlyproject.app/privacy)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Read our [Terms of Use](https://athlyproject.app/terms) and [Privacy Policy](https://athlyproject.app/privacy)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)"
-          }
-        }
-      }
-    },
-    "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly" : {
-      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ich habe die [Datenschutzrichtlinie](https://athlyproject.app/privacy) von Athly gelesen und akzeptiere sie"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I have read and accept Athly's [Privacy Policy](https://athlyproject.app/privacy)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly"
-          }
-        }
-      }
-    },
-    "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly" : {
-      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ich habe die [Nutzungsbedingungen](https://athlyproject.app/terms) von Athly gelesen und akzeptiere sie"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I have read and accept Athly's [Terms of Use](https://athlyproject.app/terms)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly"
-          }
-        }
-      }
-    },
-    "No relógio: Corrida › Configurações › Telas de dados" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auf der Uhr: Laufen › Einstellungen › Datenseiten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On the watch: Run › Settings › Data Screens"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No relógio: Corrida › Configurações › Telas de dados"
-          }
-        }
-      }
-    },
-    "O campo de dados deixa de enviar suas corridas para a Athly." : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Datenfeld sendet deine Läufe nicht mehr an Athly."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The data field stops sending your runs to Athly."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O campo de dados deixa de enviar suas corridas para a Athly."
-          }
-        }
-      }
-    },
-    "O campo mostra um código: digite abaixo" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das Feld zeigt einen Code: Gib ihn unten ein"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The field shows a code: enter it below"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O campo mostra um código: digite abaixo"
-          }
-        }
-      }
-    },
-    "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um Athly weiter zu nutzen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To keep using Athly, please read and accept the Terms of Use and Privacy Policy."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade."
-          }
-        }
-      }
-    },
-    "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um dein Konto zu erstellen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To create your account, please read and accept the Terms of Use and Privacy Policy."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade."
-          }
-        }
-      }
-    },
-    "Rota e resultado de cada tiro" : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Strecke und Ergebnis jedes Intervalls"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Route and result of each rep"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rota e resultado de cada tiro"
-          }
-        }
-      }
-    },
-    "Sua corrida do Garmin foi atribuída ao treino %@." : {
-      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dein Garmin-Lauf wurde dem Training %@ zugeordnet."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Garmin run was assigned to the workout %@."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sua corrida do Garmin foi atribuída ao treino %@."
-          }
-        }
-      }
-    },
-    "Termos e Privacidade" : {
-      "comment" : "Title of the legal consent screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bedingungen und Datenschutz"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terms and Privacy"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Termos e Privacidade"
-          }
-        }
-      }
-    },
-    "Você precisa aceitar a Política de Privacidade" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du musst die Datenschutzrichtlinie akzeptieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You must accept the Privacy Policy"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você precisa aceitar a Política de Privacidade"
-          }
-        }
-      }
-    },
-    "Você precisa aceitar os Termos de Uso" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du musst die Nutzungsbedingungen akzeptieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You must accept the Terms of Use"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você precisa aceitar os Termos de Uso"
-          }
-        }
-      }
-    },
     "·" : {
 
     },
@@ -1594,6 +1071,52 @@
         }
       }
     },
+    "Abra a corrida no relógio" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne den Lauf auf der Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the run on the watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra a corrida no relógio"
+          }
+        }
+      }
+    },
+    "Abra o app no relógio" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne die App auf der Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the app on your watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra o app no relógio"
+          }
+        }
+      }
+    },
     "Abrir Ajustes" : {
       "comment" : "Button that opens the iOS Settings app",
       "localizations" : {
@@ -1613,6 +1136,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abrir Ajustes"
+          }
+        }
+      }
+    },
+    "Abrir na Connect IQ Store" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Connect IQ Store öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in the Connect IQ Store"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir na Connect IQ Store"
+          }
+        }
+      }
+    },
+    "Aceitar e continuar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzeptieren und fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept and continue"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceitar e continuar"
+          }
+        }
+      }
+    },
+    "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzeptiere die Nutzungsbedingungen und die Datenschutzrichtlinie, um dein Konto zu erstellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept the Terms of Use and Privacy Policy to create your account."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceite os Termos de Uso e a Política de Privacidade para criar sua conta."
           }
         }
       }
@@ -1850,6 +1441,29 @@
         }
       }
     },
+    "Adicione o campo a uma tela da corrida" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge das Feld einer Lauf-Datenseite hinzu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the field to a run data screen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicione o campo a uma tela da corrida"
+          }
+        }
+      }
+    },
     "Admin" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1896,6 +1510,30 @@
         }
       }
     },
+    "Aguardando o relógio…" : {
+      "comment" : "Watch confirmed in the app but it has not fetched its token yet.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warte auf die Uhr …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the watch…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguardando o relógio…"
+          }
+        }
+      }
+    },
     "Ainda faltam dados para usar zonas de FC nos treinos." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1938,6 +1576,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustes"
+          }
+        }
+      }
+    },
+    "Alguns treinos não baixaram na última sincronização" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einige Trainings wurden bei der letzten Synchronisierung nicht geladen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some workouts didn't download in the last sync"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alguns treinos não baixaram na última sincronização"
           }
         }
       }
@@ -3201,6 +2863,29 @@
         }
       }
     },
+    "Campo de dados Athly" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly-Datenfeld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly data field"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campo de dados Athly"
+          }
+        }
+      }
+    },
     "Cancelado" : {
       "comment" : "Plan status badge",
       "extractionState" : "stale",
@@ -3271,6 +2956,29 @@
         }
       }
     },
+    "Código do relógio" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code der Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch code"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código do relógio"
+          }
+        }
+      }
+    },
     "Código inválido" : {
       "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
       "extractionState" : "stale",
@@ -3315,6 +3023,53 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Código inválido ou expirado"
+          }
+        }
+      }
+    },
+    "Código inválido ou expirado. Confira o código no relógio." : {
+      "comment" : "Backend error CIQ_PAIRING_CODE_INVALID.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültiger oder abgelaufener Code. Prüfe den Code auf deiner Uhr."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid or expired code. Check the code on your watch."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código inválido ou expirado. Confira o código no relógio."
+          }
+        }
+      }
+    },
+    "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit dem Datenfeld kommt dein Lauf wenige Minuten nach dem Speichern auf der Uhr bei Athly an (mit dem Handy in der Nähe) und erscheint, damit du ihn einem Training zuordnen kannst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With the data field, your run reaches Athly a few minutes after you save it on the watch (with your phone nearby) and shows up for you to link to a workout."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com o campo de dados, a corrida chega à Athly alguns minutos depois de salva no relógio (com o celular por perto) e aparece para você vincular a um treino."
           }
         }
       }
@@ -3384,6 +3139,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Comece seu plano de treino com IA"
+          }
+        }
+      }
+    },
+    "Como conectar" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So verbindest du die Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to connect"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Como conectar"
           }
         }
       }
@@ -3572,6 +3351,125 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Concordo com os "
+          }
+        }
+      }
+    },
+    "Conectado" : {
+      "comment" : "Garmin watch status in Settings.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado"
+          }
+        }
+      }
+    },
+    "Conectado · ainda não sincronizou" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden · noch nicht synchronisiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · not synced yet"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado · ainda não sincronizou"
+          }
+        }
+      }
+    },
+    "Conectado · envia suas corridas" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden · sendet deine Läufe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · sends your runs"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado · envia suas corridas"
+          }
+        }
+      }
+    },
+    "Conectado · último contato %@" : {
+      "comment" : "Garmin data field (Connect IQ): last time the watch reached Athly, e.g. \"2 min ago\".",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbunden · letzter Kontakt %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected · last contact %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado · último contato %@"
+          }
+        }
+      }
+    },
+    "Conectar relógio" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uhr verbinden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar relógio"
           }
         }
       }
@@ -4192,6 +4090,30 @@
         }
       }
     },
+    "Corrida no Garmin" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lauf mit Garmin"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garmin run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrida no Garmin"
+          }
+        }
+      }
+    },
     "Corrida salva localmente no Athly." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4795,6 +4717,53 @@
         }
       }
     },
+    "Desconectar" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trennen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desconectar"
+          }
+        }
+      }
+    },
+    "Desconectar este relógio?" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Uhr trennen?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect this watch?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desconectar este relógio?"
+          }
+        }
+      }
+    },
     "Descrição" : {
       "localizations" : {
         "de" : {
@@ -4982,6 +4951,29 @@
     },
     "Digite o código" : {
 
+    },
+    "Digite o código abaixo" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib den Code unten ein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the code below"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite o código abaixo"
+          }
+        }
+      }
     },
     "Diminuir" : {
       "extractionState" : "manual",
@@ -5281,6 +5273,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar perfil"
+          }
+        }
+      }
+    },
+    "Ele mostra um código de 8 dígitos" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sie zeigt einen 8-stelligen Code"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It shows an 8-digit code"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ele mostra um código de 8 dígitos"
           }
         }
       }
@@ -7734,6 +7749,52 @@
         }
       }
     },
+    "Instale o app Athly no relógio" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installiere die Athly-App auf der Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install the Athly app on your watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instale o app Athly no relógio"
+          }
+        }
+      }
+    },
+    "Instale o campo de dados Athly" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installiere das Athly-Datenfeld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Install the Athly data field"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instale o campo de dados Athly"
+          }
+        }
+      }
+    },
     "Integracao" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8207,6 +8268,29 @@
         }
       }
     },
+    "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)" : {
+      "comment" : "Welcome screen footer. Keep the markdown links and their URLs.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lies unsere [Nutzungsbedingungen](https://athlyproject.app/terms) und unsere [Datenschutzrichtlinie](https://athlyproject.app/privacy)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read our [Terms of Use](https://athlyproject.app/terms) and [Privacy Policy](https://athlyproject.app/privacy)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leia nossos [Termos de Uso](https://athlyproject.app/terms) e nossa [Política de Privacidade](https://athlyproject.app/privacy)"
+          }
+        }
+      }
+    },
     "Leitura da Athly" : {
       "localizations" : {
         "de" : {
@@ -8338,6 +8422,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Leve"
+          }
+        }
+      }
+    },
+    "Leve os treinos da Athly para o seu Garmin. Eles aparecem em Treino › Treinos no relógio e rodam no player de treino da própria Garmin." : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring deine Athly-Trainings auf deine Garmin. Sie erscheinen auf der Uhr unter Training › Trainings und laufen im Trainingsplayer von Garmin."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take your Athly workouts to your Garmin. They show up under Training › Workouts on the watch and run in Garmin's own workout player."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leve os treinos da Athly para o seu Garmin. Eles aparecem em Treino › Treinos no relógio e rodam no player de treino da própria Garmin."
+          }
+        }
+      }
+    },
+    "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly" : {
+      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe die [Datenschutzrichtlinie](https://athlyproject.app/privacy) von Athly gelesen und akzeptiere sie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and accept Athly's [Privacy Policy](https://athlyproject.app/privacy)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Li e aceito a [Política de Privacidade](https://athlyproject.app/privacy) da Athly"
+          }
+        }
+      }
+    },
+    "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly" : {
+      "comment" : "Registration consent checkbox. Keep the markdown link and its URL.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe die [Nutzungsbedingungen](https://athlyproject.app/terms) von Athly gelesen und akzeptiere sie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and accept Athly's [Terms of Use](https://athlyproject.app/terms)"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Li e aceito os [Termos de Uso](https://athlyproject.app/terms) da Athly"
           }
         }
       }
@@ -8736,6 +8889,30 @@
         }
       }
     },
+    "Memória de treinos cheia no relógio" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainingsspeicher der Uhr ist voll"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workout memory on the watch is full"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memória de treinos cheia no relógio"
+          }
+        }
+      }
+    },
     "Menos" : {
       "comment" : "Volume change: decrease.",
       "extractionState" : "stale",
@@ -9066,6 +9243,30 @@
         }
       }
     },
+    "Muitas tentativas. Aguarde alguns minutos e tente de novo." : {
+      "comment" : "Backend error CIQ_PAIRING_RATE_LIMITED.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many attempts. Wait a few minutes and try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muitas tentativas. Aguarde alguns minutos e tente de novo."
+          }
+        }
+      }
+    },
     "Muito intensa" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9155,6 +9356,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Não autorizado"
+          }
+        }
+      }
+    },
+    "Não conectado" : {
+      "comment" : "Garmin watch status in Settings.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht verbunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not connected"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não conectado"
           }
         }
       }
@@ -10193,6 +10418,29 @@
         }
       }
     },
+    "No relógio: Corrida › Configurações › Telas de dados" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf der Uhr: Laufen › Einstellungen › Datenseiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the watch: Run › Settings › Data Screens"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No relógio: Corrida › Configurações › Telas de dados"
+          }
+        }
+      }
+    },
     "Nome completo" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -10590,6 +10838,52 @@
         }
       }
     },
+    "O campo de dados deixa de enviar suas corridas para a Athly." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Datenfeld sendet deine Läufe nicht mehr an Athly."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The data field stops sending your runs to Athly."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O campo de dados deixa de enviar suas corridas para a Athly."
+          }
+        }
+      }
+    },
+    "O campo mostra um código: digite abaixo" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Feld zeigt einen Code: Gib ihn unten ein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The field shows a code: enter it below"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O campo mostra um código: digite abaixo"
+          }
+        }
+      }
+    },
     "O Health nao esta disponivel neste dispositivo (por exemplo, no simulador). Use um iPhone fisico para testar." : {
       "localizations" : {
         "de" : {
@@ -10798,6 +11092,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Origem indisponível"
+          }
+        }
+      }
+    },
+    "Os treinos da Athly saem do relógio na próxima vez que o app abrir nele." : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Athly-Trainings werden beim nächsten Öffnen der App von der Uhr entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly workouts are removed from the watch the next time the app opens on it."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os treinos da Athly saem do relógio na próxima vez que o app abrir nele."
+          }
+        }
+      }
+    },
+    "Os treinos dos próximos 7 dias sincronizam sempre que você abre o app Athly no relógio. No iPhone, mantenha o Garmin Connect aberto durante a sincronização." : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Trainings der nächsten 7 Tage werden synchronisiert, sobald du die Athly-App auf der Uhr öffnest. Lass Garmin Connect auf dem iPhone währenddessen geöffnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workouts for the next 7 days sync whenever you open the Athly app on your watch. On your iPhone, keep Garmin Connect open while syncing."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os treinos dos próximos 7 dias sincronizam sempre que você abre o app Athly no relógio. No iPhone, mantenha o Garmin Connect aberto durante a sincronização."
           }
         }
       }
@@ -11196,6 +11536,52 @@
         }
       }
     },
+    "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um Athly weiter zu nutzen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To keep using Athly, please read and accept the Terms of Use and Privacy Policy."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para continuar usando o Athly, leia e aceite os Termos de Uso e a Política de Privacidade."
+          }
+        }
+      }
+    },
+    "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um dein Konto zu erstellen, lies und akzeptiere bitte die Nutzungsbedingungen und die Datenschutzrichtlinie."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To create your account, please read and accept the Terms of Use and Privacy Policy."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para criar sua conta, leia e aceite os Termos de Uso e a Política de Privacidade."
+          }
+        }
+      }
+    },
     "Para qual distância você quer treinar?" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11308,6 +11694,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Participo de provas com preparação"
+          }
+        }
+      }
+    },
+    "Pela Connect IQ Store, no celular" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über den Connect IQ Store auf dem Handy"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the Connect IQ Store on your phone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pela Connect IQ Store, no celular"
           }
         }
       }
@@ -12753,6 +13162,29 @@
         }
       }
     },
+    "Relógio Garmin" : {
+      "comment" : "Settings row and screen title for the Garmin watch integration.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garmin-Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Garmin watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relógio Garmin"
+          }
+        }
+      }
+    },
     "Remover aviso em %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -13122,6 +13554,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rodar diagnostico Zepp"
+          }
+        }
+      }
+    },
+    "Rota e resultado de cada tiro" : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strecke und Ergebnis jedes Intervalls"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Route and result of each rep"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rota e resultado de cada tiro"
           }
         }
       }
@@ -14179,6 +14635,30 @@
         }
       }
     },
+    "Seus relógios" : {
+      "comment" : "Garmin watch (Connect IQ) pairing screen.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Uhren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your watches"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus relógios"
+          }
+        }
+      }
+    },
     "Seus treinos estão sendo preparados. Avisaremos quando estiverem prontos." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -14339,6 +14819,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sincronizada com Apple Health."
+          }
+        }
+      }
+    },
+    "Sincronizado %@" : {
+      "comment" : "Last watch sync, e.g. 'Sincronizado há 2 h'. The argument is a relative date from RelativeDateTimeFormatter.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisiert %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizado %@"
           }
         }
       }
@@ -14663,6 +15167,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sua corrida do Apple Saúde foi atribuída ao treino %@."
+          }
+        }
+      }
+    },
+    "Sua corrida do Garmin foi atribuída ao treino %@." : {
+      "comment" : "Garmin data field (Connect IQ): setup screen and detected run.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Garmin-Lauf wurde dem Training %@ zugeordnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Garmin run was assigned to the workout %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua corrida do Garmin foi atribuída ao treino %@."
           }
         }
       }
@@ -15132,6 +15659,29 @@
         }
       }
     },
+    "Termos e Privacidade" : {
+      "comment" : "Title of the legal consent screen.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bedingungen und Datenschutz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms and Privacy"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termos e Privacidade"
+          }
+        }
+      }
+    },
     "Teste · %lld dias restantes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15523,6 +16073,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Treinos com IA que evoluem com você"
+          }
+        }
+      }
+    },
+    "Treinos da Athly no seu relógio" : {
+      "comment" : "Settings row subtitle while the Garmin status loads.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly-Trainings auf deiner Uhr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Athly workouts on your watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treinos da Athly no seu relógio"
           }
         }
       }
@@ -16242,6 +16816,30 @@
         }
       }
     },
+    "Você já tem 5 relógios conectados. Desconecte um para continuar." : {
+      "comment" : "Backend error CIQ_DEVICE_LIMIT_REACHED.",
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast bereits 5 Uhren verbunden. Trenne eine, um fortzufahren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have 5 watches connected. Disconnect one to continue."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você já tem 5 relógios conectados. Desconecte um para continuar."
+          }
+        }
+      }
+    },
     "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro." : {
       "comment" : "Backend error message, resolved from an API error code. See BackendErrorCode.swift.",
       "extractionState" : "stale",
@@ -16262,6 +16860,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Você já tem um plano de treino. Atualize ou exclua o atual antes de criar outro."
+          }
+        }
+      }
+    },
+    "Você precisa aceitar a Política de Privacidade" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst die Datenschutzrichtlinie akzeptieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You must accept the Privacy Policy"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você precisa aceitar a Política de Privacidade"
+          }
+        }
+      }
+    },
+    "Você precisa aceitar os Termos de Uso" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst die Nutzungsbedingungen akzeptieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You must accept the Terms of Use"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você precisa aceitar os Termos de Uso"
           }
         }
       }
@@ -16527,627 +17171,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zonas estimadas"
-          }
-        }
-      }
-    },
-    "Código inválido ou expirado. Confira o código no relógio." : {
-      "comment" : "Backend error CIQ_PAIRING_CODE_INVALID.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ungültiger oder abgelaufener Code. Prüfe den Code auf deiner Uhr."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invalid or expired code. Check the code on your watch."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código inválido ou expirado. Confira o código no relógio."
-          }
-        }
-      }
-    },
-    "Muitas tentativas. Aguarde alguns minutos e tente de novo." : {
-      "comment" : "Backend error CIQ_PAIRING_RATE_LIMITED.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Too many attempts. Wait a few minutes and try again."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muitas tentativas. Aguarde alguns minutos e tente de novo."
-          }
-        }
-      }
-    },
-    "Você já tem 5 relógios conectados. Desconecte um para continuar." : {
-      "comment" : "Backend error CIQ_DEVICE_LIMIT_REACHED.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du hast bereits 5 Uhren verbunden. Trenne eine, um fortzufahren."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You already have 5 watches connected. Disconnect one to continue."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você já tem 5 relógios conectados. Desconecte um para continuar."
-          }
-        }
-      }
-    },
-    "Leve os treinos da Athly para o seu Garmin. Eles aparecem em Treino › Treinos no relógio e rodam no player de treino da própria Garmin." : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bring deine Athly-Trainings auf deine Garmin. Sie erscheinen auf der Uhr unter Training › Trainings und laufen im Trainingsplayer von Garmin."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take your Athly workouts to your Garmin. They show up under Training › Workouts on the watch and run in Garmin's own workout player."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leve os treinos da Athly para o seu Garmin. Eles aparecem em Treino › Treinos no relógio e rodam no player de treino da própria Garmin."
-          }
-        }
-      }
-    },
-    "Seus relógios" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deine Uhren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your watches"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seus relógios"
-          }
-        }
-      }
-    },
-    "Como conectar" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "So verbindest du die Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How to connect"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Como conectar"
-          }
-        }
-      }
-    },
-    "Código do relógio" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Code der Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Código do relógio"
-          }
-        }
-      }
-    },
-    "Os treinos dos próximos 7 dias sincronizam sempre que você abre o app Athly no relógio. No iPhone, mantenha o Garmin Connect aberto durante a sincronização." : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Trainings der nächsten 7 Tage werden synchronisiert, sobald du die Athly-App auf der Uhr öffnest. Lass Garmin Connect auf dem iPhone währenddessen geöffnet."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workouts for the next 7 days sync whenever you open the Athly app on your watch. On your iPhone, keep Garmin Connect open while syncing."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os treinos dos próximos 7 dias sincronizam sempre que você abre o app Athly no relógio. No iPhone, mantenha o Garmin Connect aberto durante a sincronização."
-          }
-        }
-      }
-    },
-    "Relógio Garmin" : {
-      "comment" : "Settings row and screen title for the Garmin watch integration.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garmin-Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Garmin watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Relógio Garmin"
-          }
-        }
-      }
-    },
-    "Desconectar este relógio?" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diese Uhr trennen?"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disconnect this watch?"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desconectar este relógio?"
-          }
-        }
-      }
-    },
-    "Desconectar" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trennen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disconnect"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desconectar"
-          }
-        }
-      }
-    },
-    "Os treinos da Athly saem do relógio na próxima vez que o app abrir nele." : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Athly-Trainings werden beim nächsten Öffnen der App von der Uhr entfernt."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athly workouts are removed from the watch the next time the app opens on it."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os treinos da Athly saem do relógio na próxima vez que o app abrir nele."
-          }
-        }
-      }
-    },
-    "Instale o app Athly no relógio" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Installiere die Athly-App auf der Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Install the Athly app on your watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instale o app Athly no relógio"
-          }
-        }
-      }
-    },
-    "Pela Connect IQ Store, no celular" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Über den Connect IQ Store auf dem Handy"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From the Connect IQ Store on your phone"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pela Connect IQ Store, no celular"
-          }
-        }
-      }
-    },
-    "Abrir na Connect IQ Store" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Im Connect IQ Store öffnen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open in the Connect IQ Store"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abrir na Connect IQ Store"
-          }
-        }
-      }
-    },
-    "Abra o app no relógio" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Öffne die App auf der Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open the app on your watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abra o app no relógio"
-          }
-        }
-      }
-    },
-    "Ele mostra um código de 8 dígitos" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sie zeigt einen 8-stelligen Code"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "It shows an 8-digit code"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ele mostra um código de 8 dígitos"
-          }
-        }
-      }
-    },
-    "Digite o código abaixo" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gib den Code unten ein"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter the code below"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Digite o código abaixo"
-          }
-        }
-      }
-    },
-    "Conectar relógio" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uhr verbinden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connect watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectar relógio"
-          }
-        }
-      }
-    },
-    "Aguardando o relógio…" : {
-      "comment" : "Watch confirmed in the app but it has not fetched its token yet.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Warte auf die Uhr …"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for the watch…"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aguardando o relógio…"
-          }
-        }
-      }
-    },
-    "Memória de treinos cheia no relógio" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsspeicher der Uhr ist voll"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workout memory on the watch is full"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Memória de treinos cheia no relógio"
-          }
-        }
-      }
-    },
-    "Alguns treinos não baixaram na última sincronização" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einige Trainings wurden bei der letzten Synchronisierung nicht geladen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Some workouts didn't download in the last sync"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alguns treinos não baixaram na última sincronização"
-          }
-        }
-      }
-    },
-    "Conectado · ainda não sincronizou" : {
-      "comment" : "Garmin watch (Connect IQ) pairing screen.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbunden · noch nicht synchronisiert"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connected · not synced yet"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado · ainda não sincronizou"
-          }
-        }
-      }
-    },
-    "Sincronizado %@" : {
-      "comment" : "Last watch sync, e.g. 'Sincronizado há 2 h'. The argument is a relative date from RelativeDateTimeFormatter.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronisiert %@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synced %@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sincronizado %@"
-          }
-        }
-      }
-    },
-    "Treinos da Athly no seu relógio" : {
-      "comment" : "Settings row subtitle while the Garmin status loads.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athly-Trainings auf deiner Uhr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Athly workouts on your watch"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Treinos da Athly no seu relógio"
-          }
-        }
-      }
-    },
-    "Não conectado" : {
-      "comment" : "Garmin watch status in Settings.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht verbunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not connected"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Não conectado"
-          }
-        }
-      }
-    },
-    "Conectado" : {
-      "comment" : "Garmin watch status in Settings.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbunden"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connected"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado"
           }
         }
       }

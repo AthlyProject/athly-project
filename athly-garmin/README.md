@@ -134,9 +134,12 @@ App iOS: GET /connect-iq/activities → pop-up de corrida detectada → vincular
 - **Pareamento**: mesmo código de 8 dígitos do app de treinos, com `kind: "data_field"`; o campo
   tem token próprio (o Connect IQ isola cada app). Logo depois chama `GET /connect-iq/device` para
   ativar o dispositivo — senão o backend o apagaria em 24 h.
-- **Só envia corrida salva**: uma corrida descartada não dispara `onActivityCompleted` e sai da fila
-  em 6 h. Se o evento falhar em algum relógio, `Config.REQUIRE_COMPLETED_EVENT = false`. Antes de
-  iniciar uma corrida, o rótulo do campo mostra "A enviar: N" se ainda houver corrida na fila.
+- **Quais corridas vão**: toda corrida com 60 s+ de cronômetro (`Config.REQUIRE_COMPLETED_EVENT =
+  false`; uma descartada aparece no app para ignorar). Com `true`, só as confirmadas pelo
+  `onActivityCompleted` — desligado porque corridas salvas não chegaram no relógio de teste.
+- **Enviar agora**: abrir a atividade Corrida sem iniciar faz o campo enviar a fila na hora. O rótulo
+  mostra "A enviar: N" e o valor, "Enviando", "Sem celular" ou "Erro <status>"; ao terminar,
+  "Enviado à Athly". Fora isso, o segundo plano tenta a cada 5 min enquanto houver fila.
 - **No app**: com o campo pareado, a cópia da corrida no Apple Health espera até 2 h pela versão do
   campo. Em Ajustes › Relógio Garmin, "último contato" mostra quando o campo falou com o backend.
 - **Formato da rota**: `source/TrackCodec.mc` ↔ `athly-backend/src/modules/connect-iq/activity/track-codec.ts`.

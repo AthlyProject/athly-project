@@ -4,6 +4,10 @@
     <string id="Pace30">Pace 30s</string>
     <!-- Corridas na fila do relógio, mostrado antes de iniciar a corrida. -->
     <string id="PendingUploads">Pending: $1$</string>
+    <string id="Uploading">Sending</string>
+    <string id="UploadSent">Sent to Athly</string>
+    <!-- Status HTTP ou código do runtime: ajuda a diagnosticar pelo README. -->
+    <string id="UploadError">Error $1$</string>
     <string id="PairLabel">Pair in Athly app</string>
     <string id="PairRequesting">Getting code</string>
     <string id="PairNoPhone">No phone</string>

@@ -7,12 +7,19 @@ import Toybox.WatchUi;
 // O campo na tela de corrida. Pareado: pace médio de 30 s, com fundo verde dentro da faixa do passo,
 // vermelho acima (lento) e azul abaixo (rápido); o rótulo mostra a faixa. Sem pareamento: o código
 // para digitar no app. Em qualquer caso grava a corrida (Recorder) — a rota sai do relógio só depois.
+// Abrir a corrida sem iniciar também envia na hora o que estiver na fila, mostrando o andamento.
 class AthlyField extends WatchUi.DataField {
+    const UPLOAD_RETRY_SEC = 60;
+
     private var _recorder as Recorder = new Recorder();
     private var _pace as PaceWindow = new PaceWindow(30);
     private var _pairing as FieldPairing?;
     // [rápido, lento] em s/km, do alvo de velocidade do passo atual.
     private var _target as [Number, Number]? = null;
+    // Envio em primeiro plano; o processo em segundo plano continua tentando a cada 5 min.
+    private var _uploader as Uploader?;
+    private var _uploadStatus as Number? = null;
+    private var _nextUploadAt as Number = 0;
 
     function initialize() {
         DataField.initialize();
@@ -31,6 +38,9 @@ class AthlyField extends WatchUi.DataField {
             }
         }
         _recorder.compute(info, now);
+        if (_pairing == null && !_recorder.isActive() && info.timerState != Activity.TIMER_STATE_ON) {
+            maybeUpload(now);
+        }
         if (info.timerState == Activity.TIMER_STATE_ON) {
             _pace.add(info.timerTime, info.elapsedDistance);
         }
@@ -103,9 +113,19 @@ class AthlyField extends WatchUi.DataField {
                         : pace > target[1] ? Graphics.COLOR_RED : Graphics.COLOR_DK_GREEN;
                     foreground = Graphics.COLOR_WHITE;
                 }
-            } else if (!_recorder.isActive() && FieldStore.hasQueued()) {
-                // Antes de começar: mostra que ainda há corrida esperando envio (celular longe?).
+            } else if (!_recorder.isActive() && (_uploader != null || FieldStore.hasQueued())) {
+                // Antes de começar: corrida esperando envio, e o andamento do envio.
                 label = Lang.format(WatchUi.loadResource(Rez.Strings.PendingUploads) as String, [FieldStore.queue().size()]);
+                var progress = uploadText();
+                if (progress != null) {
+                    value = progress;
+                    numeric = false;
+                }
+            } else if (!_recorder.isActive() && _uploadStatus == UploadRules.UPLOAD_OK) {
+                label = WatchUi.loadResource(Rez.Strings.UploadSent) as String;
+            } else if (!_recorder.isActive()) {
+                // Antes de iniciar, sem nada na fila: mostra a versão (confirma o build instalado).
+                label = "Athly " + Config.APP_VERSION;
             } else {
                 label = WatchUi.loadResource(Rez.Strings.Pace30) as String;
             }
@@ -120,6 +140,35 @@ class AthlyField extends WatchUi.DataField {
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         dc.drawText(width / 2, height * 62 / 100, fontFor(dc, value, numeric), value,
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+    }
+
+    function onUploadDone(status as Number) as Void {
+        _uploader = null;
+        _uploadStatus = status;
+        _nextUploadAt = Time.now().value() + UPLOAD_RETRY_SEC;
+    }
+
+    private function maybeUpload(now as Number) as Void {
+        if (_uploader != null || now < _nextUploadAt || !FieldStore.hasQueued() || FieldStore.token() == null) {
+            return;
+        }
+        _uploader = new Uploader(method(:onUploadDone));
+        (_uploader as Uploader).start();
+    }
+
+    // "Enviando", ou o erro do último envio; null antes da primeira tentativa.
+    private function uploadText() as String? {
+        if (_uploader != null) {
+            return WatchUi.loadResource(Rez.Strings.Uploading) as String;
+        }
+        var status = _uploadStatus;
+        if (status == null || status == UploadRules.UPLOAD_OK || status == UploadRules.UPLOAD_NOTHING_TO_SEND) {
+            return null;
+        }
+        if (FieldApi.isPhoneError(status)) {
+            return WatchUi.loadResource(Rez.Strings.PairNoPhone) as String;
+        }
+        return Lang.format(WatchUi.loadResource(Rez.Strings.UploadError) as String, [status]);
     }
 
     private function pairingText(pairing as FieldPairing) as String {
