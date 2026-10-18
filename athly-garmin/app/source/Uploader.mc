@@ -145,12 +145,14 @@ class Uploader {
     }
 
     private function sent() as Void {
+        Log.d("upload sent id=" + _id);
         RunQueue.remove(_id);
         RunQueue.setLastEvent(RunQueue.EVENT_SENT, 0);
         next();
     }
 
     private function fail(status as Number) as Void {
+        Log.d("upload fail id=" + _id + " status=" + status);
         var rejected = status == 400 || status == 404;
         RunQueue.setLastEvent(rejected ? RunQueue.EVENT_REJECTED : RunQueue.EVENT_FAILED, status);
         if (rejected) {

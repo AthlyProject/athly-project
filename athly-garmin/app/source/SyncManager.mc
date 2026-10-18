@@ -67,6 +67,7 @@ class SyncManager {
         }
         _token = token;
         _today = DateFmt.todayIso();
+        Log.d("sync start v" + Config.APP_VERSION + " today=" + _today + " url=" + Config.API_BASE);
         state = SYNC_MANIFEST;
         notify();
 
@@ -95,6 +96,7 @@ class SyncManager {
         }
         _watchdog.stop();
         var code = Api.status(responseCode, data);
+        Log.d("sync manifest response=" + responseCode + " status=" + code);
         if (code == 401) {
             unpair();
             return;
@@ -198,6 +200,7 @@ class SyncManager {
         _watchdog.stop();
         var entry = (_current as Array)[0] as Dictionary;
         var code = Api.status(responseCode, data);
+        Log.d("sync plan " + (entry["id"] as String) + " response=" + responseCode + " status=" + code);
         if (code == 200 && data instanceof Dictionary && (data as Dictionary)["steps"] instanceof Array) {
             WorkoutStore.setPlan(entry["id"] as String, data as Dictionary);
             downloaded += 1;
@@ -258,6 +261,7 @@ class SyncManager {
     }
 
     function onWatchdog() as Void {
+        Log.d("sync watchdog state=" + state);
         // A resposta, se ainda chegar, será ignorada.
         _seq += 1;
         if (state == SYNC_MANIFEST) {
@@ -312,6 +316,7 @@ class SyncManager {
     }
 
     private function fail(code as Number) as Void {
+        Log.d("sync fail state=" + state + " code=" + code);
         _watchdog.stop();
         if (state == SYNC_DOWNLOAD) {
             // Os treinos velhos já saíram do relógio: o registro tem que refletir isso.

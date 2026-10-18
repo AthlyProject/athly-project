@@ -12,7 +12,8 @@ module WorkoutMenu {
     }
 
     function build() as WatchUi.Menu2 {
-        var menu = new WatchUi.Menu2({ :title => Rez.Strings.AppName });
+        // Versão no título: confirma qual build está instalado.
+        var menu = new WatchUi.Menu2({ :title => Ui.str(Rez.Strings.AppName) + " " + Config.APP_VERSION });
         var today = DateFmt.todayIso();
         var upcoming = WorkoutStore.upcoming(today);
         for (var i = 0; i < upcoming.size(); i++) {

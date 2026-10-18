@@ -143,11 +143,15 @@ Salvar: UploadView envia na hora (POST /connect-iq/activities + parts, com worko
 
 ```bash
 cd athly-garmin
-make app-build DEVICE=fr970   # app/bin/athly.prg → GARMIN/APPS (substitui o athly.prg antigo)
+make app-build DEVICE=fr970   # sobe a versão (2.0.N+1) e gera app/bin/athly.prg → GARMIN/APPS
 make app-iq                   # app/bin/athly.iq para a Connect IQ Store
 connectiq &
 make app-test DEVICE=fr165    # testes unitários no simulador
 ```
+
+A versão instalada aparece no título do menu do relógio ("Athly 2.0.4") e no log
+(`GARMIN/APPS/LOGS/ATHLY.TXT`, criado vazio pelo cabo para ligar o log). `make app-iq` não sobe a
+versão: rode `make app-build` antes de gerar o pacote da loja.
 
 No simulador: **Simulation › FIT Data › Playback** de um FIT real alimenta GPS, distância e FC para
 testar o player. Ainda a confirmar no relógio: mapeamento dos botões (touch × botões), alertas e

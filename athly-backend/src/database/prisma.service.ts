@@ -7,11 +7,11 @@ import { Pool } from 'pg';
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {
     const connectionString = process.env.DATABASE_URL;
+    // SSL ligado por padrão (banco gerenciado em produção). O Postgres do docker-compose não tem
+    // SSL: lá DATABASE_SSL=false.
     const pool = new Pool({
       connectionString,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
     });
 
     super({

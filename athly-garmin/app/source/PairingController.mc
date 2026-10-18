@@ -77,6 +77,7 @@ class PairingController {
         data as Dictionary or String or PersistedContent.Iterator or Null
     ) as Void {
         var status = Api.status(responseCode, data);
+        Log.d("pairing code response=" + responseCode + " status=" + status);
         if (status != 200 || !(data instanceof Dictionary)) {
             errorStatus = status;
             state = PAIRING_ERROR;
@@ -117,6 +118,7 @@ class PairingController {
         data as Dictionary or String or PersistedContent.Iterator or Null
     ) as Void {
         var status = Api.status(responseCode, data);
+        Log.d("pairing poll response=" + responseCode + " status=" + status);
         if (status != 200 || !(data instanceof Dictionary)) {
             // Celular longe ou servidor fora: continua tentando enquanto o código vale.
             pollError = status;

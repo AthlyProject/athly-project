@@ -24,6 +24,9 @@ services:
       - /app/node_modules
     env_file:
       - ./athly-backend/.env
+    environment:
+      # O Postgres local (serviço db) não tem SSL; ver src/database/prisma.service.ts.
+      DATABASE_SSL: 'false'
     depends_on:
       - db
       - otel-collector
