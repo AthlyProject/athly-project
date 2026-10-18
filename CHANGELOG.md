@@ -1,3 +1,11 @@
+# [1.11.0](https://github.com/AthlyProject/athly-project/compare/v1.10.0...v1.11.0) (2026-10-18)
+
+
+### Features
+
+* new garmin app ([831ef90](https://github.com/AthlyProject/athly-project/commit/831ef9037ebcedc8d6fab4c7600c3cdde1fdc4b2))
+* new garmin app ([f1f34d5](https://github.com/AthlyProject/athly-project/commit/f1f34d5556b5b4a1f5402a4baf4490c8e6eb5482))
+
 # [1.10.0](https://github.com/AthlyProject/athly-project/compare/v1.9.0...v1.10.0) (2026-10-16)
 
 
