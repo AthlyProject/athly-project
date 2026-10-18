@@ -146,7 +146,7 @@ class Uploader {
 
     private function sent() as Void {
         Log.d("upload sent id=" + _id);
-        RunQueue.remove(_id);
+        RunQueue.markSent(_id);
         RunQueue.setLastEvent(RunQueue.EVENT_SENT, 0);
         next();
     }

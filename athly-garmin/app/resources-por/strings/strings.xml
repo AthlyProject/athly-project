@@ -69,4 +69,19 @@
     <string id="UploadSent">Enviado à Athly</string>
     <string id="UploadLater">Sem celular: envia depois</string>
     <string id="UploadError">Erro no envio $1$</string>
+    <!-- Menu Corridas: envio e situação na Athly. -->
+    <string id="Runs">Corridas</string>
+    <string id="SyncRunsNow">Sincronizar agora</string>
+    <string id="RunsChecking">Sincronizando corridas...</string>
+    <string id="NoRuns">Nenhuma corrida ainda</string>
+    <string id="RunQueued">A enviar</string>
+    <string id="RunSent">Enviada à Athly</string>
+    <string id="RunAwaitingApp">Aguardando o app</string>
+    <string id="RunIncomplete">Envio incompleto</string>
+    <string id="RunMissing">Não está na Athly</string>
+    <string id="RunSavedTo">Salva: $1$</string>
+    <string id="RunSavedToWorkout">Salva no treino</string>
+    <string id="RunSavedFree">Salva como corrida livre</string>
+    <string id="RunIgnored">Ignorada no app</string>
+    <string id="ConfirmInApp">Confirme no app Athly</string>
 </strings>

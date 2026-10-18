@@ -127,7 +127,7 @@ class RunSession {
                 session.stop();
             }
             session.save();
-            queued = _recorder.finish(Time.now().value());
+            queued = _recorder.finish(Time.now().value(), _title);
         }
         _session = null;
         state = RUN_FINISHED;

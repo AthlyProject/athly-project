@@ -47,6 +47,7 @@ describe('ConnectIqActivitiesService', () => {
       jest.Mock
     >;
     connectIqActivityPart: Record<'findMany' | 'upsert' | 'deleteMany', jest.Mock>;
+    workout: Record<'findMany', jest.Mock>;
   };
 
   beforeEach(() => {
@@ -65,6 +66,7 @@ describe('ConnectIqActivitiesService', () => {
         upsert: jest.fn().mockResolvedValue({}),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
+      workout: { findMany: jest.fn().mockResolvedValue([]) },
     };
     service = new ConnectIqActivitiesService(prisma as unknown as PrismaService);
   });
@@ -376,6 +378,41 @@ describe('ConnectIqActivitiesService', () => {
         service.resolve('user-1', 'activity-1', { resolution: 'free_run' }, NOW),
         ErrorCode.CIQ_ACTIVITY_NOT_FOUND,
       );
+    });
+  });
+
+  describe('watchStatus', () => {
+    it('devolve a situação na ordem pedida, com o título só dos vinculados', async () => {
+      prisma.connectIqActivity.findMany.mockResolvedValue([
+        { clientId: 'b', status: 'resolved', resolution: 'linked', workoutId: 'w1' },
+        { clientId: 'a', status: 'ready', resolution: null, workoutId: null },
+        { clientId: 'c', status: 'resolved', resolution: 'free_run', workoutId: null },
+      ]);
+      prisma.workout.findMany.mockResolvedValue([{ id: 'w1', title: 'Intervalado 6x400m' }]);
+
+      await expect(service.watchStatus(DEVICE, ['a', 'b', 'c', 'x'])).resolves.toEqual([
+        { id: 'a', status: 'ready', resolution: null, workoutTitle: null },
+        { id: 'b', status: 'resolved', resolution: 'linked', workoutTitle: 'Intervalado 6x400m' },
+        { id: 'c', status: 'resolved', resolution: 'free_run', workoutTitle: null },
+        { id: 'x', status: 'missing', resolution: null, workoutTitle: null },
+      ]);
+      expect(prisma.connectIqActivity.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', clientId: { in: ['a', 'b', 'c', 'x'] } },
+        select: { clientId: true, status: true, resolution: true, workoutId: true },
+      });
+      expect(prisma.workout.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['w1'] }, userId: 'user-1' },
+        select: { id: true, title: true },
+      });
+    });
+
+    it('não consulta treinos quando nada foi vinculado', async () => {
+      prisma.connectIqActivity.findMany.mockResolvedValue([
+        { clientId: 'a', status: 'receiving', resolution: null, workoutId: null },
+      ]);
+
+      await service.watchStatus(DEVICE, ['a']);
+      expect(prisma.workout.findMany).not.toHaveBeenCalled();
     });
   });
 

@@ -3,6 +3,7 @@ import {
   ConnectIqActivityHeaderDto,
   ConnectIqActivityPartDto,
   ResolveConnectIqActivityDto,
+  WatchActivityStatusQueryDto,
 } from './connect-iq-activity.dto';
 
 // Mesmas opções do pipe global (src/main.ts): campo desconhecido é erro.
@@ -98,5 +99,19 @@ describe('ResolveConnectIqActivityDto', () => {
     await expect(
       validate(ResolveConnectIqActivityDto, { resolution: 'dismissed' }),
     ).resolves.toBeDefined();
+  });
+});
+
+describe('WatchActivityStatusQueryDto', () => {
+  it('aceita até 10 ids separados por vírgula', async () => {
+    const ids = Array.from({ length: 10 }, (_, i) => String(1792152000 + i)).join(',');
+    await expect(validate(WatchActivityStatusQueryDto, { ids })).resolves.toBeDefined();
+  });
+
+  it('recusa mais de 10 ids, vazio ou caracteres fora do id', async () => {
+    const ids = Array.from({ length: 11 }, (_, i) => String(i)).join(',');
+    await expect(validate(WatchActivityStatusQueryDto, { ids })).rejects.toThrow();
+    await expect(validate(WatchActivityStatusQueryDto, { ids: '' })).rejects.toThrow();
+    await expect(validate(WatchActivityStatusQueryDto, { ids: 'a;b' })).rejects.toThrow();
   });
 });

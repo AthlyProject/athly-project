@@ -20,6 +20,7 @@ import {
   ConnectIqActivityDetailModel,
   ConnectIqActivitySummaryModel,
   ConnectIqActivityUploadModel,
+  ConnectIqWatchActivityStatusModel,
 } from './models/connect-iq-activity.model';
 
 /** A rota GPS é dado sensível: some 30 dias depois de chegar, resolvida ou não. */
@@ -235,6 +236,44 @@ export class ConnectIqActivitiesService {
       endedAt: seconds(activity.startedAt, end),
     }));
     return { ...toSummary(activity), laps, pauses, points };
+  }
+
+  /**
+   * Situação das corridas que o relógio enviou, na ordem pedida: chegou, espera o atleta no app ou
+   * já foi decidida (e com qual treino). Só corridas do usuário do token.
+   */
+  async watchStatus(
+    device: CiqDeviceContext,
+    clientIds: string[],
+  ): Promise<ConnectIqWatchActivityStatusModel[]> {
+    const activities = await this.prisma.connectIqActivity.findMany({
+      where: { userId: device.userId, clientId: { in: clientIds } },
+      select: { clientId: true, status: true, resolution: true, workoutId: true },
+    });
+    const workoutIds = activities
+      .filter((a) => a.resolution === 'linked' && a.workoutId)
+      .map((a) => a.workoutId as string);
+    const workouts = workoutIds.length
+      ? await this.prisma.workout.findMany({
+          where: { id: { in: workoutIds }, userId: device.userId },
+          select: { id: true, title: true },
+        })
+      : [];
+    const titles = new Map(workouts.map((w) => [w.id, w.title]));
+    const byClientId = new Map(activities.map((a) => [a.clientId, a]));
+    return clientIds.map((id) => {
+      const activity = byClientId.get(id);
+      if (!activity) return { id, status: 'missing', resolution: null, workoutTitle: null };
+      return {
+        id,
+        status: activity.status,
+        resolution: activity.resolution,
+        workoutTitle:
+          activity.resolution === 'linked' && activity.workoutId
+            ? (titles.get(activity.workoutId) ?? null)
+            : null,
+      };
+    });
   }
 
   /** Idempotente: o app pode repetir a decisão se a primeira resposta se perder. */

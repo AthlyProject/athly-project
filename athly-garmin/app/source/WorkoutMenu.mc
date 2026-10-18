@@ -29,11 +29,8 @@ module WorkoutMenu {
             menu.addItem(new WatchUi.MenuItem(Rez.Strings.NoWorkouts, null, :none, null));
         }
         menu.addItem(new WatchUi.MenuItem(Rez.Strings.FreeRun, null, :free, null));
-        var pending = RunQueue.size();
-        if (pending > 0) {
-            menu.addItem(new WatchUi.MenuItem(
-                Lang.format(Ui.str(Rez.Strings.ToSend), [pending]), null, :upload, null));
-        }
+        // Envia as corridas que ficaram no relógio e mostra se o app do iPhone já as salvou.
+        menu.addItem(new WatchUi.MenuItem(Rez.Strings.Runs, RunsMenu.summary(), :runs, null));
         menu.addItem(new WatchUi.MenuItem(Rez.Strings.SyncNow, lastSyncLabel(), :sync, null));
         if (AppWorkouts.isSupported()) {
             menu.addItem(new WatchUi.ToggleMenuItem(
@@ -91,9 +88,9 @@ class WorkoutMenuDelegate extends WatchUi.Menu2InputDelegate {
             Disconnect.confirm();
         } else if (id == :free) {
             WorkoutMenu.startFreeRun();
-        } else if (id == :upload) {
-            var upload = new UploadView(false);
-            WatchUi.switchToView(upload, new UploadDelegate(upload), WatchUi.SLIDE_IMMEDIATE);
+        } else if (id == :runs) {
+            var runs = new RunsSyncView();
+            WatchUi.switchToView(runs, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_IMMEDIATE);
         } else if (id == :nativeList) {
             // Liga/desliga a lista nativa e sincroniza para baixar ou apagar os FITs.
             WorkoutStore.setNativeList((item as WatchUi.ToggleMenuItem).isEnabled());

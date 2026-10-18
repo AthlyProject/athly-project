@@ -122,8 +122,9 @@ class Recorder {
         reset();
     }
 
-    // Corrida salva: finaliza e põe na fila de envio. Devolve se entrou na fila.
-    function finish(now as Number) as Boolean {
+    // Corrida salva: finaliza e põe na fila de envio. Devolve se entrou na fila. `title` é o nome
+    // mostrado no menu Corridas (não vai para o backend).
+    function finish(now as Number, title as String) as Boolean {
         if (!_active) {
             return false;
         }
@@ -159,7 +160,7 @@ class Recorder {
         if (_workoutId != null) {
             header["workoutId"] = _workoutId;
         }
-        var queued = RunQueue.enqueue(_id, header, now);
+        var queued = RunQueue.enqueue(_id, header, now, title);
         if (queued) {
             RunQueue.setLastEvent(RunQueue.EVENT_QUEUED, parts);
             UploadRules.scheduleRetries();

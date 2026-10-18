@@ -152,13 +152,13 @@ function lapStatsBuildsBackendLap(logger as Logger) as Boolean {
 function runQueueQueuesAndRemovesRuns(logger as Logger) as Boolean {
     Application.Storage.clearValues();
     Test.assert(RunQueue.saveBlock("100", 0, [1, 2, 3]b));
-    Test.assert(RunQueue.enqueue("100", { "id" => "100", "parts" => 1 }, 5000));
+    Test.assert(RunQueue.enqueue("100", { "id" => "100", "parts" => 1 }, 5000, "Tempo run"));
     Test.assertEqual(RunQueue.size(), 1);
     RunQueue.remove("100");
     Test.assertEqual(RunQueue.size(), 0);
     Test.assert(RunQueue.block("100", 0) == null);
     for (var i = 1; i <= RunQueue.MAX_QUEUED + 1; i++) {
-        RunQueue.enqueue(i.toString(), { "id" => i.toString(), "parts" => 0 }, i);
+        RunQueue.enqueue(i.toString(), { "id" => i.toString(), "parts" => 0 }, i, "");
     }
     Test.assertEqual(RunQueue.size(), RunQueue.MAX_QUEUED);
     Test.assert((RunQueue.queue()[0][0] as String).equals("2"));

@@ -120,7 +120,7 @@ pareamento). Versão 2.x: o backend usa isso para saber que o relógio envia cor
 (`ConnectIqDeviceModel.uploadsRuns`).
 
 ```
-Menu: treinos da semana · Corrida livre · A enviar: N · Sincronizar · Lista de treinos Garmin · Desconectar
+Menu: treinos da semana · Corrida livre · Corridas · Sincronizar · Lista de treinos Garmin · Desconectar
 Sync: GET /connect-iq/manifest → GET /connect-iq/workouts/:id/plan (JSON, por rev)
       + FIT para Treino › Treinos só com a opção "Lista de treinos Garmin" ligada
 Treino: Player (WorkoutPlan.expand + Player) · RunSession (ActivityRecording + GPS + FC, 1 Hz)
@@ -138,6 +138,10 @@ Salvar: UploadView envia na hora (POST /connect-iq/activities + parts, com worko
 - **Avisos**: vibra na troca de passo, 5 s/50 m antes do fim do passo, e quando o pace de 30 s fica
   fora da faixa por 10 s (dois toques: lento; um longo: rápido), repetindo a cada 30 s enquanto
   continuar fora.
+- **Menu Corridas**: envia na hora o que ficou no relógio e pergunta à Athly
+  (`GET /connect-iq/activities/status?ids=…`) a situação das 5 últimas corridas: "A enviar",
+  "Aguardando o app" (chegou, falta confirmar no iPhone), "Salva: <treino>", "Salva como corrida
+  livre", "Ignorada no app". Sem celular, mostra a última situação conhecida.
 - **Player da Garmin**: com a lista ligada, o treino também abre no player nativo — mas essa corrida
   não é enviada à Athly (volta pelo Apple Health ou importando o FIT).
 

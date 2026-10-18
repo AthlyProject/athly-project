@@ -52,7 +52,11 @@ class UploadView extends WatchUi.View {
         }
         Ui.message(dc, title, null);
         var height = dc.getHeight();
-        Ui.text(dc, height * 70 / 100, Graphics.FONT_TINY, detail, color, height * 20 / 100);
+        Ui.text(dc, height * 68 / 100, Graphics.FONT_TINY, detail, color, height * 14 / 100);
+        if (color == Graphics.COLOR_GREEN) {
+            // Chegou à Athly; falta o atleta confirmar o treino no popup do iPhone.
+            Ui.text(dc, height * 82 / 100, Graphics.FONT_XTINY, Ui.str(Rez.Strings.ConfirmInApp), Graphics.COLOR_LT_GRAY, height * 10 / 100);
+        }
     }
 
     // Título quando a corrida não entrou na fila.

@@ -29,9 +29,13 @@ import { CiqEnvelopeFilter } from './filters/ciq-envelope.filter';
 import {
   ConnectIqActivityHeaderDto,
   ConnectIqActivityPartDto,
+  WatchActivityStatusQueryDto,
 } from './dto/connect-iq-activity.dto';
 import { DeviceTokenGuard } from './guards/device-token.guard';
-import { ConnectIqActivityUploadModel } from './models/connect-iq-activity.model';
+import {
+  ConnectIqActivityUploadModel,
+  ConnectIqWatchActivityStatusListModel,
+} from './models/connect-iq-activity.model';
 import type { WatchPlan } from './fit/workout-watch-plan';
 import {
   ConnectIqManifestModel,
@@ -124,6 +128,19 @@ export class ConnectIqWatchController {
     @Body() header: ConnectIqActivityHeaderDto,
   ): Promise<ConnectIqActivityUploadModel> {
     return this.activities.receiveHeader(device, header);
+  }
+
+  /** Situação das corridas que o relógio enviou (chegaram? o atleta confirmou no app?). */
+  @Get('activities/status')
+  @UseGuards(DeviceTokenGuard)
+  @Header('Cache-Control', 'no-store')
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: ConnectIqWatchActivityStatusListModel })
+  async activityStatus(
+    @CurrentCiqDevice() device: CiqDeviceContext,
+    @Query() query: WatchActivityStatusQueryDto,
+  ): Promise<ConnectIqWatchActivityStatusListModel> {
+    return { runs: await this.activities.watchStatus(device, query.ids.split(',')) };
   }
 
   /** Um bloco da rota (base64). */

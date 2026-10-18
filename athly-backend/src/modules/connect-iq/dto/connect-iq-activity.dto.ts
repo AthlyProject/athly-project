@@ -187,6 +187,14 @@ export class ConnectIqActivityPartDto {
   data: string;
 }
 
+/** Até 10 corridas do relógio por consulta: ids separados por vírgula. */
+export class WatchActivityStatusQueryDto {
+  @ApiProperty({ example: '1792152000,1792238400', description: 'Ids das corridas no relógio' })
+  @IsString()
+  @Matches(/^[0-9a-z]{1,32}(,[0-9a-z]{1,32}){0,9}$/)
+  ids: string;
+}
+
 export const ACTIVITY_RESOLUTIONS = ['linked', 'free_run', 'dismissed'] as const;
 export type ActivityResolution = (typeof ACTIVITY_RESOLUTIONS)[number];
 
