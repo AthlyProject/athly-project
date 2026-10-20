@@ -16,10 +16,13 @@ actor APIClient {
 
     private var baseURL: String = {
         #if DEBUG
-        return "https://api.athlyproject.app"
-        #else
-        return "https://api.athlyproject.app"
+        // Backend local no iPhone: DEV_API_URL em Config/User.xcconfig (gitignored). Vazio → produção.
+        if let devURL = Bundle.main.object(forInfoDictionaryKey: "DEV_API_URL") as? String,
+           URL(string: devURL)?.host != nil {
+            return devURL
+        }
         #endif
+        return "https://api.athlyproject.app"
     }()
 
     private var accessToken: String?
@@ -109,6 +112,18 @@ actor APIClient {
 
     /// Binds a HealthKit capture to the session that started it, including before upload.
     var heartRateSessionIdentifier: UUID { sessionVersion }
+
+    #if targetEnvironment(simulator)
+    /// E-mail da conta logada (claim do JWT). Só o Health simulado usa, para escolher o cenário.
+    var simulatorAccountEmail: String? {
+        guard let payload = accessToken?.split(separator: ".").dropFirst().first else { return nil }
+        var base64 = String(payload).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        base64 += String(repeating: "=", count: (4 - base64.count % 4) % 4)
+        guard let data = Data(base64Encoded: base64),
+              let claims = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return claims["email"] as? String
+    }
+    #endif
 
     // MARK: - Auth Endpoints
 
@@ -407,6 +422,16 @@ actor APIClient {
     func getActiveGoal() async throws -> CreateGoalResponse? {
         let req = try buildRequest(path: "/goals/active", method: "GET", authenticated: true)
         return try await executeOptional(req)
+    }
+
+    /// Troca a meta ativa: vale para as próximas semanas geradas; as já entregues ficam.
+    func replaceActiveGoal(_ draft: GoalDraft) async throws -> CreateGoalResponse {
+        try await put("/goals/active", body: draft)
+    }
+
+    /// Analisa a meta (a ativa, ou o rascunho em `request.goal`) antes de gerar o plano. Sem IA.
+    func analyzeGoal(_ request: GoalAnalysisRequest) async throws -> GoalAnalysis {
+        try await post("/ai-planner/goal-analysis", body: request, timeout: 30)
     }
 
     // MARK: - Token Refresh
@@ -759,6 +784,8 @@ struct AssessmentSubmissionRequest: Encodable, Sendable {
     var objectiveDistance: String?
     var objectiveType: String?
     var targetTime: String?
+    // Data civil da prova (yyyy-MM-dd), só no objetivo pessoal. nil não vai no JSON.
+    var eventDate: String? = nil
     // P9 — Dias disponíveis para treinar (chaves em inglês: monday…sunday)
     var availableDays: [String] = []
     // Required by backend

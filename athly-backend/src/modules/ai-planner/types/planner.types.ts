@@ -1,5 +1,6 @@
 import { SportType } from '@prisma/client';
 import type { Segment } from '../../workouts/types/segment.types';
+import type { TrainingPhase } from '../periodization';
 
 export type { SportType };
 
@@ -79,6 +80,14 @@ export interface PlannerGuardrails {
   analysisOverride?: Omit<RunAnalysis, 'title' | 'fitnessInsights'>;
   defaultPaceSecPerKm?: number;
   minTrainingDate?: string;
+  /** Fase do macrociclo nesta semana (só metas com data). */
+  phase?: TrainingPhase;
+  /** Longão de referência do macrociclo nesta semana (km). */
+  longRunRefKm?: number;
+  /** Semana de avaliação (sem corridas no Health): só tempo e RPE, sem tiros. */
+  assessmentProtocol?: boolean;
+  /** Data da prova (YYYY-MM-DD), só na semana da prova: limita a véspera e a antevéspera. */
+  raceDate?: string;
 }
 
 export interface PreviousWeekAnalysis {

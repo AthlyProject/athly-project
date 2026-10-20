@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PlanGenerationStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { PlanGenerationSqsService } from './plan-generation-sqs.service';
+import {
+  isLocalPlanGenerationEnabled,
+  PlanGenerationSqsService,
+} from './plan-generation-sqs.service';
 import { PlanFromHealthDto } from './dto/plan-from-health.dto';
 
 @Injectable()
@@ -55,6 +58,8 @@ export class PlanGenerationJobsService {
   }
 
   async dispatch(generationId: string): Promise<void> {
+    // Sem fila no ambiente local: o job fica QUEUED e o PlanGenerationLocalWorker o consome.
+    if (isLocalPlanGenerationEnabled()) return;
     const lease = new Date(Date.now() + 60_000);
     const claimed = await this.prisma.planGenerationJob.updateMany({
       where: {

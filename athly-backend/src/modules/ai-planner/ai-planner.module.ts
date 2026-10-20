@@ -9,10 +9,12 @@ import { BillingModule } from '../billing/billing.module';
 import { TrainingReportModule } from '../training-report/training-report.module';
 import { PlanGenerationSqsService } from './plan-generation-sqs.service';
 import { PlanGenerationSqsConsumer } from './plan-generation-sqs.consumer';
+import { PlanGenerationLocalWorker } from './plan-generation-local.worker';
 
 import { PlanGenerationJobsService } from './plan-generation-jobs.service';
 import { PlannerHealthContextService } from './planner-health-context.service';
 import { WeeklyPlanAutomationService } from './weekly-plan-automation.service';
+import { GoalAnalysisService } from './goal-analysis.service';
 
 @Module({
   imports: [EffortZoneModule, BillingModule, TrainingReportModule, HeartRateModule],
@@ -25,7 +27,9 @@ import { WeeklyPlanAutomationService } from './weekly-plan-automation.service';
     PlanGenerationJobsService,
     PlannerHealthContextService,
     WeeklyPlanAutomationService,
+    GoalAnalysisService,
     PlanGenerationSqsConsumer,
+    PlanGenerationLocalWorker,
   ],
   exports: [GeminiService, PlannerHealthContextService, WeeklyPlanAutomationService],
 })

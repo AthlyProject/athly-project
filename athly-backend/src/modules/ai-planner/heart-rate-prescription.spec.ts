@@ -3,6 +3,7 @@ import { calculateHeartRateZones } from '../users/heart-rate-zones';
 import { withTrainingGuidance } from '../users/heart-rate-guidance';
 import {
   assessHeartRatePrescription,
+  heartRateApplies,
   snapshotHeartRateTargets,
   heartRatePrescriptionPrompt,
 } from './heart-rate-prescription';
@@ -157,6 +158,98 @@ describe('New workout HR prescriptions', () => {
       });
     },
   );
+
+  describe('tiros curtos e recuperações sem zona de FC', () => {
+    const intervals = (): WorkoutDay => ({
+      ...day(),
+      segments: [
+        {
+          id: 'wu',
+          kind: 'warmup',
+          end: { by: 'durationSec', value: 600 },
+          target: { rpe: 3, hrZone: 2 },
+        },
+        {
+          id: 'set',
+          kind: 'set',
+          repetitions: 6,
+          children: [
+            // 400 m a ~4:54/km ≈ 2 min: curto.
+            {
+              id: 'rep',
+              kind: 'work',
+              end: { by: 'distanceM', value: 400 },
+              target: { rpe: 9, hrZone: 5, paceSecPerKmMin: 284, paceSecPerKmMax: 304 },
+            },
+            {
+              id: 'rec',
+              kind: 'recovery',
+              end: { by: 'durationSec', value: 90 },
+              target: { rpe: 3, hrZone: 1 },
+            },
+          ],
+        },
+        // 2 km a ~5:20/km ≈ 10 min: longo.
+        {
+          id: 'tempo',
+          kind: 'work',
+          end: { by: 'distanceM', value: 2000 },
+          target: { rpe: 7, hrZone: 4, paceSecPerKmMin: 310, paceSecPerKmMax: 330 },
+        },
+        {
+          id: 'cd',
+          kind: 'cooldown',
+          end: { by: 'durationSec', value: 300 },
+          target: { rpe: 2, hrZone: 1 },
+        },
+      ],
+    });
+    const target = (w: WorkoutDay, id: string) => {
+      const all = [...w.segments, ...(w.segments[1].children ?? [])];
+      return all.find((s) => s.id === id)!.target as Record<string, unknown>;
+    };
+
+    it('aceita tiro curto e recuperação sem hrZone, mas exige no trecho longo', () => {
+      const w = intervals();
+      delete target(w, 'rep').hrZone;
+      delete target(w, 'rec').hrZone;
+      expect(assessHeartRatePrescription([w], enabled())).toEqual([]);
+      delete target(w, 'tempo').hrZone;
+      expect(assessHeartRatePrescription([w], enabled()).join(' ')).toContain(
+        'tempo: target.hrZone',
+      );
+    });
+
+    it('remove a zona que a IA pôs em tiro curto e recuperação, mantendo pace e RPE', () => {
+      const w = intervals();
+      snapshotHeartRateTargets([w], enabled());
+      expect(target(w, 'rep')).toEqual({ rpe: 9, paceSecPerKmMin: 284, paceSecPerKmMax: 304 });
+      expect(target(w, 'rec')).toEqual({ rpe: 3 });
+      expect(target(w, 'tempo')).toMatchObject({ hrZone: 4, hrMinBpm: expect.any(Number) });
+      expect(target(w, 'wu')).toMatchObject({ hrZone: 2, hrMinBpm: 138 });
+    });
+
+    it('trecho por tempo: menos de 3 min é curto', () => {
+      expect(
+        heartRateApplies({ id: 'a', kind: 'work', end: { by: 'durationSec', value: 120 } }),
+      ).toBe(false);
+      expect(
+        heartRateApplies({ id: 'b', kind: 'work', end: { by: 'durationSec', value: 300 } }),
+      ).toBe(true);
+      expect(
+        heartRateApplies({ id: 'c', kind: 'work', end: { by: 'distanceM', value: 1000 } }),
+      ).toBe(true);
+      expect(
+        heartRateApplies({ id: 'd', kind: 'work', end: { by: 'distanceM', value: 400 } }),
+      ).toBe(false);
+    });
+
+    it('cita o trecho de prosa que disparou o defeito', () => {
+      const w = day();
+      w.description = 'Corra leve e mantenha a FC entre 140 e 150 bpm o tempo todo.';
+      expect(assessHeartRatePrescription([w], enabled()).join(' ')).toContain('150 bpm');
+    });
+  });
 
   it('defaults both prompts to explicit RPE when shared guidance is unavailable', () => {
     expect(heartRatePrescriptionPrompt()).toContain('NÃO gere target.hrZone');

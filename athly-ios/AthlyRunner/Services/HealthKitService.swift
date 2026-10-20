@@ -1084,7 +1084,9 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
             distanceMeters: distanceMeters,
             averagePaceSecondsPerKm: averagePaceSecondsPerKm,
             activeEnergyBurned: activeEnergyBurned,
-            elevationGainMeters: elevationGainMeters
+            elevationGainMeters: elevationGainMeters,
+            sourceBundleIdentifier: workout.sourceRevision.source.bundleIdentifier,
+            wasUserEntered: workout.metadata?[HKMetadataKeyWasUserEntered] as? Bool ?? false
         )
     }
 

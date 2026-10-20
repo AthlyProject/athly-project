@@ -56,13 +56,17 @@ export interface AiPlannerUsage {
   tokenSource: 'usageMetadata' | 'estimatedFromText' | 'mixed';
 }
 
+// O Gemini emite as chaves na ordem do schema. Com hrZone antes de rpe, no modo FC o modelo
+// escrevia rpe, não podia mais abrir hrZone e emendava dígitos sem fim ("rpe": 3000…) até o
+// timeout de 5 min (eval 2026-10-20: 4 de 4 gerações do perfil com FC). Os limites também
+// impedem o número de crescer.
 const runTargetSchema = {
   type: 'object',
   properties: {
     paceSecPerKmMin: { type: 'integer' },
     paceSecPerKmMax: { type: 'integer' },
-    hrZone: { type: 'integer' },
-    rpe: { type: 'integer' },
+    rpe: { type: 'integer', minimum: 1, maximum: 10 },
+    hrZone: { type: 'integer', minimum: 1, maximum: 5 },
   },
 };
 
@@ -191,6 +195,8 @@ export const plannerResponseSchema = {
   required: ['analysis', 'weekPlan'],
 };
 
+export const GEMINI_TIMEOUT_MS = 120_000;
+
 const GEMINI_PRICING_USD_PER_1M: Record<string, { input: number; output: number }> = {
   'gemini-2.5-flash-lite': { input: 0.1, output: 0.4 },
   'gemini-2.5-flash': { input: 0.3, output: 2.5 },
@@ -218,7 +224,9 @@ export class GeminiService {
         'GEMINI_API_KEY is not configured.',
       );
     }
-    return new GoogleGenAI({ apiKey });
+    // Uma geração normal leva 20–70 s. Sem timeout próprio, uma resposta que degenera só caía no
+    // limite de 300 s do fetch, e cada tentativa do worker esperava 5 min.
+    return new GoogleGenAI({ apiKey, httpOptions: { timeout: GEMINI_TIMEOUT_MS } });
   }
 
   private plannerModelName(): string {
@@ -268,6 +276,8 @@ export class GeminiService {
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
     minTrainingDate?: string,
+    guardrails?: PlannerGuardrails,
+    goalReadiness?: string,
   ): Promise<PlannerExecution> {
     const prompt = buildAssessmentPrompt(
       weekDates,
@@ -278,11 +288,12 @@ export class GeminiService {
       userProfile,
       analyzedSessions,
       minTrainingDate,
+      goalReadiness,
     );
 
     return this.runWithStructureGate(
       prompt,
-      undefined,
+      guardrails,
       this.plannerModelName(),
       effortZones.heartRate,
     );
@@ -378,10 +389,12 @@ export class GeminiService {
     const response = await this.getClient().models.generateContent({
       model: modelName,
       contents: prompt,
+      // Sem temperature: o Gemini 3 recomenda o padrão 1.0 e avisa que valores menores causam
+      // loop. Com 0.25, 6 de 9 planos do eval raciocinaram até o limite de saída (~63k tokens,
+      // US$ 0,20 e 3,5 min cada); no padrão, nenhum passou de 7k tokens.
       config: {
         responseMimeType: 'application/json',
         responseJsonSchema,
-        temperature: 0.25,
       },
     });
 
@@ -511,6 +524,45 @@ export class GeminiService {
     if (goalAttempts.length > 1) defects.push('more than one isGoalAttempt=true');
     if (goalAttempts.length > 0 && guardrails.goalAttemptAllowed === false) {
       defects.push('isGoalAttempt=true even though backend feasibility is false');
+    }
+
+    if (guardrails.assessmentProtocol) defects.push(...assessAssessmentProtocol(parsed.weekPlan));
+
+    // Fase BASE: a IA punha 2 treinos de qualidade (RPE 7–8) e longões bem acima da referência
+    // (evals de 19 e 20/10). O prompt já pedia o limite; o gate garante, como o de volume.
+    if (guardrails.phase === 'base') {
+      const running = parsed.weekPlan.filter((d) => d.sportType !== 'other');
+      const quality = running.filter((d) => maxWorkRpe(d.segments ?? []) >= BASE_QUALITY_RPE);
+      if (quality.length > 1) {
+        defects.push(
+          `BASE phase allows at most 1 session with a work segment at RPE >= ${BASE_QUALITY_RPE}; got ${quality.length} (${quality.map((d) => d.date).join(', ')})`,
+        );
+      }
+      if (guardrails.longRunRefKm && guardrails.longRunRefKm > 0) {
+        const pace = guardrails.defaultPaceSecPerKm ?? 390;
+        const longest = Math.max(
+          0,
+          ...running.map((d) => this.estimateSegmentsMeters(d.segments ?? [], pace) / 1000),
+        );
+        const limit = guardrails.longRunRefKm * BASE_LONG_RUN_TOLERANCE;
+        if (longest > limit) {
+          defects.push(
+            `longest run ${longest.toFixed(1)}km exceeds the BASE long-run reference ${guardrails.longRunRefKm}km (max ${limit.toFixed(1)}km)`,
+          );
+        }
+      }
+    }
+
+    // Semana da prova: a IA punha 1 km no ritmo de prova na véspera e treino forte adjacente à
+    // prova (eval de 2026-10-20). Véspera: ativação curta; antevéspera: leve.
+    if (guardrails.raceDate) {
+      defects.push(
+        ...assessRaceEve(
+          parsed.weekPlan,
+          guardrails.raceDate,
+          guardrails.defaultPaceSecPerKm ?? 390,
+        ),
+      );
     }
 
     if (guardrails.weeklyVolumeMaxKm && guardrails.weeklyVolumeMaxKm > 0) {
@@ -688,6 +740,154 @@ NUNCA retorne um dia de corrida com um único segmento. Siga <segment_schema> e 
 function isoDayKey(date: string): string {
   const day = new Date(`${date}T00:00:00Z`).getUTCDay();
   return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][day];
+}
+
+const ASSESSMENT_MAX_RPE = 6;
+const ASSESSMENT_MIN_WORK_SECONDS = 300;
+
+/**
+ * Semana de avaliação sem histórico no Health: quem não registra corridas pode correr bem, então
+ * a semana mede o que ele sustenta por tempo e RPE, sem tiros (a versão anterior tinha 6×400 m em
+ * RPE 8–9 e 15 min em RPE 7 para quem declarou "nunca corri").
+ */
+function assessAssessmentProtocol(weekPlan: WorkoutDay[]): string[] {
+  const defects: string[] = [];
+  const visit = (date: string, segments: unknown[]) => {
+    for (const raw of segments) {
+      const seg = raw as {
+        id?: string;
+        kind?: string;
+        children?: unknown[];
+        end?: { by?: string; value?: number };
+        target?: { rpe?: number; paceSecPerKmMin?: number; paceSecPerKmMax?: number };
+      };
+      if (seg?.kind === 'set') {
+        visit(date, seg.children ?? []);
+        continue;
+      }
+      if (!seg || seg.kind === 'rest') continue;
+      const where = `${date}/${seg.id ?? seg.kind}`;
+      if (seg.end?.by !== 'durationSec') {
+        defects.push(`${where}: assessment segments must end by durationSec (no distance)`);
+      }
+      if (typeof seg.target?.rpe === 'number' && seg.target.rpe > ASSESSMENT_MAX_RPE) {
+        defects.push(`${where}: assessment allows RPE <= ${ASSESSMENT_MAX_RPE} (no intervals)`);
+      }
+      if (seg.target?.paceSecPerKmMin != null || seg.target?.paceSecPerKmMax != null) {
+        defects.push(`${where}: assessment must not prescribe pace (it measures it)`);
+      }
+      if (
+        seg.kind === 'work' &&
+        seg.end?.by === 'durationSec' &&
+        (seg.end.value ?? 0) < ASSESSMENT_MIN_WORK_SECONDS
+      ) {
+        defects.push(
+          `${where}: assessment work blocks last at least ${ASSESSMENT_MIN_WORK_SECONDS}s`,
+        );
+      }
+    }
+  };
+  for (const day of weekPlan) {
+    if (day.sportType !== 'other') visit(day.date, day.segments ?? []);
+  }
+  return defects;
+}
+
+const BASE_QUALITY_RPE = 7;
+const BASE_LONG_RUN_TOLERANCE = 1.25;
+
+// O prompt pede no máximo 30 min e ~1 km forte na véspera; o gate tem folga para a estimativa.
+const RACE_EVE_EASY_RPE = 4;
+const RACE_EVE_MAX_RPE = 6;
+const RACE_EVE_MAX_MINUTES = 35;
+const RACE_EVE_MAX_HARD_METERS = 1500;
+
+/**
+ * Semana da prova: na antevéspera, nada acima de RPE 4; na véspera, descanso ou uma ativação curta
+ * (até ~30 min, RPE até 6 e no máximo ~1 km acima de RPE 4, somando as repetições).
+ */
+function assessRaceEve(weekPlan: WorkoutDay[], raceDate: string, pace: number): string[] {
+  const defects: string[] = [];
+  const shift = (days: number) => {
+    const d = new Date(`${raceDate}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const eve = shift(-1);
+  const dayBeforeEve = shift(-2);
+  for (const day of weekPlan) {
+    if (day.sportType === 'other' || (day.date !== eve && day.date !== dayBeforeEve)) continue;
+    const load = segmentLoad(day.segments ?? [], pace);
+    if (day.date === dayBeforeEve && load.maxRpe > RACE_EVE_EASY_RPE) {
+      defects.push(
+        `${day.date} is two days before the race: rest or easy running only (RPE <= ${RACE_EVE_EASY_RPE}); got RPE ${load.maxRpe}`,
+      );
+    }
+    if (
+      day.date === eve &&
+      (load.maxRpe > RACE_EVE_MAX_RPE ||
+        load.seconds > RACE_EVE_MAX_MINUTES * 60 ||
+        load.hardMeters > RACE_EVE_MAX_HARD_METERS)
+    ) {
+      defects.push(
+        `${day.date} is the day before the race: rest or a short activation (up to 30 min, RPE <= ${RACE_EVE_MAX_RPE}, about 1 km above RPE ${RACE_EVE_EASY_RPE}); got ${Math.round(load.seconds / 60)} min, RPE ${load.maxRpe}, ${(load.hardMeters / 1000).toFixed(1)} km above RPE ${RACE_EVE_EASY_RPE}`,
+      );
+    }
+  }
+  return defects;
+}
+
+/** Duração, maior RPE e metros acima de RPE 4 de uma árvore de trechos, com as repetições. */
+function segmentLoad(
+  segments: unknown[],
+  pace: number,
+): { seconds: number; maxRpe: number; hardMeters: number } {
+  const load = { seconds: 0, maxRpe: 0, hardMeters: 0 };
+  for (const raw of segments) {
+    const seg = raw as {
+      kind?: string;
+      repetitions?: number;
+      children?: unknown[];
+      end?: { by?: string; value?: number };
+      target?: { rpe?: number };
+    };
+    if (seg?.kind === 'set' && Array.isArray(seg.children)) {
+      const child = segmentLoad(seg.children, pace);
+      const reps = seg.repetitions ?? 1;
+      load.seconds += child.seconds * reps;
+      load.hardMeters += child.hardMeters * reps;
+      load.maxRpe = Math.max(load.maxRpe, child.maxRpe);
+      continue;
+    }
+    const value = seg?.end?.value ?? 0;
+    const segPace = targetMidPace(seg?.target) ?? pace;
+    const seconds =
+      seg?.end?.by === 'distanceM'
+        ? (value / 1000) * segPace
+        : seg?.end?.by === 'durationSec'
+          ? value
+          : 0;
+    const rpe = typeof seg?.target?.rpe === 'number' ? seg.target.rpe : 0;
+    load.seconds += seconds;
+    load.maxRpe = Math.max(load.maxRpe, rpe);
+    if (rpe > RACE_EVE_EASY_RPE && seg?.kind !== 'rest')
+      load.hardMeters += (seconds / segPace) * 1000;
+  }
+  return load;
+}
+
+/** Maior RPE entre os trechos de trabalho, inclusive dentro de sets. */
+function maxWorkRpe(segments: unknown[]): number {
+  let max = 0;
+  for (const raw of segments) {
+    const seg = raw as { kind?: string; children?: unknown[]; target?: { rpe?: unknown } };
+    if (seg?.kind === 'set' && Array.isArray(seg.children)) {
+      max = Math.max(max, maxWorkRpe(seg.children));
+    } else if (seg?.kind === 'work' && typeof seg.target?.rpe === 'number') {
+      max = Math.max(max, seg.target.rpe);
+    }
+  }
+  return max;
 }
 
 function targetMidPace(target: unknown): number | null {

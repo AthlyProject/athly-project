@@ -366,12 +366,19 @@ struct HealthRunPayload: Encodable, Sendable {
     let elevationGainMeters: Double?
     let avgHR: Double?
     let maxHR: Double?
+    // Origem do registro: o backend separa medida (relógio, app) de relato (digitado à mão).
+    let endDate: String
+    let sourceBundleIdentifier: String?
+    let wasUserEntered: Bool?
 
     init(from item: HealthKitRunItem) {
         let iso = ISO8601DateFormatter()
         iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         self.appleHealthWorkoutUUID = item.id
         self.startDate = iso.string(from: item.startDate)
+        self.endDate = iso.string(from: item.endDate)
+        self.sourceBundleIdentifier = item.sourceBundleIdentifier
+        self.wasUserEntered = item.wasUserEntered
         self.distanceMeters = item.distanceMeters
         self.durationSeconds = item.durationSeconds
         self.averagePaceSecondsPerKm = item.averagePaceSecondsPerKm
@@ -424,6 +431,9 @@ struct PlanFromHealthRequest: Encodable, Sendable {
     let runs: [HealthRunPayload]
     let detailedSessions: [DetailedSessionPayload]?
     let weekStartDate: String?
+    /// Todas as corridas que começaram a partir desta data foram lidas (ver `HealthRunWindow`).
+    /// Nil quando as corridas vieram de outro lugar; o backend volta à regra das 20 mais recentes.
+    var runsReadFrom: String? = nil
 }
 
 struct AiPlannerResponse: Decodable, Sendable {
@@ -488,6 +498,79 @@ struct GoalFeasibility: Codable, Sendable {
         let realisticTimeSec: Double?
         let suggestedDate: String?
     }
+}
+
+// MARK: - Goal Analysis
+
+/// Meta no formato das respostas do onboarding: o corpo de `PUT /goals/active` e o rascunho da análise.
+struct GoalDraft: Codable, Equatable, Sendable {
+    var objectiveDistance: String
+    var objectiveType: String        // target_time | workload
+    var targetTime: String?
+    var eventDate: String?
+}
+
+/// Corpo de `POST /ai-planner/goal-analysis`: o mesmo Health que gera o plano, mais a meta em rascunho.
+struct GoalAnalysisRequest: Encodable, Sendable {
+    let runs: [HealthRunPayload]
+    let detailedSessions: [DetailedSessionPayload]?
+    let runsReadFrom: String?
+    let timeZone: String
+    let goal: GoalDraft?
+
+    init(health: PlanFromHealthRequest, goal: GoalDraft?, timeZone: String = TimeZone.current.identifier) {
+        runs = health.runs
+        detailedSessions = health.detailedSessions
+        runsReadFrom = health.runsReadFrom
+        self.timeZone = timeZone
+        self.goal = goal
+    }
+}
+
+/// Análise da meta antes do plano. Campos opcionais para tolerar versões diferentes do backend.
+struct GoalAnalysis: Decodable, Sendable {
+    let goal: Goal
+    let applicable: Bool?
+    let verdict: String?             // ready | feasible | ambitious | unrealistic
+    let lowConfidence: Bool?
+    let hasHistory: Bool?
+    let title: String
+    let message: String
+    let numbers: Numbers?
+    let alternatives: [Alternative]?
+
+    struct Goal: Decodable, Sendable {
+        let summary: String
+        let targetDistance: String?
+        let targetTime: String?
+        let eventDate: String?
+    }
+
+    struct Numbers: Decodable, Sendable {
+        let currentVdot: Double?
+        let requiredVdot: Double?
+        let targetTimeSec: Double?
+        let timeTodaySec: Double?
+        let timeAtEventSec: Double?
+        let weeksAvailable: Double?
+        let daysAvailable: Double?
+        let enduranceDemonstrated: Bool?
+        let longestKm: Double?
+        let requiredLongestKm: Double?
+        let weeklyKm: Double?
+        let requiredWeeklyKm: Double?
+    }
+
+    struct Alternative: Decodable, Sendable, Identifiable, Equatable {
+        let id: String
+        let axis: String             // time | distance | both
+        let source: String           // objective | projection
+        let summary: String
+        let goal: GoalDraft
+    }
+
+    var isApplicable: Bool { applicable ?? true }
+    var options: [Alternative] { alternatives ?? [] }
 }
 
 // MARK: - Update Profile

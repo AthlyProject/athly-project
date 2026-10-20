@@ -3,8 +3,13 @@ import { PlanGenerationStatus } from '@prisma/client';
 import { CodedConflictException } from '../../common/errors/coded-exception';
 import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
+import {
+  buildParsedGoal,
+  mapExperienceLevel,
+  resolveEventDate,
+  staleSkeletonWhere,
+} from '../goals/goal-builder';
 import { SubmitAssessmentDto } from './dto/submit-assessment.dto';
-import type { ParsedGoal } from '../ai-planner/prompts/goal-parser-prompt';
 
 @Injectable()
 export class AssessmentService {
@@ -22,6 +27,7 @@ export class AssessmentService {
         'Você precisa aceitar os termos para continuar.',
       );
     }
+    const eventDate = resolveEventDate(dto);
 
     const activeJob = await this.prisma.planGenerationJob.findFirst({
       where: {
@@ -36,7 +42,7 @@ export class AssessmentService {
       );
     }
 
-    const parsedGoal = this.buildParsedGoal(dto);
+    const parsedGoal = buildParsedGoal(dto, eventDate, mapExperienceLevel(dto.fitnessLevel));
 
     const [, , goal] = await this.prisma.$transaction([
       this.prisma.user.update({
@@ -67,80 +73,10 @@ export class AssessmentService {
           active: true,
         },
       }),
+      // Refazer a avaliação com plano existente: as fases futuras seguem a meta nova.
+      this.prisma.weeklyGoal.deleteMany({ where: staleSkeletonWhere(userId) }),
     ]);
 
     return goal;
-  }
-
-  /**
-   * Monta o `ParsedGoal` de forma determinística a partir das respostas já
-   * estruturadas — o parser de texto livre por IA foi removido e é desnecessário aqui.
-   */
-  private buildParsedGoal(dto: SubmitAssessmentDto): ParsedGoal {
-    const experienceLevel = this.mapExperienceLevel(dto.fitnessLevel);
-
-    // "Melhorar fitness e endurance" — objetivo aberto, sem distância/tempo alvo.
-    if (dto.objective !== 'personal') {
-      return {
-        isRunningRelated: true,
-        targetDistance: null,
-        targetTime: null,
-        eventDate: null,
-        eventName: null,
-        experienceLevel,
-        summary: 'Melhorar fitness e endurance',
-        rejectionReason: null,
-      };
-    }
-
-    // Objetivo pessoal: distância definida e (opcionalmente) tempo alvo.
-    const targetDistance = dto.objectiveDistance?.trim() || null;
-    const targetTime =
-      dto.objectiveType === 'target_time' && dto.targetTime?.trim() ? dto.targetTime.trim() : null;
-
-    const distanceLabel = targetDistance ? this.distanceLabel(targetDistance) : 'corrida';
-    const summary = targetTime
-      ? `Treinar para ${distanceLabel} em ${targetTime}`
-      : `Treinar para ${distanceLabel}`;
-
-    return {
-      isRunningRelated: true,
-      targetDistance,
-      targetTime,
-      eventDate: null,
-      eventName: null,
-      experienceLevel,
-      summary,
-      rejectionReason: null,
-    };
-  }
-
-  private mapExperienceLevel(
-    fitnessLevel?: string,
-  ): 'beginner' | 'intermediate' | 'advanced' | null {
-    switch (fitnessLevel) {
-      case 'beginning':
-      case 'beginner':
-        return 'beginner';
-      case 'hobby':
-      case 'intermediate':
-        return 'intermediate';
-      case 'advanced':
-      case 'pro':
-        return 'advanced';
-      default:
-        return null;
-    }
-  }
-
-  private distanceLabel(value: string): string {
-    const labels: Record<string, string> = {
-      '5k': '5K',
-      '10k': '10K',
-      half: 'meia maratona',
-      '42k': 'maratona',
-      ultra: 'ultra',
-    };
-    return labels[value.toLowerCase()] ?? value;
   }
 }

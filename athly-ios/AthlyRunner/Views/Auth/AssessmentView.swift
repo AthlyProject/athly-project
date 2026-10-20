@@ -20,6 +20,10 @@ struct AssessmentView: View {
     @State private var objectiveType = ""
     @State private var targetTimeText = ""
 
+    // MARK: - P8: Data da prova (opcional, objetivo pessoal)
+    @State private var hasEventDate = false
+    @State private var eventDate = Calendar.current.date(byAdding: .weekOfYear, value: 12, to: Date()) ?? Date()
+
     // MARK: - P9: Dias disponíveis (último passo em ambos os finais)
     @State private var availableDays: Set<String> = ["monday", "tuesday", "wednesday", "friday", "saturday"]
 
@@ -218,6 +222,7 @@ struct AssessmentView: View {
             objectiveDistance: objectiveDistance.isEmpty ? nil : objectiveDistance,
             objectiveType: objectiveType.isEmpty ? nil : objectiveType,
             targetTime: targetTimeText.isEmpty ? nil : targetTimeText,
+            eventDate: objective == "personal" && hasEventDate ? GoalFormatting.civilDateString(eventDate) : nil,
             availableDays: Self.weekdays.map(\.key).filter { availableDays.contains($0) },
             termsAccepted: true
         )
@@ -448,6 +453,7 @@ private extension AssessmentView {
                             objectiveDistance = ""
                             objectiveType = ""
                             targetTimeText = ""
+                            hasEventDate = false
                         }
                     }
                 } label: {
@@ -490,141 +496,18 @@ private extension AssessmentView {
     }
 }
 
-// MARK: - P7: Distância (personal path)
+// MARK: - P7/P8: Distância, tipo e data (personal path)
 
 private extension AssessmentView {
-    struct DistanceItem {
-        let icon: String; let label: String; let description: String; let value: String
-    }
-
-    static let distanceItems: [DistanceItem] = [
-        .init(icon: "flag",       label: "5K",       description: String(localized: "5 quilômetros"),       value: "5k"),
-        .init(icon: "figure.run", label: "10K",      description: String(localized: "10 quilômetros"),      value: "10k"),
-        .init(icon: "rosette",    label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
-        .init(icon: "trophy",     label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
-        .init(icon: "bolt.fill",  label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
-    ]
-
     var stepDistancia: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
-            spacing: 10
-        ) {
-            ForEach(Self.distanceItems, id: \.value) { item in
-                let sel = objectiveDistance == item.value
-                Button { objectiveDistance = item.value } label: {
-                    VStack(spacing: 6) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textSecondary)
-                            .frame(height: 30)
-                        Text(item.label)
-                            .font(AthlyTheme.Typography.semibold(16))
-                            .foregroundStyle(sel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
-                        Text(item.description)
-                            .font(AthlyTheme.Typography.body(10))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(sel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-                    .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                            .stroke(sel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
+        GoalDistanceGrid(selection: $objectiveDistance)
     }
-}
-
-// MARK: - P8: Tipo de Objetivo (personal path)
-
-private extension AssessmentView {
-    struct ObjectiveTypeItem {
-        let icon: String; let iconColor: Color; let title: String; let description: String; let value: String; let iconBg: Color
-    }
-
-    static let objectiveTypeItems: [ObjectiveTypeItem] = [
-        .init(icon: "cpu", iconColor: Color(hex: "#7C3AED"),
-              title: String(localized: "Workload adaptado pela IA"),
-              description: String(localized: "A IA define a carga com base na sua evolução"),
-              value: "workload", iconBg: Color(hex: "#7C3AED").opacity(0.10)),
-        .init(icon: "stopwatch", iconColor: Color(hex: "#F59E0B"),
-              title: String(localized: "Tempo alvo"),
-              description: String(localized: "Defina um tempo e a IA cria um plano para você bater"),
-              value: "target_time", iconBg: Color(hex: "#F59E0B").opacity(0.10)),
-    ]
 
     var stepTipo: some View {
         VStack(spacing: 8) {
-            ForEach(Self.objectiveTypeItems, id: \.value) { item in
-                let isSel = objectiveType == item.value
-                VStack(spacing: 0) {
-                    Button { withAnimation(.easeOut(duration: 0.2)) { objectiveType = item.value } } label: {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(item.iconBg)
-                                    .frame(width: 44, height: 44)
-                                Image(systemName: item.icon)
-                                    .font(.system(size: 19, weight: .semibold))
-                                    .foregroundStyle(item.iconColor)
-                            }
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(item.title)
-                                    .font(AthlyTheme.Typography.semibold(13))
-                                    .foregroundStyle(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.textPrimary)
-                                Text(item.description)
-                                    .font(AthlyTheme.Typography.body(10))
-                                    .foregroundStyle(AthlyTheme.Color.textSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            ZStack {
-                                Circle()
-                                    .stroke(isSel ? AthlyTheme.Color.primary : AthlyTheme.Color.borderMid, lineWidth: 2)
-                                    .frame(width: 20, height: 20)
-                                if isSel { Circle().fill(AthlyTheme.Color.primary).frame(width: 20, height: 20) }
-                            }
-                        }
-                        .padding(14)
-                    }
-                    .buttonStyle(.plain)
-
-                    if isSel && item.value == "target_time" {
-                        Rectangle()
-                            .fill(AthlyTheme.Color.borderDark)
-                            .frame(height: 1)
-                            .padding(.horizontal, 14)
-
-                        HStack(spacing: 8) {
-                            Text("Meta")
-                                .font(AthlyTheme.Typography.body(11))
-                                .foregroundStyle(AthlyTheme.Color.textTertiary)
-                            TextField("47:30", text: $targetTimeText)
-                                .keyboardType(.numbersAndPunctuation)
-                                .font(AthlyTheme.Typography.mono(20))
-                                .foregroundStyle(AthlyTheme.Color.primary)
-                                .frame(maxWidth: .infinity)
-                            Text("min:seg")
-                                .font(AthlyTheme.Typography.body(11))
-                                .foregroundStyle(AthlyTheme.Color.textTertiary)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                    }
-                }
-                .background(isSel ? AthlyTheme.Color.primarySoft : AthlyTheme.Color.surfaceCard)
-                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                        .stroke(isSel ? AthlyTheme.Color.primaryBorder : AthlyTheme.Color.borderMid, lineWidth: 1)
-                )
-            }
+            GoalTypeSelector(objectiveType: $objectiveType, targetTimeText: $targetTimeText)
+            GoalEventDateCard(hasEventDate: $hasEventDate, eventDate: $eventDate)
+                .padding(.top, 8)
         }
     }
 }

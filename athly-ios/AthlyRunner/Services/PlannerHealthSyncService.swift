@@ -8,6 +8,7 @@ struct PlannerHealthContextPayload: Encodable, Sendable {
     let detailedSessions: [DetailedSessionPayload]?
     let timeZone: String
     let capturedAt: String
+    var runsReadFrom: String? = nil
 }
 
 /// Shares the existing planner input builder between foreground generation and HealthKit delivery.
@@ -93,7 +94,8 @@ final class PlannerHealthSyncService {
         let capturedAt = formatter.string(from: Date())
         let request = try await buildInput(detailedLimit: 7, requestAuthorization: false, requireCompleteRead: true, syncContext: false)
         return PlannerHealthContextPayload(runs: request.runs, detailedSessions: request.detailedSessions,
-                                          timeZone: TimeZone.current.identifier, capturedAt: capturedAt)
+                                          timeZone: TimeZone.current.identifier, capturedAt: capturedAt,
+                                          runsReadFrom: request.runsReadFrom)
     }
 
     func buildInput(detailedLimit: Int, requestAuthorization: Bool,
@@ -109,19 +111,31 @@ final class PlannerHealthSyncService {
             return HealthKitService()
             #endif
         }()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var runs = suppliedRuns ?? []
+        var runsReadFrom: String?
         if suppliedRuns == nil {
             guard service.isHealthDataAvailable else { throw HealthKitError.notAvailable }
             if requestAuthorization {
                 try await service.requestReadAuthorization()
                 startObserving()
             }
-            runs = try await service.fetchLatestRunningWorkouts(limit: 20)
+            let read = try await HealthRunWindow.read { limit, beforeEndDate in
+                try await service.fetchRunningWorkoutsPage(limit: limit, beforeEndDate: beforeEndDate)
+            }
+            runs = read.runs
+            runsReadFrom = formatter.string(from: read.readFrom)
         }
-        #if !targetEnvironment(simulator)
         // Failure or an empty read leaves existing data intact and still allows RPE planning.
-        _ = try? await HeartRateHealthSync.sync(api: .shared, health: HealthKitService(), session: apiSession)
-        #endif
+        let heartRateHealth: any HeartRateHealthProviding = {
+            #if targetEnvironment(simulator)
+            return MockHealthKitService()
+            #else
+            return HealthKitService()
+            #endif
+        }()
+        _ = try? await HeartRateHealthSync.sync(api: .shared, health: heartRateHealth, session: apiSession)
         try Task.checkCancellation()
         guard await APIClient.shared.heartRateSessionIdentifier == apiSession else { throw CancellationError() }
         var details: [DetailedSessionPayload] = []
@@ -132,12 +146,12 @@ final class PlannerHealthSyncService {
         try Task.checkCancellation()
         guard await APIClient.shared.heartRateSessionIdentifier == apiSession else { throw CancellationError() }
         let request = PlanFromHealthRequest(runs: runs.map { HealthRunPayload(from: $0) },
-                                            detailedSessions: details.isEmpty ? nil : details, weekStartDate: nil)
+                                            detailedSessions: details.isEmpty ? nil : details, weekStartDate: nil,
+                                            runsReadFrom: runsReadFrom)
         if syncContext && !request.runs.isEmpty {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             let context = PlannerHealthContextPayload(runs: request.runs, detailedSessions: request.detailedSessions,
-                timeZone: TimeZone.current.identifier, capturedAt: formatter.string(from: capturedAt))
+                timeZone: TimeZone.current.identifier, capturedAt: formatter.string(from: capturedAt),
+                runsReadFrom: request.runsReadFrom)
             try? await APIClient.shared.syncPlannerHealthContext(context, session: apiSession)
         }
         try Task.checkCancellation()
@@ -147,7 +161,7 @@ final class PlannerHealthSyncService {
 
     private func detailedSessions(limit: Int) async throws -> [DetailedSessionPayload] {
         #if targetEnvironment(simulator)
-        return []
+        return await MockHealthKitService().detailedSessions(limit: limit)
         #else
         let service = HealthKitService()
         let workouts = try await service.fetchLatestRawRunningWorkouts(limit: limit)

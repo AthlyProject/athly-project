@@ -106,6 +106,40 @@ describe.each(contracts)('Planner HR contract: $name', ({ dto, wrap, fieldPrefix
     },
   );
 
+  it('accepts the workout origin sent by new clients', async () => {
+    const origin = {
+      endDate: '2026-10-05T10:31:00.000Z',
+      sourceBundleIdentifier: 'com.apple.health',
+      wasUserEntered: false,
+    };
+    const validated = await validate(wrap([{ ...run, ...origin }]));
+    const savedRuns = fieldPrefix.startsWith('planningContext')
+      ? validated.planningContext.runs
+      : validated.runs;
+    expect(savedRuns[0]).toMatchObject(origin);
+    await expect(validate(wrap([{ ...run, wasUserEntered: 'no' }]))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('accepts the time-window read: up to 60 runs and the read start', async () => {
+    const runs = Array.from({ length: 60 }, (_, index) => ({
+      ...run,
+      appleHealthWorkoutUUID: `health-workout-${index}`,
+    }));
+    const withReadFrom = (payload: any, runsReadFrom: unknown) =>
+      fieldPrefix.startsWith('planningContext')
+        ? { planningContext: { ...payload.planningContext, runsReadFrom } }
+        : { ...payload, runsReadFrom };
+    const validated = await validate(withReadFrom(wrap(runs), '2026-08-18T10:00:00.000Z'));
+    const saved = fieldPrefix.startsWith('planningContext') ? validated.planningContext : validated;
+    expect(saved.runs).toHaveLength(60);
+    expect(saved.runsReadFrom).toBe('2026-08-18T10:00:00.000Z');
+    await expect(validate(withReadFrom(wrap(runs), 'ontem'))).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
   it('still rejects unknown fields in runs and at the request root', async () => {
     for (const payload of [
       wrap([{ ...run, unexpectedField: 1 }]),

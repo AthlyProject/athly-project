@@ -1,12 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
   Max,
   ValidateNested,
@@ -199,7 +201,32 @@ export class HealthRunItemDto {
   @IsNumber()
   @Min(0)
   elevationGainMeters?: number;
+
+  // Origem do registro, para o motor de viabilidade separar medida de relato. Clientes antigos
+  // não mandam: sem esses campos a corrida não conta como medida objetiva.
+  @ApiPropertyOptional({ description: 'ISO 8601 end date of the HealthKit workout' })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiPropertyOptional({ description: 'Bundle identifier of the app that recorded the workout' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  sourceBundleIdentifier?: string;
+
+  @ApiPropertyOptional({ description: 'HKMetadataKeyWasUserEntered: typed in by hand' })
+  @IsOptional()
+  @IsBoolean()
+  wasUserEntered?: boolean;
 }
+
+/**
+ * Teto de corridas usadas do Health. O app atual lê as das últimas 9 semanas (no mínimo as 20 mais
+ * recentes, no máximo 60): o motor de viabilidade mede o volume de 6 a 8 semanas. Zonas e prompt
+ * continuam com as 20 mais recentes.
+ */
+export const MAX_HEALTH_RUNS = 60;
 
 export class PlanFromHealthDto {
   @ApiProperty({
@@ -230,4 +257,12 @@ export class PlanFromHealthDto {
   @IsOptional()
   @IsDateString()
   weekStartDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'ISO 8601: every run that started at or after this instant was read and is in runs (time-window read). Older clients omit it and send the 20 most recent runs.',
+  })
+  @IsOptional()
+  @IsDateString()
+  runsReadFrom?: string;
 }

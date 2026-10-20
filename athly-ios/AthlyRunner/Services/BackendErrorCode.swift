@@ -126,7 +126,7 @@ extension BackendErrorBody {
         // Explicit templates avoid leaking IDs, query strings or unexpected URL contents.
         let routes = [
             "/ai-planner/health-context", "/ai-planner/plan-from-health", "/ai-planner/plan-from-health/async",
-            "/ai-planner/resume", "/ai-planner/plan-from-health/generations/latest",
+            "/ai-planner/resume", "/ai-planner/goal-analysis", "/ai-planner/plan-from-health/generations/latest",
             "/ai-planner/plan-from-health/generations/:id",
             "/workouts/today", "/workouts/training-plan/:id", "/workouts/:id",
             "/workouts/:id/complete", "/workouts/:id/skip", "/workouts/:id/uncomplete", "/workouts/:id/feedback",
@@ -207,6 +207,16 @@ enum BackendErrorCode {
             return String(localized: "Você precisa aceitar os termos para continuar.")
         case "ASSESSMENT_PLAN_GENERATION_IN_PROGRESS":
             return String(localized: "Seu plano está sendo gerado. Aguarde a conclusão antes de iniciar uma nova avaliação.")
+        case "ASSESSMENT_EVENT_DATE_INVALID":
+            return String(localized: "Escolha uma data de prova futura, em até 3 anos.")
+
+        // MARK: Metas
+        case "GOAL_NOT_FOUND":
+            return String(localized: "Você ainda não tem uma meta. Faça a avaliação para começar.")
+        case "GOAL_CHANGE_GENERATION_IN_PROGRESS":
+            return String(localized: "Seu plano está sendo gerado. Aguarde a conclusão para trocar a meta.")
+        case "GOAL_TARGET_TIME_INVALID":
+            return String(localized: "Confira o tempo alvo: use h:mm:ss ou mm:ss, com um ritmo entre 2 e 15 min/km.")
 
         // MARK: Treinos
 

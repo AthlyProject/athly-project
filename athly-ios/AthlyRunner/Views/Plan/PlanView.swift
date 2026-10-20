@@ -11,7 +11,8 @@ struct PlanView: View {
     var onStartWorkout: ((WorkoutModel) -> Void)? = nil
 
     @State private var visibleWeekStart: Date = PlanView.weekStart(for: Date())
-    @State private var showAssessment = false
+    /// Fluxo de meta do onboarding (avaliação → análise), numa tela cheia só.
+    @State private var goalFlow: GoalFlowStage?
     @State private var workoutToComplete: WorkoutModel?
     /// Treino concluído aguardando confirmação para ter a corrida desvinculada (menu de contexto).
     @State private var workoutToUnlink: WorkoutModel?
@@ -76,13 +77,14 @@ struct PlanView: View {
                 guard isTabActive else { return }
                 await planVM.loadIfNeeded()
             }
-            .fullScreenCover(isPresented: $showAssessment) {
-                AssessmentView {
+            .fullScreenCover(item: $goalFlow) { stage in
+                // A avaliação cria a meta; a análise mostra o veredito e as alternativas e, com a
+                // escolha do atleta, a primeira semana é gerada com o mesmo Health da análise.
+                OnboardingGoalFlowView(startAt: stage) {
                     authVM.markAssessmentCompleted()
-                    showAssessment = false
-                    // Objetivo já foi criado no backend; gera a primeira semana
-                    // automaticamente (com dados do Apple Health) sem exigir toque manual.
-                    Task { await planVM.generateNextWeekWithHealth() }
+                } onFinish: { outcome in
+                    goalFlow = nil
+                    Task { await planVM.finishGoalDecision(outcome) }
                 }
             }
             .sheet(item: $workoutToComplete) { workout in
@@ -496,12 +498,14 @@ struct PlanView: View {
                     .shadow(color: AthlyTheme.Color.primaryGlow, radius: 20)
                     .padding(.bottom, 18)
 
-                Text("Sem meta definida")
+                Text(planVM.hasPendingGoalDecision ? LocalizedStringKey("Sua meta está definida") : LocalizedStringKey("Sem meta definida"))
                     .font(AthlyTheme.Typography.heading(16))
                     .foregroundStyle(AthlyTheme.Color.textPrimary)
                     .padding(.bottom, 8)
 
-                Text("Responda à avaliação para criarmos seu plano de treino personalizado com base no seu nível e objetivos.")
+                Text(planVM.hasPendingGoalDecision
+                     ? LocalizedStringKey("Veja a análise da sua meta e escolha como começar. A primeira semana sai logo depois.")
+                     : LocalizedStringKey("Responda à avaliação para criarmos seu plano de treino personalizado com base no seu nível e objetivos."))
                     .font(AthlyTheme.Typography.medium(12))
                     .foregroundStyle(AthlyTheme.Color.textSecondary)
                     .multilineTextAlignment(.center)
@@ -509,10 +513,10 @@ struct PlanView: View {
                     .padding(.bottom, 24)
 
                 Button {
-                    showAssessment = true
+                    goalFlow = planVM.hasPendingGoalDecision ? .analysis : .assessment
                 } label: {
                     HStack(spacing: 7) {
-                        Text("Fazer Avaliação")
+                        Text(planVM.hasPendingGoalDecision ? LocalizedStringKey("Ver análise e começar") : LocalizedStringKey("Fazer Avaliação"))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 12, weight: .bold))
                     }
@@ -526,10 +530,19 @@ struct PlanView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text("Leva apenas 2 minutos")
-                    .font(AthlyTheme.Typography.medium(10))
-                    .foregroundStyle(AthlyTheme.Color.textTertiary)
-                    .padding(.top, 14)
+                if planVM.hasPendingGoalDecision {
+                    Button("Refazer avaliação") { goalFlow = .assessment }
+                        .buttonStyle(.plain)
+                        .font(AthlyTheme.Typography.medium(11))
+                        .underline()
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        .padding(.top, 14)
+                } else {
+                    Text("Leva apenas 2 minutos")
+                        .font(AthlyTheme.Typography.medium(10))
+                        .foregroundStyle(AthlyTheme.Color.textTertiary)
+                        .padding(.top, 14)
+                }
             }
             .padding(.horizontal, AthlyTheme.Spacing.sm)
 

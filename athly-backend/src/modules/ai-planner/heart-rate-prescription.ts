@@ -12,7 +12,7 @@ Modo de prescrição determinado pelo backend: ${enabled ? 'heart_rate_and_rpe' 
 Em TODOS os segmentos ativos (warmup, work, recovery e cooldown), inclusive dentro de sets, target.rpe é OBRIGATÓRIO: inteiro de 1 a 10. Preserve o pace quando aplicável.
 ${
   enabled
-    ? `Também é OBRIGATÓRIO target.hrZone: inteiro de 1 a 5. Use estas zonas de FC por reserva cardíaca, independentes das categorias de pace:
+    ? `Também é OBRIGATÓRIO target.hrZone (inteiro de 1 a 5) no aquecimento, na volta à calma e nos trechos de trabalho de 3 min ou mais. Tiros de menos de 3 min e recuperações NÃO recebem target.hrZone: a FC não chega à zona nem volta a tempo; prescreva esses trechos só por pace e RPE. Use estas zonas de FC por reserva cardíaca, independentes das categorias de pace:
 ${zones.zones.map((z) => `Z${z.zone}: ${z.minBpm}–${z.maxBpm} bpm`).join('\n')}
 ${zones.isEstimated ? ESTIMATED_HEART_RATE_NOTICE : 'Zonas calculadas com os valores de FC configurados.'}
 Escolha a zona; o backend preencherá os bpm e o aviso de estimativa. NÃO gere hrMinBpm, hrMaxBpm nem hrIsEstimated. NÃO escreva valores em bpm nos textos: eles serão exibidos pelos targets validados.`
@@ -20,6 +20,28 @@ Escolha a zona; o backend preencherá os bpm e o aviso de estimativa. NÃO gere 
 }
 Estas regras também se aplicam ao plano de avaliação e completam os targets dos exemplos de receitas. Sets e descanso passivo não recebem targets de FC.
 </training_guidance>`;
+}
+
+/** Trechos de trabalho mais curtos que isso não estabilizam a FC. */
+export const SHORT_HEART_RATE_SECONDS = 180;
+// Sem pace alvo, a distância decide: 800 m levam 3 min ou mais para quase todo corredor.
+const SHORT_HEART_RATE_METERS = 800;
+
+/**
+ * Se o trecho recebe zona de FC. A FC leva 2–3 min para subir e para cair: num tiro curto ela não
+ * chega à zona e numa recuperação não volta a tempo (eval 2026-10-20: 6×400 m em Z5 com 90 s em Z1).
+ */
+export function heartRateApplies(segment: Segment): boolean {
+  if (segment.kind === 'warmup' || segment.kind === 'cooldown') return true;
+  if (segment.kind !== 'work' || !segment.end) return segment.kind === 'work';
+  const { by, value } = segment.end;
+  if (by === 'durationSec') return value >= SHORT_HEART_RATE_SECONDS;
+  if (by !== 'distanceM') return false;
+  const { paceSecPerKmMin: min, paceSecPerKmMax: max } = (segment.target ?? {}) as RunTarget;
+  const pace = min && max ? (min + max) / 2 : (min ?? max);
+  return pace
+    ? (value / 1000) * pace >= SHORT_HEART_RATE_SECONDS
+    : value >= SHORT_HEART_RATE_METERS;
 }
 
 function visit(segments: Segment[], callback: (s: Segment) => void) {
@@ -53,7 +75,12 @@ export function assessHeartRatePrescription(
       if (active && (!Number.isInteger(target?.rpe) || target!.rpe! < 1 || target!.rpe! > 10)) {
         defects.push(`${day.date}/${segment.id}: target.rpe must be an integer from 1 to 10`);
       }
-      if (active && enabled && !zones.zones.some((z) => z.zone === target?.hrZone)) {
+      if (
+        active &&
+        enabled &&
+        heartRateApplies(segment) &&
+        !zones.zones.some((z) => z.zone === target?.hrZone)
+      ) {
         defects.push(`${day.date}/${segment.id}: target.hrZone must select a supplied zone (1–5)`);
       }
       if (!enabled && target && Object.keys(target).some((key) => /^hr|heartRate/i.test(key))) {
@@ -61,9 +88,12 @@ export function assessHeartRatePrescription(
       }
     });
     const prose = textParts.filter(Boolean).join(' ');
-    if (bpmText.test(prose) || (!enabled && heartRateText.test(prose))) {
+    const match = bpmText.exec(prose) ?? (enabled ? null : heartRateText.exec(prose));
+    if (match) {
+      // O trecho vai no defeito: a nota corretiva diz o que remover e o log mostra o que disparou.
+      const excerpt = prose.slice(Math.max(0, match.index - 40), match.index + 40).trim();
       defects.push(
-        `${day.date}: remove HR prescription from prose; use only authorized structured targets`,
+        `${day.date}: remove HR prescription from prose ("…${excerpt}…"); use only authorized structured targets`,
       );
     }
   }
@@ -83,8 +113,7 @@ export function snapshotHeartRateTargets(days: WorkoutDay[], zones?: GuidedHeart
       const zone =
         zones?.trainingGuidance.mode === 'heart_rate_and_rpe' &&
         day.sportType !== 'other' &&
-        segment.kind !== 'rest' &&
-        segment.kind !== 'set'
+        heartRateApplies(segment)
           ? zones.zones.find((z) => z.zone === target.hrZone)
           : undefined;
       if (zone) {
