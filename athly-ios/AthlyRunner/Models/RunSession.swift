@@ -96,6 +96,11 @@ final class RunSession: Identifiable, Codable {
         distanceMeters / 1000.0
     }
 
+    /// Corrida concluída sem treino do plano vinculado.
+    var isFreeRun: Bool {
+        status == "completed" && athlyWorkoutId == nil
+    }
+
     var formattedDistance: String {
         LocalizedFormatting.formattedDistanceKm(distanceKm)
     }

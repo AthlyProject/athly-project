@@ -11,7 +11,7 @@ module Config {
 
     // 2.x = app único (grava e envia as corridas); o backend usa a versão para saber disso
     // (ConnectIqDeviceModel.uploadsRuns). `make app-build` sobe o último número a cada build.
-    const APP_VERSION = "2.0.3";
+    const APP_VERSION = "2.0.4";
 
     // Prazo de cada requisição. Alguns firmwares nunca chamam o callback de um download FIT.
     const REQUEST_TIMEOUT_MS = 30000;

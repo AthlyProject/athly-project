@@ -50,6 +50,10 @@ struct DashboardView: View {
                                 restDayCard
                             }
 
+                            if !todayFreeRuns.isEmpty {
+                                freeRunsCard
+                            }
+
                             weeklyCard
 
                             if let plan = planVM.trainingPlanResponse {
@@ -307,6 +311,60 @@ struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
+    // MARK: - Free runs
+
+    /// Corridas de hoje fora do plano ("Corrida livre" no relógio ou "Corri por conta própria").
+    private var todayFreeRuns: [RunSession] {
+        recentRuns.filter { $0.isFreeRun && Calendar.current.isDateInToday($0.startDate) }
+    }
+
+    private var freeRunsCard: some View {
+        VStack(spacing: 8) {
+            ForEach(todayFreeRuns, id: \.id) { session in
+                NavigationLink {
+                    RunSessionDetailView(session: session)
+                } label: {
+                    freeRunRow(session)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(13)
+        .athlyCard()
+    }
+
+    private func freeRunRow(_ session: RunSession) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(AthlyTheme.Color.warning)
+                .frame(width: 32, height: 32)
+                .background(AthlyTheme.Color.warning.opacity(0.14))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Corrida livre")
+                    .font(AthlyTheme.Typography.semibold(13))
+                    .foregroundStyle(AthlyTheme.Color.textPrimary)
+                Text(session.startDate.formatted(date: .omitted, time: .shortened))
+                    .font(AthlyTheme.Typography.body(11))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+            }
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(verbatim: "\(session.formattedDistance) km")
+                    .font(AthlyTheme.Typography.mono(13))
+                    .foregroundStyle(AthlyTheme.Color.primary)
+                Text(verbatim: session.formattedDuration)
+                    .font(AthlyTheme.Typography.mono(11))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AthlyTheme.Color.textTertiary)
+        }
+        .contentShape(Rectangle())
+    }
+
     // MARK: - Weekly progress
 
     private var weeklyCard: some View {
@@ -330,7 +388,8 @@ struct DashboardView: View {
                             weekDot(state)
                             Text(Self.weekdayLabels[idx])
                                 .font(AthlyTheme.Typography.label())
-                                .foregroundStyle(state == .today ? AthlyTheme.Color.primary : AthlyTheme.Color.textTertiary)
+                                .foregroundStyle(Calendar.current.isDateInToday(weekDays[idx])
+                                    ? AthlyTheme.Color.primary : AthlyTheme.Color.textTertiary)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -359,19 +418,27 @@ struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
-    private enum DayState { case done, today, rest, upcoming }
+    private enum DayState { case done, freeRun, today, rest, upcoming }
 
-    private var weekDayStates: [DayState] {
+    /// Segunda a domingo da semana atual.
+    private var weekDays: [Date] {
         var cal = Calendar.current
         cal.firstWeekday = 2
-        let today = Date()
-        guard let interval = cal.dateInterval(of: .weekOfYear, for: today) else { return [] }
+        guard let interval = cal.dateInterval(of: .weekOfYear, for: Date()) else { return [] }
         return (0..<7).map { offset in
-            let day = cal.date(byAdding: .day, value: offset, to: interval.start) ?? interval.start
-            let isToday = cal.isDate(day, inSameDayAs: today)
+            cal.date(byAdding: .day, value: offset, to: interval.start) ?? interval.start
+        }
+    }
+
+    private var weekDayStates: [DayState] {
+        let cal = Calendar.current
+        let freeRunDays = Set(recentRuns.filter(\.isFreeRun).map { cal.startOfDay(for: $0.startDate) })
+        return weekDays.map { day in
+            let isToday = cal.isDateInToday(day)
             let dayWorkouts = planVM.workouts(on: day)
             let done = !dayWorkouts.isEmpty && dayWorkouts.allSatisfy { $0.status == .done }
             if done { return .done }
+            if freeRunDays.contains(cal.startOfDay(for: day)) { return .freeRun }
             if isToday { return .today }
             if dayWorkouts.isEmpty { return .rest }
             return .upcoming
@@ -387,6 +454,15 @@ struct DashboardView: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(.white)
+            }
+            .frame(width: 24, height: 24)
+        case .freeRun:
+            ZStack {
+                Circle().fill(AthlyTheme.Color.warning.opacity(0.18))
+                Circle().stroke(AthlyTheme.Color.warning, lineWidth: 1.5)
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(AthlyTheme.Color.warning)
             }
             .frame(width: 24, height: 24)
         case .today:
