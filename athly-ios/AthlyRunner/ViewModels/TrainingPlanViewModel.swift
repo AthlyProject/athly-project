@@ -293,7 +293,11 @@ final class TrainingPlanViewModel: ObservableObject {
 
         do {
             guard let plan = try await loadDependencies.plan() else {
+                // Meta ativa sem plano = onboarding parou na análise da meta (ou a 1ª geração
+                // falhou): o Plano oferece a análise em vez de pedir a avaliação de novo.
+                let goal = try? await loadDependencies.activeGoal()
                 guard loadVersion == version else { return }
+                activeGoal = goal
                 if !hasCached {
                     trainingPlanResponse = nil
                     weeks = []
@@ -397,6 +401,49 @@ final class TrainingPlanViewModel: ObservableObject {
         activeGoal = try? await APIClient.shared.getActiveGoal()
     }
 
+    /// Recarrega a meta ativa (depois de uma troca, a viabilidade é outra).
+    func refreshActiveGoal() async {
+        if let goal = try? await APIClient.shared.getActiveGoal() { activeGoal = goal }
+    }
+
+    /// Meta definida e nenhum plano ainda: a análise da meta espera a decisão do atleta.
+    var hasPendingGoalDecision: Bool {
+        trainingPlanResponse == nil && activeGoal != nil && !isGeneratingInBackground && !isGenerating
+    }
+
+    /// A semana atual já foi gerada (a troca de meta vale a partir da próxima).
+    var currentWeekHasPlan: Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        return weeklyGoals.contains { week in
+            (week.status == .GENERATED || week.status == .LOCKED)
+                && week.parsedStartDate <= today && today <= week.parsedEndDate
+        }
+    }
+
+    /// Fim da análise no onboarding: guarda a meta escolhida e gera a 1ª semana com o mesmo Health.
+    func finishGoalDecision(_ outcome: GoalAnalysisViewModel.Outcome) async {
+        switch outcome {
+        case .kept(let input):
+            await generateNextWeekWithHealth(prebuilt: input)
+        case .replaced(let goal, let input):
+            activeGoal = goal
+            await generateNextWeekWithHealth(prebuilt: input)
+        }
+    }
+
+    /// Troca de meta no meio do ciclo. Devolve `true` quando a semana atual foi gerada agora
+    /// (ainda não existia); senão a meta nova vale a partir da próxima semana.
+    @discardableResult
+    func applyGoalChange(_ outcome: GoalAnalysisViewModel.Outcome) async -> Bool {
+        guard case .replaced(let goal, let input) = outcome else { return false }
+        activeGoal = goal
+        await loadData(reportErrors: false)
+        await refreshActiveGoal()
+        guard !currentWeekHasPlan else { return false }
+        await generateNextWeekWithHealth(prebuilt: input)
+        return true
+    }
+
     // MARK: - Delete Plan
 
     /// Deleta o plano atual. O backend captura um laudo das últimas semanas (continuidade da IA)
@@ -430,14 +477,20 @@ final class TrainingPlanViewModel: ObservableObject {
 
     /// Fluxo unificado via Apple Health: gera o plano com `planFromHealth`. Sem corridas no
     /// HealthKit, envia runs vazias e o backend gera um plano de avaliação (cold start).
-    func generateNextWeekWithHealth() async {
+    /// `prebuilt`: o Health já lido pela análise da meta, para não ler de novo.
+    func generateNextWeekWithHealth(prebuilt: PlanFromHealthRequest? = nil) async {
         isGenerating = true
         errorMessage = nil
 
         do {
-            let request = (try? await PlannerHealthSyncService.shared.buildInput(
-                detailedLimit: trainingPlanResponse == nil ? 5 : 7, requestAuthorization: true
-            )) ?? PlanFromHealthRequest(runs: [], detailedSessions: nil, weekStartDate: nil)
+            let request: PlanFromHealthRequest
+            if let prebuilt {
+                request = prebuilt
+            } else {
+                request = (try? await PlannerHealthSyncService.shared.buildInput(
+                    detailedLimit: trainingPlanResponse == nil ? 5 : 7, requestAuthorization: true
+                )) ?? PlanFromHealthRequest(runs: [], detailedSessions: nil, weekStartDate: nil)
+            }
             let response = try await APIClient.shared.startPlanFromHealthGeneration(request)
             startGenerationPolling(
                 generationId: response.generationId,

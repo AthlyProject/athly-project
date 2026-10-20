@@ -12,6 +12,10 @@ struct HealthKitRunItem: Identifiable, Codable, Equatable, Sendable {
     let elevationGainMeters: Double?
     var avgHR: Double? = nil
     var maxHR: Double? = nil
+    /// App que gravou o treino (HKSource.bundleIdentifier).
+    var sourceBundleIdentifier: String? = nil
+    /// HKMetadataKeyWasUserEntered: treino digitado à mão, não medido.
+    var wasUserEntered: Bool? = nil
 
     var distanceKm: Double {
         distanceMeters / 1000.0

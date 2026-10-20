@@ -1,4 +1,4 @@
-import { GeminiService } from './gemini.service';
+import { GeminiService, plannerResponseSchema } from './gemini.service';
 
 const gemini = new GeminiService({ get: () => 'test-key' } as any);
 
@@ -135,6 +135,170 @@ describe('GeminiService.assessPlanQuality', () => {
     );
   });
 
+  describe('semana de avaliação (sem histórico no Health)', () => {
+    const assessment = { ...guardrails, assessmentProtocol: true };
+    const timed = () => {
+      const p = plan(true) as any;
+      for (const day of p.weekPlan) {
+        if (day.sportType === 'other') continue;
+        day.segments[1] = {
+          id: 'main',
+          kind: 'work',
+          target: { rpe: 6 },
+          end: { by: 'durationSec', value: 1200 },
+        };
+      }
+      return p;
+    };
+
+    it('aceita sessões só por tempo, até RPE 6 e sem pace alvo', () => {
+      expect(assessQuality(timed(), assessment)).toEqual([]);
+    });
+
+    it('bloqueia distância, tiros, pace alvo e blocos de menos de 5 min', () => {
+      const p = timed();
+      p.weekPlan[0].segments[1] = {
+        id: 'set',
+        kind: 'set',
+        repetitions: 6,
+        children: [
+          {
+            id: 'rep',
+            kind: 'work',
+            target: { rpe: 9, paceSecPerKmMin: 280 },
+            end: { by: 'distanceM', value: 400 },
+          },
+          {
+            id: 'rec',
+            kind: 'recovery',
+            target: { rpe: 2 },
+            end: { by: 'durationSec', value: 90 },
+          },
+        ],
+      };
+      p.weekPlan[2].segments[1].end.value = 120;
+      const defects = assessQuality(p, assessment).join(' ');
+      expect(defects).toContain('2026-07-06/rep: assessment segments must end by durationSec');
+      expect(defects).toContain('2026-07-06/rep: assessment allows RPE <= 6');
+      expect(defects).toContain('2026-07-06/rep: assessment must not prescribe pace');
+      expect(defects).toContain('2026-07-08/main: assessment work blocks last at least 300s');
+    });
+
+    it('fora da avaliação não aplica essas regras', () => {
+      expect(assessQuality(plan(true), guardrails).join(' ')).not.toContain('assessment');
+    });
+  });
+
+  describe('fase BASE', () => {
+    const base = { ...guardrails, phase: 'base' as const, longRunRefKm: 7 };
+    const withRpe = (p: any, index: number, rpe: number) => {
+      p.weekPlan[index].segments[1].target.rpe = rpe;
+      return p;
+    };
+
+    it('aceita 1 treino de qualidade e bloqueia o segundo', () => {
+      const one = withRpe(plan(true), 0, 7);
+      expect(assessQuality(one, base).join(' ')).not.toContain('BASE phase');
+      const two = withRpe(withRpe(plan(true), 0, 7), 2, 8);
+      expect(assessQuality(two, base).join(' ')).toContain(
+        'BASE phase allows at most 1 session with a work segment at RPE >= 7; got 2',
+      );
+    });
+
+    it('conta trabalho dentro de sets', () => {
+      const p = withRpe(plan(true), 0, 7);
+      p.weekPlan[2].segments[1] = {
+        id: 'set',
+        kind: 'set',
+        repetitions: 4,
+        children: [
+          { id: 'rep', kind: 'work', target: { rpe: 8 }, end: { by: 'durationSec', value: 120 } },
+        ],
+      };
+      expect(assessQuality(p, base).join(' ')).toContain('got 2');
+    });
+
+    it('bloqueia longão acima de 1,25 × a referência', () => {
+      const p = plan(true) as any;
+      // 10 min + 5 km + 5 min a 6:30/km ≈ 7,3 km: dentro de 7 × 1,25 = 8,75 km.
+      expect(assessQuality(p, base).join(' ')).not.toContain('long-run reference');
+      p.weekPlan[4].segments[1].end.value = 12000;
+      expect(assessQuality(p, base).join(' ')).toContain('exceeds the BASE long-run reference 7km');
+    });
+
+    it('fora da BASE não aplica esses limites', () => {
+      const p = withRpe(withRpe(plan(true), 0, 7), 2, 8);
+      p.weekPlan[4].segments[1].end.value = 12000;
+      expect(assessQuality(p, { ...base, phase: 'build' }).join(' ')).not.toMatch(
+        /BASE phase|long-run reference/,
+      );
+    });
+  });
+
+  describe('semana da prova', () => {
+    // Prova no sábado 11/07: véspera na sexta (10/07), antevéspera na quinta (09/07, descanso).
+    const raceWeek = { ...guardrails, raceDate: '2026-07-11' };
+    const eve = (segments: unknown[]) => {
+      const p = plan(true) as any;
+      p.weekPlan[4].segments = segments;
+      return p;
+    };
+    const activation = [
+      { id: 'wu', kind: 'warmup', target: { rpe: 3 }, end: { by: 'durationSec', value: 600 } },
+      { id: 'main', kind: 'work', target: { rpe: 6 }, end: { by: 'distanceM', value: 1000 } },
+      { id: 'cd', kind: 'cooldown', target: { rpe: 2 }, end: { by: 'durationSec', value: 300 } },
+    ];
+
+    it('aceita na véspera uma ativação curta com ~1 km no ritmo de prova', () => {
+      expect(assessQuality(eve(activation), raceWeek).join(' ')).not.toContain('before the race');
+    });
+
+    it('aceita tiros curtos na véspera somando as repetições', () => {
+      const strides = [
+        activation[0],
+        {
+          id: 'set',
+          kind: 'set',
+          repetitions: 4,
+          children: [
+            { id: 'rep', kind: 'work', target: { rpe: 6 }, end: { by: 'durationSec', value: 20 } },
+            {
+              id: 'rec',
+              kind: 'recovery',
+              target: { rpe: 2 },
+              end: { by: 'durationSec', value: 60 },
+            },
+          ],
+        },
+        activation[2],
+      ];
+      expect(assessQuality(eve(strides), raceWeek).join(' ')).not.toContain('before the race');
+    });
+
+    it('bloqueia na véspera RPE 7, treino longo ou trecho forte comprido', () => {
+      const forte = eve(activation);
+      forte.weekPlan[4].segments[1].target.rpe = 7;
+      expect(assessQuality(forte, raceWeek).join(' ')).toContain('day before the race');
+      // O treino padrão do plano (10 min + 5 km + 5 min ≈ 47 min) passa de 30 min.
+      expect(assessQuality(plan(true), raceWeek).join(' ')).toContain('day before the race');
+      const comprido = eve(activation);
+      comprido.weekPlan[4].segments[1].end.value = 3000;
+      expect(assessQuality(comprido, raceWeek).join(' ')).toContain('3.0 km above RPE 4');
+    });
+
+    it('bloqueia na antevéspera trecho acima de RPE 4', () => {
+      // Prova no domingo 12/07: antevéspera na sexta (10/07).
+      const p = plan(true) as any;
+      p.weekPlan[4].segments[1].target.rpe = 6;
+      const defects = assessQuality(p, { ...guardrails, raceDate: '2026-07-12' }).join(' ');
+      expect(defects).toContain('2026-07-10 is two days before the race');
+    });
+
+    it('fora da semana da prova não aplica esses limites', () => {
+      expect(assessQuality(plan(true), guardrails).join(' ')).not.toContain('before the race');
+    });
+  });
+
   it('bloqueia volume planejado acima do teto calculado pelo backend', () => {
     const p = plan(true) as any;
     expect(assessQuality(p, { ...guardrails, weeklyVolumeMaxKm: 5 }).join(' ')).toContain(
@@ -174,7 +338,7 @@ describe('GeminiService.runWithStructureGate', () => {
 });
 
 describe('GeminiService.generateJson', () => {
-  it('não envia limite manual de maxOutputTokens para o Gemini', async () => {
+  it('não envia maxOutputTokens nem temperature para o Gemini', async () => {
     const generateContent = jest.fn(async (request: { config: unknown }) => {
       expect(request.config).toBeDefined();
       return {
@@ -195,6 +359,27 @@ describe('GeminiService.generateJson', () => {
 
     expect(generateContent).toHaveBeenCalledTimes(1);
     expect(generateContent.mock.calls[0][0].config).not.toHaveProperty('maxOutputTokens');
+    // Gemini 3 abaixo de 1.0 entra em loop no raciocínio.
+    expect(generateContent.mock.calls[0][0].config).not.toHaveProperty('temperature');
+  });
+});
+
+describe('plannerResponseSchema — alvo dos segmentos', () => {
+  const segments = (
+    plannerResponseSchema.properties.weekPlan.items.properties.segments.items as any
+  ).anyOf;
+  const targets = [
+    segments[0].properties.target,
+    segments[1].properties.children.items.properties.target,
+  ];
+
+  it('pede rpe antes de hrZone, com limites, nos segmentos e dentro de sets', () => {
+    for (const target of targets) {
+      const keys = Object.keys(target.properties);
+      expect(keys.indexOf('rpe')).toBeLessThan(keys.indexOf('hrZone'));
+      expect(target.properties.rpe).toMatchObject({ minimum: 1, maximum: 10 });
+      expect(target.properties.hrZone).toMatchObject({ minimum: 1, maximum: 5 });
+    }
   });
 });
 

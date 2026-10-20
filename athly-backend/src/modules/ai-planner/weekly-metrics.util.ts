@@ -210,8 +210,7 @@ export function unplannedSessionsKm(
         !doneWorkouts.some(
           (w) =>
             (w.id && s.athlyWorkoutId === w.id) ||
-            (w.appleHealthWorkoutUUID &&
-              s.appleHealthWorkoutUUID === w.appleHealthWorkoutUUID) ||
+            (w.appleHealthWorkoutUUID && s.appleHealthWorkoutUUID === w.appleHealthWorkoutUUID) ||
             dateKey(s.startDate) === dateKey(w.dateScheduled),
         ),
     )
@@ -312,4 +311,71 @@ export function computePreviousWeekAnalysis(
     volumeChange,
     volumeConfidence: volumeConfidence(previousGoal.workouts, options),
   };
+}
+
+export type HealthRunLike = { startDate: string; distanceMeters: number };
+
+export type HealthWeeklyVolume = {
+  /** Média semanal (km) das semanas recentes cobertas pelas corridas recebidas. */
+  km: number;
+  /** Semanas medidas; 0 = histórico de menos de 1 semana ou sem corridas nas últimas 4. */
+  weeksMeasured: number;
+};
+
+const HEALTH_VOLUME_WEEKS = 4;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function addDaysKey(dayKey: string, days: number): string {
+  return dateKey(new Date(Date.parse(`${dayKey}T00:00:00Z`) + days * DAY_MS));
+}
+
+/**
+ * Volume semanal real nas 4 semanas antes de `weekStartISO`, a partir das corridas do
+ * Health. É a base quando não há semana anterior do plano: "distância média × dias
+ * disponíveis" inflava em 50–80% quem corre menos vezes do que os dias que escolheu.
+ *
+ * O app manda só as N corridas mais recentes, então semanas que começam antes da corrida
+ * mais antiga ficam de fora (estariam incompletas). Sem corridas nas semanas medidas
+ * (atleta parado), usa a média semanal de todo o período recebido.
+ */
+export function healthWeeklyVolume(
+  runs: HealthRunLike[],
+  weekStartISO: string,
+): HealthWeeklyVolume | null {
+  const before = runs
+    .map((r) => ({ day: dateKey(r.startDate), km: r.distanceMeters / 1000 }))
+    .filter((r) => r.day < weekStartISO);
+  if (before.length === 0) return null;
+  const earliest = before.reduce((min, r) => (r.day < min ? r.day : min), before[0].day);
+
+  const weeks: number[] = [];
+  for (let i = 1; i <= HEALTH_VOLUME_WEEKS; i++) {
+    const start = addDaysKey(weekStartISO, -7 * i);
+    if (start < earliest) break;
+    const end = addDaysKey(start, 7);
+    weeks.push(
+      before.filter((r) => r.day >= start && r.day < end).reduce((sum, r) => sum + r.km, 0),
+    );
+  }
+  const recentKm = weeks.reduce((sum, km) => sum + km, 0);
+  if (recentKm > 0) return { km: recentKm / weeks.length, weeksMeasured: weeks.length };
+
+  const totalKm = before.reduce((sum, r) => sum + r.km, 0);
+  const spanWeeks = (Date.parse(weekStartISO) - Date.parse(earliest)) / DAY_MS / 7;
+  return { km: totalKm / Math.max(1, spanWeeks), weeksMeasured: 0 };
+}
+
+/**
+ * Maior corrida (km) nas 4 semanas antes de `weekStartISO`: âncora do longão do macrociclo.
+ * Null sem corrida nesse intervalo.
+ */
+export function healthLongestRunKm(runs: HealthRunLike[], weekStartISO: string): number | null {
+  const windowStart = addDaysKey(weekStartISO, -7 * HEALTH_VOLUME_WEEKS);
+  const recent = runs
+    .filter((r) => {
+      const day = dateKey(r.startDate);
+      return day >= windowStart && day < weekStartISO;
+    })
+    .map((r) => r.distanceMeters / 1000);
+  return recent.length ? Math.max(...recent) : null;
 }

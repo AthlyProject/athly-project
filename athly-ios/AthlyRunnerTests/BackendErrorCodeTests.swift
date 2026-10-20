@@ -121,6 +121,19 @@ final class BackendErrorCodeTests: XCTestCase {
         }
     }
 
+    func testMapsGoalCodes() throws {
+        let cases = [
+            ("GOAL_NOT_FOUND", "Você ainda não tem uma meta. Faça a avaliação para começar."),
+            ("GOAL_CHANGE_GENERATION_IN_PROGRESS", "Seu plano está sendo gerado. Aguarde a conclusão para trocar a meta."),
+            ("GOAL_TARGET_TIME_INVALID", "Confira o tempo alvo: use h:mm:ss ou mm:ss, com um ritmo entre 2 e 15 min/km."),
+            ("ASSESSMENT_EVENT_DATE_INVALID", "Escolha uma data de prova futura, em até 3 anos."),
+        ]
+        for (code, expected) in cases {
+            let error = try body(#"{ "statusCode": 409, "code": "\#(code)", "message": "texto do servidor" }"#)
+            XCTAssertEqual(error.localizedText, String(localized: String.LocalizationValue(expected)), code)
+        }
+    }
+
     func testFallsBackToServerMessageForUnknownCode() throws {
         let error = try body("""
         { "statusCode": 409, "code": "SOMETHING_NEW_FROM_THE_FUTURE", "message": "Mensagem do servidor" }

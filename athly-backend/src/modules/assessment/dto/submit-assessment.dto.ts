@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SubmitAssessmentDto {
@@ -15,6 +15,11 @@ export class SubmitAssessmentDto {
   @ApiPropertyOptional() @IsOptional() @IsString() objectiveDistance?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() objectiveType?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() targetTime?: string;
+  /** Data civil da prova (YYYY-MM-DD). Só vale no objetivo pessoal. */
+  @ApiPropertyOptional({ example: '2027-04-18' })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  eventDate?: string;
   @ApiPropertyOptional({ type: [String] }) @IsOptional() availableDays?: string[];
 
   @ApiProperty() @IsBoolean() termsAccepted: boolean;

@@ -3,6 +3,8 @@ import {
   executedVolumeKm,
   computeLongitudinalWeeks,
   computePreviousWeekAnalysis,
+  healthLongestRunKm,
+  healthWeeklyVolume,
   type WorkoutLike,
 } from './weekly-metrics.util';
 
@@ -137,5 +139,82 @@ describe('computePreviousWeekAnalysis', () => {
 
   it('retorna null sem semana anterior', () => {
     expect(computePreviousWeekAnalysis([])).toBeNull();
+  });
+});
+
+describe('healthWeeklyVolume', () => {
+  // Semana planejada começa na segunda 19/10; as 4 anteriores começam em 21/09, 28/09, 05/10, 12/10.
+  const weekStart = '2026-10-19';
+  const run = (day: string, km: number) => ({
+    startDate: `${day}T10:00:00Z`,
+    distanceMeters: km * 1000,
+  });
+
+  it('usa a média das 4 semanas reais, não distância média × dias disponíveis', () => {
+    const runs = [
+      run('2026-10-18', 9),
+      run('2026-10-14', 10),
+      run('2026-10-11', 15),
+      run('2026-10-07', 10),
+      run('2026-10-04', 12),
+      run('2026-09-30', 8),
+      run('2026-09-27', 12),
+      run('2026-09-23', 10),
+      run('2026-09-01', 7),
+    ];
+    // Semanas: 19, 25, 20, 22 km → 21.5 km. A conta antiga daria 10.3 km × 4 dias = 41 km.
+    expect(healthWeeklyVolume(runs, weekStart)).toEqual({ km: 21.5, weeksMeasured: 4 });
+  });
+
+  it('ignora semanas anteriores à corrida mais antiga recebida', () => {
+    // Histórico cortado em 03/10: a semana de 28/09 estaria incompleta.
+    const runs = [run('2026-10-15', 10), run('2026-10-08', 8), run('2026-10-03', 20)];
+    expect(healthWeeklyVolume(runs, weekStart)).toEqual({ km: 9, weeksMeasured: 2 });
+  });
+
+  it('não conta corridas da própria semana planejada', () => {
+    const runs = [run('2026-10-20', 30), run('2026-10-13', 10), run('2026-09-01', 5)];
+    expect(healthWeeklyVolume(runs, weekStart)).toEqual({ km: 2.5, weeksMeasured: 4 });
+  });
+
+  it('atleta parado há 4+ semanas usa a média semanal de todo o período', () => {
+    // 30 km entre 31/08 e 13/09, nada depois: 7 semanas até 19/10.
+    const runs = [run('2026-09-13', 10), run('2026-09-06', 10), run('2026-08-31', 10)];
+    const volume = healthWeeklyVolume(runs, weekStart);
+    expect(volume?.weeksMeasured).toBe(0);
+    expect(volume?.km).toBeCloseTo(30 / 7, 5);
+  });
+
+  it('histórico de menos de 1 semana devolve o total, sem semanas medidas', () => {
+    const runs = [run('2026-10-17', 5), run('2026-10-15', 4)];
+    expect(healthWeeklyVolume(runs, weekStart)).toEqual({ km: 9, weeksMeasured: 0 });
+  });
+
+  it('sem corridas antes da semana planejada devolve null', () => {
+    expect(healthWeeklyVolume([], weekStart)).toBeNull();
+    expect(healthWeeklyVolume([run('2026-10-19', 5)], weekStart)).toBeNull();
+  });
+});
+
+describe('healthLongestRunKm', () => {
+  const run = (day: string, km: number) => ({
+    startDate: `${day}T10:00:00Z`,
+    distanceMeters: km * 1000,
+  });
+
+  it('pega a maior corrida das 4 semanas antes da semana planejada', () => {
+    const runs = [
+      run('2026-10-20', 21),
+      run('2026-10-18', 9),
+      run('2026-10-11', 13),
+      run('2026-09-20', 18),
+    ];
+    // 20/10 é da própria semana e 20/09 fica antes de 21/09.
+    expect(healthLongestRunKm(runs, '2026-10-19')).toBe(13);
+  });
+
+  it('sem corrida no intervalo devolve null', () => {
+    expect(healthLongestRunKm([run('2026-09-01', 10)], '2026-10-19')).toBeNull();
+    expect(healthLongestRunKm([], '2026-10-19')).toBeNull();
   });
 });

@@ -9,6 +9,18 @@ export interface PlanGenerationMessageBody {
   input?: Record<string, unknown>;
 }
 
+/**
+ * Backend rodando na máquina do dev, sem fila: `PlanGenerationLocalWorker` processa os jobs
+ * direto do banco. Exige opt-in explícito e nunca liga em produção ou com SQS configurado.
+ */
+export function isLocalPlanGenerationEnabled(): boolean {
+  return (
+    process.env.PLAN_GENERATION_INLINE === 'true' &&
+    !process.env.AWS_SQS_PLAN_GENERATION_QUEUE_URL &&
+    process.env.NODE_ENV !== 'production'
+  );
+}
+
 @Injectable()
 export class PlanGenerationSqsService {
   private readonly logger = new Logger(PlanGenerationSqsService.name);

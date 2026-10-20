@@ -71,8 +71,250 @@
         }
       }
     },
+    "15 quilômetros" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 Kilometer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 kilometers"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 quilômetros"
+          }
+        }
+      }
+    },
     ":" : {
 
+    },
+    "A IA monta o ciclo até a prova e avalia se a meta é viável" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die KI plant den Zyklus bis zum Wettkampf und prüft, ob das Ziel machbar ist"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The AI builds the cycle up to the race and checks whether the goal is feasible"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A IA monta o ciclo até a prova e avalia se a meta é viável"
+          }
+        }
+      }
+    },
+    "A meta nova vale a partir da próxima semana gerada. As semanas que você já recebeu continuam como estão." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das neue Ziel gilt ab der nächsten erstellten Woche. Bereits erhaltene Wochen bleiben, wie sie sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The new goal applies from the next generated week. The weeks you already have stay as they are."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A meta nova vale a partir da próxima semana gerada. As semanas que você já recebeu continuam como estão."
+          }
+        }
+      }
+    },
+    "Aguarde o plano em preparo para trocar a meta." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warte, bis der Plan fertig ist, bevor du das Ziel änderst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wait for the plan being prepared before changing your goal."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguarde o plano em preparo para trocar a meta."
+          }
+        }
+      }
+    },
+    "Alterar meta" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel ändern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change goal"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alterar meta"
+          }
+        }
+      }
+    },
+    "Analisando suas corridas…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Läufe werden analysiert …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyzing your runs…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analisando suas corridas…"
+          }
+        }
+      }
+    },
+    "ANÁLISE DA SUA META" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANALYSE DEINES ZIELS"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "YOUR GOAL ANALYSIS"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANÁLISE DA SUA META"
+          }
+        }
+      }
+    },
+    "Confira o tempo alvo: use h:mm:ss ou mm:ss, com um ritmo entre 2 e 15 min/km." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe die Zielzeit: nutze h:mm:ss oder mm:ss, mit einem Tempo zwischen 2 und 15 min/km."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the target time: use h:mm:ss or mm:ss, with a pace between 2 and 15 min/km."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confira o tempo alvo: use h:mm:ss ou mm:ss, com um ritmo entre 2 e 15 min/km."
+          }
+        }
+      }
+    },
+    "Confirmar nova meta" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Ziel bestätigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm new goal"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmar nova meta"
+          }
+        }
+      }
+    },
+    "Continuar sem análise" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ohne Analyse fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue without analysis"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar sem análise"
+          }
+        }
+      }
+    },
+    "Data da prova" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wettkampfdatum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Race date"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data da prova"
+          }
+        }
+      }
     },
     "Depois de salvar a corrida no app Athly do relógio (com o celular por perto), ela aparece aqui para você confirmar o treino." : {
       "comment" : "Garmin watch screen: single Athly watch app (runs, records and uploads the workout).",
@@ -93,6 +335,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Depois de salvar a corrida no app Athly do relógio (com o celular por perto), ela aparece aqui para você confirmar o treino."
+          }
+        }
+      }
+    },
+    "Escolha a distância." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Distanz."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the distance."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha a distância."
+          }
+        }
+      }
+    },
+    "Escolha o tipo de meta." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Art des Ziels."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the goal type."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha o tipo de meta."
+          }
+        }
+      }
+    },
+    "Escolha uma data de prova futura, em até 3 anos." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle ein zukünftiges Wettkampfdatum innerhalb von 3 Jahren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a future race date within 3 years."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha uma data de prova futura, em até 3 anos."
+          }
+        }
+      }
+    },
+    "Informe o tempo alvo como h:mm:ss ou mm:ss." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib die Zielzeit als h:mm:ss oder mm:ss ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the target time as h:mm:ss or mm:ss."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informe o tempo alvo como h:mm:ss ou mm:ss."
           }
         }
       }
@@ -8658,6 +8988,28 @@
         }
       }
     },
+    "Maior corrida" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Längster Lauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longest run"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maior corrida"
+          }
+        }
+      }
+    },
     "Mais" : {
       "comment" : "Volume change: increase.",
       "extractionState" : "stale",
@@ -8701,6 +9053,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mais de 42 km"
+          }
+        }
+      }
+    },
+    "Manter minha meta" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mein Ziel behalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep my goal"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manter minha meta"
           }
         }
       }
@@ -8983,6 +9357,50 @@
         }
       }
     },
+    "Mesma prova, no tempo que a projeção do seu condicionamento indica." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gleicher Wettkampf, in der Zeit, die deine Formprognose anzeigt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same race, at the time your fitness projection points to."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mesma prova, no tempo que a projeção do seu condicionamento indica."
+          }
+        }
+      }
+    },
+    "Mesma prova, num tempo que seus treinos já sustentam." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gleicher Wettkampf, in einer Zeit, die dein Training schon trägt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same race, at a time your training already supports."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mesma prova, num tempo que seus treinos já sustentam."
+          }
+        }
+      }
+    },
     "Meta" : {
       "comment" : "Feasibility metric chip label for the goal time",
       "localizations" : {
@@ -9048,6 +9466,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Meta ativa"
+          }
+        }
+      }
+    },
+    "Meta atualizada" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziel aktualisiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal updated"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meta atualizada"
           }
         }
       }
@@ -9359,6 +9799,28 @@
         }
       }
     },
+    "Na prova" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Am Wettkampf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Race day"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na prova"
+          }
+        }
+      }
+    },
     "Não" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9519,6 +9981,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Não foi possível acessar sua sessão salva. Tente novamente."
+          }
+        }
+      }
+    },
+    "Não foi possível analisar a meta agora." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Ziel konnte gerade nicht analysiert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't analyze your goal right now."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível analisar a meta agora."
           }
         }
       }
@@ -10600,6 +11084,50 @@
         }
       }
     },
+    "Nova meta salva. A semana atual está sendo preparada com ela." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Ziel gespeichert. Die aktuelle Woche wird damit erstellt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New goal saved. This week is being prepared with it."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova meta salva. A semana atual está sendo preparada com ela."
+          }
+        }
+      }
+    },
+    "Nova meta salva. Ela vale a partir da próxima semana; as semanas já geradas continuam como estão." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Ziel gespeichert. Es gilt ab nächster Woche; bereits erstellte Wochen bleiben, wie sie sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New goal saved. It applies from next week; weeks already generated stay as they are."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova meta salva. Ela vale a partir da próxima semana; as semanas já geradas continuam como estão."
+          }
+        }
+      }
+    },
     "Nova senha" : {
 
     },
@@ -10996,6 +11524,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "O login com Google não está disponível no momento."
+          }
+        }
+      }
+    },
+    "O QUE VOCÊ PREFERE?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WAS IST DIR LIEBER?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WHAT WOULD YOU PREFER?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O QUE VOCÊ PREFERE?"
           }
         }
       }
@@ -12694,6 +13244,94 @@
         }
       }
     },
+    "Prova em %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wettkampf am %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Race on %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova em %@"
+          }
+        }
+      }
+    },
+    "Prova em %@ · %lld semanas" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wettkampf am %@ · %lld Wochen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Race on %@ · %lld weeks"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova em %@ · %lld semanas"
+          }
+        }
+      }
+    },
+    "Prova menor, no tempo que você corre hoje." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein kürzerer Wettkampf, in der Zeit, die du heute laufen kannst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A shorter race, at the time you could run it today."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova menor, no tempo que você corre hoje."
+          }
+        }
+      }
+    },
+    "Prova menor, para completar com a resistência que você já tem." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein kürzerer Wettkampf, den du mit deiner jetzigen Ausdauer schaffst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A shorter race, to finish with the endurance you already have."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova menor, para completar com a resistência que você já tem."
+          }
+        }
+      }
+    },
     "Próxima semana" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13158,6 +13796,50 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Refazer"
+          }
+        }
+      }
+    },
+    "Refazer avaliação" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einschätzung wiederholen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo assessment"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refazer avaliação"
+          }
+        }
+      }
+    },
+    "Referência" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referenz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reference"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Referência"
           }
         }
       }
@@ -14591,6 +15273,28 @@
         }
       }
     },
+    "Seu plano está sendo gerado. Aguarde a conclusão para trocar a meta." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Plan wird erstellt. Warte, bis er fertig ist, bevor du das Ziel änderst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your plan is being generated. Wait for it to finish before changing your goal."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu plano está sendo gerado. Aguarde a conclusão para trocar a meta."
+          }
+        }
+      }
+    },
     "Seu treino está sendo preparado" : {
       "localizations" : {
         "de" : {
@@ -15262,6 +15966,50 @@
         }
       }
     },
+    "Sua meta está definida" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Ziel steht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your goal is set"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua meta está definida"
+          }
+        }
+      }
+    },
+    "SUA META NOVA" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DEIN NEUES ZIEL"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "YOUR NEW GOAL"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SUA META NOVA"
+          }
+        }
+      }
+    },
     "Sua próxima semana está sendo preparada. Avisaremos quando estiver pronta." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15565,6 +16313,28 @@
         }
       }
     },
+    "Tenho data de prova" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe ein Wettkampfdatum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have a race date"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenho data de prova"
+          }
+        }
+      }
+    },
     "Tentar Apple Health" : {
       "comment" : "Button label to retry syncing a run to Apple Health",
       "extractionState" : "stale",
@@ -15794,6 +16564,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tipo de\nObjetivo"
+          }
+        }
+      }
+    },
+    "Tipo de meta" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Art des Ziels"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal type"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de meta"
           }
         }
       }
@@ -16336,6 +17128,28 @@
         }
       }
     },
+    "Usar a meta que escolhi" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mein gewähltes Ziel verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the goal I chose"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar a meta que escolhi"
+          }
+        }
+      }
+    },
     "Usar esta atividade" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -16493,6 +17307,72 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Valores informados por você têm prioridade. Use o automático para ler o repouso do Apple Health e estimar a FC máxima pela idade."
+          }
+        }
+      }
+    },
+    "Veja a análise da sua meta e escolha como começar. A primeira semana sai logo depois." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sieh dir die Analyse deines Ziels an und wähle, wie du startest. Deine erste Woche folgt direkt danach."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your goal analysis and choose how to start. Your first week comes right after."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veja a análise da sua meta e escolha como começar. A primeira semana sai logo depois."
+          }
+        }
+      }
+    },
+    "Ver análise da meta" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zielanalyse ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See goal analysis"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver análise da meta"
+          }
+        }
+      }
+    },
+    "Ver análise e começar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse ansehen und starten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See analysis and start"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver análise e começar"
           }
         }
       }
@@ -16858,6 +17738,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Visível apenas para administradores"
+          }
+        }
+      }
+    },
+    "Você ainda não tem uma meta. Faça a avaliação para começar." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast noch kein Ziel. Starte die Einschätzung, um loszulegen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't have a goal yet. Take the assessment to start."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você ainda não tem uma meta. Faça a avaliação para começar."
           }
         }
       }

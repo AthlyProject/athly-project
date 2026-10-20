@@ -1,7 +1,9 @@
 import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOkResponse, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AiPlannerService } from './ai-planner.service';
 import { PlanFromHealthDto } from './dto/plan-from-health.dto';
+import { GoalAnalysisDto } from './dto/goal-analysis.dto';
+import { GoalAnalysisService } from './goal-analysis.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
 import { UserModel } from '../users/models/user.model';
@@ -20,7 +22,19 @@ export class AiPlannerController {
     private readonly aiPlannerService: AiPlannerService,
     private readonly healthContext: PlannerHealthContextService,
     private readonly automation: WeeklyPlanAutomationService,
+    private readonly goalAnalysis: GoalAnalysisService,
   ) {}
+
+  @Post('goal-analysis')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Analisar a meta antes de gerar o plano',
+    description:
+      'Veredito, números e até 3 alternativas na mesma data, sem IA. Sem `goal`, analisa a meta ativa.',
+  })
+  analyzeGoal(@CurrentUser() user: UserModel, @Body() input: GoalAnalysisDto) {
+    return this.goalAnalysis.analyze(user.id, input);
+  }
 
   @Post('plan-from-health')
   @ApiOkResponse({ type: AiPlannerResultModel })

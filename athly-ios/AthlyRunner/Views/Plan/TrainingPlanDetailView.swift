@@ -6,6 +6,8 @@ struct TrainingPlanDetailView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
+    @State private var showGoalChange = false
+    @State private var goalChangeNotice: String?
 
     var body: some View {
         ZStack {
@@ -35,6 +37,24 @@ struct TrainingPlanDetailView: View {
         .navigationTitle("Plano de Treino")
         .navigationBarTitleDisplayMode(.inline)
         .task { await planVM.loadActiveGoalIfNeeded() }
+        .sheet(isPresented: $showGoalChange) {
+            GoalChangeFlowView(current: planVM.activeGoal?.parsedGoal) { outcome in
+                Task {
+                    let generatedNow = await planVM.applyGoalChange(outcome)
+                    goalChangeNotice = generatedNow
+                        ? String(localized: "Nova meta salva. A semana atual está sendo preparada com ela.")
+                        : String(localized: "Nova meta salva. Ela vale a partir da próxima semana; as semanas já geradas continuam como estão.")
+                }
+            }
+        }
+        .alert("Meta atualizada", isPresented: Binding(
+            get: { goalChangeNotice != nil },
+            set: { if !$0 { goalChangeNotice = nil } }
+        )) {
+            Button("OK", role: .cancel) { goalChangeNotice = nil }
+        } message: {
+            Text(goalChangeNotice ?? "")
+        }
         .alert("Excluir plano", isPresented: $showDeleteConfirmation) {
             Button("Cancelar", role: .cancel) {}
             Button("Excluir", role: .destructive) {
@@ -74,6 +94,25 @@ struct TrainingPlanDetailView: View {
                 divider
                 infoRow(label: "Esportes", value: plan.sports.map { $0.label }.joined(separator: ", "))
             }
+
+            Button {
+                showGoalChange = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                    Text("Alterar meta")
+                }
+                .font(AthlyTheme.Typography.semibold(13))
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(AthlySecondaryButtonStyle())
+            .disabled(planVM.isGeneratingInBackground || planVM.isGenerating)
+
+            if planVM.isGeneratingInBackground {
+                Text("Aguarde o plano em preparo para trocar a meta.")
+                    .font(AthlyTheme.Typography.body(11))
+                    .foregroundStyle(AthlyTheme.Color.textTertiary)
+            }
         }
         .padding(AthlyTheme.Spacing.sm)
         .athlyInsightCard()
@@ -93,7 +132,7 @@ struct TrainingPlanDetailView: View {
     // MARK: - Feasibility
 
     private func feasibilityCard(_ f: GoalFeasibility) -> some View {
-        let (label, color, icon) = verdictInfo(f.verdict)
+        let (label, color, icon) = GoalFormatting.verdict(f.verdict)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
@@ -277,31 +316,9 @@ struct TrainingPlanDetailView: View {
 
     // MARK: - Formatting
 
-    private func formatTime(_ sec: Double) -> String {
-        let total = Int(sec.rounded())
-        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
-        return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
-    }
+    private func formatTime(_ sec: Double) -> String { GoalFormatting.time(sec) }
 
-    private func friendlyDate(_ iso: String?) -> String? {
-        guard let iso else { return nil }
-        let inFmt = DateFormatter()
-        inFmt.dateFormat = "yyyy-MM-dd"
-        guard let date = inFmt.date(from: String(iso.prefix(10))) else { return String(iso.prefix(10)) }
-        let outFmt = DateFormatter()
-        outFmt.dateFormat = "dd/MM/yyyy"
-        return outFmt.string(from: date)
-    }
-
-    private func verdictInfo(_ verdict: String) -> (String, Color, String) {
-        switch verdict {
-        case "ready": return (String(localized: "Pronto"), AthlyTheme.Color.success, "checkmark.seal.fill")
-        case "feasible": return (String(localized: "Viável"), AthlyTheme.Color.success, "checkmark.circle.fill")
-        case "ambitious": return (String(localized: "Ambicioso"), AthlyTheme.Color.warning, "flame.fill")
-        case "unrealistic": return (String(localized: "Inviável no prazo"), AthlyTheme.Color.error, "exclamationmark.triangle.fill")
-        default: return (verdict, AthlyTheme.Color.textSecondary, "questionmark.circle")
-        }
-    }
+    private func friendlyDate(_ iso: String?) -> String? { GoalFormatting.friendlyDate(iso) }
 
     private func statusInfo(_ status: String) -> (String, Color) {
         switch status.uppercased() {

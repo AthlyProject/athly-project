@@ -81,13 +81,21 @@ try {
   diag.error('[OTel] SDK failed to start', err as Error);
 }
 
-async function shutdown() {
-  try {
-    await sdk.shutdown();
-  } catch (err) {
-    diag.error('[OTel] Error shutting down SDK', err as Error);
-  }
+// Uma única vez: SIGTERM seguido de beforeExit chamava de novo ("shutdown may only be called once").
+let shuttingDown: Promise<void> | null = null;
+function shutdown(): Promise<void> {
+  shuttingDown ??= sdk
+    .shutdown()
+    .catch((err) => diag.error('[OTel] Error shutting down SDK', err as Error));
+  return shuttingDown;
 }
 
-process.on('SIGTERM', shutdown);
-process.once('beforeExit', shutdown);
+// Registrar um handler de SIGTERM desliga a saída padrão do Node: sem o exit, o processo seguia
+// vivo depois do sinal (o `nest --watch` não reiniciava e o container só caía no SIGKILL). O
+// flush tem até 5 s, para um coletor fora do ar não segurar a parada.
+process.once('SIGTERM', () => {
+  const exit = () => process.exit(0);
+  setTimeout(exit, 5_000).unref();
+  void shutdown().finally(exit);
+});
+process.once('beforeExit', () => void shutdown());

@@ -48,6 +48,9 @@ export function mergeHeartRateRuns(...sources: unknown[][]): HealthRunItemDto[] 
       activeEnergyBurned: run.activeEnergyBurned ?? previous?.activeEnergyBurned,
       avgHR: measuredHeartRate(run.avgHR) ? run.avgHR : previous?.avgHR,
       maxHR: measuredHeartRate(run.maxHR) ? run.maxHR : previous?.maxHR,
+      endDate: run.endDate ?? previous?.endDate,
+      sourceBundleIdentifier: run.sourceBundleIdentifier ?? previous?.sourceBundleIdentifier,
+      wasUserEntered: run.wasUserEntered ?? previous?.wasUserEntered,
     };
     if (index < 0) runs.push(merged);
     else runs[index] = merged;

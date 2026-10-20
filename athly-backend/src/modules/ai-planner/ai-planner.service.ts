@@ -19,7 +19,12 @@ import { PrismaService } from '../../database/prisma.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
 import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
-import { PlanFromHealthDto, DetailedSessionDto, SegmentLabel } from './dto/plan-from-health.dto';
+import {
+  MAX_HEALTH_RUNS,
+  PlanFromHealthDto,
+  DetailedSessionDto,
+  SegmentLabel,
+} from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
   PlannerGuardrails,
@@ -35,13 +40,33 @@ import type {
   UserProfileContext,
   LongitudinalWeek,
 } from './prompts/planner-prompt';
-import { buildMacrocycle, type PlannedWeek } from './periodization';
+import { effortCandidatesFromSessions, zoneCandidates } from './effort-candidates';
+import {
+  WEEKLY_VOLUME_CAP_FACTOR,
+  buildMacrocycle,
+  longRunReferenceKm,
+  type PlannedWeek,
+} from './periodization';
 import {
   assessGoalFeasibility,
   parseTargetDistanceMeters,
   parseTargetTimeSeconds,
 } from './goal-feasibility';
-import { computeLongitudinalWeeks, computePreviousWeekAnalysis } from './weekly-metrics.util';
+import {
+  assessDatedGoal,
+  combineFeasibility,
+  goalReadinessPrompt,
+  healthObjectiveEvidence,
+  summarizeAssessment,
+} from './objective-goal';
+import type { GoalAssessment } from './goal-feasibility-v2';
+import {
+  computeLongitudinalWeeks,
+  computePreviousWeekAnalysis,
+  healthLongestRunKm,
+  healthWeeklyVolume,
+  type HealthWeeklyVolume,
+} from './weekly-metrics.util';
 import { TrainingReportService } from '../training-report/training-report.service';
 import { flattenToLegacyBlocks } from '../workouts/utils/flatten-to-legacy';
 import { SEGMENT_SCHEMA_VERSION } from '../workouts/types/segment.types';
@@ -57,15 +82,6 @@ const DETAILED_FIRST_GEN = 5;
 const DETAILED_MID_PLAN = 7;
 const HISTORICAL_FIRST_GEN = 20;
 const LONGITUDINAL_WEEKS = 4;
-
-// Piso de distância para um esforço entrar como candidato a "melhor esforço" do VDOT.
-// Esforços curtos demais rodam em regime supramáximo e distorcem a estimativa.
-const MIN_EFFORT_METERS = 1500;
-// Tiros são corridos QUEBRADOS por recuperação; um esforço contínuo no mesmo pace não é
-// sustentável. Penaliza ~5% a duração-equivalente do bloco de tiros para não superestimar
-// o VDOT ao tratá-lo como se fosse uma corrida contínua. Knob de calibração — validar
-// contra tabelas de Daniels antes de mexer.
-const REP_EFFORT_PENALTY = 1.05;
 
 type PlanningWindow = {
   weekDates: string[];
@@ -122,7 +138,10 @@ export class AiPlannerService {
       planningWindow;
 
     const heartRate = await this.heartRateHealth.resolve(userId, input);
-    input = { ...input, runs: heartRate.runs.slice(0, HISTORICAL_FIRST_GEN) };
+    // Todas as corridas lidas (o app atual manda as das últimas 9 semanas) servem ao volume e ao
+    // motor de viabilidade; zonas e prompt continuam com as 20 mais recentes.
+    const healthRuns = heartRate.runs.slice(0, MAX_HEALTH_RUNS);
+    input = { ...input, runs: healthRuns.slice(0, HISTORICAL_FIRST_GEN) };
 
     const trainingPlan = await this.resolveTrainingPlan(
       userId,
@@ -154,15 +173,7 @@ export class AiPlannerService {
     // aquecimento/volta à calma e subestima o VDOT — por isso também entram como
     // candidatos os melhores sub-esforços contínuos (janelas de splits reais) das
     // sessões detalhadas.
-    const runsForZones: RunDataForZones[] = [
-      ...input.runs.map((r) => ({
-        distanceMeters: r.distanceMeters,
-        durationSeconds: r.durationSeconds,
-        averageHeartRate: r.avgHR ?? null,
-        maxHeartRate: r.maxHR ?? null,
-      })),
-      ...this.bestSubEffortsFromSessions(input.detailedSessions ?? []),
-    ];
+    const runsForZones = zoneCandidates(input.runs, input.detailedSessions ?? []);
     const effortZones = await this.effortZoneService.getOrCalculateForUser(
       userId,
       runsForZones,
@@ -220,23 +231,48 @@ export class AiPlannerService {
     // Dated-goal periodization: derive the current week's phase/targets and lay out
     // (or extend) the future PLANNED skeleton up to the event. Also refresh the goal's
     // feasibility snapshot with the freshest VDOT.
+    // Volume semanal real do Health: base do macrociclo e da 1ª semana (sem semana anterior).
+    const healthVolume = healthWeeklyVolume(healthRuns, weekDates[0]);
     const currentWeeklyVolumeKm =
-      aiInput.avgDistKm > 0 ? aiInput.avgDistKm * trainingDays : trainingDays * 4;
+      healthVolume?.km ??
+      (aiInput.avgDistKm > 0 ? aiInput.avgDistKm * trainingDays : trainingDays * 4);
     const plannedWeek = await this.resolveCurrentPlannedWeek({
       trainingPlanId: trainingPlan.id,
-      startDateISO: trainingPlan.startDate,
+      startDateISO: this.macrocycleStartISO(
+        trainingPlan.startDate,
+        activeGoalRecord?.createdAt,
+        weekDates[0],
+      ),
       weekStartISO: weekDates[0],
       weekEndDate,
       goal: activeGoal,
       currentWeeklyVolumeKm,
+      recentLongestRunKm: healthLongestRunKm(healthRuns, weekDates[0]),
       preReadMetrics: plannedCurrentRow?.metrics ?? null,
     });
+    // Motor objetivo: resistência para a distância e confiança dos dados (metas com data).
+    const objectiveAssessment = await this.assessObjectiveGoal(
+      userId,
+      activeGoal,
+      healthRuns,
+      input.runsReadFrom,
+    );
     await this.refreshGoalFeasibility(
       activeGoalRecord?.id,
       activeGoal,
       effortZones.vdotScore,
       weekDates[0],
+      objectiveAssessment,
+      input.runs.length === 0,
     );
+    const raceKm = parseTargetDistanceMeters(activeGoal?.targetDistance);
+    const goalReadiness =
+      objectiveAssessment && raceKm !== null
+        ? goalReadinessPrompt(
+            summarizeAssessment(objectiveAssessment),
+            Math.round(raceKm / 100) / 10,
+          )
+        : undefined;
 
     // Continuidade entre planos: um plano novo não tem semanas próprias (cold start).
     // Se houver um laudo do plano anterior, usamos seu contexto APENAS no prompt —
@@ -265,16 +301,21 @@ export class AiPlannerService {
 
     const deterministicContext = this.buildDeterministicContext(
       aiInput,
+      healthVolume,
       promptPreviousWeek,
       activeGoal,
       analyzedSessions,
       promptLongitudinal,
+      plannedWeek,
     );
+    deterministicContext.goalReadiness = goalReadiness;
     const plannerGuardrails = this.buildPlannerGuardrails(
       aiInput,
       deterministicContext,
       promptLongitudinal,
       minTrainingDate,
+      plannedWeek,
+      activeGoal?.eventDate ?? undefined,
     );
 
     // Reserva o slot da semana ANTES da chamada lenta do Gemini. Com a unique constraint
@@ -303,6 +344,8 @@ export class AiPlannerService {
             userProfile,
             analyzedSessions,
             minTrainingDate,
+            { weekDates, availableDays, minTrainingDate, assessmentProtocol: true },
+            goalReadiness,
           )
         : this.geminiService.generatePlan(
             aiInput,
@@ -584,13 +627,17 @@ export class AiPlannerService {
 
   private buildDeterministicContext(
     input: AiPlannerInput,
+    healthVolume: HealthWeeklyVolume | null,
     previousWeek: PreviousWeekAnalysis | null | undefined,
     goal: ParsedGoal | null,
     analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
     longitudinalWeeks?: LongitudinalWeek[],
+    plannedWeek?: PlannedWeek | null,
   ): DeterministicPlannerContext {
+    // Sem semana anterior executada, a base é o volume semanal real do Health.
     const fallbackBaseline =
-      input.avgDistKm > 0 ? input.avgDistKm * Math.max(1, input.trainingDays) : input.totalDistKm;
+      healthVolume?.km ??
+      (input.avgDistKm > 0 ? input.avgDistKm * Math.max(1, input.trainingDays) : input.totalDistKm);
     const prevWeekKm =
       previousWeek?.totalDistanceKm && previousWeek.totalDistanceKm > 0
         ? previousWeek.totalDistanceKm
@@ -614,15 +661,23 @@ export class AiPlannerService {
     }
 
     const weeklyVolumeBaselineKm = round2(baselineKm);
-    const weeklyVolumeMaxKm = round2(Math.max(weeklyVolumeBaselineKm, 0) * 1.1);
+    const { maxKm: weeklyVolumeMaxKm, source: weeklyVolumeMaxSource } = this.weeklyVolumeCap(
+      weeklyVolumeBaselineKm,
+      goal,
+      plannedWeek,
+    );
 
-    // Base reconstruída pelo piso móvel — ou medida numa semana com <2 sessões
-    // completadas — não merece confiança 'high' (que autoriza progressão agressiva).
+    // Base reconstruída pelo piso móvel, medida numa semana com <2 sessões completadas ou
+    // tirada de menos de 3 semanas do Health não merece confiança 'high' (que autoriza
+    // progressão agressiva).
     let volumeConfidence = previousWeek?.volumeConfidence ?? 'high';
     const completedWorkouts = previousWeek?.completedWorkouts ?? null;
+    const shortHealthHistory = prevWeekKm === null && (healthVolume?.weeksMeasured ?? 0) < 3;
     if (
       volumeConfidence === 'high' &&
-      (baselineRaisedByTrailingFloor || (completedWorkouts !== null && completedWorkouts < 2))
+      (baselineRaisedByTrailingFloor ||
+        (completedWorkouts !== null && completedWorkouts < 2) ||
+        shortHealthHistory)
     ) {
       volumeConfidence = 'low';
     }
@@ -630,6 +685,7 @@ export class AiPlannerService {
     return {
       weeklyVolumeBaselineKm,
       weeklyVolumeMaxKm,
+      weeklyVolumeMaxSource,
       volumeConfidence,
       goalAttempt: this.assessUndatedGoalAttempt(
         goal,
@@ -640,11 +696,39 @@ export class AiPlannerService {
     };
   }
 
+  /**
+   * Teto de volume da semana: base × 1,1. O polimento reduz o volume de propósito, então o teto
+   * segue o alvo do macrociclo (eval 2026-10-19: com base × 1,1, 4 de 5 perfis mantiveram ou
+   * subiram o volume na véspera da meia). Na semana da prova o alvo não inclui a prova, que é
+   * obrigatória: ela entra no teto mesmo acima da base.
+   */
+  private weeklyVolumeCap(
+    baselineKm: number,
+    goal: ParsedGoal | null,
+    plannedWeek?: PlannedWeek | null,
+  ): { maxKm: number; source: DeterministicPlannerContext['weeklyVolumeMaxSource'] } {
+    const baselineMaxKm = round2(Math.max(baselineKm, 0) * WEEKLY_VOLUME_CAP_FACTOR);
+    if (plannedWeek?.phase === 'taper') {
+      const taperMaxKm = round2(plannedWeek.targetVolumeKm * WEEKLY_VOLUME_CAP_FACTOR);
+      if (taperMaxKm < baselineMaxKm) return { maxKm: taperMaxKm, source: 'taper' };
+    }
+    if (plannedWeek?.phase === 'race') {
+      const raceKm = (parseTargetDistanceMeters(goal?.targetDistance) ?? 0) / 1000;
+      return {
+        maxKm: round2((plannedWeek.targetVolumeKm + raceKm) * WEEKLY_VOLUME_CAP_FACTOR),
+        source: 'race',
+      };
+    }
+    return { maxKm: baselineMaxKm, source: 'baseline' };
+  }
+
   private buildPlannerGuardrails(
     input: AiPlannerInput,
     deterministicContext: DeterministicPlannerContext,
     longitudinalWeeks?: LongitudinalWeek[],
     minTrainingDate?: string,
+    plannedWeek?: PlannedWeek | null,
+    eventDate?: string,
   ): PlannerGuardrails {
     return {
       weekDates: input.weekDates,
@@ -654,6 +738,9 @@ export class AiPlannerService {
       analysisOverride: this.buildAnalysisOverride(input, longitudinalWeeks),
       defaultPaceSecPerKm: parsePace(input.avgPace) ?? 390,
       minTrainingDate,
+      phase: plannedWeek?.phase,
+      longRunRefKm: plannedWeek?.longRunKm,
+      raceDate: plannedWeek?.isRaceWeek ? eventDate : undefined,
     };
   }
 
@@ -789,85 +876,9 @@ export class AiPlannerService {
     return !paceImproved;
   }
 
-  /**
-   * Candidatos de esforço LIMPO para o cálculo de VDOT a partir de sessões detalhadas.
-   * O pace médio de corrida inteira subestima o atleta — e uma janela contínua que inclua
-   * as recuperações entre tiros também (era o bug: tiros sub-5'00 saíam diluídos pelos
-   * trotes e o VDOT vinha baixo). Em vez disso, por sessão extraímos:
-   *   (1) candidato de qualidade: os tiros (`rep`) concatenados, SEM as recuperações;
-   *   (2) candidato sustentado: a melhor janela contínua (>= MIN_EFFORT_METERS) de blocos
-   *       de esforço estável (`tempo`/`easy`), excluindo tiros e recuperações.
-   * findBestEffort escolhe depois o de VDOT mais alto entre todos os candidatos. Sessões
-   * `synthetic` (Garmin/Nike só com totais via Apple Health) não têm splits reais e são
-   * ignoradas — caem no piso dos totais de input.runs.
-   */
+  /** Ver `effortCandidatesFromSessions` (os specs exercitam por aqui). */
   private bestSubEffortsFromSessions(sessions: DetailedSessionDto[]): RunDataForZones[] {
-    const candidates: RunDataForZones[] = [];
-    for (const session of sessions) {
-      if (session.splitsSource === 'synthetic') continue;
-      const segs = session.segments ?? [];
-
-      // (1) Qualidade: soma só dos tiros (rep), recuperações fora. Captura a velocidade
-      // real dos tiros sem a diluição dos trotes.
-      const reps = segs.filter(
-        (s) => s.label === SegmentLabel.rep && s.distanceKm > 0 && s.durationSeconds > 0,
-      );
-      const repDistM = reps.reduce((sum, s) => sum + s.distanceKm * 1000, 0);
-      const repDurSec = reps.reduce((sum, s) => sum + s.durationSeconds, 0);
-      if (repDistM >= MIN_EFFORT_METERS && repDurSec > 0) {
-        candidates.push({
-          distanceMeters: repDistM,
-          durationSeconds: repDurSec * REP_EFFORT_PENALTY,
-          averageHeartRate: null,
-          maxHeartRate: null,
-        });
-      }
-
-      // (2) Sustentado: melhor janela contínua de tempo/easy (sem rep/rec). Cobre tempo
-      // runs e o trecho mais rápido de corridas steady/progressivas.
-      const steady = segs.filter(
-        (s) =>
-          (s.label === SegmentLabel.tempo || s.label === SegmentLabel.easy) &&
-          s.distanceKm > 0 &&
-          s.durationSeconds > 0,
-      );
-      const best = this.bestContinuousWindow(steady);
-      if (best) {
-        candidates.push({
-          distanceMeters: best.distM,
-          durationSeconds: best.durSec,
-          averageHeartRate: null,
-          maxHeartRate: null,
-        });
-      }
-    }
-    return candidates;
-  }
-
-  /**
-   * Melhor (mais rápida) janela contígua de >= MIN_EFFORT_METERS a partir de uma lista de
-   * splits de esforço estável já filtrada. Janela mínima a partir de cada início: janelas
-   * maiores só diluiriam o pace.
-   */
-  private bestContinuousWindow(
-    segs: Array<{ distanceKm: number; durationSeconds: number }>,
-  ): { distM: number; durSec: number } | null {
-    let best: { distM: number; durSec: number } | null = null;
-    for (let i = 0; i < segs.length; i++) {
-      let distM = 0;
-      let durSec = 0;
-      for (let j = i; j < segs.length; j++) {
-        distM += segs[j].distanceKm * 1000;
-        durSec += segs[j].durationSeconds;
-        if (distM >= MIN_EFFORT_METERS) {
-          const pace = durSec / (distM / 1000);
-          const bestPace = best ? best.durSec / (best.distM / 1000) : Infinity;
-          if (pace < bestPace) best = { distM, durSec };
-          break;
-        }
-      }
-    }
-    return best;
+    return effortCandidatesFromSessions(sessions);
   }
 
   private async buildLongitudinalTrend(
@@ -1100,6 +1111,7 @@ export class AiPlannerService {
     weekEndDate: Date;
     goal: ParsedGoal | null;
     currentWeeklyVolumeKm: number;
+    recentLongestRunKm: number | null;
     preReadMetrics: unknown;
   }): Promise<PlannedWeek | null> {
     const { goal } = params;
@@ -1116,13 +1128,33 @@ export class AiPlannerService {
       targetDistanceMeters,
       currentWeeklyVolumeKm: params.currentWeeklyVolumeKm,
       experienceLevel: goal.experienceLevel ?? null,
+      recentLongestRunKm: params.recentLongestRunKm,
     });
-    if (macro.length === 0) return fromMetrics;
+    // A fase e o volume vêm do esqueleto gravado na primeira geração; o longão de referência é
+    // recalculado com o maior treino recente (o gravado ficava preso ao início do plano).
+    const withCurrentLongRun = (week: PlannedWeek | null): PlannedWeek | null =>
+      week && {
+        ...week,
+        longRunKm:
+          Math.round(
+            longRunReferenceKm({
+              phase: week.phase,
+              targetVolumeKm: week.targetVolumeKm,
+              targetDistanceMeters,
+              recentLongestRunKm: params.recentLongestRunKm,
+            }) * 10,
+          ) / 10,
+      };
+    if (macro.length === 0) return withCurrentLongRun(fromMetrics);
 
     await this.persistFutureSkeleton(params.trainingPlanId, macro, params.weekEndDate);
 
     // Prefer the persisted (stable) context; fall back to the in-memory current week.
-    return fromMetrics ?? macro.find((w) => w.weekStartDate === params.weekStartISO) ?? null;
+    return (
+      withCurrentLongRun(fromMetrics) ??
+      macro.find((w) => w.weekStartDate === params.weekStartISO) ??
+      null
+    );
   }
 
   private plannedWeekFromMetrics(metrics: unknown): PlannedWeek | null {
@@ -1170,13 +1202,49 @@ export class AiPlannerService {
   }
 
   /** Recomputes and stores the active goal's feasibility snapshot using the freshest VDOT. */
+  /**
+   * Avaliação do motor objetivo para a meta com data, a partir das corridas do Health. Null para
+   * metas sem data/distância e para clientes antigos, que não mandam a origem das corridas.
+   */
+  private async assessObjectiveGoal(
+    userId: string,
+    goal: ParsedGoal | null,
+    runs: PlanFromHealthDto['runs'],
+    runsReadFrom?: string,
+  ): Promise<GoalAssessment | null> {
+    if (!goal?.eventDate) return null;
+    const context = await this.prisma.plannerHealthContext.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    });
+    const evidence = healthObjectiveEvidence({
+      userId,
+      runs,
+      asOf: new Date(),
+      timeZone: context?.timeZone ?? 'UTC',
+      readLimit: HISTORICAL_FIRST_GEN,
+      readFrom: runsReadFrom ? new Date(runsReadFrom) : null,
+    });
+    if (!evidence) return null;
+    return assessDatedGoal({
+      distanceMeters: parseTargetDistanceMeters(goal.targetDistance),
+      timeSeconds: parseTargetTimeSeconds(goal.targetTime),
+      eventDate: goal.eventDate,
+      evidence,
+    });
+  }
+
   private async refreshGoalFeasibility(
     goalId: string | undefined,
     goal: ParsedGoal | null,
     vdotScore: number | null,
     asOfISO: string,
+    objectiveAssessment: GoalAssessment | null,
+    noRuns: boolean,
   ): Promise<void> {
     if (!goalId || !goal?.eventDate || vdotScore == null) return;
+    // Metas sem tempo alvo não têm o formato que o app atual lê (tempo obrigatório): a avaliação
+    // delas vai só para o prompt, como prontidão para a distância.
     const feasibility = assessGoalFeasibility({
       goal: {
         targetDistance: goal.targetDistance,
@@ -1186,12 +1254,15 @@ export class AiPlannerService {
       },
       currentVdot: vdotScore,
       asOfISO,
-      lowConfidence: false,
+      // Sem corridas, o VDOT vem do pace de conforto declarado. Com o motor objetivo, a confiança
+      // dele decide (combineFeasibility).
+      lowConfidence: noRuns,
     });
     if (!feasibility) return;
+    const combined = combineFeasibility(feasibility, objectiveAssessment);
     await this.prisma.userGoal.update({
       where: { id: goalId },
-      data: { feasibility: feasibility as unknown as Prisma.InputJsonValue },
+      data: { feasibility: combined as unknown as Prisma.InputJsonValue },
     });
   }
 
@@ -1258,6 +1329,23 @@ export class AiPlannerService {
       });
 
     return normalized.length > 0 ? normalized : DEFAULT_AVAILABLE_DAYS;
+  }
+
+  /**
+   * Início do macrociclo da meta ativa: a semana em que ela foi definida, nunca antes do plano. Na
+   * meta do onboarding é o início do plano; depois de uma troca de meta, as fases recomeçam na
+   * semana da troca, a partir do volume atual (o esqueleto antigo é apagado na troca).
+   */
+  private macrocycleStartISO(
+    planStartISO: string,
+    goalCreatedAt: Date | null | undefined,
+    weekStartISO: string,
+  ): string {
+    if (!goalCreatedAt) return planStartISO;
+    const goalWeekISO = this.toISODate(this.getCurrentMonday(goalCreatedAt));
+    if (goalWeekISO <= planStartISO) return planStartISO;
+    // Fuso: a segunda da meta nunca passa da semana que está sendo gerada.
+    return goalWeekISO <= weekStartISO ? goalWeekISO : weekStartISO;
   }
 
   private getCurrentMonday(now: Date): Date {

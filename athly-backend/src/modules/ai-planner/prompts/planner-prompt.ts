@@ -36,7 +36,11 @@ export interface GoalAttemptContext {
 export interface DeterministicPlannerContext {
   weeklyVolumeBaselineKm: number;
   weeklyVolumeMaxKm: number;
+  /** De onde vem o teto: base × 1,1, alvo do polimento ou alvo da semana da prova + a prova. */
+  weeklyVolumeMaxSource?: 'baseline' | 'taper' | 'race';
   volumeConfidence: 'high' | 'corrected' | 'low';
+  /** Bloco <goal_readiness> do motor objetivo (metas com data). */
+  goalReadiness?: string;
   goalAttempt?: GoalAttemptContext;
 }
 
@@ -94,17 +98,23 @@ Tentativa de objetivo nesta semana:
 - Veredito: ${context.goalAttempt.reason}
 `
     : '';
+  const maxSource =
+    context.weeklyVolumeMaxSource === 'taper'
+      ? '\n- O volume máximo segue o POLIMENTO do macrociclo e fica abaixo do volume-base de propósito: reduza o volume, não o mantenha.'
+      : context.weeklyVolumeMaxSource === 'race'
+        ? '\n- O volume máximo da semana da prova JÁ INCLUI a própria prova; os demais dias ficam muito leves.'
+        : '';
 
   return `
 <deterministic_guardrails>
 Estes números foram calculados pelo backend e são a fonte da verdade. NÃO recalcule nem contradiga estes valores no JSON.
 - Volume-base confiável para progressão: ${context.weeklyVolumeBaselineKm.toFixed(2)} km
-- Volume máximo planejado desta semana: ${context.weeklyVolumeMaxKm.toFixed(2)} km
+- Volume máximo planejado desta semana: ${context.weeklyVolumeMaxKm.toFixed(2)} km${maxSource}
 - Confiança do volume-base: ${context.volumeConfidence}
 - Os dias listados como "dias de treino" são disponibilidade máxima; use menos dias se necessário para respeitar volume, recuperação e periodização.
 - MÍNIMO DE SESSÕES: se houver 2+ dias disponíveis e o volume máximo for >= 4 km, distribua o volume em pelo menos 2 sessões (ex.: 1 treino de qualidade + 1 corrida fácil/regenerativa curta). Concentrar tudo em 1 única sessão semanal prejudica aderência e base aeróbica.
 ${goalAttempt}
-</deterministic_guardrails>`;
+</deterministic_guardrails>${context.goalReadiness ? `\n\n${context.goalReadiness}` : ''}`;
 }
 
 function buildDateConstraintsSection(weekDates: string[], minTrainingDate?: string): string {
@@ -232,21 +242,23 @@ function buildGoalSection(goal: ParsedGoal): string {
 }
 
 /**
- * Two modes for a quantifiable goal (distance + time):
+ * Two modes for a distance goal:
  *  - WITH a programmed eventDate → countdown/periodization driven by the
- *    macrocycle's PlannedWeek (base/build/peak/taper/race). See buildCountdownSection.
- *  - WITHOUT an eventDate → the AI evaluates whether the athlete can attempt the
- *    goal THIS week and may mark exactly one day as the goal-attempt session.
+ *    macrocycle's PlannedWeek (base/build/peak/taper/race), with or without a target
+ *    time ("só completar"). See buildCountdownSection.
+ *  - WITHOUT an eventDate (needs a target time) → the AI evaluates whether the athlete
+ *    can attempt the goal THIS week and may mark exactly one day as the goal-attempt session.
  */
 function buildGoalAttemptLogicSection(
   goal: ParsedGoal | null | undefined,
   plannedWeek?: PlannedWeek | null,
   goalAttempt?: GoalAttemptContext | null,
 ): string {
-  if (!goal || !goal.targetDistance || !goal.targetTime) return '';
+  if (!goal?.targetDistance) return '';
   if (goal.eventDate) {
     return plannedWeek ? buildCountdownSection(goal, plannedWeek) : '';
   }
+  if (!goal.targetTime) return '';
   if (goalAttempt) {
     return `
 <goal_attempt_logic>
@@ -307,25 +319,41 @@ const PHASE_LABEL: Record<PlannedWeek['phase'], string> = {
 function buildCountdownSection(goal: ParsedGoal, plannedWeek: PlannedWeek): string {
   const objetivo = goal.summary;
   const alvo = [goal.targetDistance, goal.targetTime].filter(Boolean).join(' em ') || objetivo;
+  // Sem tempo alvo, a meta é completar a prova: o dia da prova não tem pace alvo.
+  const provaMain = goal.targetTime
+    ? `a tentativa no pace alvo (${goal.targetTime})`
+    : `a prova completa (${goal.targetDistance}) em esforço constante e controlado (RPE 5–6), sem pace alvo`;
+  const provaReasoning = goal.targetTime
+    ? 'citar o pace alvo e por que o atleta chega afiado'
+    : 'citar a estratégia de ritmo para completar e por que o atleta chega descansado';
+  const rumo = goal.targetTime
+    ? `rumo ao pace alvo (${alvo}). O reasoning do dia mais duro deve citar a fase e a distância à meta (ex: "fase BUILD; mainPace recente 5:20/km rumo ao alvo 5:00/km").`
+    : `rumo a completar a prova (${goal.targetDistance}), sem pace alvo. O reasoning do dia mais longo deve citar a fase e a distância que falta (ex: "fase TAPER; maior corrida recente 13 km para uma prova de 21 km").`;
 
   const raceWeekBlock = plannedWeek.isRaceWeek
     ? `SEMANA DA PROVA (é agora — weeksToEvent=0):
 1. Marque o dia ${goal.eventDate} (ou o dia de treino disponível mais próximo) com "isGoalAttempt": true e título "Tentativa: ${objetivo}".
-2. Estruture o dia da prova: aquecimento (10–15 min) + main = a tentativa no pace alvo (${goal.targetTime ?? 'pace alvo'}) + cooldown (5–10 min).
-3. 1–2 dias ANTES: descanso ou treino muito leve (RPE <= 4). NENHUMA sessão intensa (RPE >= 7) adjacente à prova.
+2. Estruture o dia da prova: aquecimento (10–15 min) + main = ${provaMain} + cooldown (5–10 min).
+3. Antevéspera (2 dias antes): descanso ou treino leve (RPE <= 4). Véspera: descanso ou uma ativação curta de no máximo 30 min, em RPE <= 3, com até ~1 km OU alguns tiros de 20–30 s no ritmo de prova (RPE <= 6). NENHUM trecho com RPE >= 7 nos 2 dias antes da prova.
 4. Demais dias: muito leves (taper final). O dia seguinte à prova = descanso ou recuperação leve.
-5. O reasoning do dia da prova deve citar o pace alvo e por que o atleta chega afiado.`
-    : `Esta NÃO é a semana da prova: NÃO marque isGoalAttempt em nenhum dia. Periodize conforme a fase atual, evoluindo o atleta rumo ao pace alvo (${alvo}). O reasoning do dia mais duro deve citar a fase e a distância à meta (ex: "fase BUILD; mainPace recente 5:20/km rumo ao alvo 5:00/km").`;
+5. O reasoning do dia da prova deve ${provaReasoning}.`
+    : `Esta NÃO é a semana da prova: NÃO marque isGoalAttempt em nenhum dia. Periodize conforme a fase atual, evoluindo o atleta ${rumo}`;
+
+  // Os mesmos limites do gate da fase BASE (assessPlanQuality): passar deles regenera o plano.
+  const baseLimits =
+    plannedWeek.phase === 'base'
+      ? `- Limites da BASE (o backend rejeita o plano que passar): no máximo 1 treino com trecho de trabalho em RPE 7 ou mais; o maior treino da semana até ~${Math.round(plannedWeek.longRunKm * 1.25 * 10) / 10} km, aquecimento e volta à calma incluídos.\n`
+      : '';
 
   return `
 <countdown_logic>
 A meta TEM data programada: ${goal.eventDate}. Faltam ${plannedWeek.weeksToEvent} semana(s) para a prova.
 Fase atual do macrociclo: ${PHASE_LABEL[plannedWeek.phase] ?? plannedWeek.phase}.
 Metas de REFERÊNCIA desta semana (adapte aos dados reais; NÃO ultrapasse +10% de volume vs. a média recente do atleta):
-- Volume-alvo: ~${plannedWeek.targetVolumeKm} km
-- Longão: ~${plannedWeek.longRunKm} km
+- Volume-alvo: ~${plannedWeek.targetVolumeKm} km${plannedWeek.isRaceWeek ? ' além da prova' : ''}
+- ${plannedWeek.isRaceWeek ? 'Prova' : 'Longão'}: ~${plannedWeek.longRunKm} km
 - Foco da fase: ${plannedWeek.intensityFocus}
-
+${baseLimits}
 Princípios de periodização rumo à prova (siga a fase atual):
 - BASE: priorize volume fácil e construção aeróbica; no máximo 1 estímulo de qualidade leve.
 - BUILD: introduza limiar (tempo) e intervalos progressivos; volume ainda subindo gradualmente.
@@ -412,7 +440,7 @@ Regras absolutas:
 - "rest" é usado para dias inteiros de descanso (treino com um único segmento rest grande), enquanto "recovery" é a pausa entre repetições dentro do treino.
 
 Targets por esporte (campo "target" do segmento) — preencha apenas o que fizer sentido:
-- running: { "paceSecPerKmMin": <int>, "paceSecPerKmMax": <int>, "hrZone": 1..5, "rpe": 1..10 }
+- running: { "paceSecPerKmMin": <int>, "paceSecPerKmMax": <int>, "rpe": 1..10, "hrZone": 1..5 }
 - cycling: { "powerWattsMin": <int>, "powerWattsMax": <int>, "cadenceRpm": <int>, "hrZone": 1..5 }
 - swimming: { "strokeType": "freestyle|backstroke|breaststroke|butterfly|medley|kick|drill", "poolLengthM": 25|50, "targetSecPer100m": <int> }
 - strength: { "exercise": "<nome em pt-BR>", "reps": <int>, "loadKg": <number>, "loadPctOf1RM": <0-150>, "tempoSec": "<3-1-1-0>", "restAfterSec": <int> }
@@ -484,13 +512,45 @@ const SEGMENT_CONSTRAINTS_PLANNER = `
 - ESPECIFICIDADE DO OBJETIVO: quando a tentativa do objetivo ainda não for viável por falta de sustentação, não responda com esforços muito fáceis só porque o pace contínuo recente está longe do alvo. Escolha treinos que aproximem progressivamente o atleta da demanda específica do objetivo: para metas curtas, aumente gradualmente a duração/distância dos tiros em ritmo próximo ao alvo; para metas médias/longas, aumente blocos de ritmo controlado, tempo/limiar e volume fácil. Se o atleta já executou repetições curtas bem mais rápidas que o ritmo-alvo com RPE controlado, prefira alongar as repetições ou reduzir a recuperação antes de tornar o pace conservador demais.
 - EASY/RECUPERAÇÃO: para atletas com fitness intermediário+ demonstrado, prescreva o easy na METADE MAIS RÁPIDA da faixa Easy (perto de easyPaceMin), não no extremo lento. Reserve o extremo lento (easyPaceMax) apenas para dias explicitamente marcados como recuperação/regenerativo. Um easy bem prescrito fica tipicamente ~60–90s/km mais lento que o limiar do atleta — não mais lento que isso.`;
 
+// As receitas gerais (6×400 m, trechos por distância) puxavam tiros para a semana de avaliação.
+const ASSESSMENT_SEGMENT_RECIPES = `
+<segment_recipes>
+Receitas da semana de avaliação — só tempo e RPE, sem pace. Estas são templates de SHAPE.
+
+(1) Rodagem de reconhecimento:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "main", "kind": "work", "label": "Ritmo confortável", "end": { "by": "durationSec", "value": 1200 }, "target": { "rpe": 4 } },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+
+(2) Blocos de 5 min:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "set-main", "kind": "set", "label": "3 × 5 min moderado", "repetitions": 3, "children": [
+    { "id": "work", "kind": "work", "label": "5 min moderado", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 6 } },
+    { "id": "rec", "kind": "recovery", "label": "Trote leve", "end": { "by": "durationSec", "value": 120 }, "target": { "rpe": 2 } }
+  ] },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+
+(3) Rodagem progressiva:
+"segments": [
+  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "p1", "kind": "work", "label": "Confortável", "end": { "by": "durationSec", "value": 900 }, "target": { "rpe": 4 } },
+  { "id": "p2", "kind": "work", "label": "Um pouco mais firme", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 5 } },
+  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+]
+</segment_recipes>`;
+
 const SEGMENT_CONSTRAINTS_ASSESSMENT = `
 - segments é OBRIGATÓRIO em todo treino — é a fonte da verdade que o tracker do app lê para tocar bipes/vibração/voz nas transições.
 - Toda sessão de corrida deve começar com 1 segmento "warmup" e terminar com 1 segmento "cooldown".
-- OBRIGATÓRIO para warmup: end.value >= 480 (8 min) ou >= 1000 (1 km).
-- OBRIGATÓRIO para cooldown: end.value >= 300 (5 min) ou >= 500 (500 m).
-- Como NÃO há histórico, NÃO preencha target.paceSecPerKmMin/Max. Use apenas target.rpe (1–10) e mencione referência de pace em "label" ou no description do dia.
-- Em sessões de intervalo: ENVOLVA as repetições em um nó "set". NÃO descreva o intervalo em texto.
+- TODOS os trechos terminam por TEMPO: end.by = "durationSec". NÃO use distância ("distanceM") nem repetições ("reps").
+- OBRIGATÓRIO para warmup: end.value >= 480 (8 min). Para cooldown: end.value >= 300 (5 min).
+- Trechos "work" duram pelo menos 300 s (5 min). Nenhum trecho passa de RPE 6: sem tiros, sem strides, sem acelerações.
+- NÃO preencha target.paceSecPerKmMin/Max nem cite pace alvo no texto: o objetivo é MEDIR o pace que o atleta sustenta em cada esforço. Use apenas target.rpe (1–10).
+- Blocos repetidos (ex.: 3 × 5 min) vão em um nó "set" com children work + recovery.
 - Dias de descanso: exatamente um segmento { "kind": "rest", "end": { "by": "durationSec", "value": 0 } }. sportType = "other".`;
 
 const SEGMENT_OUTPUT_FIELD = `      "segments": [
@@ -518,6 +578,7 @@ export function buildAssessmentPrompt(
   userProfile?: UserProfileContext | null,
   analyzedSessions?: AnalyzedSession[],
   minTrainingDate?: string,
+  goalReadiness?: string,
 ): string {
   const restDays = 7 - trainingDays;
   const daysList = formatAvailableDays(availableDays);
@@ -535,10 +596,10 @@ export function buildAssessmentPrompt(
   const goalSummary = goal?.summary ?? 'começar a correr';
 
   return `<role>
-Você é um treinador de corrida experiente recebendo um novo atleta que ainda não tem histórico de corridas registrado.
+Você é um treinador de corrida experiente recebendo um novo atleta que ainda não tem corridas registradas no Apple Health.
 Seu objetivo é criar ${trainingDays} treinos de avaliação distribuídos ao longo da próxima semana para medir com segurança o nível de condicionamento físico atual antes de prescrever um plano de treino personalizado.
 O objetivo declarado do atleta é: ${goalSummary}.
-Tom: acolhedor, encorajador e claro — este atleta está iniciando sua jornada.
+Tom: acolhedor, encorajador e claro — sem tratar o atleta como quem nunca correu: o nível dele aparece nesta semana.
 </role>
 
 <language>
@@ -549,14 +610,13 @@ Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, tren
 ${goalSection}
 
 ${profileSection}
-
+${goalReadiness ? `\n${goalReadiness}\n` : ''}
 <context>
-O atleta não possui dados de corrida anteriores. Antes de criar um plano personalizado, é necessário avaliar:
-1. A base aeróbica (corrida em ritmo fácil)
-2. O limiar lático (esforço de tempo)
-3. O teto de velocidade (intervalos curtos)
-4. A resistência muscular (corrida longa fácil)
-5. A capacidade de recuperação (trote leve ou corrida-caminhada) — apenas se trainingDays >= 5
+O atleta não tem corridas registradas no Apple Health. Isso NÃO quer dizer que ele não saiba correr: esta semana mede, com segurança, o que ele já consegue fazer, para o plano seguinte partir de dados reais:
+1. O pace fácil que ele sustenta (rodagem confortável)
+2. O pace moderado que ele sustenta por 5 min, e se ele se repete bloco a bloco
+3. A resistência: como o pace se comporta numa rodagem mais longa e progressiva
+Tudo por tempo e por esforço percebido (RPE). Sem tiros: nenhum trecho passa de RPE 6.
 
 Os ${restDays} dias restantes da semana devem ser dias de descanso completo.
 Semana a planejar: ${weekDates[0]} (Segunda) até ${weekDates[6]} (Domingo).
@@ -576,21 +636,19 @@ ${workoutTemplates}
 
 Distribua os treinos de forma inteligente ao longo da semana:
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Os demais dias são descanso obrigatório.
-- Nunca coloque dois treinos intensos (RPE >= 7) em dias consecutivos.
-- O treino de velocidade (intervalos) deve vir após pelo menos 1 dia de descanso ou treino fácil.
+- Comece pela rodagem de reconhecimento. Os blocos de 5 min e a rodagem progressiva não ficam em dias seguidos quando houver como evitar.
 </assessment_workouts>
 
 ${REASONING_INSTRUCTION}
 
 ${SEGMENT_SCHEMA_DOCS}
 
-${SEGMENT_RECIPES}
+${ASSESSMENT_SEGMENT_RECIPES}
 
 <constraints>
 - Gere EXATAMENTE 7 entradas no total: ${trainingDays} dias de treino e ${restDays} dias de descanso.
 - Treinos SOMENTE nos dias: ${daysList}. Todos os outros dias = descanso.
 ${dateConstraintBullet}
-- Mantenha todas as distâncias conservadoras (1–6 km) já que não há dados de linha de base.
 - Siga training_guidance para os targets de RPE e FC.
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 8.
@@ -632,36 +690,38 @@ ${SEGMENT_OUTPUT_FIELD}
 }
 
 function buildAssessmentWorkoutTemplates(trainingDays: number): string {
+  // Sem histórico no Health: tudo por tempo e RPE, sem tiros (nenhum trecho acima de RPE 6), com
+  // blocos de 5 min para medir o pace moderado sustentável. O gate de avaliação confere as regras.
   const templates = [
-    `1. Teste de Base Aeróbica (fácil):
-   - Aquecimento: 8 min caminhada/trote suave (RPE 2-3)
-   - Principal: 20-25 min corrida fácil (RPE 4-5, ritmo conversacional — consiga falar frases completas)
-   - Volta à calma: 5 min caminhada (RPE 2)
-   - Objetivo: estabelecer o pace de base fácil do atleta. Sem pressão de velocidade.`,
+    `1. Rodagem de reconhecimento (pace fácil):
+   - Aquecimento: 10 min de trote leve (RPE 3); pode alternar com caminhada
+   - Principal: 20 min contínuos em ritmo confortável (RPE 4 — conversa em frases completas)
+   - Volta à calma: 5 min de caminhada ou trote muito leve (RPE 2)
+   - Objetivo: medir o pace fácil que o atleta sustenta. Sem pace alvo.`,
 
-    `2. Teste de Limiar Lático (tempo):
-   - Aquecimento: 10 min trote fácil (RPE 3-4)
-   - Principal: 15 min em ritmo "difícil mas sustentável" (RPE 7 — consiga dizer apenas frases curtíssimas)
-   - Volta à calma: 5 min caminhada (RPE 2)
-   - Objetivo: estimar o pace de limiar lático. Instrua o atleta a manter o mesmo ritmo durante todo o bloco principal.`,
+    `2. Blocos de 5 min (pace moderado):
+   - Aquecimento: 10 min de trote leve (RPE 3)
+   - Principal: set de 3 × (5 min em ritmo moderado, RPE 6 — "confortavelmente forte", só frases curtas + 2 min de trote leve ou caminhada, RPE 2–3)
+   - Volta à calma: 5 min de caminhada ou trote muito leve (RPE 2)
+   - Objetivo: medir o pace moderado que o atleta sustenta por 5 min e se ele se repete nos 3 blocos. Peça o mesmo esforço nos 3, sem pace alvo.`,
 
-    `3. Avaliação de Velocidade (intervalos):
-   - Aquecimento: 10 min trote fácil (RPE 3)
-   - Principal: 6 repetições de 400m (RPE 8-9 — muito difícil, palavras isoladas), com 90 segundos de caminhada de recuperação entre cada repetição
-   - Volta à calma: 5 min caminhada (RPE 2)
-   - Objetivo: medir o teto de velocidade e a capacidade de recuperação. Instrua o atleta a correr cada repetição no máximo esforço sustentável.`,
+    `3. Rodagem progressiva (resistência):
+   - Aquecimento: 10 min de trote leve (RPE 3)
+   - Principal: 15 min em RPE 4 seguidos de 10 min em RPE 5
+   - Volta à calma: 5 min de caminhada ou trote muito leve (RPE 2)
+   - Objetivo: medir a resistência e como o pace se comporta ao longo de 25 min contínuos.`,
 
-    `4. Teste de Resistência (progressivo):
-   - Aquecimento: 8 min trote fácil (RPE 3)
-   - Principal: 30-35 min corrida iniciando em RPE 4, progredindo para RPE 6 nos últimos 10 min
-   - Volta à calma: 5 min caminhada (RPE 2)
-   - Objetivo: avaliar resistência muscular e capacidade de manter o ritmo. O atleta deve sentir os últimos 10 min como "moderadamente difícil".`,
+    `4. Rodagem leve (recuperação):
+   - Aquecimento: 8 min de trote muito leve (RPE 2–3)
+   - Principal: 20 min de trote leve (RPE 3)
+   - Volta à calma: 5 min de caminhada (RPE 2)
+   - Objetivo: confirmar a recuperação entre as sessões de medição.`,
 
-    `5. Recuperação e Técnica (strides):
-   - Aquecimento: 8 min trote muito leve (RPE 2-3)
-   - Principal: 20 min trote fácil (RPE 3) com 4 acelerações de 20 segundos (strides a RPE 7) no final, com 60 segundos de caminhada entre cada uma
-   - Volta à calma: 5 min caminhada (RPE 2)
-   - Objetivo: avaliar a forma de corrida sob fadiga leve e confirmar a capacidade de recuperação.`,
+    `5. Rodagem confortável longa (base):
+   - Aquecimento: 10 min de trote leve (RPE 3)
+   - Principal: 30 min contínuos em ritmo confortável (RPE 4)
+   - Volta à calma: 5 min de caminhada (RPE 2)
+   - Objetivo: medir se o pace fácil se mantém por mais tempo.`,
   ];
 
   return templates.slice(0, trainingDays).join('\n\n');

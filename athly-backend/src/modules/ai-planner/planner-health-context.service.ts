@@ -4,7 +4,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { PlannerHealthContextDto } from './dto/planner-health-context.dto';
-import { DetailedSessionDto, PlanFromHealthDto } from './dto/plan-from-health.dto';
+import { DetailedSessionDto, MAX_HEALTH_RUNS, PlanFromHealthDto } from './dto/plan-from-health.dto';
 
 @Injectable()
 export class PlannerHealthContextService {
@@ -44,7 +44,8 @@ export class PlannerHealthContextService {
     const payload = {
       runs: currentRuns
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))
-        .slice(0, 20),
+        .slice(0, MAX_HEALTH_RUNS),
+      runsReadFrom: input.runsReadFrom,
       detailedSessions: [...(input.detailedSessions ?? [])]
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))
         .slice(0, 7),
@@ -138,10 +139,11 @@ export class PlannerHealthContextService {
     const validLinks = new Set(linked.map((w) => w.id));
     return {
       weekStartDate: weekStartDate.toISOString().slice(0, 10),
+      runsReadFrom: context.runsReadFrom,
       runs: mergeHeartRateRuns(runs, [...sessions.values()])
         .filter((r) => localCalendar(new Date(r.startDate), timeZone).date < historyBeforeDate)
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))
-        .slice(0, 20),
+        .slice(0, MAX_HEALTH_RUNS),
       detailedSessions: [...sessions.values()]
         .filter((s) => localCalendar(new Date(s.startDate), timeZone).date < historyBeforeDate)
         .sort((a, b) => +new Date(b.startDate) - +new Date(a.startDate))

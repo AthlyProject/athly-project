@@ -188,6 +188,129 @@ describe('AiPlannerService.plannedWeekFromMetrics — leitura do contexto do mac
   });
 });
 
+describe('AiPlannerService.resolveCurrentPlannedWeek — longão no plano em andamento', () => {
+  // O esqueleto já existe (gravado na primeira geração): persistFutureSkeleton não cria nada.
+  const prisma = {
+    weeklyGoal: { findFirst: jest.fn().mockResolvedValue({ id: 'existente' }), create: jest.fn() },
+  };
+  const service = new AiPlannerService(
+    prisma as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    {} as any,
+    mockJobs,
+    {} as any,
+  );
+  // Meia em 13 semanas que começou com longão de 12 km.
+  const macro = buildMacrocycle({
+    startMondayISO: '2026-07-27',
+    eventDate: '2026-10-25',
+    targetDistanceMeters: 21097.5,
+    currentWeeklyVolumeKm: 28,
+    experienceLevel: 'intermediate',
+    recentLongestRunKm: 12,
+  });
+  const resolve = (index: number, recentLongestRunKm: number) =>
+    (service as any).resolveCurrentPlannedWeek({
+      trainingPlanId: 'plano',
+      startDateISO: '2026-07-27',
+      weekStartISO: macro[index].weekStartDate,
+      weekEndDate: new Date(macro[index].weekEndDate),
+      goal: { eventDate: '2026-10-25', targetDistance: 'half', experienceLevel: 'intermediate' },
+      currentWeeklyVolumeKm: 40,
+      recentLongestRunKm,
+      preReadMetrics: JSON.parse(JSON.stringify(macro[index])),
+    });
+
+  it('recalcula o longão da semana gravada com o maior treino recente', async () => {
+    expect(macro[6].phase).toBe('build');
+    expect(macro[6].longRunKm).toBe(13.2); // gravado no início: 1,1 × 12 km
+    const week = await resolve(6, 15.7);
+    expect(week.phase).toBe('build');
+    expect(week.targetVolumeKm).toBe(macro[6].targetVolumeKm);
+    expect(week.longRunKm).toBe(15.5);
+  });
+
+  it('na semana da prova a referência continua sendo a prova', async () => {
+    const week = await resolve(12, 18);
+    expect(week.isRaceWeek).toBe(true);
+    expect(week.longRunKm).toBe(21.1);
+  });
+});
+
+describe('AiPlannerService.macrocycleStartISO — macrociclo da meta ativa', () => {
+  const start = (planStartISO: string, goalCreatedAt?: Date, weekStartISO = '2026-10-19') =>
+    (planner as any).macrocycleStartISO(planStartISO, goalCreatedAt, weekStartISO);
+
+  it('na meta do onboarding é o início do plano', () => {
+    // Meta criada no domingo, plano começando na segunda seguinte (sem dia restante na semana).
+    expect(start('2026-10-26', new Date(2026, 9, 25, 20))).toBe('2026-10-26');
+    expect(start('2026-10-19', new Date(2026, 9, 20, 9))).toBe('2026-10-19');
+    expect(start('2026-10-19')).toBe('2026-10-19');
+  });
+
+  it('depois de uma troca de meta, recomeça na semana da troca', () => {
+    expect(start('2026-07-27', new Date(2026, 9, 21, 15))).toBe('2026-10-19');
+  });
+
+  it('nunca passa da semana que está sendo gerada', () => {
+    expect(start('2026-07-27', new Date(2026, 9, 26, 1), '2026-10-19')).toBe('2026-10-19');
+  });
+});
+
+describe('AiPlannerService.buildDeterministicContext — teto de volume no polimento e na prova', () => {
+  const input = { avgDistKm: 7.6, trainingDays: 4, totalDistKm: 152 } as any;
+  const halfOn = (eventDate: string) => ({
+    isRunningRelated: true,
+    targetDistance: 'half',
+    targetTime: null,
+    eventDate,
+    eventName: null,
+    experienceLevel: 'intermediate' as const,
+    summary: 'Completar a meia',
+    rejectionReason: null,
+  });
+  // Plano começando na segunda 19/10 com 22,7 km/semana reais no Health.
+  const macroTo = (eventDate: string) =>
+    buildMacrocycle({
+      startMondayISO: '2026-10-19',
+      eventDate,
+      targetDistanceMeters: 21097.5,
+      currentWeeklyVolumeKm: 22.7,
+      experienceLevel: 'intermediate',
+    });
+  const context = (eventDate: string, weekIndex: number) =>
+    (planner as any).buildDeterministicContext(
+      input,
+      { km: 22.7, weeksMeasured: 4 },
+      null,
+      halfOn(eventDate),
+      [],
+      undefined,
+      macroTo(eventDate)[weekIndex],
+    );
+
+  it('fora do polimento o teto continua base × 1,1', () => {
+    const ctx = context('2026-12-31', 0);
+    expect(ctx.weeklyVolumeMaxKm).toBe(24.97);
+    expect(ctx.weeklyVolumeMaxSource).toBe('baseline');
+  });
+
+  it('no polimento o teto segue o alvo do macrociclo, abaixo da base', () => {
+    const ctx = context('2026-11-01', 0);
+    expect(ctx.weeklyVolumeBaselineKm).toBe(22.7);
+    expect(ctx.weeklyVolumeMaxKm).toBe(18.7); // alvo 17,0 km (0,75 × 22,7, sem ciclo antes) × 1,1
+    expect(ctx.weeklyVolumeMaxSource).toBe('taper');
+  });
+
+  it('na semana da prova o teto soma a prova ao alvo do macrociclo', () => {
+    const ctx = context('2026-11-01', 1);
+    expect(ctx.weeklyVolumeMaxKm).toBe(33.22); // (9,1 km + 21,1 km da prova) × 1,1
+    expect(ctx.weeklyVolumeMaxSource).toBe('race');
+  });
+});
+
 describe('AiPlannerService.reserveWeeklyGoal — reserva atômica contra semana duplicada', () => {
   const buildWith = (createImpl: () => Promise<unknown>) =>
     new AiPlannerService(
