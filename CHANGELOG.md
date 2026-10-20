@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/AthlyProject/athly-project/compare/v1.11.0...v1.12.0) (2026-10-20)
+
+
+### Features
+
+* show free run on the Start screen ([17ac0aa](https://github.com/AthlyProject/athly-project/commit/17ac0aa3fcf443e5e88fb45ae40d606a45ca2fa0))
+
 # [1.11.0](https://github.com/AthlyProject/athly-project/compare/v1.10.0...v1.11.0) (2026-10-18)
 
 
