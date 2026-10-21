@@ -57,6 +57,11 @@
     <string id="Pace30">Pace 30s</string>
     <string id="HeartRate">FC</string>
     <string id="NextStep">Próximo:</string>
+    <string id="Cadence">ppm</string>
+    <string id="AvgPace">Pace médio</string>
+    <string id="AvgHeartRate">FC média</string>
+    <string id="AvgCadence">Cadência média</string>
+    <string id="ZoneTarget">Z$1$ · alvo Z$2$</string>
     <string id="LapToContinue">Volta para seguir</string>
     <string id="Resume">Retomar</string>
     <string id="Save">Salvar</string>

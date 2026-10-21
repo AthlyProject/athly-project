@@ -25,6 +25,8 @@ class RunSession {
     // Último Activity.Info lido (a tela mostra tempo, distância, FC).
     var info as Activity.Info?;
     var gpsQuality as Number = Position.QUALITY_NOT_AVAILABLE;
+    // Limites das zonas de FC (HrZones), lidos uma vez ao abrir; null sem perfil.
+    var hrZones as Array<Number>? = null;
 
     private var _title as String;
     private var _workoutId as String?;
@@ -47,6 +49,7 @@ class RunSession {
 
     // Liga GPS e FC já na tela de "pronto", para o GPS achar posição antes do início.
     function open() as Void {
+        hrZones = HrZones.load();
         enableLocation();
         Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE] as Array<Sensor.SensorType>);
         _timer.start(method(:tick), 1000, true);

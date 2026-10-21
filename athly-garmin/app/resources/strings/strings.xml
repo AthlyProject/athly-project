@@ -58,6 +58,11 @@
     <string id="Pace30">Pace 30s</string>
     <string id="HeartRate">Heart rate</string>
     <string id="NextStep">Next:</string>
+    <string id="Cadence">spm</string>
+    <string id="AvgPace">Avg pace</string>
+    <string id="AvgHeartRate">Avg HR</string>
+    <string id="AvgCadence">Avg cadence</string>
+    <string id="ZoneTarget">Z$1$ · target Z$2$</string>
     <string id="LapToContinue">LAP to continue</string>
     <string id="Resume">Resume</string>
     <string id="Save">Save</string>

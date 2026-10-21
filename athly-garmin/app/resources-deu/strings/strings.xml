@@ -57,6 +57,11 @@
     <string id="Pace30">Pace 30s</string>
     <string id="HeartRate">Herzfrequenz</string>
     <string id="NextStep">Nächster:</string>
+    <string id="Cadence">spm</string>
+    <string id="AvgPace">Ø Pace</string>
+    <string id="AvgHeartRate">Ø HF</string>
+    <string id="AvgCadence">Ø Kadenz</string>
+    <string id="ZoneTarget">Z$1$ · Ziel Z$2$</string>
     <string id="LapToContinue">Runde für weiter</string>
     <string id="Resume">Fortsetzen</string>
     <string id="Save">Speichern</string>

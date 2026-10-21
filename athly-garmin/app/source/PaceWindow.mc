@@ -80,4 +80,33 @@ module PaceMath {
     function format(secPerKm as Number) as String {
         return Lang.format("$1$:$2$", [secPerKm / 60, (secPerKm % 60).format("%02d")]);
     }
+
+    // Pace médio da corrida (cronômetro ÷ distância; ms/m = s/km), ou null nos primeiros 50 m.
+    function average(timerMs as Number, distanceM as Float) as Number? {
+        if (distanceM < 50.0 || timerMs <= 0) {
+            return null;
+        }
+        return (timerMs / distanceM + 0.5).toNumber();
+    }
+
+    // Segundos fora da faixa [rápido, lento]: positivo lento, negativo rápido, 0 dentro.
+    function offTarget(pace as Number, target as [Number, Number]) as Number {
+        if (pace > target[1]) {
+            return pace - target[1];
+        }
+        if (pace < target[0]) {
+            return pace - target[0];
+        }
+        return 0;
+    }
+
+    // Posição na régua do pace (0 = ponta rápida, 1 = ponta lenta). A faixa fica no meio, com
+    // max(largura da faixa, 20 s) de cada lado; além disso o marcador fica preso na ponta.
+    function gaugeFraction(pace as Number, target as [Number, Number]) as Float {
+        var band = target[1] - target[0];
+        var margin = band > 20 ? band : 20;
+        var fast = target[0] - margin;
+        var fraction = (pace - fast) / (band + 2 * margin).toFloat();
+        return fraction < 0.0 ? 0.0 : fraction > 1.0 ? 1.0 : fraction;
+    }
 }
