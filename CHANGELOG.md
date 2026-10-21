@@ -1,3 +1,11 @@
+# [1.13.0](https://github.com/AthlyProject/athly-project/compare/v1.12.0...v1.13.0) (2026-10-21)
+
+
+### Features
+
+* new screens for garmin app ([70e95cf](https://github.com/AthlyProject/athly-project/commit/70e95cfd730a340477234699da2f8384e1cbf0ce))
+* use the best gps satelite on garmin ([ae705ee](https://github.com/AthlyProject/athly-project/commit/ae705eebdef74fa38a46e9f4cb7f643d2e5b4750))
+
 # [1.12.0](https://github.com/AthlyProject/athly-project/compare/v1.11.0...v1.12.0) (2026-10-20)
 
 
