@@ -47,9 +47,47 @@ class RunSession {
 
     // Liga GPS e FC já na tela de "pronto", para o GPS achar posição antes do início.
     function open() as Void {
-        Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
+        enableLocation();
         Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE] as Array<Sensor.SensorType>);
         _timer.start(method(:tick), 1000, true);
+    }
+
+    // Sem opções o relógio usa só GPS L1, bem pior que a corrida nativa (todos os sistemas ou
+    // multibanda): a distância oscila e o pace junto. Pede a melhor configuração disponível. SatIQ
+    // fica de fora: troca para L1 para poupar bateria, e o pace é o que importa aqui.
+    (:typecheck(false))
+    private function enableLocation() as Void {
+        if (Position has :hasConfigurationSupport) {
+            var configs = [] as Array;
+            if (Position has :CONFIGURATION_GPS_GLONASS_GALILEO_BEIDOU_L1_L5) {
+                configs.add(Position.CONFIGURATION_GPS_GLONASS_GALILEO_BEIDOU_L1_L5);
+            }
+            if (Position has :CONFIGURATION_GPS_GLONASS_GALILEO_BEIDOU_L1) {
+                configs.add(Position.CONFIGURATION_GPS_GLONASS_GALILEO_BEIDOU_L1);
+            }
+            configs.add(Position.CONFIGURATION_GPS_GALILEO);
+            configs.add(Position.CONFIGURATION_GPS_GLONASS);
+            for (var i = 0; i < configs.size(); i++) {
+                if (Position.hasConfigurationSupport(configs[i])) {
+                    Position.enableLocationEvents({
+                        :acquisitionType => Position.LOCATION_CONTINUOUS,
+                        :configuration => configs[i],
+                    }, method(:onPosition));
+                    return;
+                }
+            }
+        } else if (Position has :CONSTELLATION_GALILEO) {
+            try {
+                Position.enableLocationEvents({
+                    :acquisitionType => Position.LOCATION_CONTINUOUS,
+                    :constellations => [Position.CONSTELLATION_GPS, Position.CONSTELLATION_GALILEO],
+                }, method(:onPosition));
+                return;
+            } catch (e instanceof Lang.InvalidValueException) {
+                // Combinação não suportada: cai no GPS puro abaixo.
+            }
+        }
+        Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
     }
 
     function close() as Void {
