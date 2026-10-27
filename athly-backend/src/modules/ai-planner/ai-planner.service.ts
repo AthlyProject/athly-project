@@ -1,4 +1,5 @@
 import { HeartRateHealthService } from '../users/heart-rate-health.service';
+import { normalizeLanguage } from '../../common/i18n/user-language';
 import { measuredHeartRate, weightedHeartRate } from '../users/heart-rate-guidance';
 import { serializeGenerationJob } from './generation-status';
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
@@ -105,9 +106,10 @@ export class AiPlannerService {
       }),
       this.prisma.user.findUnique({
         where: { id: userId },
-        select: { availableDays: true, fitnessLevel: true },
+        select: { availableDays: true, fitnessLevel: true, language: true },
       }),
     ]);
+    const language = normalizeLanguage(userHealth?.language);
     const activeGoal = activeGoalRecord
       ? (activeGoalRecord.parsedGoal as unknown as ParsedGoal)
       : null;
@@ -299,6 +301,7 @@ export class AiPlannerService {
             trainingDays,
             availableDays,
             effortZones,
+            language,
             activeGoal,
             userProfile,
             analyzedSessions,
@@ -307,6 +310,7 @@ export class AiPlannerService {
         : this.geminiService.generatePlan(
             aiInput,
             effortZones,
+            language,
             promptPreviousWeek,
             activeGoal,
             userProfile,

@@ -99,9 +99,16 @@ describe('New workout HR prescriptions', () => {
     expect(workout.segments[0].target).toMatchObject({ hrIsEstimated: true });
   });
 
-  it.each(['normal', 'assessment'])(
-    'uses correction/retry and backend ranges in the %s generator',
-    async (kind) => {
+  it.each([
+    ['normal', 'pt-BR', 'Brazilian Portuguese (pt-BR)'],
+    ['assessment', 'pt-BR', 'Brazilian Portuguese (pt-BR)'],
+    ['normal', 'en', 'English'],
+    ['assessment', 'en', 'English'],
+    ['normal', 'de', 'German (Deutsch)'],
+    ['assessment', 'de', 'German (Deutsch)'],
+  ] as const)(
+    'uses correction/retry and backend ranges in the %s generator (%s)',
+    async (kind, language, displayName) => {
       const gemini = new GeminiService({ get: () => 'test-key' } as any);
       const invalid = Array.from({ length: 7 }, day);
       invalid[0].segments[0].target = { rpe: 4 }; // Missing required zone triggers retry.
@@ -132,7 +139,7 @@ describe('New workout HR prescriptions', () => {
       const dates = ['2026-10-01'];
       const result =
         kind === 'assessment'
-          ? await gemini.generateAssessmentPlan(dates, 3, ['thursday'], effort)
+          ? await gemini.generateAssessmentPlan(dates, 3, ['thursday'], effort, language)
           : await gemini.generatePlan(
               {
                 runSummaries: [],
@@ -146,8 +153,14 @@ describe('New workout HR prescriptions', () => {
                 availableDays: ['thursday'],
               },
               effort,
+              language,
             );
       expect(mock).toHaveBeenCalledTimes(2);
+      for (const [prompt] of mock.mock.calls) {
+        expect(prompt).toContain(`MANDATORY: write ALL user-visible text in ${displayName}.`);
+        if (language !== 'pt-BR')
+          expect(prompt).not.toMatch(/Português|Portuguese|pt-BR|em português/i);
+      }
       expect(mock.mock.calls[0][0]).toContain('heart_rate_and_rpe');
       expect(result.parsed.weekPlan[0].segments[0].target).toMatchObject({
         hrZone: 2,

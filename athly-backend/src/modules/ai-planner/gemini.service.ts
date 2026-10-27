@@ -1,4 +1,5 @@
 import { assessHeartRatePrescription, snapshotHeartRateTargets } from './heart-rate-prescription';
+import type { PlanLanguage } from '../../common/i18n/user-language';
 import type { GuidedHeartRateZones } from '../users/heart-rate-guidance';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -228,6 +229,7 @@ export class GeminiService {
   async generatePlan(
     input: AiPlannerInput,
     effortZones: FormattedZones,
+    language: PlanLanguage,
     previousWeekAnalysis?: PreviousWeekAnalysis | null,
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
@@ -241,6 +243,7 @@ export class GeminiService {
     const prompt = buildPlannerPrompt(
       input,
       effortZones,
+      language,
       previousWeekAnalysis,
       goal,
       userProfile,
@@ -264,6 +267,7 @@ export class GeminiService {
     trainingDays: number,
     availableDays: string[],
     effortZones: FormattedZones,
+    language: PlanLanguage,
     goal?: ParsedGoal | null,
     userProfile?: UserProfileContext | null,
     analyzedSessions?: AnalyzedSession[],
@@ -274,6 +278,7 @@ export class GeminiService {
       trainingDays,
       availableDays,
       effortZones,
+      language,
       goal,
       userProfile,
       analyzedSessions,

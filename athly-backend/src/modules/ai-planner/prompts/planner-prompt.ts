@@ -1,4 +1,5 @@
 import { heartRatePrescriptionPrompt } from '../heart-rate-prescription';
+import { languageDisplayName, type PlanLanguage } from '../../../common/i18n/user-language';
 import type { AiPlannerInput, PreviousWeekAnalysis } from '../types/planner.types';
 import type { FormattedZones } from '../../effort-zones/types/effort-zone.types';
 import type { ParsedGoal } from './goal-parser-prompt';
@@ -6,6 +7,70 @@ import type { AnalyzedSession } from '../workout-execution-analyzer.service';
 import type { PlannedWeek } from '../periodization';
 
 export type { AiPlannerInput };
+
+const PLAN_EXAMPLES = {
+  'pt-BR': {
+    initialAssessment: 'Avaliação Inicial',
+    baseWeek: 'Semana de Base',
+    volumeProgression: 'Progressão de Volume',
+    deload: 'Deload',
+    noData: 'Sem dados',
+    warmup: 'Aquecimento',
+    hard400m: '400m forte',
+    hard800m: '800m forte',
+    hard1200m: '1200m forte',
+    recovery: 'Recuperação',
+    cooldown: 'Volta à calma',
+    tempoRun: 'Tempo run',
+    gentleStart: 'Início suave',
+    easyRun: 'Corrida fácil',
+    fullRest: 'Descanso completo',
+  },
+  en: {
+    initialAssessment: 'Initial Assessment',
+    baseWeek: 'Base Week',
+    volumeProgression: 'Volume Progression',
+    deload: 'Deload',
+    noData: 'No data',
+    warmup: 'Warm-up',
+    hard400m: '400m hard',
+    hard800m: '800m hard',
+    hard1200m: '1200m hard',
+    recovery: 'Recovery',
+    cooldown: 'Cool-down',
+    tempoRun: 'Tempo run',
+    gentleStart: 'Gentle start',
+    easyRun: 'Easy run',
+    fullRest: 'Complete rest',
+  },
+  de: {
+    initialAssessment: 'Erste Leistungsbewertung',
+    baseWeek: 'Woche des Grundlagentrainings',
+    volumeProgression: 'Steigerung des Trainingsumfangs',
+    deload: 'Woche der Entlastung',
+    noData: 'Keine Daten',
+    warmup: 'Aufwärmen',
+    hard400m: '400m schnell',
+    hard800m: '800m schnell',
+    hard1200m: '1200m schnell',
+    recovery: 'Erholung',
+    cooldown: 'Auslaufen',
+    tempoRun: 'Tempolauf',
+    gentleStart: 'Lockerer Start',
+    easyRun: 'Lockerer Lauf',
+    fullRest: 'Vollständige Ruhe',
+  },
+} satisfies Record<PlanLanguage, Record<string, string>>;
+
+type PromptExamples = (typeof PLAN_EXAMPLES)[PlanLanguage];
+
+function buildLanguageInstruction(language: PlanLanguage): string {
+  return `<language>
+MANDATORY: write ALL user-visible text in ${languageDisplayName(language)}. This includes title, description, instructions of each block, label, exercise names, fitnessInsights, reasoning and period.
+JSON keys, enums, numeric fields, dates (YYYY-MM-DD) and pace formats (M:SS/km) stay exactly as specified.
+Source context and historical text may use other languages; express all user-visible explanations in the requested language.
+</language>`;
+}
 
 export interface LongitudinalWeek {
   weekLabel: string;
@@ -390,7 +455,7 @@ O reasoning deve ser técnico e específico, não genérico. Mínimo 2 frases.
 Dias de descanso NÃO precisam de reasoning.
 </reasoning_requirement>`;
 
-const SEGMENT_SCHEMA_DOCS = `
+const buildSegmentSchemaDocs = (examples: PromptExamples) => `
 <segment_schema>
 Cada treino é uma árvore de "segments" — formato estruturado e legível por máquina que o app usa para anunciar transições em tempo real (vibração, bipe e voz). Esqueça texto livre descrevendo séries e tiros; a estrutura abaixo é a fonte da verdade.
 
@@ -398,7 +463,7 @@ Cada nó da árvore segue este shape:
 {
   "id": "<slug único curto, ex: 'wu', 'work-1', 'rec-1'>",
   "kind": "<warmup | work | recovery | cooldown | rest | set>",
-  "label": "<texto curto em pt-BR exibido no app, ex: '400m forte'>",
+  "label": "<short label in the user's language, e.g. '${examples.hard400m}'>",
   "end": { "by": "<distanceM | durationSec | reps>", "value": <número> },
   "target": { ... },         // opcional, ver targets por esporte
   "repetitions": <int >= 1>, // obrigatório APENAS quando kind = "set"
@@ -415,57 +480,57 @@ Targets por esporte (campo "target" do segmento) — preencha apenas o que fizer
 - running: { "paceSecPerKmMin": <int>, "paceSecPerKmMax": <int>, "hrZone": 1..5, "rpe": 1..10 }
 - cycling: { "powerWattsMin": <int>, "powerWattsMax": <int>, "cadenceRpm": <int>, "hrZone": 1..5 }
 - swimming: { "strokeType": "freestyle|backstroke|breaststroke|butterfly|medley|kick|drill", "poolLengthM": 25|50, "targetSecPer100m": <int> }
-- strength: { "exercise": "<nome em pt-BR>", "reps": <int>, "loadKg": <number>, "loadPctOf1RM": <0-150>, "tempoSec": "<3-1-1-0>", "restAfterSec": <int> }
+- strength: { "exercise": "<exercise name in the user's language>", "reps": <int>, "loadKg": <number>, "loadPctOf1RM": <0-150>, "tempoSec": "<3-1-1-0>", "restAfterSec": <int> }
 
 Estrutura mínima esperada em um treino de corrida: um warmup + um ou mais work (eventualmente envolvidos em set) + um cooldown. Dias de descanso têm UM ÚNICO segmento { "kind": "rest", "end": {...} }.
 </segment_schema>`;
 
-const SEGMENT_RECIPES = `
+const buildSegmentRecipes = (examples: PromptExamples) => `
 <segment_recipes>
 Receitas canônicas — adapte distâncias, paces e durações aos dados do atleta. Estas são templates de SHAPE, não valores fixos.
 
 (1) Intervalado clássico 6×400m com 90s de recuperação:
 "segments": [
-  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "wu", "kind": "warmup", "label": "${examples.warmup}", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
   { "id": "set-main", "kind": "set", "label": "6×400m", "repetitions": 6, "children": [
-    { "id": "work", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 278, "paceSecPerKmMax": 298 } },
-    { "id": "rec", "kind": "recovery", "label": "Recuperação", "end": { "by": "durationSec", "value": 90 }, "target": { "rpe": 3 } }
+    { "id": "work", "kind": "work", "label": "${examples.hard400m}", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 278, "paceSecPerKmMax": 298 } },
+    { "id": "rec", "kind": "recovery", "label": "${examples.recovery}", "end": { "by": "durationSec", "value": 90 }, "target": { "rpe": 3 } }
   ] },
-  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+  { "id": "cd", "kind": "cooldown", "label": "${examples.cooldown}", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
 ]
 
 (2) Tempo run 20min em limiar:
 "segments": [
-  { "id": "wu", "kind": "warmup", "label": "Aquecimento", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
-  { "id": "tempo", "kind": "work", "label": "Tempo run", "end": { "by": "durationSec", "value": 1200 }, "target": { "paceSecPerKmMin": 328, "paceSecPerKmMax": 348, "rpe": 7 } },
-  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
+  { "id": "wu", "kind": "warmup", "label": "${examples.warmup}", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
+  { "id": "tempo", "kind": "work", "label": "${examples.tempoRun}", "end": { "by": "durationSec", "value": 1200 }, "target": { "paceSecPerKmMin": 328, "paceSecPerKmMax": 348, "rpe": 7 } },
+  { "id": "cd", "kind": "cooldown", "label": "${examples.cooldown}", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
 ]
 
 (3) Longão fácil 12 km:
 "segments": [
-  { "id": "wu", "kind": "warmup", "label": "Início suave", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } },
-  { "id": "main", "kind": "work", "label": "Corrida fácil", "end": { "by": "distanceM", "value": 12000 }, "target": { "paceSecPerKmMin": 390, "paceSecPerKmMax": 420, "rpe": 4 } },
-  { "id": "cd", "kind": "cooldown", "label": "Volta à calma", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 2 } }
+  { "id": "wu", "kind": "warmup", "label": "${examples.gentleStart}", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } },
+  { "id": "main", "kind": "work", "label": "${examples.easyRun}", "end": { "by": "distanceM", "value": 12000 }, "target": { "paceSecPerKmMin": 390, "paceSecPerKmMax": 420, "rpe": 4 } },
+  { "id": "cd", "kind": "cooldown", "label": "${examples.cooldown}", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 2 } }
 ]
 
 (4) Pirâmide 400-800-1200-800-400 (filhos heterogêneos — NÃO use "set"):
 "segments": [
   { "id": "wu", "kind": "warmup", "end": { "by": "durationSec", "value": 600 }, "target": { "rpe": 3 } },
-  { "id": "w-400-1", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
+  { "id": "w-400-1", "kind": "work", "label": "${examples.hard400m}", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
   { "id": "r-1", "kind": "recovery", "end": { "by": "durationSec", "value": 120 }, "target": { "rpe": 3 } },
-  { "id": "w-800-1", "kind": "work", "label": "800m forte", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
+  { "id": "w-800-1", "kind": "work", "label": "${examples.hard800m}", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
   { "id": "r-2", "kind": "recovery", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 3 } },
-  { "id": "w-1200", "kind": "work", "label": "1200m forte", "end": { "by": "distanceM", "value": 1200 }, "target": { "paceSecPerKmMin": 310 } },
+  { "id": "w-1200", "kind": "work", "label": "${examples.hard1200m}", "end": { "by": "distanceM", "value": 1200 }, "target": { "paceSecPerKmMin": 310 } },
   { "id": "r-3", "kind": "recovery", "end": { "by": "durationSec", "value": 180 }, "target": { "rpe": 3 } },
-  { "id": "w-800-2", "kind": "work", "label": "800m forte", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
+  { "id": "w-800-2", "kind": "work", "label": "${examples.hard800m}", "end": { "by": "distanceM", "value": 800 }, "target": { "paceSecPerKmMin": 295 } },
   { "id": "r-4", "kind": "recovery", "end": { "by": "durationSec", "value": 120 }, "target": { "rpe": 3 } },
-  { "id": "w-400-2", "kind": "work", "label": "400m forte", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
+  { "id": "w-400-2", "kind": "work", "label": "${examples.hard400m}", "end": { "by": "distanceM", "value": 400 }, "target": { "paceSecPerKmMin": 280 } },
   { "id": "cd", "kind": "cooldown", "end": { "by": "durationSec", "value": 300 }, "target": { "rpe": 2 } }
 ]
 
 (5) Dia de descanso:
 "segments": [
-  { "id": "rest", "kind": "rest", "label": "Descanso completo", "end": { "by": "durationSec", "value": 0 } }
+  { "id": "rest", "kind": "rest", "label": "${examples.fullRest}", "end": { "by": "durationSec", "value": 0 } }
 ]
 </segment_recipes>`;
 
@@ -497,7 +562,7 @@ const SEGMENT_OUTPUT_FIELD = `      "segments": [
         {
           "id": "<slug>",
           "kind": "<warmup|work|recovery|cooldown|rest|set>",
-          "label": "<texto curto em pt-BR>",
+          "label": "<short label in the user's language>",
           "end": { "by": "<distanceM|durationSec|reps>", "value": <número> },
           "target": { /* campos opcionais por esporte; ver <segment_schema> */ },
           "repetitions": <int — apenas quando kind=set>,
@@ -514,11 +579,13 @@ export function buildAssessmentPrompt(
   trainingDays: number,
   availableDays: string[],
   effortZones: FormattedZones,
+  language: PlanLanguage,
   goal?: ParsedGoal | null,
   userProfile?: UserProfileContext | null,
   analyzedSessions?: AnalyzedSession[],
   minTrainingDate?: string,
 ): string {
+  const examples = PLAN_EXAMPLES[language];
   const restDays = 7 - trainingDays;
   const daysList = formatAvailableDays(availableDays);
   const workoutTemplates = buildAssessmentWorkoutTemplates(trainingDays);
@@ -541,10 +608,7 @@ O objetivo declarado do atleta é: ${goalSummary}.
 Tom: acolhedor, encorajador e claro — este atleta está iniciando sua jornada.
 </role>
 
-<language>
-OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco, fitnessInsights, reasoning e o campo period.
-Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
-</language>
+${buildLanguageInstruction(language)}
 
 ${goalSection}
 
@@ -582,9 +646,9 @@ Distribua os treinos de forma inteligente ao longo da semana:
 
 ${REASONING_INSTRUCTION}
 
-${SEGMENT_SCHEMA_DOCS}
+${buildSegmentSchemaDocs(examples)}
 
-${SEGMENT_RECIPES}
+${buildSegmentRecipes(examples)}
 
 <constraints>
 - Gere EXATAMENTE 7 entradas no total: ${trainingDays} dias de treino e ${restDays} dias de descanso.
@@ -595,9 +659,9 @@ ${dateConstraintBullet}
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 8.
 - trend deve ser "maintaining" (sem histórico para determinar).
-- Set runsAnalyzed to 0, period to "Sem dados", avgDistanceKm to 0, avgPace to "N/A", avgHeartRate to null, totalDistanceKm to 0.
-- analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Avaliação Inicial", "Semana de Base"). Displayed in the calendar UI.
-- fitnessInsights: maximum 2 short sentences in Portuguese explaining that no previous data exists and these sessions will assess current fitness. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
+- Set runsAnalyzed to 0, period to "${examples.noData}", avgDistanceKm to 0, avgPace to "N/A", avgHeartRate to null, totalDistanceKm to 0.
+- analysis.title: short weekly goal title in the user's language (2-4 words, e.g. "${examples.initialAssessment}", "${examples.baseWeek}"). Displayed in the calendar UI.
+- fitnessInsights: maximum 2 short sentences in the user's language explaining that no previous data exists and these sessions will assess current fitness. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 ${SEGMENT_CONSTRAINTS_ASSESSMENT}
 </constraints>
 
@@ -605,25 +669,25 @@ ${SEGMENT_CONSTRAINTS_ASSESSMENT}
 Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
-    "title": "<short weekly goal title in Portuguese, 2-4 words, e.g. 'Avaliação Inicial'>",
+    "title": "<short weekly goal title in the user's language, 2-4 words, e.g. '${examples.initialAssessment}'>",
     "runsAnalyzed": 0,
-    "period": "Sem dados",
+    "period": "${examples.noData}",
     "avgDistanceKm": 0,
     "avgPace": "N/A",
     "avgHeartRate": null,
     "totalDistanceKm": 0,
     "trend": "maintaining",
-    "fitnessInsights": "<2 short sentences in Portuguese explaining no data was found and these sessions establish the fitness baseline. No coaching instructions.>"
+    "fitnessInsights": "<2 short sentences in the user's language explaining no data was found and these sessions establish the fitness baseline. No coaching instructions.>"
   },
   "weekPlan": [
     {
       "date": "<YYYY-MM-DD>",
       "dayOfWeek": "<Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday>",
-      "title": "<título do treino em português>",
-      "description": "<descrição geral da sessão com meta de RPE em português>",
+      "title": "<workout title in the user's language>",
+      "description": "<session overview with target RPE in the user's language>",
       "sportType": "<running|walking|other>",
       "intensity": <número 1-10>,
-      "reasoning": "<justificativa técnica em português — obrigatório para dias de treino, omitir para descanso>",
+      "reasoning": "<technical reasoning in the user's language — required for training days, omit for rest>",
 ${SEGMENT_OUTPUT_FIELD}
     }
   ]
@@ -674,6 +738,7 @@ function buildAssessmentWorkoutTemplates(trainingDays: number): string {
 export function buildPlannerPrompt(
   input: AiPlannerInput,
   effortZones: FormattedZones,
+  language: PlanLanguage,
   previousWeekAnalysis?: PreviousWeekAnalysis | null,
   goal?: ParsedGoal | null,
   userProfile?: UserProfileContext | null,
@@ -695,6 +760,7 @@ export function buildPlannerPrompt(
     availableDays,
     minTrainingDate,
   } = input;
+  const examples = PLAN_EXAMPLES[language];
   const restDays = 7 - trainingDays;
   const hrCtx = avgHR
     ? `${avgHR} bpm (histórico observado; prescrição segue training_guidance)`
@@ -735,10 +801,7 @@ Tom: direto, motivador e orientado por dados — como um treinador de atletismo.
 Objetivo do atleta: ${goalSummary}.
 </role>
 
-<language>
-OBRIGATÓRIO: escreva TODO o texto visível ao usuário em Português Brasileiro (pt-BR). Isso inclui: title, description, instructions de cada bloco, fitnessInsights e reasoning.
-Mantenha em inglês apenas: keys do JSON, valores de enum (sportType, type, trend), formato de datas (YYYY-MM-DD) e formato de pace (M:SS/km).
-</language>
+${buildLanguageInstruction(language)}
 
 ${goalSection}
 
@@ -780,9 +843,9 @@ ${previousWeekSection}
 
 ${REASONING_INSTRUCTION}
 
-${SEGMENT_SCHEMA_DOCS}
+${buildSegmentSchemaDocs(examples)}
 
-${SEGMENT_RECIPES}
+${buildSegmentRecipes(examples)}
 
 <constraints>
 - Treinos DEVEM ser agendados APENAS nos seguintes dias: ${daysList}. Todos os outros dias = descanso obrigatório.
@@ -794,8 +857,8 @@ ${dateConstraintBullet}
 - sportType deve ser exatamente um de: "running" | "walking" | "other". Use "running" para dias de treino, "other" para dias de descanso.
 - intensity deve ser um número de 1 a 10. Descanso = 1, fácil = 3, moderado = 6, intenso = 9.
 - trend deve ser exatamente um de: "improving (volume)" | "improving (intensity)" | "maintaining" | "declining".
-- analysis.title: short weekly goal title in Portuguese (2-4 words, e.g. "Semana de Base", "Progressão de Volume", "Deload"). Displayed in the calendar UI.
-- analysis.fitnessInsights: 2-3 short sentences in Portuguese covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
+- analysis.title: short weekly goal title in the user's language (2-4 words, e.g. "${examples.baseWeek}", "${examples.volumeProgression}", "${examples.deload}"). Displayed in the calendar UI.
+- analysis.fitnessInsights: 2-3 short sentences in the user's language covering current fitness diagnosis and weekly focus. This field is displayed directly to the user — do NOT include coaching instructions, tone directives, or meta-text.
 - isGoalAttempt: opcional, default false. Marque true em NO MÁXIMO 1 dia da semana e somente quando: (a) <goal_attempt_logic> indicar feasibility verdadeira (meta sem data), OU (b) <countdown_logic> indicar que esta é a SEMANA DA PROVA (meta com data). Se houver tentativa, respeite as regras de periodização ao redor (1 dia leve antes, recuperação depois, sem sessão intensa adjacente).
 - Corridas longas: nó "work" principal com end.by="distanceM" e value de pelo menos a distância prescrita; OU end.by="durationSec" com pelo menos 1800 (30 min).
 - Corridas de recuperação/fácil: ajuste o nó "work" ao teto de volume; use 15–25 min ou 2–4 km, e reduza para 10–15 min/1.5–2 km quando a semana exigir controle de carga.
@@ -806,7 +869,7 @@ ${SEGMENT_CONSTRAINTS_PLANNER}
 Retorne APENAS este JSON — sem markdown, sem texto extra:
 {
   "analysis": {
-    "title": "<short weekly goal title in Portuguese, 2-4 words, e.g. 'Semana de Base', 'Progressão de Volume', 'Deload'>",
+    "title": "<short weekly goal title in the user's language, 2-4 words, e.g. '${examples.baseWeek}', '${examples.volumeProgression}', '${examples.deload}'>",
     "runsAnalyzed": <número>,
     "period": "<data da primeira corrida> — <data da última corrida>",
     "avgDistanceKm": <número>,
@@ -814,17 +877,17 @@ Retorne APENAS este JSON — sem markdown, sem texto extra:
     "avgHeartRate": <número | null>,
     "totalDistanceKm": <número>,
     "trend": "<improving (volume) | improving (intensity) | maintaining | declining>",
-    "fitnessInsights": "<2-3 short sentences in Portuguese: current fitness diagnosis and weekly focus. No coaching instructions.>"
+    "fitnessInsights": "<2-3 short sentences in the user's language: current fitness diagnosis and weekly focus. No coaching instructions.>"
   },
   "weekPlan": [
     {
       "date": "<YYYY-MM-DD>",
       "dayOfWeek": "<Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday>",
-      "title": "<título do treino em português>",
-      "description": "<descrição geral da sessão com instrução específica de treino em português>",
+      "title": "<workout title in the user's language>",
+      "description": "<session overview with specific workout instructions in the user's language>",
       "sportType": "<running|walking|other>",
       "intensity": <número 1-10>,
-      "reasoning": "<justificativa técnica em português — obrigatório para dias de treino, omitir para descanso>",
+      "reasoning": "<technical reasoning in the user's language — required for training days, omit for rest>",
       "isGoalAttempt": <boolean — opcional, true APENAS no dia da tentativa de objetivo (ver <goal_attempt_logic>)>,
 ${SEGMENT_OUTPUT_FIELD}
     }

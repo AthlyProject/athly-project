@@ -636,7 +636,7 @@ export class AuthService {
     if (!user) {
       throw new CodedUnauthorizedException(ErrorCode.USER_NOT_FOUND, 'User not found');
     }
-    return this.usersService.toUserModel(user);
+    return { ...this.usersService.toUserModel(user), language: user.language };
   }
 
   private signAccessToken(user: User) {

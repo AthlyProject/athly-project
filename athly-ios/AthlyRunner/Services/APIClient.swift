@@ -428,6 +428,7 @@ actor APIClient {
         guard let url = URL(string: baseURL + "/auth/refresh") else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(Bundle.main.preferredLocalizations.first ?? "pt-BR", forHTTPHeaderField: "X-Athly-Language")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(RefreshRequest(refreshToken: currentRefresh))
         request.timeoutInterval = 30
@@ -564,6 +565,7 @@ actor APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = timeout
+        request.setValue(Bundle.main.preferredLocalizations.first ?? "pt-BR", forHTTPHeaderField: "X-Athly-Language")
 
         // Correlation headers — backend logs these to link iOS spans ↔ server request logs
         request.setValue(OTelClient.sessionId, forHTTPHeaderField: "X-Athly-Session-Id")

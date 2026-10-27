@@ -84,6 +84,7 @@ model User {
   name                 String
   username             String?   @unique
   gender               String?   @db.VarChar(50)
+  language             String?   @map("language") @db.VarChar(10)
   email                String    @unique
   // Opcional: contas criadas via login social (Apple/Google) não têm senha.
   password             String?

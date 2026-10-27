@@ -382,3 +382,21 @@ describe('AuthService — legal consent', () => {
     expect(result.user.legalConsentRequired).toBe(true);
   });
 });
+
+describe('AuthService authenticated language', () => {
+  it('preserves the persisted language on the principal using the existing user lookup', async () => {
+    const stored = { id: 'user-1', language: 'de', password: 'private' };
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue(stored) } };
+    const users = { toUserModel: jest.fn().mockReturnValue({ id: stored.id }) };
+    const service = new AuthService(
+      prisma as unknown as PrismaService,
+      users as unknown as UsersService,
+      {} as JwtService,
+      { get: jest.fn() } as unknown as ConfigService,
+      {} as EmailService,
+    );
+    await expect(service.validateUser(stored.id)).resolves.toEqual({ id: stored.id, language: 'de' });
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(users.toUserModel).toHaveBeenCalledWith(stored);
+  });
+});

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { UserLanguageInterceptor } from './common/i18n/user-language.interceptor';
 import { ConfigModule } from '@nestjs/config';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { AppController } from './app.controller';
@@ -46,6 +48,6 @@ import { ConnectIqModule } from './modules/connect-iq/connect-iq.module';
     ConnectIqModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_INTERCEPTOR, useClass: UserLanguageInterceptor }],
 })
 export class AppModule {}
