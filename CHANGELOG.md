@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/AthlyProject/athly-project/compare/v1.13.0...v1.14.0) (2026-10-27)
+
+
+### Features
+
+* **planner:** generate training plans in the user's language ([ed430d0](https://github.com/AthlyProject/athly-project/commit/ed430d008ea7447350abfa2bf4c51fb9e743d2fe))
+
 # [1.13.0](https://github.com/AthlyProject/athly-project/compare/v1.12.0...v1.13.0) (2026-10-21)
 
 
