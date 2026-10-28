@@ -91,7 +91,7 @@ struct DashboardView: View {
                             fallback: fallback,
                             runStore: runStore
                         )
-                        if case .success = outcome { workoutToComplete = nil }
+
                         return outcome
                     },
                     onDismiss: { workoutToComplete = nil }

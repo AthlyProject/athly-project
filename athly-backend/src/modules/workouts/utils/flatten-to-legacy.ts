@@ -48,7 +48,7 @@ const describeSegment = (s: Segment): string => {
       );
     if (t.hrZone)
       hints.push(
-        `Z${t.hrZone}${t.hrMinBpm && t.hrMaxBpm ? ` (${t.hrMinBpm}–${t.hrMaxBpm} bpm)` : ''}${t.hrIsEstimated ? ' (estimada por falta de dados de FC máxima no Apple Health)' : ''}`,
+        `Z${t.hrZone}${t.hrMinBpm && t.hrMaxBpm ? ` (${t.hrMinBpm}–${t.hrMaxBpm} bpm)` : ''}${t.hrIsEstimated ? ' (estimada pela idade)' : ''}`,
       );
     if (t.rpe) hints.push(`RPE ${t.rpe}/10`);
   }

@@ -22,6 +22,7 @@ final class DetectedRunViewModel: ObservableObject {
     /// Presente quando a corrida veio do campo de dados do Garmin.
     let garmin: GarminDetectedRun?
 
+    @Published var heartRateSuggestion: WorkoutHeartRateSuggestion?
     @Published var step: Step = .reveal
     @Published var choice: Choice = .freeRun
     @Published var routeDetail: RunRouteDetail?
@@ -147,7 +148,8 @@ final class DetectedRunViewModel: ObservableObject {
         let outcome = await complete(workout, planVM: planVM, runStore: runStore)
 
         switch outcome {
-        case .success:
+        case .success(let suggestion):
+            heartRateSuggestion = suggestion
             // Corrida do Health vinculada já sai da detecção pelo `RunWorkoutLinkStore` (e volta se o
             // treino for desvinculado); a do Garmin precisa ser encerrada no backend.
             if garmin != nil { acknowledge(resolution: .linked, workoutId: workout.id) }

@@ -22,6 +22,11 @@ struct PlanLoadDependencies {
 }
 
 struct WorkoutCompletionDependencies {
+    var heartRateZones: @MainActor () async throws -> HeartRateZones = {
+        let session = await APIClient.shared.heartRateSessionIdentifier
+        return try await APIClient.shared.getHeartRateZones(session: session)
+    }
+    var canReadHeartRateProfile: @MainActor () async -> Bool = { await APIClient.shared.isAuthenticated }
     var prepareHealthAuthorization: @MainActor () async throws -> Void
     var findEquivalentHealthRun: @MainActor (ImportedWorkout) async throws -> String?
     var request: @MainActor (String, String?, Double?, Double?, DetailedSessionPayload?) async throws -> WorkoutModel = {
@@ -91,6 +96,7 @@ enum WorkoutRescheduleDecision: Equatable {
 
 @MainActor
 final class TrainingPlanViewModel: ObservableObject {
+    private var offeredHeartRateEvidence = Set<String>()
     private static let segmentationLogger = Logger(
         subsystem: "com.athly.runner",
         category: "WorkoutSegmentation"
@@ -497,9 +503,14 @@ final class TrainingPlanViewModel: ObservableObject {
         defer { completingWorkoutIds.remove(workout.id) }
         let segmentation = result.segmentRecords.isEmpty ? nil : WorkoutSegmentationResult(
             segments: result.segmentRecords, origin: .athlyTracker, confidence: .exact, fallbackReason: nil)
+        let measuredPeak = result.heartRateSamples.filter {
+            $0.timestamp >= result.startDate && $0.timestamp <= result.endDate
+                && $0.beatsPerMinute.isFinite && (100...240).contains($0.beatsPerMinute)
+        }.map(\.beatsPerMinute).max()
         return await confirmCompletion(workout, healthKitUUID: healthKitUUID,
             distance: result.distanceMeters, duration: result.durationSeconds,
-            pace: result.averagePaceSecondsPerKm, segmentation: segmentation)
+            pace: result.averagePaceSecondsPerKm, segmentation: segmentation,
+            measuredPeak: measuredPeak, measuredDate: result.startDate)
     }
 
     @discardableResult
@@ -510,7 +521,7 @@ final class TrainingPlanViewModel: ObservableObject {
         return await confirmCompletion(workout, healthKitUUID: healthRun.id,
             distance: healthRun.distanceMeters, duration: healthRun.durationSeconds,
             pace: healthRun.averagePaceSecondsPerKm, executionDetails: detail?.payload,
-            segmentation: detail?.segmentation)
+            segmentation: detail?.segmentation, measuredPeak: healthRun.maxHR, measuredDate: healthRun.startDate)
     }
 
     private var completionInProgress: WorkoutCompletionOutcome {
@@ -529,9 +540,11 @@ final class TrainingPlanViewModel: ObservableObject {
         distance: Double? = nil, duration: Double? = nil, pace: Double? = nil,
         executionDetails: DetailedSessionPayload? = nil,
         segmentation: WorkoutSegmentationResult? = nil,
+        measuredPeak: Double? = nil, measuredDate: Date? = nil,
         onConfirmed: () -> Void = {}
     ) async -> WorkoutCompletionOutcome {
         do {
+            let accountSession = await APIClient.shared.heartRateSessionIdentifier
             await LocalStoresBootstrap.prepare()
             try Task.checkCancellation()
             let updated = try await completionDependencies.request(workout.id, healthKitUUID, distance, duration, executionDetails)
@@ -552,7 +565,37 @@ final class TrainingPlanViewModel: ObservableObject {
                     actualDurationSeconds: duration, actualPaceSecPerKm: pace)
             }
             await handleWeekClosure(updated)
-            return .success
+            guard !Task.isCancelled,
+                  accountSession == (await APIClient.shared.heartRateSessionIdentifier) else {
+                return .success(nil)
+            }
+            var suggestion: WorkoutHeartRateSuggestion?
+            var date = measuredDate ?? executionDetails.flatMap { details in
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                return formatter.date(from: details.startDate) ?? ISO8601DateFormatter().date(from: details.startDate)
+            }
+            var value = [measuredPeak, executionDetails?.maxHR].compactMap { $0 }.filter { $0.isFinite && (100...240).contains($0) }.max()
+            if updated.trainingPlanId != nil, value == nil, let uuid = healthKitUUID,
+               await completionDependencies.canReadHeartRateProfile(),
+               let run = try? await completionDependencies.fetchHealthRun(uuid) {
+                value = run.maxHR
+                date = run.startDate
+            }
+            if updated.trainingPlanId != nil,
+               WorkoutHeartRateSuggestion.make(workoutID: workout.id, value: value, date: date, current: nil) != nil,
+               await completionDependencies.canReadHeartRateProfile() {
+                // Optional analysis must never turn a confirmed completion into a failure.
+                if let zones = try? await completionDependencies.heartRateZones(),
+                   !Task.isCancelled, accountSession == (await APIClient.shared.heartRateSessionIdentifier) {
+                    suggestion = WorkoutHeartRateSuggestion.make(workoutID: workout.id, value: value, date: date, current: zones.maxHeartRate?.bpm)
+                }
+            }
+            if let candidate = suggestion {
+                let key = "\(accountSession)-\(candidate.workoutID)-\(candidate.measuredAt.timeIntervalSince1970)-\(candidate.bpm)"
+                if !offeredHeartRateEvidence.insert(key).inserted { suggestion = nil }
+            }
+            return .success(suggestion)
         } catch is CancellationError {
             return .failure(String(localized: "Operação cancelada."))
         } catch let error as URLError where error.code == .cancelled {

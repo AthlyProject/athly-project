@@ -13,8 +13,10 @@ struct WorkoutCompletionSheet: View {
     enum Step {
         case healthKit
         case feedback
+        case completed
     }
 
+    @State private var heartRateSuggestion: WorkoutHeartRateSuggestion?
     @State private var step: Step
     @State private var selection: WorkoutCompletionSelection = .none
 
@@ -64,7 +66,15 @@ struct WorkoutCompletionSheet: View {
                 AthlyTheme.Color.backgroundDark
                     .ignoresSafeArea()
 
-                if step == .healthKit {
+                if step == .completed {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            Label("Treino concluído", systemImage: "checkmark.circle.fill").font(.title2)
+                            if let suggestion = heartRateSuggestion { WorkoutHeartRateSuggestionCard(suggestion: suggestion) }
+                            Button("Concluir", action: onDismiss).buttonStyle(AthlyPrimaryButtonStyle())
+                        }.padding()
+                    }
+                } else if step == .healthKit {
                     if isLoading {
                         loadingView
                     } else {
@@ -82,7 +92,7 @@ struct WorkoutCompletionSheet: View {
                         Button("Voltar") { step = .healthKit }
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                     } else {
-                        Button("Cancelar") { onDismiss() }
+                        Button(step == .completed ? String(localized: "Concluir") : String(localized: "Cancelar")) { onDismiss() }
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                     }
                 }
@@ -429,8 +439,9 @@ struct WorkoutCompletionSheet: View {
         let outcome = await onComplete(selection, fallback)
         isCompleting = false
         switch outcome {
-        case .success:
-            break
+        case .success(let suggestion):
+            if let suggestion { heartRateSuggestion = suggestion; step = .completed }
+            else { onDismiss() }
         case .failure(let message):
             submitError = message
         case .healthKitFallbackRequired(let message):
@@ -868,6 +879,7 @@ struct WorkoutCompletionSheet: View {
     }
 
     private var navigationTitle: String {
+        if step == .completed { return String(localized: "Treino concluído") }
         if step == .feedback { return String(localized: "Como foi o treino?") }
         return isEnrichment ? String(localized: "Adicionar dados") : String(localized: "Concluir Treino")
     }

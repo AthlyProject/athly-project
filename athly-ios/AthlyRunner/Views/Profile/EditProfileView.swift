@@ -3,6 +3,7 @@ import SwiftUI
 /// Folha de edição dos dados pessoais coletados no onboarding (nome, gênero, peso, altura e FC).
 struct EditProfileView: View {
     let profile: UserProfile?
+    var suggestedMaximum: Int? = nil
     let onSaved: (UserProfile) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -103,6 +104,7 @@ struct EditProfileView: View {
                                     accessibilityName: String(localized: "Frequência cardíaca máxima")
                                 )
                             }
+                            ObservedHeartRatePeakView(savedMaximum: profile?.maxHeartRate, draftMaximum: maxHeartRate, isEditing: true) { maxHeartRate = $0 }
                             Text("Valores informados por você têm prioridade. Use o automático para ler o repouso do Apple Health e estimar a FC máxima pela idade.")
                                 .font(.footnote)
                                 .foregroundStyle(AthlyTheme.Color.textSecondary)
@@ -229,7 +231,7 @@ struct EditProfileView: View {
         weightKg = profile?.weight.map { Int($0.rounded()) }
         heightCm = profile?.height.map { Int($0.rounded()) }
         restingHeartRate = profile?.restingHeartRate
-        maxHeartRate = profile?.maxHeartRate
+        maxHeartRate = suggestedMaximum ?? profile?.maxHeartRate
         birthDate = profile?.dateOfBirth.flatMap { Self.birthDateFormatter.date(from: String($0.prefix(10))) }
     }
 
@@ -263,6 +265,7 @@ struct EditProfileView: View {
             if let weight = updated.weight {
                 UserMetrics.weightKg = weight
             }
+            NotificationCenter.default.post(name: .athlyHeartRateChanged, object: nil)
             onSaved(updated)
             dismiss()
         } catch {

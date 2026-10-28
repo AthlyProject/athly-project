@@ -106,3 +106,41 @@ final class HeartRateZonesViewModel: ObservableObject {
         }
     }
 }
+
+@MainActor
+final class ObservedHeartRatePeakViewModel: ObservableObject {
+    @Published private(set) var peak: ObservedHeartRatePeak?
+    @Published private(set) var isLoading = false
+    @Published private(set) var message: String?
+    private var generation = UUID()
+    private let read: @Sendable () async throws -> ObservedHeartRatePeak?
+
+    init(read: @escaping @Sendable () async throws -> ObservedHeartRatePeak? = { try await ObservedHeartRatePeakPool.shared.read() }) {
+        self.read = read
+    }
+    func clear() {
+        generation = UUID()
+        peak = nil
+        message = nil
+        isLoading = false
+    }
+    func refresh(requestAuthorization: Bool = false) async {
+        clear()
+        let current = generation
+        isLoading = true
+        defer { if current == generation { isLoading = false } }
+        do {
+            if requestAuthorization { try await HealthKitService().requestHeartRateReadAuthorization() }
+            try Task.checkCancellation()
+            let result = try await read()
+            try Task.checkCancellation()
+            guard current == generation else { return }
+            peak = result
+            if result == nil { message = String(localized: "Nenhuma medição elegível encontrada nos exercícios dos últimos 90 dias. Verifique os dados e o acesso no app Saúde.") }
+        } catch is CancellationError { }
+        catch {
+            guard current == generation else { return }
+            message = String(localized: "Não foi possível buscar a maior FC observada. Tente novamente.")
+        }
+    }
+}

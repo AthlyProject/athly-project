@@ -172,7 +172,6 @@ struct HealthKitRunsView: View {
                         runStore: runStore
                     )
                     if case .success = outcome {
-                        workoutToRepair = nil
                         await loadData()
                     }
                     return outcome

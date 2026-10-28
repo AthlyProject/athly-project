@@ -309,3 +309,85 @@ final class WorkoutCompletionTests: XCTestCase {
         XCTAssertEqual(TrainingPlanCache.shared.load()?.allWorkouts.first?.status, .done)
     }
 }
+
+extension WorkoutCompletionTests {
+    func testImportedMeasuredPeakIsSuggestedAfterPartialCompletion() async throws {
+        let pending = try workout(), partial = try workout(status: "partial")
+        var dependencies = WorkoutCompletionDependencies(request: { _, _, _, _, _ in partial }, links: links)
+        dependencies.canReadHeartRateProfile = { true }
+        dependencies.heartRateZones = {
+            try JSONDecoder().decode(HeartRateZones.self, from: Data(#"{"status":"available","method":"hrr_v1","isEstimated":true,"missingData":[],"restingHeartRate":null,"maxHeartRate":{"bpm":187,"source":"age_estimate","measuredAt":null},"zones":[]}"#.utf8))
+        }
+        let start = Date().addingTimeInterval(-3600)
+        let activity = ImportedWorkout(format: .fit, fingerprint: "peak-fit", originalFileName: "peak.fit",
+            startDate: start, endDate: Date(), activeDurationSeconds: 3600, totalDurationSeconds: 3600,
+            distanceMeters: 5000, heartRateSamples: [
+                ActivityHeartRateSample(timestamp: start, beatsPerMinute: 155),
+                ActivityHeartRateSample(timestamp: start.addingTimeInterval(60), beatsPerMinute: 191)
+            ])
+        let vm = TrainingPlanViewModel(completionDependencies: dependencies)
+        vm.allWorkouts = [pending]
+        guard case .success(let suggestion) = await vm.completeWorkoutWithImportedData(pending,
+            imported: activity, saveToHealthKit: false, fallback: .ask, runStore: runs) else { return XCTFail() }
+        XCTAssertEqual(suggestion?.bpm, 191)
+        XCTAssertEqual(suggestion?.previousMaximum, 187)
+        XCTAssertEqual(vm.allWorkouts.first?.status, .partial)
+    }
+
+    func testFreeActivityAndCompletionWithoutMeasuredPeakDoNotReadProfile() async throws {
+        let pending = try workout()
+        let done = try workout(status: "done")
+        let free = try JSONDecoder().decode(WorkoutModel.self, from: Data(#"{"id":"wednesday","date":"2026-09-30","title":"Free run","status":"done","sportType":"running","blocks":[]}"#.utf8))
+        for completed in [done, free] {
+            var dependencies = WorkoutCompletionDependencies(request: { _, _, _, _, _ in completed }, links: links)
+            dependencies.canReadHeartRateProfile = { true }
+            dependencies.heartRateZones = { XCTFail("No eligible planned peak"); throw URLError(.badServerResponse) }
+            let vm = TrainingPlanViewModel(completionDependencies: dependencies)
+            vm.allWorkouts = [pending]
+            let outcome: WorkoutCompletionOutcome
+            if completed.trainingPlanId == nil {
+                var run = healthRun
+                run.maxHR = 191
+                outcome = await vm.completeWorkoutWithHealthData(pending, healthRun: run)
+            } else {
+                outcome = await vm.completeWorkout(pending)
+            }
+            guard case .success(let suggestion) = outcome else { return XCTFail() }
+            XCTAssertNil(suggestion)
+        }
+    }
+
+    func testConfirmedCompletionSuggestsHigherPeakOnceAndNeverSavesProfile() async throws {
+        let pending = try workout(), done = try workout(status: "done")
+        var dependencies = WorkoutCompletionDependencies(request: { _, _, _, _, _ in done }, links: links)
+        dependencies.canReadHeartRateProfile = { true }
+        dependencies.heartRateZones = {
+            try JSONDecoder().decode(HeartRateZones.self, from: Data(#"{"status":"available","method":"hrr_v1","isEstimated":false,"missingData":[],"restingHeartRate":null,"maxHeartRate":{"bpm":187,"source":"manual","measuredAt":null},"zones":[]}"#.utf8))
+        }
+        let vm = TrainingPlanViewModel(completionDependencies: dependencies)
+        vm.allWorkouts = [pending]
+        var run = HealthKitRunItem(id: "peak-test", startDate: Date().addingTimeInterval(-3600), endDate: Date(),
+            durationSeconds: 3600, distanceMeters: 5000, averagePaceSecondsPerKm: 720,
+            activeEnergyBurned: 400, elevationGainMeters: nil)
+        run.maxHR = 191
+        guard case .success(let suggestion) = await vm.completeWorkoutWithHealthData(pending, healthRun: run) else { return XCTFail() }
+        XCTAssertEqual(suggestion?.bpm, 191)
+        guard case .success(let repeated) = await vm.completeWorkoutWithHealthData(pending, healthRun: run) else { return XCTFail() }
+        XCTAssertNil(repeated)
+    }
+    func testProfileReadFailureDoesNotFailConfirmedWorkout() async throws {
+        let pending = try workout(), done = try workout(status: "done")
+        var dependencies = WorkoutCompletionDependencies(request: { _, _, _, _, _ in done }, links: links)
+        dependencies.canReadHeartRateProfile = { true }
+        dependencies.heartRateZones = { throw URLError(.notConnectedToInternet) }
+        let vm = TrainingPlanViewModel(completionDependencies: dependencies)
+        vm.allWorkouts = [pending]
+        var run = HealthKitRunItem(id: "peak-test", startDate: Date().addingTimeInterval(-3600), endDate: Date(),
+            durationSeconds: 3600, distanceMeters: 5000, averagePaceSecondsPerKm: 720,
+            activeEnergyBurned: 400, elevationGainMeters: nil)
+        run.maxHR = 191
+        guard case .success(let suggestion) = await vm.completeWorkoutWithHealthData(pending, healthRun: run) else { return XCTFail() }
+        XCTAssertNil(suggestion)
+        XCTAssertEqual(vm.allWorkouts.first?.status, .done)
+    }
+}

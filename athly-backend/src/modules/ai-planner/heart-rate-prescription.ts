@@ -3,7 +3,7 @@ import type { RunTarget, Segment } from '../workouts/types/segment.types';
 import type { WorkoutDay } from './types/planner.types';
 
 export const ESTIMATED_HEART_RATE_NOTICE =
-  'Zonas estimadas: o Apple Health não forneceu dados suficientes para definir sua FC máxima; usamos uma estimativa baseada na sua idade.';
+  'Zonas estimadas: a FC máxima usada nas zonas foi estimada pela sua idade.';
 
 export function heartRatePrescriptionPrompt(zones?: GuidedHeartRateZones): string {
   const enabled = zones?.trainingGuidance.mode === 'heart_rate_and_rpe';

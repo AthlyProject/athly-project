@@ -94,3 +94,96 @@ enum HeartRateHealthSync {
         return try await api.syncHeartRateHealth(snapshot, session: session)
     }
 }
+
+/// A recorded exercise peak, not an automatically calibrated physiological maximum.
+struct ObservedHeartRatePeak: Sendable, Equatable {
+    let value: Double
+    let measuredAt: Date
+    let sourceName: String
+    let workoutID: UUID
+    let sampleID: UUID
+    let activity: UInt
+    var bpm: Int { Int(value.rounded()) }
+    var canUse: Bool { (100...240).contains(bpm) }
+
+    static func select(_ candidates: [Self], now: Date) -> Self? {
+        let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60)
+        return candidates.filter {
+            $0.value.isFinite && (30...240).contains($0.value) && $0.measuredAt >= cutoff && $0.measuredAt <= now
+        }.max {
+            if $0.value != $1.value { return $0.value < $1.value }
+            if $0.measuredAt != $1.measuredAt { return $0.measuredAt < $1.measuredAt }
+            return $0.sampleID.uuidString < $1.sampleID.uuidString
+        }
+    }
+}
+
+protocol ObservedHeartRatePeakProviding: Sendable {
+    func fetchObservedHeartRatePeak() async throws -> ObservedHeartRatePeak?
+}
+
+/// Concurrent views share work, but no health results persist across reads or accounts.
+actor ObservedHeartRatePeakPool {
+    static let shared = ObservedHeartRatePeakPool()
+    private var pending: Task<ObservedHeartRatePeak?, Error>?
+    private var waiters = Set<UUID>()
+    private var generation = UUID()
+
+    func cancel() {
+        generation = UUID()
+        pending?.cancel()
+        pending = nil
+        waiters.removeAll()
+    }
+    private func release(_ waiter: UUID, generation expected: UUID) {
+        guard generation == expected else { return }
+        waiters.remove(waiter)
+        if waiters.isEmpty { cancel() }
+    }
+    func read() async throws -> ObservedHeartRatePeak? {
+        try Task.checkCancellation()
+        if pending == nil { pending = Task { try await HealthKitService().fetchObservedHeartRatePeak() } }
+        let task = pending!
+        let waiter = UUID()
+        let expected = generation
+        waiters.insert(waiter)
+        defer { release(waiter, generation: expected) }
+        return try await withTaskCancellationHandler {
+            let result = try await task.value
+            try Task.checkCancellation()
+            guard generation == expected else { throw CancellationError() }
+            return result
+        } onCancel: {
+            Task { await self.release(waiter, generation: expected) }
+        }
+    }
+}
+
+struct WorkoutHeartRateSuggestion: Sendable, Equatable {
+    let workoutID: String
+    let bpm: Int
+    let measuredAt: Date
+    let previousMaximum: Int?
+
+    static func make(workoutID: String, value: Double?, date: Date?, current: Int?, now: Date = Date()) -> Self? {
+        guard let value, value.isFinite, (100...240).contains(value),
+              let date, date <= now, date >= now.addingTimeInterval(-90 * 86400) else { return nil }
+        let bpm = Int(value.rounded())
+        if let current, bpm <= current { return nil }
+        return Self(workoutID: workoutID, bpm: bpm, measuredAt: date, previousMaximum: current)
+    }
+}
+
+enum HeartRatePeakActionState: Equatable {
+    case available, inUse, selected, higherConfigured
+    static func resolve(peak: Int, saved: Int?, draft: Int?, editing: Bool) -> Self {
+        if editing, draft == peak, saved != peak { return .selected }
+        if saved == peak, !editing || draft == peak { return .inUse }
+        if let current = editing ? draft : saved, current > peak { return .higherConfigured }
+        return .available
+    }
+}
+
+extension Notification.Name {
+    static let athlyHeartRateChanged = Notification.Name("athlyHeartRateChanged")
+}

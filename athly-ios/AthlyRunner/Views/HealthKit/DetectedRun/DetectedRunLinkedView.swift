@@ -5,6 +5,7 @@ struct DetectedRunLinkedView: View {
     let run: HealthKitRunItem
     let workout: WorkoutModel?
     var isFromGarmin = false
+    var heartRateSuggestion: WorkoutHeartRateSuggestion?
     let onOpenPlan: () -> Void
     let onDismiss: () -> Void
 
@@ -13,6 +14,9 @@ struct DetectedRunLinkedView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     successHero
+                    if let suggestion = heartRateSuggestion {
+                        WorkoutHeartRateSuggestionCard(suggestion: suggestion).padding()
+                    }
                     if let workout {
                         comparisonCard(workout)
                             .padding(.horizontal, AthlyTheme.Spacing.sm)

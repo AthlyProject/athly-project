@@ -257,3 +257,122 @@ final class HeartRateZonesTests: XCTestCase {
     }
 
 }
+
+@MainActor
+final class ObservedHeartRatePeakTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+    private func peak(_ value: Double, age: TimeInterval = 0) -> ObservedHeartRatePeak {
+        ObservedHeartRatePeak(value: value, measuredAt: now.addingTimeInterval(-age), sourceName: "Test sensor",
+                              workoutID: UUID(), sampleID: UUID(), activity: 37)
+    }
+    func testWindowAndInvalidMeasurements() {
+        let valid = peak(180, age: 90 * 86400)
+        XCTAssertEqual(ObservedHeartRatePeak.select([valid, peak(200, age: 90 * 86400 + 1), peak(220, age: -1), peak(.nan), peak(.infinity), peak(241), peak(29)], now: now), valid)
+        XCTAssertNil(ObservedHeartRatePeak.select([], now: now))
+    }
+    func testSelectsBeforeRoundingAndBreaksTiesByDate() {
+        let highest = peak(180.49, age: 10)
+        XCTAssertEqual(ObservedHeartRatePeak.select([peak(180.1), highest], now: now), highest)
+        XCTAssertEqual(highest.bpm, 180)
+        let recent = peak(190)
+        XCTAssertEqual(ObservedHeartRatePeak.select([peak(190, age: 10), recent], now: now), recent)
+        XCTAssertFalse(peak(99).canUse)
+        XCTAssertTrue(peak(100).canUse)
+    }
+    func testSuccessAndEmptyResults() async {
+        let expected = peak(190)
+        let model = ObservedHeartRatePeakViewModel(read: { expected })
+        await model.refresh()
+        XCTAssertEqual(model.peak, expected)
+        XCTAssertNil(model.message)
+        XCTAssertFalse(model.isLoading)
+        model.clear()
+        XCTAssertNil(model.peak)
+        let empty = ObservedHeartRatePeakViewModel(read: { nil })
+        await empty.refresh()
+        XCTAssertNil(empty.peak)
+        XCTAssertNotNil(empty.message)
+    }
+    func testFailureNeverPublishesPartialPeak() async {
+        let model = ObservedHeartRatePeakViewModel(read: { throw URLError(.cannotLoadFromNetwork) })
+        await model.refresh()
+        XCTAssertNil(model.peak)
+        XCTAssertNotNil(model.message)
+        XCTAssertFalse(model.isLoading)
+    }
+    func testCancelledTaskDoesNotPublish() async {
+        let expected = peak(190)
+        let model = ObservedHeartRatePeakViewModel(read: { expected })
+        let work = Task { await model.refresh() }
+        work.cancel()
+        await work.value
+        XCTAssertNil(model.peak)
+    }
+}
+
+private actor PeakReadGate {
+    private var continuation: CheckedContinuation<ObservedHeartRatePeak?, Never>?
+    var isWaiting: Bool { continuation != nil }
+    func read() async -> ObservedHeartRatePeak? {
+        await withCheckedContinuation { continuation = $0 }
+    }
+    func finish(_ peak: ObservedHeartRatePeak?) {
+        continuation?.resume(returning: peak)
+        continuation = nil
+    }
+}
+
+extension ObservedHeartRatePeakTests {
+    func testAccountChangeDiscardsAnInFlightResult() async {
+        let gate = PeakReadGate()
+        let model = ObservedHeartRatePeakViewModel(read: { await gate.read() })
+        let task = Task { await model.refresh() }
+        while !(await gate.isWaiting) { await Task.yield() }
+        model.clear()
+        await gate.finish(peak(190))
+        await task.value
+        XCTAssertNil(model.peak)
+        XCTAssertNil(model.message)
+        XCTAssertFalse(model.isLoading)
+    }
+}
+
+/// Run explicitly on a paired device to compare the result against Apple Health.
+final class ObservedHeartRatePeakDeviceTests: XCTestCase {
+    func testReadDevicePeak() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Requires real, authorized exercise samples on a physical device")
+        #else
+        let service = HealthKitService()
+        try await service.requestHeartRateReadAuthorization()
+        guard let peak = try await service.fetchObservedHeartRatePeak() else {
+            throw XCTSkip("No eligible samples available; check Health access and exercise data")
+        }
+        XCTAssertTrue((30...240).contains(peak.value))
+        print("ATHLY_PEAK_DIAGNOSTIC bpm=\(peak.bpm) measuredAt=\(peak.measuredAt) source=\(peak.sourceName) activity=\(peak.activity)")
+        #endif
+    }
+}
+
+final class HeartRateSuggestionDecisionTests: XCTestCase {
+    func testSavedAndDraftStatesRemainDistinct() {
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 187, saved: 187, draft: nil, editing: false), .inUse)
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 187, saved: nil, draft: 187, editing: true), .selected)
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 187, saved: nil, draft: nil, editing: false), .available)
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 187, saved: 190, draft: nil, editing: false), .higherConfigured)
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 191, saved: 187, draft: nil, editing: false), .available)
+        XCTAssertEqual(HeartRatePeakActionState.resolve(peak: 187, saved: 187, draft: nil, editing: true), .available)
+    }
+    func testOnlyHigherRecentMeasuredPeaksAreSuggested() {
+        let now = Date()
+        func suggestion(_ bpm: Double?, age: Double = 0, current: Int? = 187) -> WorkoutHeartRateSuggestion? {
+            .make(workoutID: "w", value: bpm, date: now.addingTimeInterval(-age), current: current, now: now)
+        }
+        XCTAssertEqual(suggestion(191)?.bpm, 191)
+        XCTAssertNotNil(suggestion(180, current: nil))
+        for value in [Double.nan, .infinity, 99, 241, 186, 187, 187.4] { XCTAssertNil(suggestion(value)) }
+        XCTAssertNil(suggestion(nil))
+        XCTAssertNil(suggestion(191, age: 90 * 86400 + 1))
+        XCTAssertNil(suggestion(191, age: -1))
+    }
+}

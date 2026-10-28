@@ -40,6 +40,7 @@ struct DetectedRunView: View {
                     run: viewModel.run,
                     workout: viewModel.linkedWorkout,
                     isFromGarmin: viewModel.garmin != nil,
+                    heartRateSuggestion: viewModel.heartRateSuggestion,
                     onOpenPlan: {
                         onFinish()
                         onOpenPlan?()

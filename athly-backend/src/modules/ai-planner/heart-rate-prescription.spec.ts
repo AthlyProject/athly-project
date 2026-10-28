@@ -95,7 +95,7 @@ describe('New workout HR prescriptions', () => {
     const saved = JSON.stringify(workout);
     zones.zones[1].minBpm = 90;
     expect(JSON.stringify(workout)).toBe(saved);
-    expect(workout.description).toContain('Apple Health não forneceu dados suficientes');
+    expect(workout.description).toContain('FC máxima usada nas zonas foi estimada pela sua idade');
     expect(workout.segments[0].target).toMatchObject({ hrIsEstimated: true });
   });
 

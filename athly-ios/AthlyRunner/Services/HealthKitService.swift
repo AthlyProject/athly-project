@@ -1442,3 +1442,46 @@ enum HealthKitError: LocalizedError {
         }
     }
 }
+
+extension HealthKitService: ObservedHeartRatePeakProviding {
+    func fetchObservedHeartRatePeak() async throws -> ObservedHeartRatePeak? {
+        guard isHealthDataAvailable else { throw HealthKitError.notAvailable }
+        let now = Date()
+        let cutoff = now.addingTimeInterval(-90 * 24 * 60 * 60)
+        let window = HKQuery.predicateForSamples(withStart: cutoff, end: now, options: [.strictStartDate, .strictEndDate])
+        let workouts: [HKWorkout] = try await withCheckedThrowingContinuation { continuation in
+            let query = HKSampleQuery(sampleType: .workoutType(), predicate: window, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
+                if let error { continuation.resume(throwing: error) }
+                else { continuation.resume(returning: samples as? [HKWorkout] ?? []) }
+            }
+            store.execute(query)
+        }
+        let eligible = workouts.filter { ($0.metadata?[HKMetadataKeyWasUserEntered] as? Bool) != true }
+        var peaks: [ObservedHeartRatePeak] = []
+        // Batches cap HealthKit concurrency and bound cancellation latency.
+        for start in stride(from: 0, to: eligible.count, by: 4) {
+            try Task.checkCancellation()
+            let batch = Array(eligible[start..<min(start + 4, eligible.count)])
+            let results = try await withThrowingTaskGroup(of: ObservedHeartRatePeak?.self) { group in
+                for workout in batch {
+                    group.addTask {
+                        let samples = try await self.fetchRunHeartRateSamples(for: workout)
+                        let candidates = samples.compactMap { sample -> ObservedHeartRatePeak? in
+                            guard (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) != true else { return nil }
+                            return ObservedHeartRatePeak(value: sample.quantity.doubleValue(for: .count().unitDivided(by: .minute())),
+                                measuredAt: sample.startDate, sourceName: sample.sourceRevision.source.name,
+                                workoutID: workout.uuid, sampleID: sample.uuid, activity: workout.workoutActivityType.rawValue)
+                        }
+                        return ObservedHeartRatePeak.select(candidates, now: now)
+                    }
+                }
+                var results: [ObservedHeartRatePeak] = []
+                for try await result in group { if let result { results.append(result) } }
+                return results
+            }
+            peaks.append(contentsOf: results)
+        }
+        try Task.checkCancellation()
+        return ObservedHeartRatePeak.select(peaks, now: now)
+    }
+}

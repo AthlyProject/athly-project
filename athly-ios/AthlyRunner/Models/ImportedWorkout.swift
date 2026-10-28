@@ -235,7 +235,7 @@ enum ImportedWorkoutHealthKitFallback: Sendable, Equatable {
 }
 
 enum WorkoutCompletionOutcome: Sendable {
-    case success
+    case success(WorkoutHeartRateSuggestion? = nil)
     case failure(String)
     case healthKitFallbackRequired(String)
 }

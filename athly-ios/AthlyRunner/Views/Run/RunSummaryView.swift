@@ -183,10 +183,7 @@ struct RunSummaryView: View {
                         } else {
                             outcome = await planVM.completeWorkout(workout)
                         }
-                        if case .success = outcome {
-                            viewModel.pendingWorkout = nil
-                            viewModel.showWorkoutFeedback = false
-                        }
+
                         return outcome
                     },
                     onDismiss: {

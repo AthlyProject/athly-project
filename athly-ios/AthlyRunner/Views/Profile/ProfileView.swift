@@ -18,6 +18,7 @@ struct ProfileView: View {
     @State private var daysError: String?
     @State private var showDaysSaved = false
     @State private var showEditProfile = false
+    @State private var suggestedMaximum: Int?
     @State private var records: [PersonalRecord] = []
     @State private var totalDistance = 0.0
     @State private var totalTime = 0.0
@@ -76,7 +77,7 @@ struct ProfileView: View {
                         statsGrid
 
                         if heartRateZones.zones?.shouldShowInProfile == true {
-                            HeartRateZonesCard(model: heartRateZones) { showEditProfile = true }
+                            HeartRateZonesCard(model: heartRateZones) { suggestedMaximum = $0; showEditProfile = true }
                         }
 
                         if let goal = goalSnapshot {
@@ -126,6 +127,9 @@ struct ProfileView: View {
                     Task { await heartRateZones.refresh() }
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .athlyHeartRateChanged)) { _ in
+                Task { await loadProfile(); await heartRateZones.refresh(syncHealth: false) }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .athlyAuthChanged)) { _ in
                 heartRateZones.cancel(clear: true)
             }
@@ -155,8 +159,8 @@ struct ProfileView: View {
                 totalElevation = result.1.elevation
                 recentDistance = result.1.recent
             }
-            .sheet(isPresented: $showEditProfile) {
-                EditProfileView(profile: userProfile) { updated in
+            .sheet(isPresented: $showEditProfile, onDismiss: { suggestedMaximum = nil }) {
+                EditProfileView(profile: userProfile, suggestedMaximum: suggestedMaximum) { updated in
                     applyProfile(updated)
                     Task { await heartRateZones.refresh(syncHealth: false) }
                 }

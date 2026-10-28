@@ -17244,6 +17244,424 @@
           }
         }
       }
+    },
+    "A FC máxima usada nas zonas foi estimada pela sua idade." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die maximale Herzfrequenz für deine Zonen wurde anhand deines Alters geschätzt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The maximum heart rate used for your zones was estimated from your age."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A FC máxima usada nas zonas foi estimada pela sua idade."
+          }
+        }
+      }
+    },
+    "Atualizar maior FC observada" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchste gemessene Herzfrequenz aktualisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh highest observed heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualizar maior FC observada"
+          }
+        }
+      }
+    },
+    "Ciclismo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Radfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cycling"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclismo"
+          }
+        }
+      }
+    },
+    "Maior FC observada nos últimos 90 dias" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchste gemessene Herzfrequenz der letzten 90 Tage"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highest observed heart rate in the last 90 days"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maior FC observada nos últimos 90 dias"
+          }
+        }
+      }
+    },
+    "Maior registro encontrado nos seus exercícios. Suas zonas só mudam quando você escolher e salvar este valor." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchster Messwert aus deinen Trainings. Deine Zonen ändern sich erst, wenn du diesen Wert auswählst und speicherst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highest reading found in your workouts. Your zones only change when you choose and save this value."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maior registro encontrado nos seus exercícios. Suas zonas só mudam quando você escolher e salvar este valor."
+          }
+        }
+      }
+    },
+    "Natação" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schwimmen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swimming"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natação"
+          }
+        }
+      }
+    },
+    "Nenhuma medição elegível encontrada nos exercícios dos últimos 90 dias. Verifique os dados e o acesso no app Saúde." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine geeignete Messung in Trainings der letzten 90 Tage gefunden. Prüfe die Daten und den Zugriff in der Health-App."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No eligible reading found in workouts from the last 90 days. Check the data and access in the Health app."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma medição elegível encontrada nos exercícios dos últimos 90 dias. Verifique os dados e o acesso no app Saúde."
+          }
+        }
+      }
+    },
+    "Não foi possível buscar a maior FC observada. Tente novamente." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die höchste gemessene Herzfrequenz konnte nicht abgerufen werden. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not retrieve the highest observed heart rate. Try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível buscar a maior FC observada. Tente novamente."
+          }
+        }
+      }
+    },
+    "Outro exercício" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anderes Training"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other workout"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outro exercício"
+          }
+        }
+      }
+    },
+    "Treino de força" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Krafttraining"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strength training"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treino de força"
+          }
+        }
+      }
+    },
+    "Usar este valor" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diesen Wert verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this value"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar este valor"
+          }
+        }
+      }
+    },
+    "Valor em uso" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wert wird verwendet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Value in use"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valor em uso"
+          }
+        }
+      }
+    },
+    "Selecionado — salve para aplicar" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausgewählt — zum Anwenden speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected — save to apply"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecionado — salve para aplicar"
+          }
+        }
+      }
+    },
+    "Sua FC máxima configurada já é maior que este pico." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine eingestellte maximale Herzfrequenz ist bereits höher als dieser Spitzenwert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your configured maximum heart rate is already higher than this peak."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua FC máxima configurada já é maior que este pico."
+          }
+        }
+      }
+    },
+    "FC acima da máxima atual" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herzfrequenz über deinem aktuellen Maximum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart rate above your current maximum"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FC acima da máxima atual"
+          }
+        }
+      }
+    },
+    "Este treino registrou %lld bpm." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bei diesem Training wurden %lld bpm gemessen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This workout recorded %lld bpm."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este treino registrou %lld bpm."
+          }
+        }
+      }
+    },
+    "Sua FC máxima atual é %lld bpm." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine aktuelle maximale Herzfrequenz beträgt %lld bpm."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your current maximum heart rate is %lld bpm."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua FC máxima atual é %lld bpm."
+          }
+        }
+      }
+    },
+    "Revisar FC máxima" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximale Herzfrequenz prüfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review maximum heart rate"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisar FC máxima"
+          }
+        }
+      }
+    },
+    "Não foi possível atualizar seu perfil. Tente novamente." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Profil konnte nicht aktualisiert werden. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not refresh your profile. Try again."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível atualizar seu perfil. Tente novamente."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
