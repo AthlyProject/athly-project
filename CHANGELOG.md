@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/AthlyProject/athly-project/compare/v1.14.0...v1.15.0) (2026-10-28)
+
+
+### Features
+
+* **health:** suggest measured heart rate peaks and clarify zone settings ([5f6555e](https://github.com/AthlyProject/athly-project/commit/5f6555ea4252ba5a8115009b38be004220d97190))
+
 # [1.14.0](https://github.com/AthlyProject/athly-project/compare/v1.13.0...v1.14.0) (2026-10-27)
 
 
