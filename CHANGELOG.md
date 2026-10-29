@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/AthlyProject/athly-project/compare/v1.15.0...v1.16.0) (2026-10-29)
+
+
+### Features
+
+* **goals:** support guided and custom running goals with race dates ([050932e](https://github.com/AthlyProject/athly-project/commit/050932ec041f5d88a118333224c64b60e8e75b98))
+
 # [1.15.0](https://github.com/AthlyProject/athly-project/compare/v1.14.0...v1.15.0) (2026-10-28)
 
 
