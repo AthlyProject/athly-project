@@ -306,6 +306,7 @@ export class AiPlannerService {
             userProfile,
             analyzedSessions,
             minTrainingDate,
+            plannedWeek,
           )
         : this.geminiService.generatePlan(
             aiInput,

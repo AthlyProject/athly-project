@@ -1,6 +1,6 @@
 // Estrutura do objetivo do usuário armazenada em `UserGoal.parsedGoal` e consumida pelo
-// AI planner. A criação via texto livre foi removida; este tipo permanece como contrato
-// dos objetivos já persistidos e da integração de metas/viabilidade do planner.
+// AI planner. A interpretação em texto livre produz um rascunho separado; este contrato
+// representa os objetivos confirmados e a integração de metas/viabilidade do planner.
 export interface ParsedGoal {
   isRunningRelated: boolean;
   targetDistance: string | null;

@@ -203,6 +203,10 @@ enum BackendErrorCode {
 
         // MARK: Avaliação
 
+        case "GOAL_INVALID":
+            return String(localized: "Confira a descrição, a distância e o formato do tempo.")
+        case "GOAL_NOT_RUNNING":
+            return String(localized: "Descreva um objetivo relacionado a corrida.")
         case "ASSESSMENT_TERMS_NOT_ACCEPTED":
             return String(localized: "Você precisa aceitar os termos para continuar.")
         case "ASSESSMENT_PLAN_GENERATION_IN_PROGRESS":

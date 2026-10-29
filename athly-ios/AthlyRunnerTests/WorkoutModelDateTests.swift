@@ -644,3 +644,26 @@ private final class ProgressiveHealthProvider: HealthKitRunningWorkoutsProviding
         return items.map { item in var enriched = item; enriched.avgHR = 150; return enriched }
     }
 }
+
+final class AssessmentGoalDraftTests: XCTestCase {
+    func testExactDistancesAndOptionalTargets() throws {
+        for distance in ["4km", "7.5km", "21km", "30km", "42km"] {
+            let goal = AssessmentGoalDraft(summary: "Correr sem parar", targetDistance: distance, eventDate: "2027-03-14")
+            XCTAssertTrue(goal.isValid)
+            let decoded = try JSONDecoder().decode(AssessmentGoalDraft.self, from: JSONEncoder().encode(goal))
+            XCTAssertEqual(decoded.targetDistance, distance)
+            XCTAssertEqual(decoded.eventDate, "2027-03-14")
+            XCTAssertNil(decoded.targetTime)
+        }
+    }
+    func testRejectsInvalidGoalFields() {
+        XCTAssertFalse(AssessmentGoalDraft(summary: "  ").isValid)
+        for distance in ["0km", "-4km", "NaNkm"] {
+            XCTAssertFalse(AssessmentGoalDraft(summary: "Correr", targetDistance: distance).isValid)
+        }
+        for time in ["47:99", "0:00", "abc", "1::30"] {
+            XCTAssertFalse(AssessmentGoalDraft(summary: "Correr", targetTime: time).isValid)
+        }
+        XCTAssertTrue(AssessmentGoalDraft(summary: "Correr", targetTime: "1:30:00").isValid)
+    }
+}

@@ -1,6 +1,578 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
+  "Descreva um objetivo relacionado a corrida.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Descreva um objetivo relacionado a corrida."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Describe a running-related goal."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Beschreibe ein Ziel zum Laufen."
+        }
+      }
+    }
+  },
+  "Escrever meu objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escrever meu objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Write my goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mein Ziel beschreiben"
+        }
+      }
+    }
+  },
+  "Editar meu objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Editar meu objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Edit my goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mein Ziel bearbeiten"
+        }
+      }
+    }
+  },
+  "Voltar ao guiado": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voltar ao guiado"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Return to guided setup"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zur geführten Einrichtung"
+        }
+      }
+    }
+  },
+  "Revise seu objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Revise seu objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Review your goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ziel überprüfen"
+        }
+      }
+    }
+  },
+  "Confira os detalhes antes de criar seus treinos": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Confira os detalhes antes de criar seus treinos"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Check the details before creating your workouts"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prüfe die Angaben, bevor deine Trainings erstellt werden"
+        }
+      }
+    }
+  },
+  "Completar a distância e evoluir na corrida": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Completar a distância e evoluir na corrida"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Complete the distance and improve my running"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Die Distanz schaffen und mich beim Laufen verbessern"
+        }
+      }
+    }
+  },
+  "Outra distância": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Outra distância"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Other distance"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Andere Distanz"
+        }
+      }
+    }
+  },
+  "Escolha quantos quilômetros": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escolha quantos quilômetros"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Choose how many kilometers"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Wähle die Kilometerzahl"
+        }
+      }
+    }
+  },
+  "Distância em km": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distância em km"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distance in km"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distanz in km"
+        }
+      }
+    }
+  },
+  "Descrição do objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Descrição do objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Goal description"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zielbeschreibung"
+        }
+      }
+    }
+  },
+  "Seu objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Seu objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Your goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Dein Ziel"
+        }
+      }
+    }
+  },
+  "Distância em km (opcional)": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distância em km (opcional)"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distance in km (optional)"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Distanz in km (optional)"
+        }
+      }
+    }
+  },
+  "Ex.: 4 ou 30": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ex.: 4 ou 30"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "E.g. 4 or 30"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Z. B. 4 oder 30"
+        }
+      }
+    }
+  },
+  "Tempo alvo (opcional)": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Tempo alvo (opcional)"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Target time (optional)"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zielzeit (optional)"
+        }
+      }
+    }
+  },
+  "MM:SS ou HH:MM:SS": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "MM:SS ou HH:MM:SS"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "MM:SS or HH:MM:SS"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "MM:SS oder HH:MM:SS"
+        }
+      }
+    }
+  },
+  "Tenho uma prova marcada": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Tenho uma prova marcada"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "I have a race scheduled"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ich habe einen Wettkampf geplant"
+        }
+      }
+    }
+  },
+  "Data da prova": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Data da prova"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Race date"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Wettkampfdatum"
+        }
+      }
+    }
+  },
+  "Nome da prova (opcional)": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nome da prova (opcional)"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Race name (optional)"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Wettkampfname (optional)"
+        }
+      }
+    }
+  },
+  "Confira a descrição, a distância e o formato do tempo.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Confira a descrição, a distância e o formato do tempo."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Check the description, distance and time format."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prüfe die Beschreibung, die Distanz und das Zeitformat."
+        }
+      }
+    }
+  },
+  "Escreva o que você quer alcançar correndo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escreva o que você quer alcançar correndo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Describe what you want to achieve with running"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Beschreibe, was du beim Laufen erreichen möchtest"
+        }
+      }
+    }
+  },
+  "Ex.: Quero correr 4 km sem parar ou completar uma prova de 30 km.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ex.: Quero correr 4 km sem parar ou completar uma prova de 30 km."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "E.g. I want to run 4 km without stopping or finish a 30 km race."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Z. B. Ich möchte 4 km ohne Pause laufen oder einen 30-km-Lauf schaffen."
+        }
+      }
+    }
+  },
+  "Interpretar objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Interpretar objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Interpret goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ziel auswerten"
+        }
+      }
+    }
+  },
+  "Usar este objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usar este objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Use this goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Dieses Ziel verwenden"
+        }
+      }
+    }
+  },
+  "Continuar pelo guiado": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Continuar pelo guiado"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Continue with guided setup"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mit geführter Einrichtung fortfahren"
+        }
+      }
+    }
+  },
+  "Meu objetivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Meu objetivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "My goal"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mein Ziel"
+        }
+      }
+    }
+  },
     " (pulado)" : {
       "comment" : "Suffix appended to a segment label when it was skipped, e.g. 'Sprint 1 (pulado)'. Leading space is intentional.",
       "extractionState" : "stale",

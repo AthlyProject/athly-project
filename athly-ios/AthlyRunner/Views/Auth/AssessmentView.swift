@@ -23,7 +23,20 @@ struct AssessmentView: View {
     // MARK: - P9: Dias disponíveis (último passo em ambos os finais)
     @State private var availableDays: Set<String> = ["monday", "tuesday", "wednesday", "friday", "saturday"]
 
-    private var totalSteps: Int { objective == "personal" ? 6 : 4 }
+    @State private var customDistance = ""
+    @State private var useCustomGoal = false
+    @State private var showGoalEditor = false
+    @State private var guidedReview = AssessmentGoalDraft()
+    @State private var editorDraft = AssessmentGoalDraft()
+    @State private var interpretedText: String?
+    @State private var interpretationWarnings: [String] = []
+    @State private var lastGuidedSignature = ""
+    @State private var reviewedGoal = AssessmentGoalDraft()
+    private var steps: [Int] {
+        useCustomGoal ? [0, 1, 5, 6] : (objective == "personal" ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 5, 6])
+    }
+    private var currentStep: Int { steps[min(step, steps.count - 1)] }
+    private var totalSteps: Int { steps.count }
     private var isLastStep: Bool { step == totalSteps - 1 }
 
     private let screenMeta: [(title: String, subtitle: String)] = [
@@ -65,7 +78,31 @@ struct AssessmentView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
+                Button(useCustomGoal ? String(localized: "Editar meu objetivo") : String(localized: "Escrever meu objetivo")) {
+                    showGoalEditor = true
+                }
+                .font(AthlyTheme.Typography.semibold(13))
+                .padding(.top, 8)
+                .disabled(isSubmitting)
+                if useCustomGoal {
+                    Button("Voltar ao guiado") {
+                        returnToGuided()
+                    }
+                    .font(AthlyTheme.Typography.body(12))
+                    .padding(.top, 6)
+                    .disabled(isSubmitting)
+                }
                 footer
+            }
+        }
+        .sheet(isPresented: $showGoalEditor) {
+            CustomGoalEditor(draft: $editorDraft, interpretedText: $interpretedText, warnings: $interpretationWarnings, onGuided: returnToGuided) {
+                let previousStep = currentStep
+                if !useCustomGoal { guidedReview = reviewedGoal }
+                useCustomGoal = true
+                reviewedGoal = editorDraft
+                step = steps.firstIndex(of: previousStep) ?? 2
+                showGoalEditor = false
             }
         }
     }
@@ -86,7 +123,7 @@ struct AssessmentView: View {
             }
             .buttonStyle(.plain)
             .opacity(step == 0 ? 0 : 1)
-            .disabled(step == 0)
+            .disabled(step == 0 || isSubmitting)
 
             Spacer()
 
@@ -134,10 +171,11 @@ struct AssessmentView: View {
     // O passo de dias é sempre o último e seu índice varia por caminho (3 fitness / 5 pessoal),
     // então não pode ser indexado direto em `screenMeta` (índice trocado/fora de faixa).
     private var currentMeta: (title: String, subtitle: String) {
-        if step == totalSteps - 1 {
+        if currentStep == 5 {
             return (String(localized: "Seus dias\nde treino"), String(localized: "Quais dias da semana você quer treinar?"))
         }
-        return screenMeta[step]
+        if currentStep == 6 { return (String(localized: "Revise seu objetivo"), String(localized: "Confira os detalhes antes de criar seus treinos")) }
+        return screenMeta[currentStep]
     }
 
     private var screenHead: some View {
@@ -158,14 +196,14 @@ struct AssessmentView: View {
 
     @ViewBuilder
     private var stepContent: some View {
-        switch step {
+        switch currentStep {
         case 0: step4
         case 1: step5
         case 2: step6
-        case 3:
-            if objective == "personal" { stepDistancia } else { stepDays }
+        case 3: stepDistancia
         case 4: stepTipo
-        default: stepDays
+        case 5: stepDays
+        default: GoalDraftFields(draft: $reviewedGoal)
         }
     }
 
@@ -174,7 +212,19 @@ struct AssessmentView: View {
     private var footer: some View {
         Button {
             if isLastStep { Task { await submit() } }
-            else { withAnimation(.easeOut(duration: 0.2)) { step += 1 } }
+            else {
+                if steps[step + 1] == 6 {
+                    let signature = [objective, objectiveDistance, customDistance, objectiveType, targetTimeText].joined(separator: "|")
+                    if !useCustomGoal && signature != lastGuidedSignature {
+                        lastGuidedSignature = signature
+                        reviewedGoal.summary = objective == "personal" ? String(localized: "Completar a distância e evoluir na corrida") : String(localized: "Melhorar fitness e endurance")
+                        let distances = ["5k": "5km", "10k": "10km", "half": "21.0975km", "42k": "42.195km"]
+                        reviewedGoal.targetDistance = objective == "personal" ? (distances[objectiveDistance] ?? customDistance.replacingOccurrences(of: ",", with: ".") + "km") : nil
+                        reviewedGoal.targetTime = objective == "personal" && objectiveType == "target_time" ? targetTimeText : nil
+                    }
+                }
+                withAnimation(.easeOut(duration: 0.2)) { step += 1 }
+            }
         } label: {
             HStack(spacing: 8) {
                 if isSubmitting { ProgressView().tint(.white).scaleEffect(0.85) }
@@ -190,11 +240,37 @@ struct AssessmentView: View {
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(isSubmitting || (step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty))
-        .opacity(((step == 2 && objective.isEmpty) || (isLastStep && availableDays.isEmpty)) ? 0.5 : 1)
+        .disabled(isSubmitting || !canContinue)
+        .opacity(canContinue ? 1 : 0.5)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
         .padding(.top, 10)
+    }
+
+    private func returnToGuided() {
+        guard useCustomGoal else { return }
+        let previousStep = currentStep
+        useCustomGoal = false
+        reviewedGoal = guidedReview
+        step = previousStep < 2 ? previousStep : 2
+    }
+
+    private var canContinue: Bool {
+        switch currentStep {
+        case 0: return !fitnessLevel.isEmpty
+        case 2: return !objective.isEmpty
+        case 3:
+            if objectiveDistance == "custom" || objectiveDistance == "ultra" {
+                guard let value = Double(customDistance.replacingOccurrences(of: ",", with: ".")) else { return false }
+                return value.isFinite && value > 0
+            }
+            return !objectiveDistance.isEmpty
+        case 4:
+            return !objectiveType.isEmpty && (objectiveType != "target_time" || AssessmentGoalDraft(summary: "goal", targetTime: targetTimeText.isEmpty ? "invalid" : targetTimeText).isValid)
+        case 5: return !availableDays.isEmpty
+        case 6: return reviewedGoal.isValid
+        default: return true
+        }
     }
 
     // MARK: - Submit
@@ -205,6 +281,7 @@ struct AssessmentView: View {
         errorMessage = nil
 
         let request = AssessmentSubmissionRequest(
+            goal: reviewedGoal,
             gender: nil,
             weight: nil,
             height: nil,
@@ -226,7 +303,7 @@ struct AssessmentView: View {
             try await APIClient.shared.submitAssessment(request)
             onCompleted()
         } catch {
-            errorMessage = String(localized: "Não foi possível enviar o questionário. Tente novamente.")
+            errorMessage = error.localizedDescription
         }
         isSubmitting = false
     }
@@ -503,9 +580,11 @@ private extension AssessmentView {
         .init(icon: "rosette",    label: String(localized: "Meia"),     description: String(localized: "21 quilômetros"),      value: "half"),
         .init(icon: "trophy",     label: String(localized: "Maratona"), description: String(localized: "42 quilômetros"),      value: "42k"),
         .init(icon: "bolt.fill",  label: String(localized: "Ultra"),    description: String(localized: "Mais de 42 km"),       value: "ultra"),
+        .init(icon: "pencil", label: String(localized: "Outra distância"), description: String(localized: "Escolha quantos quilômetros"), value: "custom"),
     ]
 
     var stepDistancia: some View {
+        VStack(spacing: 12) {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
             spacing: 10
@@ -537,6 +616,12 @@ private extension AssessmentView {
                 }
                 .buttonStyle(.plain)
             }
+        }
+        if objectiveDistance == "custom" || objectiveDistance == "ultra" {
+            TextField("Distância em km", text: $customDistance)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(.roundedBorder)
+        }
         }
     }
 }
@@ -678,5 +763,106 @@ private extension AssessmentView {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+
+private struct GoalDraftFields: View {
+    @Binding var draft: AssessmentGoalDraft
+    private func optional(_ key: WritableKeyPath<AssessmentGoalDraft, String?>) -> Binding<String> {
+        Binding(get: { draft[keyPath: key] ?? "" }, set: { draft[keyPath: key] = $0.isEmpty ? nil : $0 })
+    }
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter(); f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Descrição do objetivo")
+            TextField("Seu objetivo", text: $draft.summary, axis: .vertical)
+                .onChange(of: draft.summary) { value in draft.summary = String(value.prefix(500)) }
+            Text("Distância em km (opcional)")
+            TextField("Ex.: 4 ou 30", text: Binding(
+                get: { (draft.targetDistance ?? "").replacingOccurrences(of: "km", with: "") },
+                set: { draft.targetDistance = $0.isEmpty ? nil : $0.replacingOccurrences(of: ",", with: ".") + "km" }
+            )).keyboardType(.decimalPad)
+            Text("Tempo alvo (opcional)")
+            TextField("MM:SS ou HH:MM:SS", text: optional(\.targetTime)).keyboardType(.numbersAndPunctuation)
+            Toggle("Tenho uma prova marcada", isOn: Binding(
+                get: { draft.eventDate != nil },
+                set: { enabled in
+                    if enabled {
+                        // Preserve the local civil date while keeping the wire format timezone-free.
+                        let parts = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                        var utc = Calendar(identifier: .gregorian); utc.timeZone = TimeZone(secondsFromGMT: 0)!
+                        draft.eventDate = Self.dateFormatter.string(from: utc.date(from: parts)!)
+                    } else { draft.eventDate = nil; draft.eventName = nil }
+                }
+            ))
+            if draft.eventDate != nil {
+                DatePicker("Data da prova", selection: Binding(
+                    get: { Self.dateFormatter.date(from: draft.eventDate ?? "") ?? Date() },
+                    set: { draft.eventDate = Self.dateFormatter.string(from: $0) }
+                ), displayedComponents: .date)
+                .environment(\.timeZone, TimeZone(secondsFromGMT: 0)!)
+                TextField("Nome da prova (opcional)", text: optional(\.eventName))
+                    .onChange(of: draft.eventName) { value in draft.eventName = value.map { String($0.prefix(200)) } }
+            }
+            if !draft.isValid { Text("Confira a descrição, a distância e o formato do tempo.").foregroundStyle(.red) }
+        }
+        .textFieldStyle(.roundedBorder)
+        .foregroundStyle(AthlyTheme.Color.textPrimary)
+    }
+}
+
+private struct CustomGoalEditor: View {
+    @Binding var draft: AssessmentGoalDraft
+    @Binding var interpretedText: String?
+    @Binding var warnings: [String]
+    let onGuided: () -> Void
+    let onUse: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var interpreted = false
+    @State private var loading = false
+    @State private var errorMessage: String?
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Escreva o que você quer alcançar correndo")
+                    Text("Ex.: Quero correr 4 km sem parar ou completar uma prova de 30 km.")
+                        .font(.footnote)
+                    TextEditor(text: $text).frame(minHeight: 110).disabled(loading)
+                        .onChange(of: text) { value in
+                            text = String(value.prefix(500))
+                            if draft.rawText != text { draft.rawText = text; interpreted = false }
+                        }
+                    Text("\(text.count)/500").font(.caption)
+                    Button("Interpretar objetivo") { Task { await interpret() } }
+                        .disabled(loading || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if loading { ProgressView() }
+                    if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                    ForEach(Array(warnings.enumerated()), id: \.offset) { _, warning in Text(warning).font(.footnote) }
+                    if interpreted {
+                        GoalDraftFields(draft: $draft)
+                        Button("Usar este objetivo", action: onUse).disabled(!draft.isValid || loading)
+                    }
+                    Button("Continuar pelo guiado") { onGuided(); dismiss() }
+                }.padding()
+            }
+            .navigationTitle("Meu objetivo")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
+            .onAppear { text = draft.rawText ?? ""; interpreted = draft.isValid && interpretedText == text }
+        }
+    }
+    @MainActor private func interpret() async {
+        loading = true; errorMessage = nil
+        defer { loading = false }
+        do {
+            let response = try await APIClient.shared.interpretGoal(text)
+            draft = response.goal; warnings = response.warnings; interpretedText = text; interpreted = true
+        } catch { errorMessage = error.localizedDescription }
     }
 }

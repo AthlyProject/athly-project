@@ -1,7 +1,14 @@
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { GoalDraftDto } from '../../goals/dto/goal-draft.dto';
+import { IsBoolean, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SubmitAssessmentDto {
+  @ApiPropertyOptional({ type: GoalDraftDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GoalDraftDto)
+  goal?: GoalDraftDto;
   @ApiPropertyOptional() @IsOptional() @IsString() gender?: string;
   @ApiPropertyOptional() @IsOptional() @IsNumber() weight?: number;
   @ApiPropertyOptional() @IsOptional() @IsNumber() height?: number;

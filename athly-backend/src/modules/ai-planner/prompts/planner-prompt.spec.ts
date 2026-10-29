@@ -1,3 +1,4 @@
+import { GeminiService } from '../gemini.service';
 import type { PlanLanguage } from '../../../common/i18n/user-language';
 import type { AiPlannerInput } from '../types/planner.types';
 import { buildAssessmentPrompt, buildPlannerPrompt } from './planner-prompt';
@@ -129,3 +130,25 @@ it.each([
     expect(prompt).toContain('"trend": "maintaining"');
   },
 );
+
+describe('dated completion goals', () => {
+  const goal = { isRunningRelated: true, targetDistance: '30km', targetTime: null,
+    eventDate: '2027-03-14', eventName: null, experienceLevel: null,
+    summary: 'Completar a distância sem parar', rejectionReason: null };
+  const week = { weekIndex: 0, weekStartDate: '2026-10-26', weekEndDate: '2026-11-01',
+    phase: 'base' as const, weeksToEvent: 20, targetVolumeKm: 20, longRunKm: 7,
+    intensityFocus: 'Base', isRaceWeek: false };
+  it('includes countdown for a weekly goal without target time', () => {
+    const prompt = buildPlannerPrompt(input, zones, 'pt-BR', null, goal, null, [], [], week);
+    expect(prompt).toContain('<countdown_logic>');
+    expect(prompt).toContain('2027-03-14');
+    expect(prompt).toContain('30km');
+  });
+  it('includes the same countdown in first-week assessment generation', async () => {
+    const service = new GeminiService({ get: () => undefined } as any);
+    const gate = jest.spyOn(service as any, 'runWithStructureGate').mockResolvedValue({});
+    await service.generateAssessmentPlan(input.weekDates, 3, input.availableDays, zones, 'pt-BR', goal, null, [], undefined, week);
+    expect(gate.mock.calls[0][0]).toContain('<countdown_logic>');
+    expect(gate.mock.calls[0][0]).toContain('2027-03-14');
+  });
+});

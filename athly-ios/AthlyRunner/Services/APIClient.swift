@@ -373,6 +373,10 @@ actor APIClient {
         try await post("/assessment", body: request)
     }
 
+    func interpretGoal(_ text: String) async throws -> GoalInterpretationResponse {
+        try await post("/goals/interpret", body: GoalInterpretationRequest(goalText: text))
+    }
+
     // MARK: - Billing / Entitlement
 
     /// Snapshot de entitlement do backend (fonte de verdade do bypass de admin via ADMIN_EMAILS).
@@ -742,6 +746,7 @@ private struct PushDeviceResponse: Decodable {
 // MARK: - Assessment payload v2 (espelha SubmitAssessmentDto do backend)
 
 struct AssessmentSubmissionRequest: Encodable, Sendable {
+    var goal: AssessmentGoalDraft? = nil
     // P1 — Informações
     var gender: String?
     var weight: Double?
@@ -828,4 +833,35 @@ enum APIError: LocalizedError {
 
 private struct WorkoutPlanningContextRequest: Encodable {
     let planningContext: PlannerHealthContextPayload?
+}
+
+
+struct GoalInterpretationRequest: Encodable, Sendable { let goalText: String }
+struct GoalInterpretationResponse: Decodable, Sendable {
+    var goal: AssessmentGoalDraft
+    let warnings: [String]
+}
+struct AssessmentGoalDraft: Codable, Sendable {
+    var rawText: String? = nil
+    var summary: String = ""
+    var targetDistance: String? = nil
+    var targetTime: String? = nil
+    var eventDate: String? = nil
+    var eventName: String? = nil
+
+    var isValid: Bool {
+        guard !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        if let distance = targetDistance, !distance.isEmpty {
+            let numeric = distance.lowercased().replacingOccurrences(of: "km", with: "")
+                .replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)
+            guard let km = Double(numeric), km.isFinite, km > 0 else { return false }
+        }
+        if let time = targetTime, !time.isEmpty {
+            let parts = time.split(separator: ":", omittingEmptySubsequences: false)
+            guard (2...3).contains(parts.count), parts.allSatisfy({ Int($0) != nil }),
+                  parts.dropFirst().allSatisfy({ (0..<60).contains(Int($0)!) }),
+                  parts.allSatisfy({ Int($0)! >= 0 }), parts.contains(where: { Int($0)! > 0 }) else { return false }
+        }
+        return true
+    }
 }

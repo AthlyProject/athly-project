@@ -275,7 +275,7 @@ Use esse bloco para detectar stagnation, overreaching e progressão sustentável
 }
 
 function buildGoalSection(goal: ParsedGoal): string {
-  const lines = [`Objetivo do atleta: ${goal.summary}`];
+  const lines = [`Objetivo do atleta: ${goal.summary}`, "Os campos estruturados abaixo são os valores confirmados; prevalecem sobre números divergentes na descrição. Não invente tempo alvo ausente."];
   if (goal.targetDistance) lines.push(`- Distância alvo: ${goal.targetDistance}`);
   if (goal.targetTime) lines.push(`- Tempo alvo: ${goal.targetTime}`);
   if (goal.eventDate) lines.push(`- Data do evento: ${goal.eventDate}`);
@@ -308,10 +308,11 @@ function buildGoalAttemptLogicSection(
   plannedWeek?: PlannedWeek | null,
   goalAttempt?: GoalAttemptContext | null,
 ): string {
-  if (!goal || !goal.targetDistance || !goal.targetTime) return '';
+  if (!goal || !goal.targetDistance) return '';
   if (goal.eventDate) {
     return plannedWeek ? buildCountdownSection(goal, plannedWeek) : '';
   }
+  if (!goal.targetTime) return '';
   if (goalAttempt) {
     return `
 <goal_attempt_logic>
@@ -369,17 +370,17 @@ const PHASE_LABEL: Record<PlannedWeek['phase'], string> = {
  * On the race week it instructs the goal attempt; otherwise it periodizes toward
  * the date without marking any attempt.
  */
-function buildCountdownSection(goal: ParsedGoal, plannedWeek: PlannedWeek): string {
+export function buildCountdownSection(goal: ParsedGoal, plannedWeek: PlannedWeek): string {
   const objetivo = goal.summary;
   const alvo = [goal.targetDistance, goal.targetTime].filter(Boolean).join(' em ') || objetivo;
 
   const raceWeekBlock = plannedWeek.isRaceWeek
     ? `SEMANA DA PROVA (é agora — weeksToEvent=0):
 1. Marque o dia ${goal.eventDate} (ou o dia de treino disponível mais próximo) com "isGoalAttempt": true e título "Tentativa: ${objetivo}".
-2. Estruture o dia da prova: aquecimento (10–15 min) + main = a tentativa no pace alvo (${goal.targetTime ?? 'pace alvo'}) + cooldown (5–10 min).
+2. Estruture o dia da prova: aquecimento (10–15 min) + main = a tentativa no pace alvo (${goal.targetTime ?? 'sem tempo alvo; esforço confortável para completar a distância'}) + cooldown (5–10 min).
 3. 1–2 dias ANTES: descanso ou treino muito leve (RPE <= 4). NENHUMA sessão intensa (RPE >= 7) adjacente à prova.
 4. Demais dias: muito leves (taper final). O dia seguinte à prova = descanso ou recuperação leve.
-5. O reasoning do dia da prova deve citar o pace alvo e por que o atleta chega afiado.`
+5. Sem tempo alvo, priorize completar a distância com esforço controlado e não invente uma meta de velocidade. Explique a preparação.`
     : `Esta NÃO é a semana da prova: NÃO marque isGoalAttempt em nenhum dia. Periodize conforme a fase atual, evoluindo o atleta rumo ao pace alvo (${alvo}). O reasoning do dia mais duro deve citar a fase e a distância à meta (ex: "fase BUILD; mainPace recente 5:20/km rumo ao alvo 5:00/km").`;
 
   return `

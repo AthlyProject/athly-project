@@ -1,3 +1,4 @@
+import { normalizeGoalDraft } from '../goals/dto/goal-draft.dto';
 import { Injectable } from '@nestjs/common';
 import { PlanGenerationStatus } from '@prisma/client';
 import { CodedConflictException } from '../../common/errors/coded-exception';
@@ -62,7 +63,7 @@ export class AssessmentService {
       this.prisma.userGoal.create({
         data: {
           userId,
-          rawText: parsedGoal.summary,
+          rawText: dto.goal?.rawText?.trim() || parsedGoal.summary,
           parsedGoal: parsedGoal as unknown as object,
           active: true,
         },
@@ -74,10 +75,23 @@ export class AssessmentService {
 
   /**
    * Monta o `ParsedGoal` de forma determinística a partir das respostas já
-   * estruturadas — o parser de texto livre por IA foi removido e é desnecessário aqui.
+   * estruturadas ou revisadas — nenhuma chamada de IA ocorre na confirmação.
    */
   private buildParsedGoal(dto: SubmitAssessmentDto): ParsedGoal {
     const experienceLevel = this.mapExperienceLevel(dto.fitnessLevel);
+    if (dto.goal) {
+      const { rawText: _rawText, ...goal } = normalizeGoalDraft(dto.goal);
+      return {
+        ...goal,
+        targetDistance: goal.targetDistance ?? null,
+        targetTime: goal.targetTime ?? null,
+        eventDate: goal.eventDate ?? null,
+        eventName: goal.eventName ?? null,
+        isRunningRelated: true,
+        rejectionReason: null,
+        experienceLevel,
+      };
+    }
 
     // "Melhorar fitness e endurance" — objetivo aberto, sem distância/tempo alvo.
     if (dto.objective !== 'personal') {

@@ -1,4 +1,7 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { normalizeLanguage } from '../../common/i18n/user-language';
+import { GeminiService } from '../ai-planner/gemini.service';
+import { InterpretGoalDto } from './dto/goal-draft.dto';
+import { Controller, Get, Post, Body, Headers, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GoalsService } from './goals.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,7 +13,16 @@ import { UserModel } from '../users/models/user.model';
 @UseGuards(JwtAuthGuard)
 @Controller('goals')
 export class GoalsController {
-  constructor(private readonly goalsService: GoalsService) {}
+  constructor(
+    private readonly goalsService: GoalsService,
+    private readonly gemini: GeminiService,
+  ) {}
+
+  @Post('interpret')
+  @ApiOperation({ summary: 'Interpretar objetivo sem persistir' })
+  interpret(@Body() dto: InterpretGoalDto, @Headers('x-athly-language') language?: string) {
+    return this.gemini.interpretGoal(dto.goalText, normalizeLanguage(language));
+  }
 
   @Get('active')
   @ApiOperation({ summary: 'Buscar objetivo ativo do usuário' })
