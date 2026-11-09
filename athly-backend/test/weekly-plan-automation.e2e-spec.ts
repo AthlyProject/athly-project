@@ -106,11 +106,104 @@ suite('weekly automation (PostgreSQL transactions)', () => {
     return { user, plan, week, earlier, last, rest, create };
   }
 
+  async function confirmResume(userId: string, retryFailed = false, now = friday) {
+    const offer = await automation.resume(userId, retryFailed, now);
+    if (!offer.pendingGeneration) return offer;
+    return automation.resume(userId, retryFailed, now, {
+      confirmed: true,
+      ...offer.pendingGeneration,
+    });
+  }
+
+  async function confirmClosure(userId: string, _weekId: string, now = friday) {
+    const result = await confirmResume(userId, false, now);
+    if (!result.generation) return undefined;
+    return {
+      closed: true,
+      generationId: result.generation.generationId,
+      status: result.generation.status,
+      started: result.started,
+    };
+  }
+
+  it.each<WorkoutStatus>(['done', 'partial', 'skipped'])(
+    'only offers after %s; saves, lookup and sweep leave the week untouched',
+    async (status) => {
+      const f = await fixture(status);
+      await automation.afterWorkout(f.user.id, f.week.id);
+      await automation.tick();
+      const offer = await automation.resume(f.user.id, true, friday);
+      expect(offer.pendingGeneration).toMatchObject({
+        weekStartDate: '2026-09-14',
+        reason: 'last_workout',
+      });
+      expect(offer.started).toBe(false);
+      expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(0);
+      expect(
+        (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closedAt,
+      ).toBeNull();
+      expect((await prisma.workout.findUniqueOrThrow({ where: { id: f.earlier.id } })).status).toBe(
+        'scheduled',
+      );
+    },
+  );
+
+  it('offers only after local Monday when the last workout is unresolved', async () => {
+    const f = await fixture('scheduled');
+    expect(
+      (await automation.resume(f.user.id, false, new Date('2026-09-14T02:59:59Z')))
+        .pendingGeneration,
+    ).toBeNull();
+    const monday = await automation.resume(f.user.id, false, new Date('2026-09-14T03:00:00Z'));
+    expect(monday.pendingGeneration).toMatchObject({
+      weekStartDate: '2026-09-14',
+      reason: 'resume',
+    });
+    expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(0);
+  });
+
+  it('withdraws a last-workout offer after unlinking and includes later corrections on confirmation', async () => {
+    const f = await fixture();
+    const offer = await automation.resume(f.user.id, false, friday);
+    await workouts.uncompleteWorkout(f.user.id, f.last.id);
+    expect((await automation.resume(f.user.id, false, friday)).pendingGeneration).toBeNull();
+    await expect(
+      automation.resume(f.user.id, false, friday, { confirmed: true, ...offer.pendingGeneration! }),
+    ).rejects.toThrow();
+    await workouts.completeWorkout(f.user.id, f.earlier.id, {
+      actualDistanceMeters: 4321,
+      actualDurationSeconds: 1234,
+    });
+    await workouts.completeWorkout(f.user.id, f.last.id);
+    expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(0);
+    const result = await confirmResume(f.user.id, false, friday);
+    const job = await prisma.planGenerationJob.findUniqueOrThrow({
+      where: { id: result.generation!.generationId },
+    });
+    expect(job.payload).toMatchObject({
+      runs: expect.arrayContaining([
+        expect.objectContaining({ distanceMeters: 4321, durationSeconds: 1234 }),
+      ]),
+    });
+  });
+
+  it('rejects stale confirmation without changing workouts', async () => {
+    const f = await fixture();
+    await expect(
+      automation.resume(f.user.id, false, friday, {
+        confirmed: true,
+        trainingPlanId: f.plan.id,
+        weekStartDate: '2026-09-21',
+      }),
+    ).rejects.toThrow('período mudou');
+    expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(0);
+  });
+
   it.each<WorkoutStatus>(['done', 'partial', 'skipped'])(
     'closes on final scheduled workout %s, skipping earlier pending workouts and ignoring rest',
     async (status) => {
       const f = await fixture(status);
-      const result = await automation.closeWeek(f.user.id, f.week.id, friday);
+      const result = await confirmClosure(f.user.id, f.week.id, friday);
       expect(result).toMatchObject({ closed: true, status: 'queued' });
       expect(
         (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closureReason,
@@ -133,24 +226,15 @@ suite('weekly automation (PostgreSQL transactions)', () => {
   it('waits for every workout on the last scheduled date', async () => {
     const f = await fixture();
     await f.create('2026-09-11', 'scheduled');
-    expect(await automation.closeWeek(f.user.id, f.week.id, friday)).toBeUndefined();
+    expect(await confirmClosure(f.user.id, f.week.id, friday)).toBeUndefined();
   });
 
   it.each(['2026-09-14T01:59:59Z', '2026-09-14T02:00:00Z', '2026-09-14T03:00:00Z'])(
     'does not close pending weeks on a scheduled sweep at %s',
     async (instant) => {
       const f = await fixture('scheduled');
-      const closeWeek = automation.closeWeek.bind(automation);
-      // Fix the closure clock while exercising the real periodic sweep and transactions.
-      const clock = jest
-        .spyOn(automation, 'closeWeek')
-        .mockImplementation((userId, weekId) => closeWeek(userId, weekId, new Date(instant)));
-      try {
-        await automation.tick();
-        expect(clock).toHaveBeenCalledWith(f.user.id, f.week.id);
-      } finally {
-        clock.mockRestore();
-      }
+      await automation.tick();
+      expect((await automation.resume(f.user.id, false, new Date(instant))).started).toBe(false);
       expect(await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).toMatchObject(
         {
           closedAt: null,
@@ -162,41 +246,6 @@ suite('weekly automation (PostgreSQL transactions)', () => {
       expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(0);
       expect(sqs.send.mock.calls.filter(([message]) => message.userId === f.user.id)).toHaveLength(
         0,
-      );
-    },
-  );
-
-  it.each<WorkoutStatus>(['done', 'partial', 'skipped'])(
-    'recovers a failed last-workout closure and pending queue dispatch for %s',
-    async (status) => {
-      const f = await fixture(status);
-      const reservation = jest
-        .spyOn(jobs, 'reserve')
-        .mockRejectedValueOnce(new Error('DB unavailable'));
-      try {
-        expect(await automation.afterWorkout(f.user.id, f.week.id)).toBeUndefined();
-      } finally {
-        reservation.mockRestore();
-      }
-      expect(
-        (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closedAt,
-      ).toBeNull();
-      sqs.send.mockRejectedValue(new Error('SQS unavailable'));
-      await automation.tick();
-      const job = await prisma.planGenerationJob.findFirstOrThrow({ where: { userId: f.user.id } });
-      expect(job.enqueuedAt).toBeNull();
-      expect(
-        (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closureReason,
-      ).toBe('last_workout');
-      sqs.send.mockReset().mockResolvedValue(undefined);
-      await automation.tick();
-      await automation.tick();
-      expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(1);
-      expect(
-        (await prisma.planGenerationJob.findUniqueOrThrow({ where: { id: job.id } })).enqueuedAt,
-      ).not.toBeNull();
-      expect(sqs.send.mock.calls.filter(([message]) => message.userId === f.user.id)).toHaveLength(
-        1,
       );
     },
   );
@@ -248,16 +297,16 @@ suite('weekly automation (PostgreSQL transactions)', () => {
   it('serializes simultaneous closure requests and dispatches exactly once', async () => {
     const f = await fixture();
     const results = await Promise.all(
-      Array.from({ length: 8 }, () => automation.closeWeek(f.user.id, f.week.id, friday)),
+      Array.from({ length: 8 }, () => confirmClosure(f.user.id, f.week.id, friday)),
     );
-    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(results.filter((r) => r?.started)).toHaveLength(1);
     expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(1);
     expect(sqs.send).toHaveBeenCalledTimes(1);
   });
 
   it('never regenerates after unlinking/recompleting a closed week', async () => {
     const f = await fixture();
-    const first = await automation.closeWeek(f.user.id, f.week.id, friday);
+    const first = await confirmClosure(f.user.id, f.week.id, friday);
     await workouts.uncompleteWorkout(f.user.id, f.last.id);
     const completed = await workouts.completeWorkout(f.user.id, f.last.id);
     expect(completed.nextWeekGeneration).toBeUndefined();
@@ -268,7 +317,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
   it('keeps a committed closure/job during a queue outage and recovers dispatch later', async () => {
     const f = await fixture();
     sqs.send.mockRejectedValueOnce(new Error('SQS unavailable'));
-    const result = await automation.closeWeek(f.user.id, f.week.id, friday);
+    const result = await confirmClosure(f.user.id, f.week.id, friday);
     expect(result!.generationId).toBeDefined();
     expect(
       (await prisma.planGenerationJob.findUniqueOrThrow({ where: { id: result!.generationId } }))
@@ -283,28 +332,26 @@ suite('weekly automation (PostgreSQL transactions)', () => {
 
   it('enforces eligibility and enrollment without closing historical weeks on first sync', async () => {
     const f = await fixture('done', false);
-    expect(await automation.closeWeek(f.user.id, f.week.id, friday)).toBeUndefined();
+    expect(await confirmClosure(f.user.id, f.week.id, friday)).toBeUndefined();
     await contexts.sync(f.user.id, {
       runs: [],
       timeZone: 'America/Sao_Paulo',
       capturedAt: friday.toISOString(),
     });
-    // createdAt is now, after this historical week.
-    expect(
-      await automation.closeWeek(f.user.id, f.week.id, new Date('2026-09-21')),
-    ).toBeUndefined();
+    // Merely discovering a historical pending week must not close it.
+    expect((await automation.resume(f.user.id, false, new Date('2026-09-21'))).started).toBe(false);
     const eligible = await fixture();
     billing.isEntitled.mockResolvedValue(false);
-    expect(await automation.closeWeek(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
+    expect(await confirmClosure(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
     billing.isEntitled.mockResolvedValue(true);
     config.set('WEEKLY_PLAN_AUTOMATION_ENABLED', 'false');
-    expect(await automation.closeWeek(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
+    expect(await confirmClosure(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
     config.set('WEEKLY_PLAN_AUTOMATION_ENABLED', 'true');
     await prisma.trainingPlan.update({
       where: { id: eligible.plan.id },
       data: { autoGenerate: false },
     });
-    expect(await automation.closeWeek(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
+    expect(await confirmClosure(eligible.user.id, eligible.week.id, friday)).toBeUndefined();
   });
 
   it('does not enqueue a next week that already exists', async () => {
@@ -330,10 +377,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
         status: 'scheduled',
       },
     });
-    expect(await automation.closeWeek(f.user.id, f.week.id, friday)).toMatchObject({
-      closed: true,
-      generationId: undefined,
-    });
+    expect(await confirmClosure(f.user.id, f.week.id, friday)).toBeUndefined();
     expect(sqs.send).not.toHaveBeenCalled();
   });
 
@@ -396,7 +440,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
   it('rolls back skipping/closure if reserving the job fails', async () => {
     const f = await fixture();
     const spy = jest.spyOn(jobs, 'reserve').mockRejectedValueOnce(new Error('reservation failed'));
-    await expect(automation.closeWeek(f.user.id, f.week.id, friday)).rejects.toThrow(
+    await expect(confirmClosure(f.user.id, f.week.id, friday)).rejects.toThrow(
       'reservation failed',
     );
     spy.mockRestore();
@@ -424,7 +468,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
       'America/Sao_Paulo',
     );
     expect(input.runs).toHaveLength(1);
-    expect(input.runs[0].startDate).toBe('2026-09-14T01:00:00Z');
+    expect(new Date(input.runs[0].startDate).toISOString()).toBe('2026-09-14T01:00:00.000Z');
   });
 
   it('captures the final completion metrics before reserving the generation', async () => {
@@ -435,7 +479,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
     });
     expect(result.status).toBe('done');
     const job = await prisma.planGenerationJob.findUniqueOrThrow({
-      where: { id: result.nextWeekGeneration!.generationId },
+      where: { id: (await confirmClosure(f.user.id, f.week.id, friday))!.generationId },
     });
     expect(job.payload).toMatchObject({
       runs: [expect.objectContaining({ distanceMeters: 7000, durationSeconds: 2500 })],
@@ -553,7 +597,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
         timeZone: 'America/Sao_Paulo',
         capturedAt: new Date().toISOString(),
       });
-      const result = await automation.resume(f.user.id, false, wednesday);
+      const result = await confirmResume(f.user.id, false, wednesday);
       expect(result).toMatchObject({
         started: true,
         weekStartDate: '2026-09-21',
@@ -581,10 +625,10 @@ suite('weekly automation (PostgreSQL transactions)', () => {
       expect(await prisma.weeklyGoal.count({ where: { trainingPlanId: f.plan.id } })).toBe(1);
     });
 
-    it('serializes simultaneous app openings into one generation and one dispatch', async () => {
+    it('serializes simultaneous confirmations into one generation and one dispatch', async () => {
       const f = await resumable();
       const results = await Promise.all(
-        Array.from({ length: 8 }, () => automation.resume(f.user.id, false, wednesday)),
+        Array.from({ length: 8 }, () => confirmResume(f.user.id, false, wednesday)),
       );
       expect(results.filter((r) => r.started)).toHaveLength(1);
       expect(new Set(results.map((r) => r.generation?.generationId)).size).toBe(1);
@@ -604,7 +648,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
             metrics: {},
           },
         });
-        expect((await automation.resume(f.user.id, false, wednesday)).generation).toBeNull();
+        expect((await confirmResume(f.user.id, false, wednesday)).generation).toBeNull();
         expect(
           (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closedAt,
         ).toBeNull();
@@ -626,7 +670,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
           metrics: {},
         },
       });
-      expect((await automation.resume(f.user.id, false, wednesday)).started).toBe(true);
+      expect((await confirmResume(f.user.id, false, wednesday)).started).toBe(true);
       expect((await prisma.workout.findUniqueOrThrow({ where: { id: f.last.id } })).status).toBe(
         'scheduled',
       );
@@ -634,7 +678,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
 
     it('does not reset a failed job on reopening; explicit retry updates its window', async () => {
       const f = await resumable();
-      const first = await automation.resume(f.user.id, false, wednesday);
+      const first = await confirmResume(f.user.id, false, wednesday);
       const id = first.generation!.generationId;
       await prisma.planGenerationJob.update({
         where: { id },
@@ -644,7 +688,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
         'failed',
       );
       expect(sqs.send).toHaveBeenCalledTimes(1);
-      const retry = await automation.resume(f.user.id, true, new Date('2026-09-25T15:00:00Z'));
+      const retry = await confirmResume(f.user.id, true, new Date('2026-09-25T15:00:00Z'));
       expect(retry).toMatchObject({
         started: true,
         generation: { generationId: id, status: 'queued' },
@@ -659,7 +703,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
 
     it('passes the partial window to the consumer and terminates an expired window without three retries', async () => {
       const f = await resumable();
-      const resumed = await automation.resume(f.user.id, false, wednesday);
+      const resumed = await confirmResume(f.user.id, false, wednesday);
       const generationId = resumed.generation!.generationId;
       const planner = {
         planFromHealth: jest.fn(
@@ -692,31 +736,31 @@ suite('weekly automation (PostgreSQL transactions)', () => {
     it('leaves onboarding, disabled automation, missing snapshots and expired entitlement alone', async () => {
       const f = await resumable();
       billing.isEntitled.mockResolvedValue(false);
-      expect((await automation.resume(f.user.id, false, wednesday)).started).toBe(false);
+      expect((await confirmResume(f.user.id, false, wednesday)).started).toBe(false);
       billing.isEntitled.mockResolvedValue(true);
       config.set('WEEKLY_PLAN_AUTOMATION_ENABLED', 'false');
-      expect((await automation.resume(f.user.id, false, wednesday)).started).toBe(false);
+      expect((await confirmResume(f.user.id, false, wednesday)).started).toBe(false);
       config.set('WEEKLY_PLAN_AUTOMATION_ENABLED', 'true');
       await prisma.plannerHealthContext.delete({ where: { userId: f.user.id } });
-      expect((await automation.resume(f.user.id, false, wednesday)).started).toBe(false);
+      expect((await confirmResume(f.user.id, false, wednesday)).started).toBe(false);
       await prisma.plannerHealthContext.create({
         data: { userId: f.user.id, timeZone: 'UTC', capturedAt: wednesday, payload: { runs: [] } },
       });
       await prisma.weeklyGoal.deleteMany({ where: { trainingPlanId: f.plan.id } });
-      expect((await automation.resume(f.user.id, false, wednesday)).started).toBe(false);
+      expect((await confirmResume(f.user.id, false, wednesday)).started).toBe(false);
       expect(sqs.send).not.toHaveBeenCalled();
     });
 
     it('rolls back historical changes when reservation fails and keeps a job durable during SQS outage', async () => {
       const f = await resumable();
       const spy = jest.spyOn(jobs, 'reserve').mockRejectedValueOnce(new Error('DB failure'));
-      await expect(automation.resume(f.user.id, false, wednesday)).rejects.toThrow('DB failure');
+      await expect(confirmResume(f.user.id, false, wednesday)).rejects.toThrow('DB failure');
       spy.mockRestore();
       expect((await prisma.workout.findUniqueOrThrow({ where: { id: f.last.id } })).status).toBe(
         'scheduled',
       );
       sqs.send.mockRejectedValueOnce(new Error('SQS unavailable'));
-      const result = await automation.resume(f.user.id, false, wednesday);
+      const result = await confirmResume(f.user.id, false, wednesday);
       expect(result.started).toBe(true);
       await jobs.dispatchPending();
       expect(
@@ -733,10 +777,11 @@ suite('weekly automation (PostgreSQL transactions)', () => {
       async (retryFailed) => {
         const f = await resumable();
         const saturday = new Date('2026-09-26T15:00:00Z');
-        expect(await automation.resume(f.user.id, retryFailed, saturday)).toEqual({
+        expect(await confirmResume(f.user.id, retryFailed, saturday)).toEqual({
           weekStartDate: null,
           generation: null,
           started: false,
+          pendingGeneration: null,
         });
         expect(
           (await prisma.weeklyGoal.findUniqueOrThrow({ where: { id: f.week.id } })).closedAt,
@@ -752,7 +797,7 @@ suite('weekly automation (PostgreSQL transactions)', () => {
     it('resumes Sunday after 23:00 in the current week when Sunday is available', async () => {
       const f = await resumable();
       await prisma.user.update({ where: { id: f.user.id }, data: { availableDays: ['sunday'] } });
-      const result = await automation.resume(f.user.id, false, new Date('2026-09-28T02:30:00Z'));
+      const result = await confirmResume(f.user.id, false, new Date('2026-09-28T02:30:00Z'));
       expect(result).toMatchObject({ started: true, weekStartDate: '2026-09-21' });
       const job = await prisma.planGenerationJob.findUniqueOrThrow({
         where: { id: result.generation!.generationId },
@@ -769,14 +814,14 @@ suite('weekly automation (PostgreSQL transactions)', () => {
     it('waits for local Monday to generate the new current week when no days remain', async () => {
       const f = await resumable();
       expect(
-        (await automation.resume(f.user.id, false, new Date('2026-09-28T02:59:59Z'))).started,
+        (await confirmResume(f.user.id, false, new Date('2026-09-28T02:59:59Z'))).started,
       ).toBe(false);
-      expect(
-        await automation.resume(f.user.id, false, new Date('2026-09-28T03:00:00Z')),
-      ).toMatchObject({
-        started: true,
-        weekStartDate: '2026-09-28',
-      });
+      expect(await confirmResume(f.user.id, false, new Date('2026-09-28T03:00:00Z'))).toMatchObject(
+        {
+          started: true,
+          weekStartDate: '2026-09-28',
+        },
+      );
       expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(1);
     });
 
@@ -785,8 +830,8 @@ suite('weekly automation (PostgreSQL transactions)', () => {
       await prisma.workout.update({ where: { id: f.last.id }, data: { status: 'done' } });
       const monday = new Date('2026-09-14T12:00:00Z');
       await Promise.all([
-        automation.closeWeek(f.user.id, f.week.id, monday),
-        automation.resume(f.user.id, false, monday),
+        confirmClosure(f.user.id, f.week.id, monday),
+        confirmResume(f.user.id, false, monday),
       ]);
       expect(await prisma.planGenerationJob.count({ where: { userId: f.user.id } })).toBe(1);
       expect(sqs.send).toHaveBeenCalledTimes(1);

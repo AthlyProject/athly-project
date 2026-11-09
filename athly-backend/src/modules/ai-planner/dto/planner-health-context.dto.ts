@@ -25,5 +25,20 @@ export class ResumePlanDto {
   @ApiPropertyOptional({ default: false })
   @IsOptional()
   @IsBoolean()
+  confirmed?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  trainingPlanId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  weekStartDate?: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
   retryFailed?: boolean;
 }

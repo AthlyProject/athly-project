@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
 
-/// Text-to-speech announcements in pt-BR, serialised through a single queue
+/// Text-to-speech announcements in the app language, serialised through a single queue
 /// so phrases never overlap. Supports priority interruption (e.g. boundary
 /// cue replaces a lower-priority in-flight phrase).
 @MainActor
@@ -18,7 +18,6 @@ final class SpeechService: NSObject {
     }
 
     private let synthesizer = AVSpeechSynthesizer()
-    private let voice: AVSpeechSynthesisVoice? = AVSpeechSynthesisVoice(language: "pt-BR")
     private var currentPriority: Priority = .low
     private var currentUtteranceID: ObjectIdentifier?
     private var utteranceCueTokens: [ObjectIdentifier: UUID] = [:]
@@ -33,8 +32,12 @@ final class SpeechService: NSObject {
 
     // MARK: - Public API
 
-    func announce(_ phrase: String, priority: Priority = .normal) {
+    func announce(_ phrase: String, language: WorkoutSpeechLanguage, priority: Priority = .normal) {
         guard !phrase.isEmpty else { return }
+        let preferred = AVSpeechSynthesisVoice(language: language.voiceLanguage)
+        let voices = [preferred].compactMap { $0 } + AVSpeechSynthesisVoice.speechVoices()
+        guard let identifier = language.voiceIdentifier(in: voices.map { ($0.identifier, $0.language) }),
+              let voice = AVSpeechSynthesisVoice(identifier: identifier) else { return }
         if synthesizer.isSpeaking && priority < currentPriority { return }
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)

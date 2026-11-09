@@ -282,9 +282,16 @@ actor APIClient {
         let _: Response = try await post("/ai-planner/health-context", body: context)
     }
 
-    func resumePlan(retryFailed: Bool = false) async throws -> ResumePlanResponse {
-        struct Request: Encodable { let retryFailed: Bool }
-        return try await post("/ai-planner/resume", body: Request(retryFailed: retryFailed))
+    func resumePlan(retryFailed: Bool = false, confirmation: PendingWeekGeneration? = nil) async throws -> ResumePlanResponse {
+        struct Request: Encodable {
+            let retryFailed: Bool
+            let confirmed: Bool
+            let trainingPlanId: String?
+            let weekStartDate: String?
+        }
+        return try await post("/ai-planner/resume", body: Request(retryFailed: retryFailed,
+            confirmed: confirmation != nil, trainingPlanId: confirmation?.trainingPlanId,
+            weekStartDate: confirmation?.weekStartDate))
     }
 
     func latestPlanGeneration() async throws -> AiPlannerGenerationStatusResponse? {

@@ -31,21 +31,12 @@ struct RunTargetAlert: Equatable, Sendable {
         case .distance:
             return String(localized: "\(Self.formatDecimal(value)) km")
         case .time:
-            return Self.formatDuration(seconds: Int((value * 60).rounded()), compact: true)
+            return Self.formatDuration(seconds: Int((value * 60).rounded()))
         }
     }
 
     var spokenValue: String {
-        switch kind {
-        case .distance:
-            let meters = value * 1000
-            if meters >= 1000 {
-                return "\(Self.formatDecimal(value)) quilômetros"
-            }
-            return "\(Int(meters.rounded())) metros"
-        case .time:
-            return Self.formatDuration(seconds: Int((value * 60).rounded()), compact: false)
-        }
+        WorkoutSpeechFormatter().targetValue(self)
     }
 
     private static func formatDecimal(_ value: Double) -> String {
@@ -56,21 +47,10 @@ struct RunTargetAlert: Equatable, Sendable {
         return formatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
     }
 
-    private static func formatDuration(seconds: Int, compact: Bool) -> String {
+    private static func formatDuration(seconds: Int) -> String {
         let minutes = seconds / 60
         let remainingSeconds = seconds % 60
-
-        if compact {
-            if remainingSeconds == 0 { return String(localized: "\(minutes) min") }
-            return String(localized: "\(minutes)m \(remainingSeconds)s")
-        }
-
-        if minutes == 0 {
-            return "\(remainingSeconds) segundo\(remainingSeconds == 1 ? "" : "s")"
-        }
-        if remainingSeconds == 0 {
-            return "\(minutes) minuto\(minutes == 1 ? "" : "s")"
-        }
-        return "\(minutes) minuto\(minutes == 1 ? "" : "s") e \(remainingSeconds) segundo\(remainingSeconds == 1 ? "" : "s")"
+        if remainingSeconds == 0 { return String(localized: "\(minutes) min") }
+        return String(localized: "\(minutes)m \(remainingSeconds)s")
     }
 }

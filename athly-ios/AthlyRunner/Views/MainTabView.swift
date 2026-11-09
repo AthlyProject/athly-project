@@ -61,9 +61,9 @@ struct MainTabView: View {
                             .font(AthlyTheme.Typography.body(14))
                         if planVM.canRetryGeneration {
                             Button("Tentar novamente") {
-                                Task { await planVM.refreshAutomaticGeneration(retryFailed: true) }
+                                planVM.presentWeekGenerationConfirmation()
                             }
-                            .disabled(planVM.isResumingPlan)
+                            .disabled(planVM.isResumingPlan || planVM.isConfirmingWeek)
                         }
                     }
                     Button {
@@ -79,6 +79,38 @@ struct MainTabView: View {
                 .padding(.horizontal, AthlyTheme.Spacing.sm)
                 .accessibilityElement(children: .combine)
             }
+        }
+        .sheet(isPresented: $planVM.showWeekGenerationConfirmation) {
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text(planVM.pendingWeekGeneration?.buttonTitle ?? String(localized: "Gerar treinos"))
+                        .font(AthlyTheme.Typography.heading(22))
+                    if let pending = planVM.pendingWeekGeneration {
+                        Text(pending.periodLabel)
+                    }
+                    Text("Antes de gerar, confira se você já importou suas corridas e ajustou os treinos realizados. Os treinos ainda pendentes da semana encerrada serão marcados como pulados.")
+                    Button("Gerar agora") { Task { await planVM.confirmWeekGeneration() } }
+                        .buttonStyle(AthlyPrimaryButtonStyle())
+                    Button("Agora não") { planVM.showWeekGenerationConfirmation = false }
+                }
+                .padding(24)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Fechar") { planVM.showWeekGenerationConfirmation = false }
+                    }
+                }
+            }
+            .presentationDetents([.large])
+        }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            guard planVM.pendingWeekGeneration != nil, !planVM.showWeekGenerationConfirmation,
+                  UIApplication.shared.applicationState == .active,
+                  !isRunInProgress, !isDetecting, detectedRun == nil else { return }
+            // Child feedback/import sheets take priority; offer after they dismiss.
+            let root = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                .flatMap(\.windows).first(where: \.isKeyWindow)?.rootViewController
+            guard root?.presentedViewController == nil else { return }
+            planVM.offerWeekGeneration()
         }
         .ignoresSafeArea(.keyboard)
         .alert("Erro", isPresented: Binding(
@@ -111,9 +143,11 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             planVM.refreshCalendar()
+            Task { await planVM.refreshAutomaticGeneration() }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name.NSSystemTimeZoneDidChange)) { _ in
             planVM.refreshCalendar()
+            Task { await planVM.refreshAutomaticGeneration() }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             planVM.refreshCalendar()

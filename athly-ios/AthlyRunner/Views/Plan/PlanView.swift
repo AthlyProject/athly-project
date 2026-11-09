@@ -54,6 +54,14 @@ struct PlanView: View {
                                 .padding(.vertical, 8)
                         }
 
+                        if let pending = planVM.pendingWeekGeneration, !planVM.isGeneratingInBackground {
+                            Button(pending.buttonTitle) { planVM.presentWeekGenerationConfirmation() }
+                                .buttonStyle(AthlyPrimaryButtonStyle())
+                                .disabled(planVM.isResumingPlan || planVM.isConfirmingWeek)
+                                .padding(.horizontal, AthlyTheme.Spacing.sm)
+                                .padding(.top, 8)
+                        }
+
                         if planVM.isGeneratingInBackground {
                             generatingBanner
                                 .padding(.horizontal, AthlyTheme.Spacing.sm)

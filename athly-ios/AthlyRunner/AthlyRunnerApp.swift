@@ -126,6 +126,7 @@ struct AthlyRunnerApp: App {
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+                    planViewModel.beginWeekOfferSession()
                     Task { await HealthKitAuthorizationCoordinator.shared.invalidate() }
                 }
         }

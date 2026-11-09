@@ -40,7 +40,7 @@ export class AiPlannerController {
   @Post('resume')
   @HttpCode(200)
   resume(@CurrentUser() user: UserModel, @Body() input: ResumePlanDto) {
-    return this.automation.resume(user.id, input?.retryFailed ?? false);
+    return this.automation.resume(user.id, input?.retryFailed ?? false, new Date(), input);
   }
 
   @Post('health-context')

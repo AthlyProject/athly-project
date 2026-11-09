@@ -5,6 +5,59 @@ import HealthKit
 final class WorkoutModelDateTests: XCTestCase {
 
     @MainActor
+    func testLogoutDuringConfirmationHealthSyncPreventsGeneration() async {
+        var finishSync: CheckedContinuation<Void, Never>?
+        var confirmed = false
+        let vm = TrainingPlanViewModel(resumeDependencies: PlanResumeDependencies(
+            isAuthenticated: { true }, syncHealth: {},
+            syncBeforeConfirmation: { await withCheckedContinuation { finishSync = $0 } },
+            confirm: { _ in
+                confirmed = true
+                return ResumePlanResponse(weekStartDate: nil, generation: nil, started: false)
+            }, latest: { nil }))
+        vm.pendingWeekGeneration = PendingWeekGeneration(trainingPlanId: "p", sourceWeeklyGoalId: "w",
+            weekStartDate: "2026-11-16", reason: "last_workout")
+        let confirmation = Task { await vm.confirmWeekGeneration() }
+        while finishSync == nil { await Task.yield() }
+        vm.cancelPendingGeneration()
+        finishSync?.resume()
+        await confirmation.value
+        XCTAssertFalse(confirmed)
+        XCTAssertFalse(vm.isConfirmingWeek)
+        XCTAssertNil(vm.pendingWeekGeneration)
+    }
+
+    @MainActor
+    func testPendingWeekOnlyPromptsOncePerOpeningAndNeverConfirmsDuringRefresh() async {
+        let pending = PendingWeekGeneration(trainingPlanId: "p", sourceWeeklyGoalId: "w",
+            weekStartDate: "2026-11-16", reason: "last_workout")
+        var confirmations = 0
+        let vm = TrainingPlanViewModel(resumeDependencies: PlanResumeDependencies(
+            isAuthenticated: { true }, syncHealth: {},
+            request: { _ in ResumePlanResponse(pendingGeneration: pending, weekStartDate: pending.weekStartDate,
+                generation: nil, started: false) }, syncBeforeConfirmation: {},
+            confirm: { _ in confirmations += 1; return ResumePlanResponse(weekStartDate: nil, generation: nil, started: false) },
+            latest: { nil }))
+        await vm.refreshAutomaticGeneration()
+        XCTAssertEqual(confirmations, 0)
+        XCTAssertEqual(vm.pendingWeekGeneration, pending)
+        vm.offerWeekGeneration()
+        XCTAssertTrue(vm.showWeekGenerationConfirmation)
+        vm.showWeekGenerationConfirmation = false
+        await vm.refreshAutomaticGeneration()
+        vm.offerWeekGeneration()
+        XCTAssertFalse(vm.showWeekGenerationConfirmation)
+        vm.beginWeekOfferSession()
+        vm.offerWeekGeneration()
+        XCTAssertTrue(vm.showWeekGenerationConfirmation)
+        await vm.confirmWeekGeneration()
+        XCTAssertEqual(confirmations, 1)
+        vm.cancelPendingGeneration()
+        XCTAssertNil(vm.pendingWeekGeneration)
+        XCTAssertFalse(vm.showWeekGenerationConfirmation)
+    }
+
+    @MainActor
     func testResumeCoalescesForegroundAndLoginAndRequiresExplicitRetry() async {
         var uploads = 0
         var requests: [Bool] = []
@@ -19,7 +72,7 @@ final class WorkoutModelDateTests: XCTestCase {
             },
             request: { retry in
                 requests.append(retry)
-                return ResumePlanResponse(weekStartDate: "2026-09-21", generation: failed, started: false)
+                return ResumePlanResponse(pendingGeneration: PendingWeekGeneration(trainingPlanId: "p", sourceWeeklyGoalId: "w", weekStartDate: "2026-09-21", reason: "resume"), weekStartDate: "2026-09-21", generation: failed, started: false)
             }, latest: { nil }
         ))
         let login = Task { await vm.refreshAutomaticGeneration() }

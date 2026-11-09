@@ -28,6 +28,7 @@ final class CueOrchestrator {
     // MARK: - Public API
 
     func fire(_ event: Event) {
+        let formatter = WorkoutSpeechFormatter()
         switch event {
         case .countdown3:
             haptic.fire(.countdown)
@@ -36,18 +37,17 @@ final class CueOrchestrator {
         case .boundary(let next):
             haptic.fire(.boundary)
             audio.playBoundary()
-            speech.announce(ttsPhrase(for: next), priority: .normal)
+            speech.announce(formatter.boundary(for: next), language: formatter.language, priority: .normal)
 
-        case .setComplete(let label, let total):
+        case .setComplete:
             haptic.fire(.setComplete)
             audio.playSetComplete()
-            let phrase = total > 1 ? "\(label) concluído" : "Série concluída"
-            speech.announce(phrase, priority: .high)
+            speech.announce(formatter.setComplete, language: formatter.language, priority: .high)
 
         case .targetAlertReached(let alert):
             haptic.fire(.boundary)
             audio.playBoundary()
-            speech.announce("Ponto de retorno alcançado, \(alert.spokenValue).", priority: .high)
+            speech.announce(formatter.targetReached(alert), language: formatter.language, priority: .high)
         }
     }
 
@@ -55,54 +55,5 @@ final class CueOrchestrator {
         audio.stopAll()
         speech.stop()
         CueAudioSession.shared.forceDeactivate()
-    }
-
-    // MARK: - Private
-
-    private func ttsPhrase(for segment: ActiveSegment) -> String {
-        var parts: [String] = []
-
-        // Set position badge — "Tiro 3 de 6"
-        if let idx = segment.setIndex, let total = segment.setTotal {
-            parts.append("\(kindLabel(segment.kind)) \(idx) de \(total)")
-        } else {
-            parts.append(kindLabel(segment.kind))
-        }
-
-        // Duration or distance cue
-        switch segment.end.by {
-        case .distanceM:
-            let meters = Int(segment.end.value)
-            if meters >= 1000 {
-                let km = String(format: "%.1f", Double(meters) / 1000.0)
-                parts.append("\(km) quilômetros")
-            } else {
-                parts.append("\(meters) metros")
-            }
-        case .durationSec:
-            let secs = Int(segment.end.value)
-            if secs >= 60 {
-                let m = secs / 60
-                let s = secs % 60
-                parts.append(s == 0 ? "\(m) minuto\(m > 1 ? "s" : "")" : "\(m):\(String(format: "%02d", s))")
-            } else {
-                parts.append("\(secs) segundos")
-            }
-        case .reps:
-            parts.append("\(Int(segment.end.value)) repetições")
-        }
-
-        return parts.joined(separator: ", ")
-    }
-
-    private func kindLabel(_ kind: SegmentKind) -> String {
-        switch kind {
-        case .warmup:   return "Aquecimento"
-        case .work:     return "Tiro"
-        case .recovery: return "Recuperação"
-        case .cooldown: return "Desaceleramento"
-        case .rest:     return "Descanso"
-        case .set, .unknown: return "Próximo bloco"
-        }
     }
 }

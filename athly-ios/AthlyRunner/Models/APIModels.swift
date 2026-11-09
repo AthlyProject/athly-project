@@ -646,7 +646,32 @@ struct AdminWeeklyReportResponse: Codable, Sendable {
     let workouts: [AdminWorkoutSummary]
 }
 
+struct PendingWeekGeneration: Codable, Sendable, Equatable {
+    let trainingPlanId: String
+    let sourceWeeklyGoalId: String
+    let weekStartDate: String
+    let reason: String
+
+    var periodLabel: String {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd"
+        guard let start = parser.date(from: weekStartDate),
+              let end = Calendar.current.date(byAdding: .day, value: 6, to: start) else { return weekStartDate }
+        let formatter = DateIntervalFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        let first = reason == "resume" ? min(end, max(start, Calendar.current.startOfDay(for: Date()))) : start
+        return formatter.string(from: first, to: end)
+    }
+
+    var buttonTitle: String {
+        reason == "last_workout" ? String(localized: "Gerar treinos da próxima semana") : String(localized: "Gerar treinos desta semana")
+    }
+}
+
 struct ResumePlanResponse: Decodable, Sendable {
+    var pendingGeneration: PendingWeekGeneration? = nil
     let weekStartDate: String?
     let generation: AiPlannerGenerationStatusResponse?
     let started: Bool

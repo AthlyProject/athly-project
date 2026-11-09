@@ -1,6 +1,666 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
+  "speech.block.warmup": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Aquecimento"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Warm-up"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Aufwärmen"
+        }
+      }
+    }
+  },
+  "speech.block.work": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Tiro"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Interval"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Intervall"
+        }
+      }
+    }
+  },
+  "speech.block.recovery": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Recuperação"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Recovery"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Erholung"
+        }
+      }
+    }
+  },
+  "speech.block.cooldown": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Desaceleramento"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cool-down"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Abwärmen"
+        }
+      }
+    }
+  },
+  "speech.block.rest": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Descanso"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rest"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pause"
+        }
+      }
+    }
+  },
+  "speech.block.next": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Próximo bloco"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Next block"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nächster Abschnitt"
+        }
+      }
+    }
+  },
+  "speech.position": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ %@ de %@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ %@ of %@"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ %@ von %@"
+        }
+      }
+    }
+  },
+  "speech.boundary": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@, %@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@, %@"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@, %@"
+        }
+      }
+    }
+  },
+  "speech.setComplete": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Série concluída"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Set completed"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Serie abgeschlossen"
+        }
+      }
+    }
+  },
+  "speech.durationCombined": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ e %@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ and %@"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ und %@"
+        }
+      }
+    }
+  },
+  "speech.targetReached": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ponto de retorno alcançado, %@."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Turnaround point reached, %@."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Umkehrpunkt erreicht, %@."
+        }
+      }
+    }
+  },
+  "speech.kilometer.one": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ quilômetro"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ kilometer"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Kilometer"
+        }
+      }
+    }
+  },
+  "speech.kilometer.other": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ quilômetros"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ kilometers"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Kilometer"
+        }
+      }
+    }
+  },
+  "speech.meter.one": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ metro"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ meter"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Meter"
+        }
+      }
+    }
+  },
+  "speech.meter.other": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ metros"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ meters"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Meter"
+        }
+      }
+    }
+  },
+  "speech.second.one": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ segundo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ second"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Sekunde"
+        }
+      }
+    }
+  },
+  "speech.second.other": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ segundos"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ seconds"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Sekunden"
+        }
+      }
+    }
+  },
+  "speech.minute.one": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ minuto"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ minute"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Minute"
+        }
+      }
+    }
+  },
+  "speech.minute.other": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ minutos"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ minutes"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Minuten"
+        }
+      }
+    }
+  },
+  "speech.repetition.one": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ repetição"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ repetition"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Wiederholung"
+        }
+      }
+    }
+  },
+  "speech.repetition.other": {
+    "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
+    "extractionState": "manual",
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ repetições"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ repetitions"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ Wiederholungen"
+        }
+      }
+    }
+  },
+  "Gerar treinos da próxima semana": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gerar treinos da próxima semana"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generate next week’s workouts"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Trainings für nächste Woche erstellen"
+        }
+      }
+    }
+  },
+  "Gerar treinos desta semana": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gerar treinos desta semana"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generate this week’s workouts"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Trainings für diese Woche erstellen"
+        }
+      }
+    }
+  },
+  "Gerar treinos": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gerar treinos"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generate workouts"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Trainings erstellen"
+        }
+      }
+    }
+  },
+  "Semana de": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Semana de"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Week of"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Woche vom"
+        }
+      }
+    }
+  },
+  "Gerar agora": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gerar agora"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generate now"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Jetzt erstellen"
+        }
+      }
+    }
+  },
+  "Agora não": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Agora não"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Not now"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Jetzt nicht"
+        }
+      }
+    }
+  },
+  "Antes de gerar, confira se você já importou suas corridas e ajustou os treinos realizados. Os treinos ainda pendentes da semana encerrada serão marcados como pulados.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Antes de gerar, confira se você já importou suas corridas e ajustou os treinos realizados. Os treinos ainda pendentes da semana encerrada serão marcados como pulados."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Before generating, make sure you have imported your runs and reviewed completed workouts. Pending workouts in the closing week will be marked as skipped."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prüfe vor dem Erstellen, ob du deine Läufe importiert und absolvierte Trainings angepasst hast. Offene Trainings der abgeschlossenen Woche werden als übersprungen markiert."
+        }
+      }
+    }
+  }
+,
+
   "Descreva um objetivo relacionado a corrida.": {
     "localizations": {
       "pt-BR": {

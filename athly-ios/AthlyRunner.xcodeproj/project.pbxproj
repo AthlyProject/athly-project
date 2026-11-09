@@ -186,6 +186,8 @@
 		5BA72CA34B21769E9500D684 /* HeartRateZonesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41E0B034CB5FACFD49861B1B /* HeartRateZonesViewModel.swift */; };
 		48C2D2F0D49EE987800E5CDB /* HeartRateZonesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E1EA5053E41A6C26BF9621 /* HeartRateZonesCard.swift */; };
 		FB90A238C1BBEC9562D5602D /* HeartRateZonesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D6B4348AB1FCA2EAE20BF8 /* HeartRateZonesTests.swift */; };
+		0509CCFAACB26193AA417192 /* WorkoutSpeechFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DBACC7E288B4E767754027 /* WorkoutSpeechFormatter.swift */; };
+		0DDFB3C33F394095005E13EA /* WorkoutSpeechFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4D5430E704614A12E6771A /* WorkoutSpeechFormatterTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -392,6 +394,8 @@
 		41E0B034CB5FACFD49861B1B /* HeartRateZonesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesViewModel.swift; sourceTree = "<group>"; };
 		F2E1EA5053E41A6C26BF9621 /* HeartRateZonesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesCard.swift; sourceTree = "<group>"; };
 		49D6B4348AB1FCA2EAE20BF8 /* HeartRateZonesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZonesTests.swift; sourceTree = "<group>"; };
+		E8DBACC7E288B4E767754027 /* WorkoutSpeechFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSpeechFormatter.swift; sourceTree = "<group>"; };
+		4C4D5430E704614A12E6771A /* WorkoutSpeechFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSpeechFormatterTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -574,6 +578,7 @@
 				D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */,
 				C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */,
 				423FFE7AAB42199A780B472F /* WorkoutSegmentationEngineTests.swift */,
+				4C4D5430E704614A12E6771A /* WorkoutSpeechFormatterTests.swift */,
 			);
 			path = AthlyRunnerTests;
 			sourceTree = "<group>";
@@ -663,6 +668,7 @@
 				EFEF5866D83EEA2BF3BEF16D /* WorkoutImportService.swift */,
 				5A81DD03B1528A6E276C509E /* WorkoutObjectiveValidator.swift */,
 				3D3E656AAEC4CBDF039D56F6 /* WorkoutSegmentationEngine.swift */,
+				E8DBACC7E288B4E767754027 /* WorkoutSpeechFormatter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -973,6 +979,7 @@
 				D7A3CB6FE5144DF7956BCE11 /* WorkoutCompletionTests.swift in Sources */,
 				C904BD91DA634809B184B811 /* HealthKitAuthorizationTests.swift in Sources */,
 				ACD4680D762031EC32CB8267 /* WorkoutSegmentationEngineTests.swift in Sources */,
+				0DDFB3C33F394095005E13EA /* WorkoutSpeechFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1101,6 +1108,7 @@
 				30AC5D62B0EDBC82EBA09E39 /* WorkoutImportService.swift in Sources */,
 				6B5D1D33AE4BCABBA6370518 /* WorkoutObjectiveValidator.swift in Sources */,
 				9D796877255933839B6D1A3F /* WorkoutSegmentationEngine.swift in Sources */,
+				0509CCFAACB26193AA417192 /* WorkoutSpeechFormatter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -10,6 +10,10 @@ struct PlanResumeDependencies {
     var isAuthenticated: @MainActor () async -> Bool = { await APIClient.shared.isAuthenticated }
     var syncHealth: @MainActor () async -> Void = { await PlannerHealthSyncService.shared.sync() }
     var request: @MainActor (Bool) async throws -> ResumePlanResponse = { try await APIClient.shared.resumePlan(retryFailed: $0) }
+    var syncBeforeConfirmation: @MainActor () async -> Void = { await PlannerHealthSyncService.shared.sync(force: true) }
+    var confirm: @MainActor (PendingWeekGeneration) async throws -> ResumePlanResponse = {
+        try await APIClient.shared.resumePlan(retryFailed: true, confirmation: $0)
+    }
     var latest: @MainActor () async throws -> AiPlannerGenerationStatusResponse? = { try await APIClient.shared.latestPlanGeneration() }
 }
 
@@ -118,6 +122,56 @@ final class TrainingPlanViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isGenerating: Bool = false
     @Published var isGeneratingInBackground: Bool = false
+    @Published var pendingWeekGeneration: PendingWeekGeneration?
+    @Published var showWeekGenerationConfirmation = false
+    private var offeredWeekGenerations = Set<String>()
+    @Published private(set) var isConfirmingWeek = false
+
+    func beginWeekOfferSession() { offeredWeekGenerations.removeAll() }
+
+    func offerWeekGeneration() {
+        guard let pending = pendingWeekGeneration, !isResumingPlan, !isConfirmingWeek,
+              !isGeneratingInBackground, !showWeekGenerationConfirmation else { return }
+        let key = pending.trainingPlanId + pending.weekStartDate
+        guard offeredWeekGenerations.insert(key).inserted else { return }
+        showWeekGenerationConfirmation = true
+    }
+
+    func presentWeekGenerationConfirmation() {
+        guard let pending = pendingWeekGeneration, !isConfirmingWeek, !isGeneratingInBackground else { return }
+        offeredWeekGenerations.insert(pending.trainingPlanId + pending.weekStartDate)
+        showWeekGenerationConfirmation = true
+    }
+
+    func confirmWeekGeneration() async {
+        guard let pending = pendingWeekGeneration, !isConfirmingWeek else { return }
+        isConfirmingWeek = true
+        showWeekGenerationConfirmation = false
+        let version = resumeVersion
+        defer { if version == resumeVersion { isConfirmingWeek = false } }
+        if let refresh = resumeRefreshTask { await refresh.value }
+        await resumeDependencies.syncBeforeConfirmation()
+        guard version == resumeVersion else { return }
+        do {
+            let response = try await resumeDependencies.confirm(pending)
+            guard version == resumeVersion else { return }
+            pendingWeekGeneration = response.pendingGeneration
+            if let generation = response.generation {
+                resumableGenerationIds.insert(generation.generationId)
+                await applyDiscoveredGeneration(generation, showNotice: true)
+            }
+            guard version == resumeVersion else { return }
+            await loadData(reportErrors: false)
+        } catch {
+            guard version == resumeVersion else { return }
+            generationErrorMessage = error.localizedDescription
+            pendingWeekGeneration = nil
+        }
+        guard version == resumeVersion else { return }
+        isConfirmingWeek = false
+        await refreshAutomaticGeneration()
+    }
+
     @Published var showNextWeekNotice = false
     private var noticeTask: Task<Void, Never>?
     private var handledClosureIds = Set<String>()
@@ -890,6 +944,7 @@ final class TrainingPlanViewModel: ObservableObject {
             AchievementStore.shared.remove(workoutId: workout.id)
             achievementCount = AchievementStore.shared.count
             replaceWorkout(updated)
+            await refreshAutomaticGeneration()
             // O lembrete local só é agendado para treinos `scheduled`, então precisa voltar.
             await NotificationService.shared.reschedule(workouts: allWorkouts)
             return true
@@ -941,6 +996,7 @@ final class TrainingPlanViewModel: ObservableObject {
             let updated = try await rescheduleDependencies.request(workout.id, dayString)
             replaceWorkout(updated)
             await rescheduleDependencies.notify(allWorkouts)
+            await refreshAutomaticGeneration()
         } catch is CancellationError {
             // ignored
         } catch let error as URLError where error.code == .cancelled {
@@ -955,28 +1011,11 @@ final class TrainingPlanViewModel: ObservableObject {
     }
 
     private func handleWeekClosure(_ workout: WorkoutModel) async {
-        guard let closure = workout.nextWeekGeneration, closure.closed else { return }
-        let key = closure.generationId ?? workout.weeklyGoalId ?? workout.id
-        guard handledClosureIds.insert(key).inserted else { return }
-        await loadData(reportErrors: false)
-        await NotificationService.shared.reschedule(workouts: allWorkouts)
-        guard let generationId = closure.generationId else { return }
-        if closure.status == "failed" {
-            generationErrorMessage = String(localized: "Não foi possível gerar a próxima semana. Tente novamente mais tarde.")
-            return
-        }
-        guard closure.status != "completed" else { return }
-        showNextWeekNotice = true
-        noticeTask?.cancel()
-        noticeTask = Task { [weak self] in
-            do { try await Task.sleep(nanoseconds: 6_000_000_000) } catch { return }
-            self?.showNextWeekNotice = false
-        }
-        startGenerationPolling(generationId: generationId, pollAfterSeconds: closure.pollAfterSeconds)
+        await refreshAutomaticGeneration()
     }
 
     func refreshAutomaticGeneration(retryFailed: Bool = false) async {
-        guard await resumeDependencies.isAuthenticated() else { return }
+        guard !isConfirmingWeek, await resumeDependencies.isAuthenticated() else { return }
         if let resumeRefreshTask {
             await resumeRefreshTask.value
             return
@@ -990,11 +1029,15 @@ final class TrainingPlanViewModel: ObservableObject {
             do {
                 let response = try await self.resumeDependencies.request(retryFailed)
                 guard !Task.isCancelled, self.resumeVersion == version else { return }
+                if self.pendingWeekGeneration != response.pendingGeneration {
+                    self.showWeekGenerationConfirmation = false
+                }
+                self.pendingWeekGeneration = response.pendingGeneration
                 if let generation = response.generation {
                     self.resumableGenerationIds.insert(generation.generationId)
                     await self.applyDiscoveredGeneration(generation, showNotice: true)
                     if response.started { await self.loadData(reportErrors: false) }
-                } else if let generation = try await self.resumeDependencies.latest() {
+                } else if response.pendingGeneration == nil, let generation = try await self.resumeDependencies.latest() {
                     guard !Task.isCancelled, self.resumeVersion == version else { return }
                     await self.applyDiscoveredGeneration(generation, showNotice: false)
                 }
@@ -1035,7 +1078,7 @@ final class TrainingPlanViewModel: ObservableObject {
             await loadData(reportErrors: false)
         } else if generation.status == "failed" {
             generationErrorMessage = String(localized: "Não foi possível preparar seus treinos. Tente novamente.")
-            canRetryGeneration = resumableGenerationIds.contains(generation.generationId)
+            canRetryGeneration = pendingWeekGeneration != nil
         }
     }
 
@@ -1077,6 +1120,7 @@ final class TrainingPlanViewModel: ObservableObject {
                         ? String(localized: "Não foi possível preparar seus treinos. Tente novamente.")
                         : String(localized: "Não foi possível gerar a próxima semana. Tente novamente mais tarde.")
                     clearPendingGeneration(generationId)
+                    await refreshAutomaticGeneration()
                     return
                 }
                 if status.status == "completed" {
@@ -1105,6 +1149,7 @@ final class TrainingPlanViewModel: ObservableObject {
                     }
                     await NotificationService.shared.reschedule(workouts: allWorkouts)
                     clearPendingGeneration(generationId)
+                    await refreshAutomaticGeneration()
                     return
                 }
             } catch {
@@ -1134,6 +1179,10 @@ final class TrainingPlanViewModel: ObservableObject {
         todayWorkout = nil
         activeGoal = nil
         lastAnalysis = nil
+        pendingWeekGeneration = nil
+        showWeekGenerationConfirmation = false
+        offeredWeekGenerations.removeAll()
+        isConfirmingWeek = false
         resumeVersion += 1
         resumeRefreshTask?.cancel()
         resumeRefreshTask = nil
