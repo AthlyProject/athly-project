@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/AthlyProject/athly-project/compare/v1.16.0...v1.16.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* confirm weekly plan generation and localize workout speech ([04036fd](https://github.com/AthlyProject/athly-project/commit/04036fd361958a0ddc6d146364b697802e9ac35c))
+
 # [1.16.0](https://github.com/AthlyProject/athly-project/compare/v1.15.0...v1.16.0) (2026-10-29)
 
 
