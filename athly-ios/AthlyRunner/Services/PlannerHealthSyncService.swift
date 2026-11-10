@@ -152,11 +152,24 @@ final class PlannerHealthSyncService {
         let service = HealthKitService()
         let workouts = try await service.fetchLatestRawRunningWorkouts(limit: limit)
         let fetcher = WorkoutDetailFetcher()
+        // A prescrição vinculada guia a segmentação, como na conclusão do treino. Sem ela, uma
+        // corrida gravada por outro app/relógio cai na heurística de laps, e aquecimento +
+        // limiar + volta à calma vira "rec, rec, rep, rep" para o planner.
+        var planSnapshot = TrainingPlanCache.shared.load()
+        if planSnapshot == nil { planSnapshot = await TrainingPlanCache.shared.loadFromDisk() }
+        let prescriptions = Dictionary(
+            (planSnapshot?.allWorkouts ?? []).map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         var results: [DetailedSessionPayload] = []
         for workout in workouts {
             try Task.checkCancellation()
             let workoutId = RunWorkoutLinkStore.shared.athlyWorkoutId(for: workout.uuid.uuidString)
-            if let payload = try await fetcher.buildDetailedSession(for: workout, athlyWorkoutId: workoutId) {
+            if let payload = try await fetcher.buildDetailedSession(
+                for: workout,
+                athlyWorkoutId: workoutId,
+                prescribedWorkout: workoutId.flatMap { prescriptions[$0] }
+            ) {
                 results.append(payload)
             }
         }
