@@ -1,3 +1,11 @@
+## [1.16.3](https://github.com/AthlyProject/athly-project/compare/v1.16.2...v1.16.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ios:** segment planner health sessions with the linked prescription ([f344037](https://github.com/AthlyProject/athly-project/commit/f3440374ccae9b1268ed8447dee98eaa3e51e228))
+* **planner:** calibrate goal pace, threshold VDOT and quality paces from real efforts ([b38efa5](https://github.com/AthlyProject/athly-project/commit/b38efa587792d3dea09015204715fa6537a0fe9e))
+
 ## [1.16.2](https://github.com/AthlyProject/athly-project/compare/v1.16.1...v1.16.2) (2026-11-10)
 
 
