@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
-  calculateVdot,
   derivePaceZones,
+  effortVdot,
   findBestEffort,
   formatPace,
   DEFAULT_VDOT,
+  type EffortKind,
 } from './vdot-calculator';
 import type { EffortZoneData, RunDataForZones, FormattedZones } from './types/effort-zone.types';
 
@@ -65,20 +66,26 @@ export class EffortZoneService {
     const bestEffort = findBestEffort(runs);
 
     let vdot: number;
-    let bestEffortMeta: { distanceKm: number; pace: string; durationMin: number };
+    let bestEffortMeta: {
+      distanceKm: number;
+      pace: string;
+      durationMin: number;
+      kind: EffortKind;
+    };
 
     if (bestEffort) {
-      vdot = calculateVdot(bestEffort.distanceMeters, bestEffort.durationSeconds);
+      vdot = effortVdot(bestEffort);
       // Clamp VDOT to reasonable range (20-85)
       vdot = Math.max(20, Math.min(85, vdot));
       bestEffortMeta = {
         distanceKm: parseFloat((bestEffort.distanceMeters / 1000).toFixed(2)),
         pace: formatPace((bestEffort.durationSeconds / bestEffort.distanceMeters) * 1000),
         durationMin: parseFloat((bestEffort.durationSeconds / 60).toFixed(1)),
+        kind: bestEffort.effortKind ?? 'race',
       };
     } else {
       vdot = DEFAULT_VDOT;
-      bestEffortMeta = { distanceKm: 0, pace: 'N/A', durationMin: 0 };
+      bestEffortMeta = { distanceKm: 0, pace: 'N/A', durationMin: 0, kind: 'race' };
     }
 
     const paceZones = derivePaceZones(vdot);
@@ -94,6 +101,7 @@ export class EffortZoneService {
         runCount: runs.length,
         bestEffortDistanceKm: bestEffortMeta.distanceKm,
         bestEffortPace: bestEffortMeta.pace,
+        bestEffortKind: bestEffortMeta.kind,
         bestEffortDurationMin: bestEffortMeta.durationMin,
         calculatedAt: new Date().toISOString(),
       },

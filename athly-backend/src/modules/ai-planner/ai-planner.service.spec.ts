@@ -412,3 +412,179 @@ describe('AiPlannerService expired resumption', () => {
     expect(prisma.trainingPlan.findUnique).not.toHaveBeenCalled();
   });
 });
+
+describe('AiPlannerService — pace específico, limiar demonstrado e VDOT de limiar (caso prod 10/11/2026)', () => {
+  const goal = {
+    isRunningRelated: true,
+    targetDistance: '5k',
+    targetTime: '00:25:00',
+    eventDate: null,
+    eventName: null,
+    experienceLevel: 'intermediate',
+    summary: 'Correr 5km em menos de 25 minutos',
+    rejectionReason: null,
+  };
+  const previousWeek = {
+    completedWorkouts: 3,
+    totalWorkouts: 3,
+    completionRate: 1,
+    totalDistanceKm: 12.15,
+    avgEffort: 6.5,
+    avgFatigue: 6.5,
+    skippedWorkouts: [],
+    volumeChange: 'aumentou',
+  };
+  const assess = (sessions: any[], vdot?: number) =>
+    (planner as any).assessUndatedGoalAttempt(goal, previousWeek, sessions, undefined, vdot);
+
+  const uniform = (km: number, totalSec: number) =>
+    Array.from({ length: Math.ceil(km) }, (_, i) => {
+      const d = Math.min(1, km - i);
+      return { label: SegmentLabel.easy, distanceKm: d, durationSeconds: (totalSec / km) * d };
+    });
+
+  // Sessões como chegaram no prompt de 10/11 (resumidas).
+  const realSessions = [
+    {
+      session: {
+        startDate: '2026-11-06T15:24:00Z',
+        splitsSource: 'events',
+        distanceMeters: 3330,
+        durationSeconds: 1135,
+        segments: [
+          { label: SegmentLabel.warmup, distanceKm: 1, durationSeconds: 373 },
+          { label: SegmentLabel.tempo, distanceKm: 1.81, durationSeconds: 583 },
+          { label: SegmentLabel.cooldown, distanceKm: 0.5, durationSeconds: 168 },
+        ],
+      },
+      prescribed: { intensity: 3, title: 'Easy Recovery Run' },
+      executionAnalysis: { mainPace: '5:23', observations: [] },
+      feedback: { effort: 5, fatigue: 5, completed: true },
+    },
+    {
+      session: {
+        startDate: '2026-11-04T15:35:00Z',
+        splitsSource: 'prescribed',
+        distanceMeters: 4010,
+        durationSeconds: 1464,
+        segments: [
+          { label: SegmentLabel.warmup, distanceKm: 1, durationSeconds: 400 },
+          { label: SegmentLabel.tempo, distanceKm: 2.5, durationSeconds: 765 },
+          { label: SegmentLabel.cooldown, distanceKm: 0.51, durationSeconds: 299 },
+        ],
+      },
+      prescribed: { intensity: 7, title: 'Threshold Run' },
+      executionAnalysis: { mainPace: '5:06', observations: [] },
+    },
+    {
+      session: {
+        startDate: '2026-10-27T16:23:00Z',
+        splitsSource: 'synthetic',
+        distanceMeters: 4090,
+        durationSeconds: 1416,
+        segments: uniform(4.09, 1416),
+      },
+      prescribed: { intensity: 9, title: 'Intervalos de Potência Aeróbica' },
+      executionAnalysis: { mainPace: '5:46', observations: [] },
+    },
+    {
+      session: {
+        startDate: '2026-10-23T15:19:00Z',
+        splitsSource: 'synthetic',
+        distanceMeters: 4860,
+        durationSeconds: 1644,
+        segments: uniform(4.86, 1644),
+      },
+      prescribed: { intensity: 4, title: 'Rodagem de Base' },
+      executionAnalysis: { mainPace: '5:39', observations: [] },
+    },
+  ];
+
+  it('não usa a média de uma rodagem leve nem de intervalos só com totais como pace de 5k', () => {
+    const verdict = assess(realSessions, 39.8);
+    expect(verdict.recentPace).toBeUndefined();
+    expect(verdict.feasible).toBe(false);
+    expect(verdict.reason).not.toContain('5:39');
+  });
+
+  it('expõe o pace estimado pelo VDOT como referência sem liberar a tentativa', () => {
+    const verdict = assess(realSessions, 39.8);
+    const [min, sec] = verdict.estimatedPace.replace('/km', '').split(':').map(Number);
+    expect(min * 60 + sec).toBeLessThan(300); // VDOT ~40 → abaixo de 5:00/km no 5k
+    expect(verdict.reason).toContain(verdict.estimatedPace);
+    expect(verdict.feasible).toBe(false);
+  });
+
+  it('corrida livre só com totais (sem prescrição) continua valendo como esforço específico', () => {
+    const freeRace = {
+      session: {
+        startDate: '2026-11-08T10:00:00Z',
+        splitsSource: 'synthetic',
+        distanceMeters: 5000,
+        durationSeconds: 1525,
+        segments: uniform(5, 1525),
+      },
+      prescribed: null,
+      executionAnalysis: { mainPace: '5:05', observations: [] },
+    };
+    const verdict = assess([...realSessions, freeRace], 39.8);
+    expect(verdict.recentPace).toBe('5:05/km');
+    expect(verdict.feasible).toBe(true);
+  });
+
+  it('limiar demonstrado = bloco contínuo mais rápido de treino de limiar com splits reais', () => {
+    expect((planner as any).demonstratedThreshold(realSessions)).toEqual({
+      paceSecPerKm: 306,
+      date: '2026-11-04',
+      distanceKm: 2.5,
+    });
+  });
+
+  it('limiar demonstrado ignora bloco reportado como esforço de prova', () => {
+    const allOut = realSessions.map((s) =>
+      s.prescribed.intensity === 7
+        ? { ...s, feedback: { effort: 9, fatigue: 8, completed: true } }
+        : s,
+    );
+    expect((planner as any).demonstratedThreshold(allOut)).toBeUndefined();
+  });
+
+  describe('candidatos de VDOT em treinos de limiar', () => {
+    const thresholdSession = (avgHR?: number): DetailedSessionDto =>
+      ({
+        startDate: '2026-11-04T15:35:00Z',
+        distanceMeters: 4010,
+        durationSeconds: 1464,
+        splitsSource: 'events',
+        athlyWorkoutId: 'w-threshold',
+        segments: [
+          { label: SegmentLabel.warmup, distanceKm: 1, durationSeconds: 400 },
+          { label: SegmentLabel.tempo, distanceKm: 2.5, durationSeconds: 765, avgHR },
+          { label: SegmentLabel.cooldown, distanceKm: 0.51, durationSeconds: 299 },
+        ],
+      }) as DetailedSessionDto;
+    const candidates = (
+      session: DetailedSessionDto,
+      intensity?: number,
+      ceiling: number | null = 174,
+    ) =>
+      (planner as any).bestSubEffortsFromSessions(
+        [session],
+        new Map(intensity === undefined ? [] : [['w-threshold', intensity]]),
+        ceiling,
+      ) as RunDataForZones[];
+
+    it('bloco de treino prescrito como limiar entra como esforço de limiar', () => {
+      expect(candidates(thresholdSession(165), 7)[0].effortKind).toBe('threshold');
+    });
+
+    it('FC média na Z5 indica esforço acima do limiar → volta a valer como prova', () => {
+      expect(candidates(thresholdSession(178), 7)[0].effortKind).toBe('race');
+    });
+
+    it('rótulo tempo sem prescrição de limiar (ex.: rodagem leve) continua como prova', () => {
+      expect(candidates(thresholdSession(150), 3)[0].effortKind).toBe('race');
+      expect(candidates(thresholdSession(150))[0].effortKind).toBe('race');
+    });
+  });
+});

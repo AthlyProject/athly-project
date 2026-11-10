@@ -5,6 +5,7 @@ import type { FormattedZones } from '../../effort-zones/types/effort-zone.types'
 import type { ParsedGoal } from './goal-parser-prompt';
 import type { AnalyzedSession } from '../workout-execution-analyzer.service';
 import type { PlannedWeek } from '../periodization';
+import { formatPace } from '../../effort-zones/vdot-calculator';
 
 export type { AiPlannerInput };
 
@@ -93,7 +94,10 @@ export interface UserProfileContext {
 export interface GoalAttemptContext {
   feasible: boolean;
   targetPace: string;
+  /** Melhor esforço contínuo de distância similar DEMONSTRADO (o que decide a viabilidade). */
   recentPace?: string;
+  /** Pace previsto para a distância do objetivo pelo VDOT atual (referência de fitness). */
+  estimatedPace?: string;
   adherencePct?: number;
   reason: string;
 }
@@ -103,6 +107,17 @@ export interface DeterministicPlannerContext {
   weeklyVolumeMaxKm: number;
   volumeConfidence: 'high' | 'corrected' | 'low';
   goalAttempt?: GoalAttemptContext;
+  /** Bloco de limiar contínuo mais rápido já corrido; piso dos treinos de qualidade. */
+  demonstratedThreshold?: { paceSecPerKm: number; date: string; distanceKm: number };
+}
+
+const NO_SPECIFIC_EFFORT = 'nenhum (rodagens leves e médias de sessão inteira não contam)';
+
+function goalAttemptPaceLines(goalAttempt: GoalAttemptContext): string {
+  const estimate = goalAttempt.estimatedPace
+    ? `\n- Pace estimado pelo VDOT para a distância do objetivo: ${goalAttempt.estimatedPace} (referência de fitness; não é esforço demonstrado)`
+    : '';
+  return `- Melhor esforço contínuo recente de distância similar: ${goalAttempt.recentPace ?? NO_SPECIFIC_EFFORT}${estimate}`;
 }
 
 const DAY_NAME_MAP: Record<string, string> = {
@@ -154,9 +169,14 @@ function buildDeterministicContextSection(
 Tentativa de objetivo nesta semana:
 - feasibility: ${context.goalAttempt.feasible ? 'true' : 'false'}
 - Pace alvo: ${context.goalAttempt.targetPace}
-- Pace recente específico: ${context.goalAttempt.recentPace ?? 'sem esforço específico suficiente'}
+${goalAttemptPaceLines(context.goalAttempt)}
 - Aderência recente: ${context.goalAttempt.adherencePct != null ? `${context.goalAttempt.adherencePct}%` : 'sem dados'}
 - Veredito: ${context.goalAttempt.reason}
+`
+    : '';
+
+  const threshold = context.demonstratedThreshold
+    ? `- Limiar já demonstrado: ${formatPace(context.demonstratedThreshold.paceSecPerKm)}/km (bloco contínuo de ${context.demonstratedThreshold.distanceKm} km em ${context.demonstratedThreshold.date}). Treinos de qualidade (RPE >= 7) NÃO podem ter pace mais lento que isso; o backend corrige qualquer alvo mais lento.
 `
     : '';
 
@@ -168,7 +188,7 @@ Estes números foram calculados pelo backend e são a fonte da verdade. NÃO rec
 - Confiança do volume-base: ${context.volumeConfidence}
 - Os dias listados como "dias de treino" são disponibilidade máxima; use menos dias se necessário para respeitar volume, recuperação e periodização.
 - MÍNIMO DE SESSÕES: se houver 2+ dias disponíveis e o volume máximo for >= 4 km, distribua o volume em pelo menos 2 sessões (ex.: 1 treino de qualidade + 1 corrida fácil/regenerativa curta). Concentrar tudo em 1 única sessão semanal prejudica aderência e base aeróbica.
-${goalAttempt}
+${threshold}${goalAttempt}
 </deterministic_guardrails>`;
 }
 
@@ -275,7 +295,10 @@ Use esse bloco para detectar stagnation, overreaching e progressão sustentável
 }
 
 function buildGoalSection(goal: ParsedGoal): string {
-  const lines = [`Objetivo do atleta: ${goal.summary}`, "Os campos estruturados abaixo são os valores confirmados; prevalecem sobre números divergentes na descrição. Não invente tempo alvo ausente."];
+  const lines = [
+    `Objetivo do atleta: ${goal.summary}`,
+    'Os campos estruturados abaixo são os valores confirmados; prevalecem sobre números divergentes na descrição. Não invente tempo alvo ausente.',
+  ];
   if (goal.targetDistance) lines.push(`- Distância alvo: ${goal.targetDistance}`);
   if (goal.targetTime) lines.push(`- Tempo alvo: ${goal.targetTime}`);
   if (goal.eventDate) lines.push(`- Data do evento: ${goal.eventDate}`);
@@ -319,7 +342,7 @@ function buildGoalAttemptLogicSection(
 O backend já avaliou a viabilidade da tentativa do objetivo nesta semana.
 - feasibility=${goalAttempt.feasible ? 'true' : 'false'}
 - Pace alvo: ${goalAttempt.targetPace}
-- Pace recente específico: ${goalAttempt.recentPace ?? 'sem evidência suficiente'}
+${goalAttemptPaceLines(goalAttempt)}
 - Aderência recente: ${goalAttempt.adherencePct != null ? `${goalAttempt.adherencePct}%` : 'sem dados'}
 - Justificativa: ${goalAttempt.reason}
 

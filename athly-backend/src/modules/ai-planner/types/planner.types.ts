@@ -79,6 +79,8 @@ export interface PlannerGuardrails {
   analysisOverride?: Omit<RunAnalysis, 'title' | 'fitnessInsights'>;
   defaultPaceSecPerKm?: number;
   minTrainingDate?: string;
+  /** Pace (s/km) mais lento permitido nos blocos de qualidade: o limiar já demonstrado. */
+  qualityPaceFloorSecPerKm?: number;
 }
 
 export interface PreviousWeekAnalysis {

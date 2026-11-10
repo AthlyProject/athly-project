@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { normalizeGoalDraft } from '../goals/dto/goal-draft.dto';
 import { assessHeartRatePrescription, snapshotHeartRateTargets } from './heart-rate-prescription';
+import { applyQualityPaceFloor } from './quality-pace-floor';
 import type { PlanLanguage } from '../../common/i18n/user-language';
 import type { GuidedHeartRateZones } from '../users/heart-rate-guidance';
 import { Injectable, Logger } from '@nestjs/common';
@@ -433,6 +434,15 @@ USER TEXT: ${JSON.stringify(goalText)}`;
         ...assessHeartRatePrescription(parsed.weekPlan, heartRate),
       ];
       if (degenerate.length === 0) {
+        const paceFloorAdjustments = applyQualityPaceFloor(
+          parsed.weekPlan,
+          guardrails?.qualityPaceFloorSecPerKm,
+        );
+        if (paceFloorAdjustments.length > 0) {
+          this.logger.warn(
+            `Quality pace floor applied (demonstrated threshold): ${paceFloorAdjustments.join('; ')}`,
+          );
+        }
         this.finalizeSegments(parsed.weekPlan);
         snapshotHeartRateTargets(parsed.weekPlan, heartRate);
         this.applyAnalysisOverride(parsed, guardrails);

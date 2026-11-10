@@ -1,3 +1,5 @@
+import type { EffortKind } from '../vdot-calculator';
+
 export interface EffortZoneData {
   vdotScore: number | null;
   maxHeartRate: number | null;
@@ -29,6 +31,8 @@ export interface CalculationMetadata {
   runCount: number;
   bestEffortDistanceKm: number;
   bestEffortPace: string;
+  /** Como o melhor esforço foi interpretado no VDOT (ausente em registros antigos = 'race'). */
+  bestEffortKind?: EffortKind;
   bestEffortDurationMin: number;
   calculatedAt: string;
 }
@@ -38,6 +42,8 @@ export interface RunDataForZones {
   durationSeconds: number;
   averageHeartRate?: number | null;
   maxHeartRate?: number | null;
+  /** Interpretação do esforço no VDOT; ausente = 'race' (esforço máximo para a duração). */
+  effortKind?: EffortKind;
 }
 
 export interface FormattedZones {

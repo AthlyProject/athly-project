@@ -157,12 +157,49 @@ export function deriveHrZones(maxHR: number, restHR: number): HrZoneRanges {
 }
 
 /**
- * Find the best effort from a list of runs.
- * Best effort = fastest pace at distance >= 1.5km
+ * Duração (min) que o atleta sustentaria em prova no pace de limiar. Daniels define o
+ * T pace como o ritmo de ~60 min de prova (~88% do VO2max).
  */
-export function findBestEffort(
-  runs: Array<{ distanceMeters: number; durationSeconds: number }>,
-): { distanceMeters: number; durationSeconds: number } | null {
+export const THRESHOLD_SUSTAINABLE_MINUTES = 60;
+
+/**
+ * VDOT de um bloco corrido NO LIMIAR (tempo run / cruise intervals prescritos como limiar).
+ * calculateVdot trata o bloco como prova da própria duração: 2,5 km em 12,7 min viram
+ * ~99% do VO2max e o VDOT sai baixo (35.6), derivando um limiar de 5:35–5:51 mais lento
+ * que o próprio bloco de 5:06. Aqui o pace do bloco é tratado como o pace sustentável por
+ * THRESHOLD_SUSTAINABLE_MINUTES — o que um bloco de limiar de fato representa.
+ */
+export function calculateVdotFromThresholdEffort(
+  distanceMeters: number,
+  durationSeconds: number,
+): number {
+  const velocityMetersPerMin = distanceMeters / (durationSeconds / 60);
+  return calculateVdot(
+    velocityMetersPerMin * THRESHOLD_SUSTAINABLE_MINUTES,
+    THRESHOLD_SUSTAINABLE_MINUTES * 60,
+  );
+}
+
+/** 'race' = esforço máximo para a duração (padrão); 'threshold' = bloco corrido no limiar. */
+export type EffortKind = 'race' | 'threshold';
+
+export interface EffortSample {
+  distanceMeters: number;
+  durationSeconds: number;
+  effortKind?: EffortKind;
+}
+
+export function effortVdot(effort: EffortSample): number {
+  return effort.effortKind === 'threshold'
+    ? calculateVdotFromThresholdEffort(effort.distanceMeters, effort.durationSeconds)
+    : calculateVdot(effort.distanceMeters, effort.durationSeconds);
+}
+
+/**
+ * Find the best effort from a list of runs.
+ * Best effort = the eligible run (>= 1.5km) with the highest VDOT.
+ */
+export function findBestEffort<T extends EffortSample>(runs: T[]): T | null {
   const eligible = runs.filter((r) => r.distanceMeters >= 1500 && r.durationSeconds > 0);
   if (eligible.length === 0) return null;
 
@@ -171,9 +208,9 @@ export function findBestEffort(
   // longo (5 km a 4:45) e ainda assim representar um VDOT menor, porque o esforço curto
   // roda em regime supramáximo. Ranquear por VDOT escolhe o esforço mais representativo.
   let best = eligible[0];
-  let bestVdot = calculateVdot(best.distanceMeters, best.durationSeconds);
+  let bestVdot = effortVdot(best);
   for (let i = 1; i < eligible.length; i++) {
-    const vdot = calculateVdot(eligible[i].distanceMeters, eligible[i].durationSeconds);
+    const vdot = effortVdot(eligible[i]);
     if (vdot > bestVdot) {
       bestVdot = vdot;
       best = eligible[i];

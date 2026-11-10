@@ -19,8 +19,16 @@ import { ErrorCode } from '../../common/errors/error-codes';
 import { PrismaService } from '../../database/prisma.service';
 import { GeminiService } from './gemini.service';
 import { EffortZoneService } from '../effort-zones/effort-zone.service';
-import { WorkoutExecutionAnalyzerService } from './workout-execution-analyzer.service';
-import { PlanFromHealthDto, DetailedSessionDto, SegmentLabel } from './dto/plan-from-health.dto';
+import {
+  WorkoutExecutionAnalyzerService,
+  type AnalyzedSession,
+} from './workout-execution-analyzer.service';
+import {
+  PlanFromHealthDto,
+  DetailedSessionDto,
+  SegmentDto,
+  SegmentLabel,
+} from './dto/plan-from-health.dto';
 import type {
   AiPlannerInput,
   PlannerGuardrails,
@@ -29,6 +37,9 @@ import type {
   RunSummary,
 } from './types/planner.types';
 import type { RunDataForZones } from '../effort-zones/types/effort-zone.types';
+import { predictRaceTime, type EffortKind } from '../effort-zones/vdot-calculator';
+import { preferPersistedExecutions } from './persisted-executions';
+import type { GuidedHeartRateZones } from '../users/heart-rate-guidance';
 import type { ParsedGoal } from './prompts/goal-parser-prompt';
 import type {
   DeterministicPlannerContext,
@@ -53,7 +64,7 @@ import {
 } from './weekly-calendar';
 import { PlanGenerationJobsService } from './plan-generation-jobs.service';
 
-const PROMPT_VERSION = 'v3.2-hr-guidance';
+const PROMPT_VERSION = 'v3.3-goal-evidence';
 const DETAILED_FIRST_GEN = 5;
 const DETAILED_MID_PLAN = 7;
 const HISTORICAL_FIRST_GEN = 20;
@@ -67,6 +78,14 @@ const MIN_EFFORT_METERS = 1500;
 // o VDOT ao tratá-lo como se fosse uma corrida contínua. Knob de calibração — validar
 // contra tabelas de Daniels antes de mexer.
 const REP_EFFORT_PENALTY = 1.05;
+
+// Escala de intensidade (1–10) das prescrições Athly: 3–5 rodagens leves/base, 6–8
+// limiar/tempo, 9–10 intervalos VO2max/repetição.
+const EASY_INTENSITY_MAX = 5;
+const THRESHOLD_INTENSITY_MIN = 6;
+const THRESHOLD_INTENSITY_MAX = 8;
+// Esforço reportado a partir do qual o bloco deixa de ser "confortável" (prova/teste).
+const ALL_OUT_EFFORT_MIN = 9;
 
 type PlanningWindow = {
   weekDates: string[];
@@ -125,6 +144,10 @@ export class AiPlannerService {
 
     const heartRate = await this.heartRateHealth.resolve(userId, input);
     input = { ...input, runs: heartRate.runs.slice(0, HISTORICAL_FIRST_GEN) };
+    input = {
+      ...input,
+      detailedSessions: await this.withPersistedExecutions(userId, input.detailedSessions),
+    };
 
     const trainingPlan = await this.resolveTrainingPlan(
       userId,
@@ -156,6 +179,10 @@ export class AiPlannerService {
     // aquecimento/volta à calma e subestima o VDOT — por isso também entram como
     // candidatos os melhores sub-esforços contínuos (janelas de splits reais) das
     // sessões detalhadas.
+    const prescribedIntensity = await this.prescribedIntensityBySession(
+      userId,
+      input.detailedSessions ?? [],
+    );
     const runsForZones: RunDataForZones[] = [
       ...input.runs.map((r) => ({
         distanceMeters: r.distanceMeters,
@@ -163,7 +190,11 @@ export class AiPlannerService {
         averageHeartRate: r.avgHR ?? null,
         maxHeartRate: r.maxHR ?? null,
       })),
-      ...this.bestSubEffortsFromSessions(input.detailedSessions ?? []),
+      ...this.bestSubEffortsFromSessions(
+        input.detailedSessions ?? [],
+        prescribedIntensity,
+        this.thresholdHeartRateCeiling(heartRate.zones),
+      ),
     ];
     const effortZones = await this.effortZoneService.getOrCalculateForUser(
       userId,
@@ -271,6 +302,7 @@ export class AiPlannerService {
       activeGoal,
       analyzedSessions,
       promptLongitudinal,
+      effortZones.vdotScore,
     );
     const plannerGuardrails = this.buildPlannerGuardrails(
       aiInput,
@@ -593,6 +625,7 @@ export class AiPlannerService {
     goal: ParsedGoal | null,
     analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
     longitudinalWeeks?: LongitudinalWeek[],
+    vdotScore?: number | null,
   ): DeterministicPlannerContext {
     const fallbackBaseline =
       input.avgDistKm > 0 ? input.avgDistKm * Math.max(1, input.trainingDays) : input.totalDistKm;
@@ -641,7 +674,9 @@ export class AiPlannerService {
         previousWeek,
         analyzedSessions,
         longitudinalWeeks,
+        vdotScore,
       ),
+      demonstratedThreshold: this.demonstratedThreshold(analyzedSessions),
     };
   }
 
@@ -659,6 +694,7 @@ export class AiPlannerService {
       analysisOverride: this.buildAnalysisOverride(input, longitudinalWeeks),
       defaultPaceSecPerKm: parsePace(input.avgPace) ?? 390,
       minTrainingDate,
+      qualityPaceFloorSecPerKm: deterministicContext.demonstratedThreshold?.paceSecPerKm,
     };
   }
 
@@ -700,20 +736,29 @@ export class AiPlannerService {
   private assessUndatedGoalAttempt(
     goal: ParsedGoal | null,
     previousWeek: PreviousWeekAnalysis | null | undefined,
-    analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
+    analyzedSessions: AnalyzedSession[],
     longitudinalWeeks?: LongitudinalWeek[],
+    vdotScore?: number | null,
   ): GoalAttemptContext | undefined {
     if (!goal || goal.eventDate || !goal.targetDistance || !goal.targetTime) return undefined;
     const targetDistanceMeters = parseTargetDistanceMeters(goal.targetDistance);
     const targetTimeSec = parseTargetTimeSeconds(goal.targetTime);
     if (!targetDistanceMeters || !targetTimeSec) return undefined;
 
-    const targetPaceSec = targetTimeSec / (targetDistanceMeters / 1000);
+    const targetDistanceKm = targetDistanceMeters / 1000;
+    const targetPaceSec = targetTimeSec / targetDistanceKm;
     const targetPace = `${this.formatPaceFromSecondsPerKm(targetPaceSec)}/km`;
     const recentSpecificPaceSec = this.bestSimilarContinuousPace(
       analyzedSessions,
       targetDistanceMeters,
     );
+    // Capacidade estimada pelo VDOT (preditor de Daniels). É a referência de fitness para a
+    // IA quando não há esforço específico — mas NÃO libera a tentativa sozinha: viabilidade
+    // continua exigindo um esforço contínuo de distância similar que prove sustentação.
+    const estimatedPaceSec =
+      vdotScore && vdotScore > 0
+        ? predictRaceTime(vdotScore, targetDistanceMeters) / targetDistanceKm
+        : null;
     const adherence = previousWeek?.completionRate ?? 1;
     const adherencePct = Math.round(adherence * 100);
     const fatigue = previousWeek?.avgFatigue ?? null;
@@ -727,14 +772,22 @@ export class AiPlannerService {
       recentSpecificPaceSec !== null
         ? `${this.formatPaceFromSecondsPerKm(recentSpecificPaceSec)}/km`
         : undefined;
+    const estimatedPace =
+      estimatedPaceSec !== null
+        ? `${this.formatPaceFromSecondsPerKm(estimatedPaceSec)}/km`
+        : undefined;
+    const estimateNote =
+      estimatedPace && vdotScore
+        ? ` O VDOT atual (${vdotScore.toFixed(1)}) estima ${estimatedPace} para ${goal.targetDistance}.`
+        : '';
 
     let reason: string;
     if (feasible) {
-      reason = `Viável: pace recente específico ${recentPace} está dentro de 3% do alvo ${targetPace}, aderência ${adherencePct}% e sem sinal de overreach.`;
+      reason = `Viável: esforço contínuo recente de distância similar a ${recentPace} está dentro de 3% do alvo ${targetPace}, aderência ${adherencePct}% e sem sinal de overreach.`;
     } else if (recentSpecificPaceSec === null) {
-      reason = `Ainda não é viável: não há esforço contínuo recente de distância similar para validar o alvo ${targetPace}; tiros curtos não bastam para provar sustentação em ${goal.targetDistance}.`;
+      reason = `Ainda não é viável: não há esforço contínuo recente de distância similar para validar o alvo ${targetPace} (rodagens leves e médias de sessão inteira não contam; tiros curtos não bastam para provar sustentação em ${goal.targetDistance}).${estimateNote}`;
     } else if (!paceReady) {
-      reason = `Ainda não é viável: pace recente específico ${recentPace} está fora da margem de 3% do alvo ${targetPace}; aderência ${adherencePct}%.`;
+      reason = `Ainda não é viável: o melhor esforço contínuo recente de distância similar foi ${recentPace}, fora da margem de 3% do alvo ${targetPace}; aderência ${adherencePct}%.${estimateNote}`;
     } else if (adherence < 0.7) {
       reason = `Ainda não é viável: aderência recente ${adherencePct}% está abaixo do mínimo de 70%, apesar do pace estar próximo do alvo ${targetPace}.`;
     } else {
@@ -745,20 +798,21 @@ export class AiPlannerService {
       feasible,
       targetPace,
       recentPace,
+      estimatedPace,
       adherencePct,
       reason,
     };
   }
 
   private bestSimilarContinuousPace(
-    analyzedSessions: Awaited<ReturnType<WorkoutExecutionAnalyzerService['analyzeSessions']>>,
+    analyzedSessions: AnalyzedSession[],
     targetDistanceMeters: number,
   ): number | null {
     const minSimilarKm = (targetDistanceMeters / 1000) * 0.7;
     let best: number | null = null;
 
     for (const analyzed of analyzedSessions) {
-      if (analyzed.session.segments.some((s) => s.label === SegmentLabel.rep)) continue;
+      if (!this.isSpecificEffortEvidence(analyzed)) continue;
       const mainDistanceKm = this.mainContinuousDistanceKm(analyzed.session);
       if (mainDistanceKm < minSimilarKm) continue;
       const pace = parsePace(analyzed.executionAnalysis.mainPace);
@@ -766,6 +820,64 @@ export class AiPlannerService {
       if (best === null || pace < best) best = pace;
     }
 
+    return best;
+  }
+
+  /**
+   * Uma sessão só prova capacidade na distância do objetivo se foi um esforço de verdade
+   * com o bloco principal medido. Ficam de fora:
+   *  - tiros: não demonstram sustentação;
+   *  - rodagens leves/base prescritas (intensidade <= EASY_INTENSITY_MAX): o pace delas é
+   *    disciplina, não teto. Era o bug do "pace específico de 5k = 5:39" saído de uma
+   *    Rodagem de Base;
+   *  - sessões `synthetic` vinculadas a uma prescrição: só há totais, então o mainPace é a
+   *    média da sessão inteira com aquecimento/recuperações. Sem prescrição (corrida livre,
+   *    prova) a média é o próprio esforço e continua valendo.
+   */
+  private isSpecificEffortEvidence(analyzed: AnalyzedSession): boolean {
+    const segs = analyzed.session.segments ?? [];
+    if (segs.some((s) => s.label === SegmentLabel.rep)) return false;
+    const intensity = analyzed.prescribed?.intensity ?? null;
+    if (intensity !== null && intensity <= EASY_INTENSITY_MAX) return false;
+    if (analyzed.session.splitsSource === 'synthetic' && analyzed.prescribed) return false;
+    return true;
+  }
+
+  /**
+   * Limiar já demonstrado: o bloco principal contínuo mais rápido entre treinos prescritos
+   * como limiar/tempo (intensidade 6–8), com splits reais, >= MIN_EFFORT_METERS e sem
+   * esforço reportado de prova. Vira piso dos treinos de qualidade — a IA não pode
+   * prescrever limiar mais lento do que o atleta já correu no limiar.
+   */
+  private demonstratedThreshold(
+    analyzedSessions: AnalyzedSession[],
+  ): DeterministicPlannerContext['demonstratedThreshold'] {
+    let best: DeterministicPlannerContext['demonstratedThreshold'];
+    for (const analyzed of analyzedSessions) {
+      const intensity = analyzed.prescribed?.intensity ?? null;
+      if (
+        intensity === null ||
+        intensity < THRESHOLD_INTENSITY_MIN ||
+        intensity > THRESHOLD_INTENSITY_MAX
+      ) {
+        continue;
+      }
+      const source = analyzed.session.splitsSource;
+      if (source === 'synthetic' || source === 'prescribed_low_confidence') continue;
+      if ((analyzed.feedback?.effort ?? 0) >= ALL_OUT_EFFORT_MIN) continue;
+      if ((analyzed.session.segments ?? []).some((s) => s.label === SegmentLabel.rep)) continue;
+      const mainKm = this.mainContinuousDistanceKm(analyzed.session);
+      if (mainKm * 1000 < MIN_EFFORT_METERS) continue;
+      const pace = parsePace(analyzed.executionAnalysis.mainPace);
+      if (pace === null) continue;
+      if (!best || pace < best.paceSecPerKm) {
+        best = {
+          paceSecPerKm: pace,
+          date: analyzed.session.startDate.slice(0, 10),
+          distanceKm: round2(mainKm),
+        };
+      }
+    }
     return best;
   }
 
@@ -802,15 +914,35 @@ export class AiPlannerService {
    *   (1) candidato de qualidade: os tiros (`rep`) concatenados, SEM as recuperações;
    *   (2) candidato sustentado: a melhor janela contínua (>= MIN_EFFORT_METERS) de blocos
    *       de esforço estável (`tempo`/`easy`), excluindo tiros e recuperações.
+   * Em treinos prescritos como limiar (intensidade 6–8) o bloco de trabalho foi corrido NO
+   * limiar, não em ritmo de prova: o candidato sai com effortKind 'threshold', salvo se a
+   * FC média do bloco chegou à Z5 (aí o atleta correu acima do limiar e vale como prova).
+   * O rótulo `tempo` sozinho não basta — o iOS rotula assim qualquer bloco de trabalho
+   * único, inclusive o de uma rodagem leve.
    * findBestEffort escolhe depois o de VDOT mais alto entre todos os candidatos. Sessões
    * `synthetic` (Garmin/Nike só com totais via Apple Health) não têm splits reais e são
    * ignoradas — caem no piso dos totais de input.runs.
    */
-  private bestSubEffortsFromSessions(sessions: DetailedSessionDto[]): RunDataForZones[] {
+  private bestSubEffortsFromSessions(
+    sessions: DetailedSessionDto[],
+    intensityByWorkoutId: Map<string, number> = new Map(),
+    thresholdHrCeiling: number | null = null,
+  ): RunDataForZones[] {
     const candidates: RunDataForZones[] = [];
     for (const session of sessions) {
       if (session.splitsSource === 'synthetic') continue;
       const segs = session.segments ?? [];
+      const intensity = session.athlyWorkoutId
+        ? intensityByWorkoutId.get(session.athlyWorkoutId)
+        : undefined;
+      const thresholdWorkout =
+        intensity !== undefined &&
+        intensity >= THRESHOLD_INTENSITY_MIN &&
+        intensity <= THRESHOLD_INTENSITY_MAX;
+      const kindOf = (blocks: SegmentDto[]): EffortKind =>
+        thresholdWorkout && !this.reachedHeartRate(blocks, thresholdHrCeiling)
+          ? 'threshold'
+          : 'race';
 
       // (1) Qualidade: soma só dos tiros (rep), recuperações fora. Captura a velocidade
       // real dos tiros sem a diluição dos trotes.
@@ -825,6 +957,7 @@ export class AiPlannerService {
           durationSeconds: repDurSec * REP_EFFORT_PENALTY,
           averageHeartRate: null,
           maxHeartRate: null,
+          effortKind: kindOf(reps),
         });
       }
 
@@ -838,11 +971,13 @@ export class AiPlannerService {
       );
       const best = this.bestContinuousWindow(steady);
       if (best) {
+        const onlyWorkBlocks = best.segments.every((s) => s.label === SegmentLabel.tempo);
         candidates.push({
           distanceMeters: best.distM,
           durationSeconds: best.durSec,
           averageHeartRate: null,
           maxHeartRate: null,
+          effortKind: onlyWorkBlocks ? kindOf(best.segments) : 'race',
         });
       }
     }
@@ -854,10 +989,10 @@ export class AiPlannerService {
    * splits de esforço estável já filtrada. Janela mínima a partir de cada início: janelas
    * maiores só diluiriam o pace.
    */
-  private bestContinuousWindow(
-    segs: Array<{ distanceKm: number; durationSeconds: number }>,
-  ): { distM: number; durSec: number } | null {
-    let best: { distM: number; durSec: number } | null = null;
+  private bestContinuousWindow<T extends { distanceKm: number; durationSeconds: number }>(
+    segs: T[],
+  ): { distM: number; durSec: number; segments: T[] } | null {
+    let best: { distM: number; durSec: number; segments: T[] } | null = null;
     for (let i = 0; i < segs.length; i++) {
       let distM = 0;
       let durSec = 0;
@@ -867,12 +1002,94 @@ export class AiPlannerService {
         if (distM >= MIN_EFFORT_METERS) {
           const pace = durSec / (distM / 1000);
           const bestPace = best ? best.durSec / (best.distM / 1000) : Infinity;
-          if (pace < bestPace) best = { distM, durSec };
+          if (pace < bestPace) best = { distM, durSec, segments: segs.slice(i, j + 1) };
           break;
         }
       }
     }
     return best;
+  }
+
+  /** FC média (ponderada por tempo) dos blocos atingiu o teto? Sem FC medida → false. */
+  private reachedHeartRate(blocks: SegmentDto[], ceilingBpm: number | null): boolean {
+    if (ceilingBpm === null) return false;
+    let weighted = 0;
+    let seconds = 0;
+    for (const block of blocks) {
+      if (typeof block.avgHR !== 'number' || block.avgHR <= 0 || block.durationSeconds <= 0) {
+        continue;
+      }
+      weighted += block.avgHR * block.durationSeconds;
+      seconds += block.durationSeconds;
+    }
+    return seconds > 0 && weighted / seconds >= ceilingBpm;
+  }
+
+  /** FC a partir da qual o bloco deixa de ser limiar: início da Z5. null sem zonas válidas. */
+  private thresholdHeartRateCeiling(zones?: GuidedHeartRateZones | null): number | null {
+    if (!zones || zones.status !== 'available') return null;
+    return zones.zones.find((z) => z.zone === 5)?.minBpm ?? null;
+  }
+
+  /** Sessões do payload com a execução salva na conclusão no lugar da releitura do iPhone. */
+  private async withPersistedExecutions(
+    userId: string,
+    sessions: DetailedSessionDto[] | undefined,
+  ): Promise<DetailedSessionDto[] | undefined> {
+    if (!sessions?.length) return sessions;
+    const uuids = [
+      ...new Set(
+        sessions.flatMap((s) =>
+          s.appleHealthWorkoutUUID
+            ? [
+                s.appleHealthWorkoutUUID,
+                s.appleHealthWorkoutUUID.toUpperCase(),
+                s.appleHealthWorkoutUUID.toLowerCase(),
+              ]
+            : [],
+        ),
+      ),
+    ];
+    const ids = [...new Set(sessions.flatMap((s) => (s.athlyWorkoutId ? [s.athlyWorkoutId] : [])))];
+    const or: Prisma.WorkoutWhereInput[] = [];
+    if (uuids.length > 0) or.push({ appleHealthWorkoutUUID: { in: uuids } });
+    if (ids.length > 0) or.push({ id: { in: ids } });
+    if (or.length === 0) return sessions;
+
+    const workouts = await this.prisma.workout.findMany({
+      where: { userId, status: { in: [WorkoutStatus.done, WorkoutStatus.partial] }, OR: or },
+      select: { id: true, appleHealthWorkoutUUID: true, executionDetails: true },
+    });
+    return preferPersistedExecutions(
+      sessions,
+      workouts.map((w) => ({
+        workoutId: w.id,
+        appleHealthWorkoutUUID: w.appleHealthWorkoutUUID,
+        executionDetails: w.executionDetails,
+      })),
+    );
+  }
+
+  /** Intensidade prescrita (1–10) de cada sessão vinculada a um treino Athly, por id. */
+  private async prescribedIntensityBySession(
+    userId: string,
+    sessions: DetailedSessionDto[],
+  ): Promise<Map<string, number>> {
+    const ids = [
+      ...new Set(
+        sessions
+          .map((s) => s.athlyWorkoutId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
+    if (ids.length === 0) return new Map();
+    const workouts = await this.prisma.workout.findMany({
+      where: { userId, id: { in: ids } },
+      select: { id: true, intensity: true },
+    });
+    const byId = new Map<string, number>();
+    for (const w of workouts) if (typeof w.intensity === 'number') byId.set(w.id, w.intensity);
+    return byId;
   }
 
   private async buildLongitudinalTrend(

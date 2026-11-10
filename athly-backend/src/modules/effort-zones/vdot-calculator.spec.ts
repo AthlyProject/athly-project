@@ -1,4 +1,10 @@
-import { calculateVdot, predictRaceTime } from './vdot-calculator';
+import {
+  calculateVdot,
+  calculateVdotFromThresholdEffort,
+  derivePaceZones,
+  findBestEffort,
+  predictRaceTime,
+} from './vdot-calculator';
 
 describe('predictRaceTime — Daniels equivalent performance (inverse of calculateVdot)', () => {
   it('round-trips: predicting a time then recomputing VDOT returns the same VDOT', () => {
@@ -30,5 +36,36 @@ describe('predictRaceTime — Daniels equivalent performance (inverse of calcula
   it('returns 0 for degenerate inputs', () => {
     expect(predictRaceTime(0, 5000)).toBe(0);
     expect(predictRaceTime(50, 0)).toBe(0);
+  });
+});
+
+describe('calculateVdotFromThresholdEffort — bloco corrido no limiar, não em prova', () => {
+  // Caso real (prod, 04/11/2026): 2,5 km a 5:06 dentro de um Threshold Run (intensidade 7).
+  const blockMeters = 2500;
+  const blockSeconds = 12.7 * 60;
+
+  it('tratar o bloco como prova derruba o VDOT e gera limiar mais lento que o próprio bloco', () => {
+    const raceVdot = calculateVdot(blockMeters, blockSeconds);
+    expect(raceVdot).toBeCloseTo(35.8, 0);
+    const zones = derivePaceZones(raceVdot);
+    expect(zones.thresholdPaceMin).toBeGreaterThan(blockSeconds / 2.5 + 20);
+  });
+
+  it('como limiar, o pace do bloco cai dentro da faixa de limiar derivada', () => {
+    const thresholdVdot = calculateVdotFromThresholdEffort(blockMeters, blockSeconds);
+    expect(thresholdVdot).toBeGreaterThan(39);
+    expect(thresholdVdot).toBeLessThan(41);
+    const zones = derivePaceZones(thresholdVdot);
+    const blockPace = blockSeconds / 2.5;
+    expect(zones.thresholdPaceMin).toBeLessThanOrEqual(blockPace + 3);
+    expect(zones.thresholdPaceMax).toBeGreaterThanOrEqual(blockPace);
+    // VDOT ~40 → 5K perto de 24:10, abaixo dos 25:00 da meta.
+    expect(predictRaceTime(thresholdVdot, 5000)).toBeLessThan(25 * 60);
+  });
+
+  it('findBestEffort prefere o bloco de limiar ao mesmo pace tratado como prova', () => {
+    const race = { distanceMeters: blockMeters, durationSeconds: blockSeconds };
+    const threshold = { ...race, effortKind: 'threshold' as const };
+    expect(findBestEffort([race, threshold])).toBe(threshold);
   });
 });
