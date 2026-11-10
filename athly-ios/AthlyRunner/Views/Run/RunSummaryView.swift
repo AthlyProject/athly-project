@@ -187,7 +187,6 @@ struct RunSummaryView: View {
                         return outcome
                     },
                     onDismiss: {
-                        viewModel.pendingWorkout = nil
                         viewModel.showWorkoutFeedback = false
                     }
                 )

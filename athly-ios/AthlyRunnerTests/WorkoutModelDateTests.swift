@@ -1,5 +1,6 @@
 import XCTest
 import HealthKit
+import CoreLocation
 @testable import AthlyRunner
 
 final class WorkoutModelDateTests: XCTestCase {
@@ -718,5 +719,129 @@ final class AssessmentGoalDraftTests: XCTestCase {
             XCTAssertFalse(AssessmentGoalDraft(summary: "Correr", targetTime: time).isValid)
         }
         XCTAssertTrue(AssessmentGoalDraft(summary: "Correr", targetTime: "1:30:00").isValid)
+    }
+}
+
+final class RunInitializationTests: XCTestCase {
+    private let warmup = #"{"id":"warmup","kind":"warmup","end":{"by":"durationSec","value":300}}"#
+    private let interval = #"{"id":"set","kind":"set","repetitions":2,"children":[{"id":"work","kind":"work","end":{"by":"distanceM","value":400}},{"id":"recovery","kind":"recovery","end":{"by":"durationSec","value":60}}]}"#
+
+    private func workout(id: String = "today", nodes: String? = nil, legacy: Bool = false) throws -> WorkoutModel {
+        let tree = legacy ? "null" : """
+        {"schemaVersion":1,"sport":"running","segments":[\(nodes ?? warmup + "," + interval)]}
+        """
+        return try JSONDecoder().decode(WorkoutModel.self, from: Data("""
+        {"id":"\(id)","date":"2026-11-09","sportType":"running","title":"Treino \(id)","blocks":[{"type":"warmup","duration":5}],"segments":\(tree),"status":"scheduled"}
+        """.utf8))
+    }
+
+    @MainActor private func readyManager() -> LocationManager {
+        let manager = LocationManager()
+        manager.authorizationStatus = .authorizedAlways
+        manager.currentLocation = CLLocation(latitude: -23.55, longitude: -46.63)
+        return manager
+    }
+
+    @MainActor
+    func testFirstSelectionAndRepeatedPreparationKeepSameTrackerAndCompleteSequence() throws {
+        let vm = RunViewModel(locationManager: readyManager())
+        let originalTracker = vm.tracker
+        let selected = try workout()
+        for _ in 0..<3 {
+            XCTAssertTrue(vm.prepareWorkout(selected))
+            XCTAssertTrue(vm.tracker === originalTracker)
+            XCTAssertEqual(vm.tracker.playlist.map(\.sourceSegmentId), ["warmup", "work", "recovery", "work", "recovery"])
+            XCTAssertEqual(vm.tracker.workoutTitle, selected.title)
+            XCTAssertEqual(vm.pendingWorkout?.id, selected.id)
+        }
+        XCTAssertTrue(vm.prepareWorkout(try workout(id: "replacement")))
+        XCTAssertEqual(vm.pendingWorkout?.id, "replacement")
+    }
+
+    @MainActor
+    func testStartRebuildsPlaylistAndUsesSharedLocationManager() throws {
+        let manager = readyManager()
+        let vm = RunViewModel(locationManager: manager)
+        vm.prepareWorkout(try workout())
+        vm.tracker.loadPlaylist(nil) // Regression: stale/missing prepared state before start.
+        XCTAssertEqual(vm.startRun(), .started)
+        defer { vm.discardRun() }
+        XCTAssertEqual(vm.tracker.currentSegment?.sourceSegmentId, "warmup")
+        XCTAssertEqual(vm.tracker.playlist.count, 5)
+        XCTAssertEqual(vm.startRun(), .busy)
+        XCTAssertFalse(vm.prepareWorkout(try workout(id: "other")))
+        vm.pauseRun()
+        XCTAssertFalse(vm.prepareWorkout(try workout(id: "other")))
+        vm.resumeRun()
+        XCTAssertEqual(vm.tracker.currentSegment?.sourceSegmentId, "warmup")
+        XCTAssertEqual(vm.pendingWorkout?.id, "today")
+    }
+
+    @MainActor
+    func testMissingPermissionOrGPSPreservesSelectedWorkout() throws {
+        let manager = readyManager()
+        let vm = RunViewModel(locationManager: manager)
+        vm.prepareWorkout(try workout())
+        manager.currentLocation = nil
+        XCTAssertEqual(vm.startRun(), .locationUnavailable)
+        manager.currentLocation = CLLocation(latitude: 0, longitude: 0)
+        manager.authorizationStatus = .denied
+        XCTAssertEqual(vm.startRun(), .locationUnavailable)
+        XCTAssertEqual(vm.pendingWorkout?.id, "today")
+        XCTAssertEqual(vm.tracker.state, .idle)
+    }
+
+    @MainActor
+    func testInvalidAndLegacyStructuresNeverStartOrPartiallyLoad() throws {
+        let vm = RunViewModel(locationManager: readyManager())
+        let invalid = ["", #"{"id":"bad","kind":"work"}"#,
+            #"{"id":"bad","kind":"work","end":{"by":"durationSec","value":0}}"#,
+            #"{"id":"bad","kind":"work","end":{"by":"distanceM","value":-1}}"#,
+            #"{"id":"bad","kind":"set","repetitions":0,"children":[]}"#,
+            #"{"id":"bad","kind":"set","repetitions":2,"children":[]}"#,
+            #"{"id":"bad","kind":"future","end":{"by":"durationSec","value":30}}"#]
+        for nodes in invalid {
+            vm.prepareWorkout(try workout(nodes: nodes))
+            XCTAssertEqual(vm.startRun(), .workoutUnavailable)
+            XCTAssertTrue(vm.tracker.playlist.isEmpty)
+            XCTAssertEqual(vm.tracker.state, .idle)
+        }
+        vm.prepareWorkout(try workout(nodes: warmup + "," + invalid[1]))
+        XCTAssertEqual(vm.startRun(), .workoutUnavailable) // Never execute just the valid prefix.
+        vm.prepareWorkout(try workout(legacy: true))
+        XCTAssertEqual(vm.startRun(), .workoutUnavailable)
+        XCTAssertEqual(vm.pendingWorkout?.id, "today") // Cancelling the alert retains selection.
+    }
+
+    @MainActor
+    func testExplicitFreeRunRemovesWorkoutContext() throws {
+        let vm = RunViewModel(locationManager: readyManager())
+        vm.prepareWorkout(try workout(legacy: true))
+        XCTAssertEqual(vm.startRun(), .workoutUnavailable)
+        XCTAssertEqual(vm.startFreeRun(), .started)
+        defer { vm.discardRun() }
+        XCTAssertNil(vm.pendingWorkout)
+        XCTAssertEqual(vm.tracker.workoutTitle, "")
+        XCTAssertNil(vm.tracker.currentSegment)
+        XCTAssertFalse(vm.showWorkoutFeedback)
+    }
+
+    @MainActor
+    func testSummaryPreservesLinkUntilDismissAndDiscardClearsIt() throws {
+        let vm = RunViewModel(locationManager: readyManager())
+        vm.prepareWorkout(try workout())
+        XCTAssertEqual(vm.startRun(), .started)
+        vm.finishRun()
+        XCTAssertFalse(vm.prepareWorkout(try workout(id: "other")))
+        XCTAssertEqual(vm.startFreeRun(), .busy)
+        XCTAssertEqual(vm.pendingWorkout?.id, "today")
+        vm.dismissSummary()
+        XCTAssertNil(vm.pendingWorkout)
+        XCTAssertTrue(vm.tracker.playlist.isEmpty)
+        XCTAssertEqual(vm.tracker.workoutTitle, "")
+        vm.prepareWorkout(try workout())
+        vm.discardRun()
+        XCTAssertNil(vm.pendingWorkout)
+        XCTAssertTrue(vm.tracker.playlist.isEmpty)
     }
 }

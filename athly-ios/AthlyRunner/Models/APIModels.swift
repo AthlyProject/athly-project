@@ -214,8 +214,8 @@ struct WorkoutModel: Codable, Identifiable, Sendable {
     let description: String?
     let blocks: [WorkoutBlock]
     /// Árvore estruturada. Quando presente, vira a fonte da verdade do tracker
-    /// (cues de transição, contagem regressiva, voz). Quando nil, o app cai
-    /// no renderer/tracker legado baseado em `blocks`.
+    /// (cues de transição, contagem regressiva, voz). Sem estrutura válida, `blocks`
+    /// serve apenas para exibição; corrida livre exige uma escolha explícita.
     let segments: WorkoutSegments?
     let status: WorkoutStatus
     let trainingPlanId: String?

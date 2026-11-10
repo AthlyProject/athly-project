@@ -4,6 +4,7 @@ import UIKit
 struct MainTabView: View {
     @EnvironmentObject var planVM: TrainingPlanViewModel
     @EnvironmentObject var runStore: RunStore
+    @EnvironmentObject var locationManager: LocationManager
     @State private var selectedTab: AppTab = .dashboard
     @State private var isRunInProgress = false
     @State private var pendingWorkout: WorkoutModel?
@@ -26,7 +27,7 @@ struct MainTabView: View {
                 .environment(\.isAppTabActive, selectedTab == .plan)
                 .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.plan)
-            RunStartView(isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
+            RunStartView(locationManager: locationManager, isRunInProgress: $isRunInProgress, pendingWorkout: $pendingWorkout)
                 .environment(\.isAppTabActive, selectedTab == .run)
                 .toolbar(.hidden, for: .tabBar)
                 .tag(AppTab.run)

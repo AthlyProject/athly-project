@@ -1,6 +1,74 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
+  "Treino guiado indisponível": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Treino guiado indisponível"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Guided workout unavailable"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Geführtes Training nicht verfügbar"
+        }
+      }
+    }
+  },
+  "Iniciar corrida livre": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Iniciar corrida livre"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Start a free run"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Freien Lauf starten"
+        }
+      }
+    }
+  },
+  "Não foi possível carregar os blocos deste treino. Você pode voltar ou iniciar uma corrida livre, sem vínculo automático com este treino.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Não foi possível carregar os blocos deste treino. Você pode voltar ou iniciar uma corrida livre, sem vínculo automático com este treino."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The workout steps could not be loaded. You can go back or start a free run without automatically linking it to this workout."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Die Trainingsabschnitte konnten nicht geladen werden. Du kannst zurückgehen oder einen freien Lauf ohne automatische Verknüpfung mit diesem Training starten."
+        }
+      }
+    }
+  }
+,
+
   "speech.block.warmup": {
     "comment": "Spoken workout cue. %@ placeholders contain localized text or numbers.",
     "extractionState": "manual",

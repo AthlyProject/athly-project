@@ -4,7 +4,7 @@ import Combine
 
 @MainActor
 final class RunViewModel: ObservableObject {
-    @Published var tracker: RunTracker
+    let tracker: RunTracker
     @Published var showSummary = false
     @Published var lastRunResult: RunResult?
     @Published var isSaving = false
@@ -16,11 +16,29 @@ final class RunViewModel: ObservableObject {
 
     /// Workout agendado que originou esta corrida (definido quando o usuario
     /// clica "Iniciar treino agora" na dashboard). Após salvar, dispara a sheet de feedback.
-    var pendingWorkout: WorkoutModel? {
-        didSet {
-            tracker.loadPlaylist(pendingWorkout?.segments)
-            tracker.workoutTitle = pendingWorkout?.title ?? ""
-        }
+    @Published private(set) var pendingWorkout: WorkoutModel?
+
+    /// A navigation request is consumed only while idle; never overwrite an active run.
+    @discardableResult
+    func prepareWorkout(_ workout: WorkoutModel) -> Bool {
+        guard !isActive, !showSummary, !isSaving else { return false }
+        pendingWorkout = workout
+        prepareTracker()
+        return true
+    }
+
+    private func prepareTracker() {
+        tracker.loadPlaylist(pendingWorkout?.segments)
+        tracker.workoutTitle = pendingWorkout?.title ?? ""
+    }
+
+    private func clearWorkout() {
+        pendingWorkout = nil
+        prepareTracker()
+    }
+
+    enum StartOutcome: Equatable {
+        case started, busy, locationUnavailable, workoutUnavailable
     }
 
     /// UUID do HKWorkout gravado no Apple Health após esta corrida ser finalizada.
@@ -39,7 +57,7 @@ final class RunViewModel: ObservableObject {
     }
 
     /// Forward tracker's objectWillChange so SwiftUI re-renders this ViewModel's observers.
-    func bindTracker() {
+    private func bindTracker() {
         trackerCancellable = tracker.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -51,15 +69,29 @@ final class RunViewModel: ObservableObject {
     var isPaused: Bool { tracker.state == .paused }
     var isActive: Bool { tracker.state == .running || tracker.state == .paused }
 
-    func startRun() {
+    @discardableResult
+    func startRun() -> StartOutcome {
+        guard !isActive, !showSummary, !isSaving else { return .busy }
+        // Rebuild immediately before starting, independent of view lifecycle callbacks.
+        prepareTracker()
+        if pendingWorkout != nil && tracker.playlist.isEmpty { return .workoutUnavailable }
         if !locationManager.hasPermission {
             locationManager.requestAlwaysPermission()
-            return
+            return .locationUnavailable
         }
+        guard locationManager.currentLocation != nil else { return .locationUnavailable }
         tracker.userWeightKg = UserMetrics.weightKg ?? 70
         tracker.configureTargetAlert(targetAlert)
         tracker.start()
         targetAlert = nil
+        return .started
+    }
+
+    @discardableResult
+    func startFreeRun() -> StartOutcome {
+        guard !isActive, !showSummary, !isSaving else { return .busy }
+        clearWorkout()
+        return startRun()
     }
 
     func pauseRun() {
@@ -84,7 +116,7 @@ final class RunViewModel: ObservableObject {
         isSaved = false
         saveError = nil
         healthKitWriteDenied = false
-        pendingWorkout = nil
+        clearWorkout()
         lastSavedHealthKitUUID = nil
         lastSavedSession = nil
         showWorkoutFeedback = false
@@ -231,6 +263,9 @@ final class RunViewModel: ObservableObject {
     }
 
     func dismissSummary() {
+        guard !isSaving else { return }
+        clearWorkout()
+        showWorkoutFeedback = false
         showSummary = false
         lastRunResult = nil
         isSaved = false

@@ -106,7 +106,7 @@ final class RunTracker: ObservableObject {
     }
 
     func loadPlaylist(_ workoutSegments: WorkoutSegments?) {
-        playlist = workoutSegments?.flatten() ?? []
+        playlist = workoutSegments?.executionPlaylist() ?? []
         activeSegmentIndex = 0
     }
 

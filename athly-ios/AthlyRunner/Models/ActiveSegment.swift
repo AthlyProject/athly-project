@@ -35,6 +35,37 @@ extension WorkoutSegments {
         return result
     }
 
+    /// Reject the entire prescription rather than silently dropping invalid steps.
+    /// Bound expansion before flattening so malformed sets cannot crash or exhaust memory.
+    func executionPlaylist() -> [ActiveSegment]? {
+        guard schemaVersion == 1, !segments.isEmpty else { return nil }
+        func count(_ nodes: [Segment], depth: Int) -> Int? {
+            guard depth <= 16, !nodes.isEmpty else { return nil }
+            var total = 0
+            for node in nodes {
+                let size: Int
+                if node.kind == .set {
+                    let repetitions = node.repetitions ?? 1
+                    guard repetitions > 0, repetitions <= 10_000,
+                          let children = node.children,
+                          let childCount = count(children, depth: depth + 1),
+                          childCount <= 10_000 / repetitions else { return nil }
+                    size = childCount * repetitions
+                } else {
+                    guard node.kind != .unknown, node.children?.isEmpty != false,
+                          let end = node.end, end.value.isFinite, end.value > 0,
+                          end.by != .reps || end.value.rounded() == end.value else { return nil }
+                    size = 1
+                }
+                total += size
+                guard total <= 10_000 else { return nil }
+            }
+            return total
+        }
+        guard count(segments, depth: 0) != nil else { return nil }
+        return flatten()
+    }
+
     // MARK: Private
 
     private func expand(

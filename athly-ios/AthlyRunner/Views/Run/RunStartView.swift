@@ -4,18 +4,19 @@ import UIKit
 
 struct RunStartView: View {
     @Environment(\.isAppTabActive) private var isTabActive
-    @EnvironmentObject var locationManager: LocationManager
+    @ObservedObject var locationManager: LocationManager
     @StateObject private var viewModel: RunViewModel
     @Binding var isRunInProgress: Bool
     @Binding var pendingWorkout: WorkoutModel?
 
-    init(isRunInProgress: Binding<Bool> = .constant(false), pendingWorkout: Binding<WorkoutModel?> = .constant(nil)) {
-        _viewModel = StateObject(wrappedValue: RunViewModel(locationManager: LocationManager()))
+    init(locationManager: LocationManager, isRunInProgress: Binding<Bool> = .constant(false), pendingWorkout: Binding<WorkoutModel?> = .constant(nil)) {
+        self.locationManager = locationManager
+        _viewModel = StateObject(wrappedValue: RunViewModel(locationManager: locationManager))
         _isRunInProgress = isRunInProgress
         _pendingWorkout = pendingWorkout
     }
 
-    @State private var isInitialized = false
+    @State private var showWorkoutUnavailable = false
     @State private var showLiveActivityAlert = false
     @State private var showTargetAlertSheet = false
 
@@ -52,24 +53,16 @@ struct RunStartView: View {
                 viewModel.tracker.liveActivityDisabled = false
             }
         }
-        .onAppear {
-            if !isInitialized {
-                viewModel.updateLocationManager(locationManager)
-                isInitialized = true
-            }
-            // Sync pending workout context from dashboard
-            if let workout = pendingWorkout {
-                viewModel.pendingWorkout = workout
-                pendingWorkout = nil
-            }
+        .alert("Treino guiado indisponível", isPresented: $showWorkoutUnavailable) {
+            Button("Voltar", role: .cancel) {}
+            Button("Iniciar corrida livre") { viewModel.startFreeRun() }
+        } message: {
+            Text("Não foi possível carregar os blocos deste treino. Você pode voltar ou iniciar uma corrida livre, sem vínculo automático com este treino.")
         }
-        .onChange(of: pendingWorkout?.id) { _ in
-            if let workout = pendingWorkout {
-                viewModel.pendingWorkout = workout
-                pendingWorkout = nil
-            }
-        }
+        .onAppear { consumePendingWorkout() }
+        .onChange(of: pendingWorkout?.id) { _ in consumePendingWorkout() }
         .onChange(of: isTabActive) { active in
+            if active { consumePendingWorkout() }
             if active && !viewModel.isActive && !viewModel.showSummary && locationManager.hasPermission {
                 locationManager.startTracking()
             } else if !active && !viewModel.isActive {
@@ -81,7 +74,14 @@ struct RunStartView: View {
         }
         .onChange(of: viewModel.showSummary) { summary in
             isRunInProgress = viewModel.isActive || summary
+            if !summary { consumePendingWorkout() }
         }
+    }
+
+    private func consumePendingWorkout() {
+        guard let workout = pendingWorkout, viewModel.prepareWorkout(workout) else { return }
+        pendingWorkout = nil
+        showWorkoutUnavailable = false
     }
 
     // MARK: - Pre-run view with location map snapshot
@@ -201,6 +201,12 @@ struct RunStartView: View {
                     }
                 }
 
+                Text(viewModel.pendingWorkout?.title ?? String(localized: "Corrida livre"))
+                    .font(AthlyTheme.Typography.semibold(16))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
                 Text("Pronto para correr?")
                     .font(AthlyTheme.Typography.heading(26))
                     .foregroundStyle(.white)
@@ -209,7 +215,7 @@ struct RunStartView: View {
             VStack(spacing: 22) {
                 // Start button
                 Button {
-                    viewModel.startRun()
+                    showWorkoutUnavailable = viewModel.startRun() == .workoutUnavailable
                 } label: {
                     ZStack {
                         Circle()
@@ -403,13 +409,5 @@ private struct LocationSnapshotMap: UIViewRepresentable {
             longitudinalMeters: 400
         )
         mapView.setRegion(region, animated: false)
-    }
-}
-
-// Extension to allow updating locationManager after init
-extension RunViewModel {
-    func updateLocationManager(_ manager: LocationManager) {
-        self.tracker = RunTracker(locationManager: manager)
-        bindTracker()
     }
 }
