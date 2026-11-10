@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/AthlyProject/athly-project/compare/v1.16.1...v1.16.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ios:** preserve workout blocks when starting a run ([2594e5c](https://github.com/AthlyProject/athly-project/commit/2594e5c47a8adfdd3568b74ab04cd9cff3180ce4))
+
 ## [1.16.1](https://github.com/AthlyProject/athly-project/compare/v1.16.0...v1.16.1) (2026-11-09)
 
 
