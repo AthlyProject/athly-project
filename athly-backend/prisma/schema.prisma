@@ -135,6 +135,8 @@ model User {
   planGenerationJobs PlanGenerationJob[]
   pushDevices        PushDevice[]
   passwordResetCodes PasswordResetCode[]
+  zeppConnection ZeppConnection?
+  zeppActivities ZeppActivity[]
   connectIqDevices   ConnectIqDevice[]
   connectIqPairings  ConnectIqPairing[]
   connectIqActivities ConnectIqActivity[]
@@ -589,4 +591,45 @@ model ConnectIqActivityPart {
 
   @@id([activityId, seq])
   @@map("connect_iq_activity_parts")
+}
+
+// Zepp partner integration. Tokens and download URLs are encrypted by the service.
+model ZeppConnection {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zeppUserId String? @unique
+  tokens String?
+  expiresAt DateTime?
+  timeZone String @default("America/Sao_Paulo")
+  stateHash String? @unique
+  stateExpiresAt DateTime?
+  connected Boolean @default(false)
+  syncHash String?
+  lastSyncAt DateTime?
+  nextSyncAt DateTime @default(now())
+  leaseUntil DateTime?
+  error String?
+}
+model ZeppWorkoutMapping {
+  id Int @id @default(autoincrement())
+  workoutId String @unique
+}
+model ZeppActivity {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  summaryId String
+  downloadUrl String
+  status String @default("pending")
+  attempts Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  leaseUntil DateTime?
+  fit Bytes?
+  summary Json?
+  resolution String?
+  workoutId String?
+  error String?
+  createdAt DateTime @default(now())
+  @@unique([userId, summaryId])
+  @@index([status, nextAttemptAt])
 }

@@ -1,4 +1,5 @@
 import './otel-init';
+import { text } from 'express';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -10,6 +11,7 @@ import { OTelLoggerService } from './otel-logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use('/zepp/webhooks', text({ type: 'text/plain', limit: '256kb' }));
   app.useLogger(new OTelLoggerService());
   app.enableCors({ origin: true, credentials: true });
   app.useGlobalPipes(

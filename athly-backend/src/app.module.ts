@@ -1,3 +1,4 @@
+import { ZeppModule } from './modules/zepp/zepp.module';
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UserLanguageInterceptor } from './common/i18n/user-language.interceptor';
@@ -46,6 +47,7 @@ import { ConnectIqModule } from './modules/connect-iq/connect-iq.module';
     WaitlistModule,
     NotificationsModule,
     ConnectIqModule,
+    ZeppModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_INTERCEPTOR, useClass: UserLanguageInterceptor }],
