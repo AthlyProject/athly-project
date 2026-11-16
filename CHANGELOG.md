@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/AthlyProject/athly-project/compare/v1.16.3...v1.17.0) (2026-11-16)
+
+
+### Features
+
+* **zepp:** add native workout and activity integration backend ([4a7ff61](https://github.com/AthlyProject/athly-project/commit/4a7ff6183dd007e9d5394292ada7f2e64d58a0dd))
+
 ## [1.16.3](https://github.com/AthlyProject/athly-project/compare/v1.16.2...v1.16.3) (2026-11-10)
 
 
