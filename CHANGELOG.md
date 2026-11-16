@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/AthlyProject/athly-project/compare/v1.17.0...v1.17.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **zepp:** reference webhook secret in App Runner ([acf1d7f](https://github.com/AthlyProject/athly-project/commit/acf1d7f4db3fcd549da9df2970d4257f11b2823a))
+
 # [1.17.0](https://github.com/AthlyProject/athly-project/compare/v1.16.3...v1.17.0) (2026-11-16)
 
 
