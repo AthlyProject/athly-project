@@ -10,6 +10,12 @@ run:
   network:
     port: 4000
   env:
+    - name: ZEPP_ENABLED
+      value: "true"
+    - name: ZEPP_WORKOUTS_VALIDATED
+      value: "false"
+    - name: ZEPP_REDIRECT_URI
+      value: "https://api.athlyproject.app/zepp/callback"
     - name: REFRESH_TOKEN_EXPIRES_IN
       value: "365d"
     - name: NODE_ENV
@@ -41,6 +47,12 @@ run:
     - name: SWAGGER_DOCS_USER
       value: "athly"
   secrets:
+    - name: ZEPP_CLIENT_ID
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:ZEPP_CLIENT_ID::"
+    - name: ZEPP_CLIENT_SECRET
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:ZEPP_CLIENT_SECRET::"
+    - name: ZEPP_TOKEN_KEY
+      value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:ZEPP_TOKEN_KEY::"
     - name: ZEPP_WEBHOOK_SECRET
       value-from: "arn:aws:secretsmanager:eu-central-1:730335545778:secret:prod/BackEnd/Athly-bdsWXr:ZEPP_WEBHOOK_SECRET::"
     - name: WEEKLY_PLAN_AUTOMATION_ENABLED
