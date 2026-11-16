@@ -1,3 +1,10 @@
+## [1.17.2](https://github.com/AthlyProject/athly-project/compare/v1.17.1...v1.17.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* **zepp:** configure production credentials and enable connections ([04644e6](https://github.com/AthlyProject/athly-project/commit/04644e6f729516336b5bb6c16170c9435c29d873))
+
 ## [1.17.1](https://github.com/AthlyProject/athly-project/compare/v1.17.0...v1.17.1) (2026-11-16)
 
 
