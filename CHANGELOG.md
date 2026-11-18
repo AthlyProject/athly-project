@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/AthlyProject/athly-project/compare/v1.18.0...v1.19.0) (2026-11-18)
+
+
+### Features
+
+* **zepp:** select activities by workout window and persist completion links ([09f81d5](https://github.com/AthlyProject/athly-project/commit/09f81d5d679658b5ce9918da08087650bd1a60ce))
+
 # [1.18.0](https://github.com/AthlyProject/athly-project/compare/v1.17.2...v1.18.0) (2026-11-18)
 
 
