@@ -12,7 +12,7 @@ import {
   UnauthorizedException,
   HttpCode,
 } from '@nestjs/common';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { timingSafeEqual } from 'node:crypto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user-rest.decorator';
@@ -24,6 +24,10 @@ class AuthorizeDto {
 class ResolveDto {
   @IsIn(['linked', 'free_run', 'dismissed']) resolution: string;
   @IsOptional() @IsString() workoutId?: string;
+}
+export class BackfillDto {
+  @IsInt() @Min(0) startTime: number;
+  @IsInt() @Min(0) endTime: number;
 }
 @Controller('zepp')
 @UseGuards(JwtAuthGuard)
@@ -43,6 +47,11 @@ export class ZeppController {
   }
   @Get('activities') list(@CurrentUser() u: UserModel) {
     return this.zepp.activities(u.id);
+  }
+  @Post('activities/backfill')
+  @HttpCode(202)
+  backfill(@CurrentUser() u: UserModel, @Body() b: BackfillDto) {
+    return this.zepp.requestBackfill(u.id, b.startTime, b.endTime);
   }
   @Get('activities/:id/fit')
   @Header('Cache-Control', 'no-store')

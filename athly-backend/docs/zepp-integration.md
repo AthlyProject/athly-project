@@ -1,6 +1,6 @@
 # Athly / Zepp — integração nativa
 
-Alvo de homologação: Active 3 Premium + iPhone. O treino é executado pelo app nativo do relógio. Não há aplicativo Zepp OS próprio. O frontend iOS está disponível apenas em DEBUG e o backend inicia com a integração desligada.
+Alvo de homologação: Active 3 Premium + iPhone. O treino é executado pelo app nativo do relógio. Não há aplicativo Zepp OS próprio. O frontend iOS está disponível apenas em DEBUG. O backend depende de `ZEPP_ENABLED`; no App Runner, a conexão está habilitada e o envio de treinos permanece desativado.
 
 ## Cadastro de parceiro (ação do responsável pela Athly)
 
@@ -15,7 +15,7 @@ Portal e requisitos: https://devopen.zepp.com/docs/getting-started/partner-onboa
 
 ## Configuração e implantação
 
-1. Aplicar a migração `20261115000000_zepp` no ambiente desejado. No App Runner, `npm run start:prod:migrate` aplica as migrações antes de iniciar a API. Não há alteração dos dados Garmin.
+1. Aplicar as migrações `20261115000000_zepp` e `20261117000000_zepp_backfill` no ambiente desejado. No App Runner, `npm run start:prod:migrate` aplica as migrações antes de iniciar a API. Não há alteração dos dados Garmin.
 2. Configurar as variáveis `ZEPP_*` de `.env.example`. Chave de tokens: 32 bytes aleatórios em base64. Segredo do webhook: pelo menos 32 caracteres aleatórios URL-safe. Manter fora do repositório e ocultar caminho de webhook, query OAuth e headers Authorization nos logs de infraestrutura.
 3. Com aprovação e credenciais, habilitar `ZEPP_ENABLED=true` em ambiente de teste. Conectar pelo iPhone; depois da página de confirmação, voltar à Athly.
 4. Manter `ZEPP_WORKOUTS_VALIDATED=false` até validar unidades e comportamentos abaixo. A recepção das corridas funciona independentemente do envio de treinos.
@@ -28,6 +28,10 @@ Sem credenciais, os testes usam mocks. Não é possível afirmar funcionamento n
 Rotas autenticadas pelo JWT Athly: `GET /zepp/status`, `POST /zepp/authorize {timeZone}`, `POST /zepp/sync`, `DELETE /zepp/connection`, `GET /zepp/activities`, `GET /zepp/activities/:id/fit`, `POST /zepp/activities/:id/resolve {resolution, workoutId?}`. Resoluções: `linked`, `free_run`, `dismissed`. O vínculo verifica propriedade do treino e não o conclui no backend.
 
 OAuth usa state aleatório de uso único com 10 minutos de validade. Os tokens são AES-256-GCM. O webhook aceita o array de strings JSON servido como text/plain; exige o segredo do caminho pois a documentação atual não prevê assinatura HMAC. URLs FIT aceitas somente em `https://api-open.zepp.com/api/activity/file`, sem redirecionamento. Outra origem oficial exigirá revisão explícita.
+
+Histórico: `POST /zepp/activities/backfill {startTime, endTime}` usa timestamps Unix em segundos e o token da conta autenticada, com intervalo passado de até 30 dias. O botão iOS “Buscar corridas de hoje” envia apenas o período entre o início do dia no fuso do iPhone e o instante atual. O backend chama `GET /wellness-api/rest/backfill/activities` na Zepp e retorna HTTP 202 somente quando a Zepp confirma `ACCEPTED` com um `requestId`. O comprovante, a data do pedido e eventuais erros ficam na conexão. Há intervalo mínimo persistente de um minuto entre pedidos, inclusive após falhas; não há repetição automática de solicitações. Recebimento e deduplicação usam o webhook existente. HTTP 202 confirma o pedido, não a entrega de corridas. Contrato: https://devopen.zepp.com/docs/data-apis/backfill-api.
+
+`GET /zepp/status` também informa `historyImportAvailable`, `workoutsEnabled`, `backfillRequestedAt`, `backfillRequestId` e `backfillError`. O app oculta a busca enquanto o servidor antigo estiver em produção e oculta o envio de treinos quando não estiver validado.
 
 Worker a cada 5 segundos, filas no PostgreSQL com leases de 120 segundos. Sincronização de treinos verifica a janela completa de sete dias a cada cinco minutos e compara hash. IDs numéricos estáveis preservam o vínculo com UUIDs Athly. FITs são deduplicados por usuário e summaryId, limitados a 50 MB e expurgados em 30 dias. Download tem timeout de 60 segundos e tentativas exponenciais até dez tentativas ou 24h. A URL é de uso único: interrupção após consumo remoto e antes da gravação local pode exigir reentrega pela Zepp.
 

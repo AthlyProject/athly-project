@@ -56,6 +56,79 @@ describe('Zepp integration', () => {
     await expect(service.callback('old', 'code')).rejects.toThrow('expirada');
     expect(fetcher).not.toHaveBeenCalled();
   });
+  describe('activity history', () => {
+    const requestId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    const end = Math.floor(Date.now() / 1000);
+    beforeEach(() => {
+      const connection = {
+        connected: true,
+        tokens: seal(JSON.stringify({ access_token: 'access' }), process.env.ZEPP_TOKEN_KEY!),
+        expiresAt: new Date(Date.now() + 3600_000),
+      };
+      db.zeppConnection.findUnique.mockResolvedValue(connection);
+      db.zeppConnection.findUniqueOrThrow.mockResolvedValue(connection);
+      db.zeppConnection.updateMany.mockResolvedValue({ count: 1 });
+    });
+    it('requests FIT history with the user token, stores the receipt and works with workouts disabled', async () => {
+      process.env.ZEPP_WORKOUTS_VALIDATED = 'false';
+      const fetcher = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ requestId, status: 'ACCEPTED' }), { status: 202 }),
+      );
+      await expect(service.requestBackfill('u', end - 86400, end)).resolves.toEqual({ requestId, status: 'ACCEPTED' });
+      const [url, init] = fetcher.mock.calls[0];
+      expect(new URL(String(url)).origin + new URL(String(url)).pathname)
+        .toBe('https://api-open.zepp.com/wellness-api/rest/backfill/activities');
+      expect(new URL(String(url)).searchParams.get('summaryStartTimeInSeconds')).toBe(String(end - 86400));
+      expect(new URL(String(url)).searchParams.get('summaryEndTimeInSeconds')).toBe(String(end));
+      expect(init).toMatchObject({ method: 'GET', headers: { Authorization: 'Bearer access' }, redirect: 'error' });
+      expect(db.zeppConnection.updateMany.mock.calls[0][0].where).toMatchObject({ userId: 'u', connected: true });
+      expect(db.zeppConnection.updateMany.mock.calls[1][0]).toMatchObject({
+        where: { userId: 'u', connected: true }, data: { backfillRequestId: requestId },
+      });
+    });
+    it.each([
+      [-1, end], [end, end - 1], [end - 30 * 86400 - 1, end], [end - 1, end + 3600], [1.5, end], [NaN, end],
+    ])('rejects invalid time ranges (%s, %s) before accessing credentials', async (start, stop) => {
+      const fetcher = jest.spyOn(globalThis, 'fetch');
+      await expect(service.requestBackfill('u', start, stop)).rejects.toThrow('período');
+      expect(db.zeppConnection.findUnique).not.toHaveBeenCalled();
+      expect(fetcher).not.toHaveBeenCalled();
+    });
+    it('requires an enabled integration and connected account', async () => {
+      process.env.ZEPP_ENABLED = 'false';
+      await expect(service.requestBackfill('u', end, end)).rejects.toThrow('indisponível');
+      process.env.ZEPP_ENABLED = 'true';
+      db.zeppConnection.findUnique.mockResolvedValue(null);
+      await expect(service.requestBackfill('u', end, end)).rejects.toThrow('Conecte');
+      expect(db.zeppConnection.updateMany).not.toHaveBeenCalled();
+    });
+    it('does not call Zepp when another request holds the persistent cooldown', async () => {
+      db.zeppConnection.updateMany.mockResolvedValue({ count: 0 });
+      const fetcher = jest.spyOn(globalThis, 'fetch');
+      await expect(service.requestBackfill('u', end, end)).rejects.toMatchObject({ status: 429 });
+      expect(fetcher).not.toHaveBeenCalled();
+    });
+    it.each([401, 403, 429, 500, 200])('does not report HTTP %s as accepted', async (status) => {
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ requestId, status: 'ACCEPTED' }), { status }),
+      );
+      await expect(service.requestBackfill('u', end, end)).rejects.toThrow();
+      expect(db.zeppConnection.updateMany.mock.calls[1][0].data).toHaveProperty('backfillError');
+      expect(db.zeppConnection.updateMany.mock.calls[1][0].data).not.toHaveProperty('backfillRequestId');
+    });
+    it('rejects malformed receipts and keeps failures separate from workout sync errors', async () => {
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ status: 'ACCEPTED' }), { status: 202 }),
+      );
+      await expect(service.requestBackfill('u', end, end)).rejects.toThrow('inválida');
+      expect(db.zeppConnection.updateMany.mock.calls[1][0].data).not.toHaveProperty('error');
+    });
+    it('does not expose a token or provider response on network failure', async () => {
+      jest.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('token=secret'));
+      await expect(service.requestBackfill('u', end, end)).rejects.toThrow('Não foi possível confirmar');
+      expect(JSON.stringify(db.zeppConnection.updateMany.mock.calls[1][0].data)).not.toContain('secret');
+    });
+  });
   it('consumes state once and encrypts the OAuth token', async () => {
     db.zeppConnection.findFirst.mockResolvedValue({ userId: 'u' });
     db.zeppConnection.updateMany.mockResolvedValue({ count: 1 });

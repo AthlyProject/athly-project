@@ -609,6 +609,9 @@ model ZeppConnection {
   nextSyncAt DateTime @default(now())
   leaseUntil DateTime?
   error String?
+  backfillRequestedAt DateTime?
+  backfillRequestId String?
+  backfillError String?
 }
 model ZeppWorkoutMapping {
   id Int @id @default(autoincrement())
