@@ -45,6 +45,16 @@ export class ZeppController {
   @Delete('connection') disconnect(@CurrentUser() u: UserModel) {
     return this.zepp.disconnect(u.id);
   }
+  @Get('activities/candidates')
+  candidates(
+    @CurrentUser() u: UserModel,
+    @Query('workoutId') workoutId: string,
+    @Query('startTime') start: string,
+    @Query('endTime') end: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.zepp.candidates(u.id, workoutId, Number(start), Number(end), cursor);
+  }
   @Get('activities') list(@CurrentUser() u: UserModel) {
     return this.zepp.activities(u.id);
   }

@@ -1,0 +1,10 @@
+ALTER TABLE "ZeppConnection" ADD COLUMN "backfillWindowStart" DOUBLE PRECISION, ADD COLUMN "backfillWindowEnd" DOUBLE PRECISION;
+ALTER TABLE "ZeppActivity" ADD COLUMN "startedAt" TIMESTAMP(3), ADD COLUMN "hasRoute" BOOLEAN NOT NULL DEFAULT false;
+UPDATE "ZeppActivity" SET "startedAt" = ("summary"->>'startedAt')::timestamp WHERE "summary"->>'startedAt' IS NOT NULL;
+CREATE TABLE "ZeppActivityLink" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL, "summaryId" TEXT NOT NULL, "workoutId" TEXT NOT NULL);
+CREATE UNIQUE INDEX "ZeppActivityLink_workoutId_key" ON "ZeppActivityLink"("workoutId");
+CREATE UNIQUE INDEX "ZeppActivityLink_userId_summaryId_key" ON "ZeppActivityLink"("userId", "summaryId");
+INSERT INTO "ZeppActivityLink" ("id", "userId", "summaryId", "workoutId") SELECT a."id", a."userId", a."summaryId", a."workoutId" FROM "ZeppActivity" a JOIN "workouts" w ON w."id"=a."workoutId" AND w."user_id"=a."userId" WHERE a."resolution"='linked';
+CREATE INDEX "ZeppActivity_userId_startedAt_idx" ON "ZeppActivity"("userId", "startedAt");
+ALTER TABLE "ZeppActivityLink" ADD CONSTRAINT "ZeppActivityLink_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ZeppActivityLink" ADD CONSTRAINT "ZeppActivityLink_workoutId_fkey" FOREIGN KEY ("workoutId") REFERENCES "workouts"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -217,6 +217,29 @@ export class WorkoutsService {
       }
       const workout = await this.prisma.$transaction(async (tx) => {
         await this.lockWeek(tx, userId, workoutId);
+        if (input?.zeppActivityId) {
+          const activity = await tx.zeppActivity.findFirst({
+            where: { id: input.zeppActivityId, userId, status: { in: ['ready', 'resolved'] } },
+          });
+          if (!activity) throw new BadRequestException('Atividade Zepp indisponível');
+          const link = await tx.zeppActivityLink.findUnique({
+            where: { userId_summaryId: { userId, summaryId: activity.summaryId } },
+          });
+          if (link && link.workoutId !== workoutId)
+            throw new ConflictException('Esta corrida já está vinculada a outro treino.');
+          const existingLink = await tx.zeppActivityLink.findUnique({ where: { workoutId } });
+          if (existingLink && existingLink.summaryId !== activity.summaryId)
+            throw new ConflictException('Desvincule a corrida anterior antes de selecionar outra.');
+          await tx.zeppActivityLink.upsert({
+            where: { workoutId },
+            create: { userId, summaryId: activity.summaryId, workoutId },
+            update: { summaryId: activity.summaryId },
+          });
+          await tx.zeppActivity.update({
+            where: { id: activity.id },
+            data: { status: 'resolved', resolution: 'linked', workoutId },
+          });
+        }
         const updated = await tx.workout.updateMany({ where: { id: workoutId, userId }, data });
         if (!updated.count)
           throw new CodedNotFoundException(ErrorCode.WORKOUT_NOT_FOUND, 'Workout not found');
@@ -231,7 +254,12 @@ export class WorkoutsService {
       const nextWeekGeneration = await this.automation?.afterWorkout(userId, workout.weeklyGoalId);
       return { ...this.mapWorkout(workout), ...(nextWeekGeneration ? { nextWeekGeneration } : {}) };
     } catch (err) {
-      if (err instanceof NotFoundException || err instanceof BadRequestException) throw err;
+      if (
+        err instanceof NotFoundException ||
+        err instanceof BadRequestException ||
+        err instanceof ConflictException
+      )
+        throw err;
       // O índice único global em `apple_health_workout_uuid` impede que a mesma corrida do
       // Apple Health fique vinculada a dois treinos. Sem este mapeamento o choque virava um 500
       // opaco, sem indicar ao app que basta desvincular o treino anterior.
@@ -274,6 +302,11 @@ export class WorkoutsService {
         }
 
         await tx.workoutFeedback.deleteMany({ where: { workoutId, userId } });
+        await tx.zeppActivityLink.deleteMany({ where: { workoutId, userId } });
+        await tx.zeppActivity.updateMany({
+          where: { workoutId, userId },
+          data: { workoutId: null, resolution: null, status: 'ready' },
+        });
 
         return tx.workout.update({
           where: { id: workoutId },

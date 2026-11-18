@@ -112,6 +112,10 @@ export function fitSummary(bytes: Uint8Array) {
     throw new Error('Atividade não é corrida simples');
   const s = sessions[0];
   return {
+    hasRoute:
+      (messages.recordMesgs ?? []).filter(
+        (r: any) => Number.isFinite(r.positionLat) && Number.isFinite(r.positionLong),
+      ).length >= 2,
     startedAt: s.startTime,
     endedAt: s.timestamp,
     distanceMeters: s.totalDistance ?? 0,

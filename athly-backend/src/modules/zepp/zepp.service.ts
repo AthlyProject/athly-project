@@ -214,43 +214,79 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
     this.requireEnabled();
     const now = new Date();
     if (
-      !Number.isSafeInteger(startTime) || !Number.isSafeInteger(endTime) ||
-      startTime < 0 || endTime < startTime || endTime - startTime > 30 * 86400 ||
+      !Number.isSafeInteger(startTime) ||
+      !Number.isSafeInteger(endTime) ||
+      startTime < 0 ||
+      endTime < startTime ||
+      endTime - startTime > 30 * 86400 ||
       endTime > Math.floor(now.getTime() / 1000) + 60
-    ) throw new BadRequestException('Escolha um período passado de até 30 dias.');
+    )
+      throw new BadRequestException('Escolha um período passado de até 30 dias.');
     const connection = await this.db.zeppConnection.findUnique({ where: { userId } });
     if (!connection?.connected || !connection.tokens)
       throw new BadRequestException('Conecte sua conta Zepp antes de buscar corridas.');
+    if (
+      connection.backfillRequestId &&
+      connection.backfillRequestedAt &&
+      now.getTime() - connection.backfillRequestedAt.getTime() < 300_000 &&
+      connection.backfillWindowStart === startTime &&
+      (connection.backfillWindowEnd ?? 0) >= endTime - 300
+    ) {
+      return { requestId: connection.backfillRequestId, status: 'ACCEPTED' as const };
+    }
     // Persistent per-account cooldown also prevents simultaneous requests across replicas.
     const claim = await this.db.zeppConnection.updateMany({
       where: {
-        userId, connected: true, tokens: connection.tokens,
-        OR: [{ backfillRequestedAt: null }, { backfillRequestedAt: { lt: new Date(now.getTime() - 60_000) } }],
+        userId,
+        connected: true,
+        tokens: connection.tokens,
+        OR: [
+          { backfillRequestedAt: null },
+          { backfillRequestedAt: { lt: new Date(now.getTime() - 60_000) } },
+        ],
       },
-      data: { backfillRequestedAt: now, backfillRequestId: null, backfillError: null },
+      data: {
+        backfillRequestedAt: now,
+        backfillRequestId: null,
+        backfillError: null,
+        backfillWindowStart: startTime,
+        backfillWindowEnd: endTime,
+      },
     });
-    if (!claim.count)
-      throw new HttpException('Aguarde um minuto antes de pedir outra busca.', 429);
+    if (!claim.count) throw new HttpException('Aguarde um minuto antes de pedir outra busca.', 429);
     try {
       const query = new URLSearchParams({
         summaryStartTimeInSeconds: String(startTime),
         summaryEndTimeInSeconds: String(endTime),
       });
-      const response = await fetch(`https://api-open.zepp.com/wellness-api/rest/backfill/activities?${query}`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${await this.access(userId)}` },
-        signal: AbortSignal.timeout(30_000),
-        redirect: 'error',
-      });
+      const response = await fetch(
+        `https://api-open.zepp.com/wellness-api/rest/backfill/activities?${query}`,
+        {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${await this.access(userId)}` },
+          signal: AbortSignal.timeout(30_000),
+          redirect: 'error',
+        },
+      );
       if (response.status === 429)
-        throw new HttpException('A Zepp limitou as buscas. Aguarde antes de tentar novamente.', 429);
+        throw new HttpException(
+          'A Zepp limitou as buscas. Aguarde antes de tentar novamente.',
+          429,
+        );
       if (response.status === 401 || response.status === 403)
-        throw new BadRequestException('A Zepp recusou o acesso ao histórico. Reconecte a conta e confira a permissão Sport.');
+        throw new BadRequestException(
+          'A Zepp recusou o acesso ao histórico. Reconecte a conta e confira a permissão Sport.',
+        );
       if (response.status !== 202)
-        throw new ServiceUnavailableException('A Zepp não confirmou a busca. Tente novamente mais tarde.');
+        throw new ServiceUnavailableException(
+          'A Zepp não confirmou a busca. Tente novamente mais tarde.',
+        );
       const result = await response.json();
-      if (result?.status !== 'ACCEPTED' || typeof result.requestId !== 'string' ||
-          !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(result.requestId))
+      if (
+        result?.status !== 'ACCEPTED' ||
+        typeof result.requestId !== 'string' ||
+        !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(result.requestId)
+      )
         throw new ServiceUnavailableException('Resposta de histórico inválida da Zepp.');
       await this.db.zeppConnection.updateMany({
         where: { userId, connected: true, backfillRequestedAt: now },
@@ -258,8 +294,12 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       });
       return { requestId: result.requestId as string, status: 'ACCEPTED' as const };
     } catch (error) {
-      const failure = error instanceof HttpException ? error :
-        new ServiceUnavailableException('Não foi possível confirmar a busca na Zepp. Aguarde e tente novamente.');
+      const failure =
+        error instanceof HttpException
+          ? error
+          : new ServiceUnavailableException(
+              'Não foi possível confirmar a busca na Zepp. Aguarde e tente novamente.',
+            );
       await this.db.zeppConnection.updateMany({
         where: { userId, connected: true, backfillRequestedAt: now },
         data: { backfillError: failure.message },
@@ -314,6 +354,39 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
     }
     return {};
   }
+  async candidates(userId: string, workoutId: string, start: number, end: number, cursor?: string) {
+    this.requireEnabled();
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start < 0 ||
+      end <= start ||
+      end - start > 30 * 86400
+    )
+      throw new BadRequestException('Período inválido');
+    if (!(await this.db.workout.findFirst({ where: { id: workoutId, userId } })))
+      throw new NotFoundException();
+    const links = await this.db.zeppActivityLink.findMany({
+      where: { userId, workoutId: { not: workoutId } },
+    });
+    const rows = await this.db.zeppActivity.findMany({
+      where: {
+        userId,
+        status: { in: ['ready', 'resolved'] },
+        startedAt: { gte: new Date(start * 1000), lt: new Date(end * 1000) },
+        summaryId: { notIn: links.map((l) => l.summaryId) },
+      },
+      orderBy: { id: 'asc' },
+      take: 51,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+    return {
+      items: rows
+        .slice(0, 50)
+        .map((r) => ({ id: r.id, hasRoute: r.hasRoute, ...(r.summary as object) })),
+      nextCursor: rows.length > 50 ? rows[49].id : null,
+    };
+  }
   async activities(userId: string) {
     const rows = await this.db.zeppActivity.findMany({
       where: { userId, status: 'ready', createdAt: { gte: new Date(Date.now() - 7 * 86400_000) } },
@@ -337,6 +410,24 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       (!workoutId || !(await this.db.workout.findFirst({ where: { id: workoutId, userId } })))
     )
       throw new BadRequestException('Treino inválido');
+    const activity = await this.db.zeppActivity.findFirst({ where: { userId, id } });
+    if (activity) {
+      const link = await this.db.zeppActivityLink.findUnique({
+        where: { userId_summaryId: { userId, summaryId: activity.summaryId } },
+      });
+      if (link) {
+        if (resolution !== 'linked' || link.workoutId !== workoutId) return {};
+      } else if (resolution === 'linked') {
+        const workout = await this.db.workout.findFirst({
+          where: { id: workoutId, userId, status: { in: ['done', 'partial'] } },
+        });
+        if (!workout)
+          throw new BadRequestException('Conclua o treino antes de vincular a atividade.');
+        await this.db.zeppActivityLink.create({
+          data: { userId, summaryId: activity.summaryId, workoutId: workoutId! },
+        });
+      }
+    }
     const r = await this.db.zeppActivity.updateMany({
       where: { userId, id, status: { in: ['ready', 'resolved'] } },
       data: {
@@ -440,6 +531,8 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
             data: {
               fit: new Uint8Array(bytes),
               summary: JSON.parse(JSON.stringify(summary)),
+              startedAt: new Date(String(summary.startedAt)),
+              hasRoute: summary.hasRoute,
               status: 'ready',
               error: null,
               leaseUntil: null,

@@ -80,6 +80,7 @@ enum PushDeliveryStatus {
 }
 
 model User {
+  zeppActivityLinks ZeppActivityLink[]
   id                   String    @id @default(uuid())
   name                 String
   username             String?   @unique
@@ -173,6 +174,7 @@ model PasswordResetCode {
 }
 
 model Workout {
+  zeppActivityLink ZeppActivityLink?
   id             String        @id @default(uuid())
   trainingPlanId String        @map("training_plan_id")
   weeklyGoalId   String?       @map("weekly_goal_id")
@@ -612,6 +614,8 @@ model ZeppConnection {
   backfillRequestedAt DateTime?
   backfillRequestId String?
   backfillError String?
+  backfillWindowStart Float?
+  backfillWindowEnd Float?
 }
 model ZeppWorkoutMapping {
   id Int @id @default(autoincrement())
@@ -629,10 +633,23 @@ model ZeppActivity {
   leaseUntil DateTime?
   fit Bytes?
   summary Json?
+  startedAt DateTime?
+  hasRoute Boolean @default(false)
   resolution String?
   workoutId String?
   error String?
   createdAt DateTime @default(now())
   @@unique([userId, summaryId])
+  @@index([userId, startedAt])
   @@index([status, nextAttemptAt])
+}
+
+model ZeppActivityLink {
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
+  userId String
+  summaryId String
+  workoutId String @unique
+  @@unique([userId, summaryId])
 }

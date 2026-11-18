@@ -5,6 +5,11 @@ import { WorkoutPlanningContextDto } from '../../ai-planner/dto/planner-health-c
 import { DetailedSessionDto } from '../../ai-planner/dto/plan-from-health.dto';
 
 export class CompleteWorkoutDto extends WorkoutPlanningContextDto {
+  @IsOptional()
+  @IsString()
+  @Length(1, 64)
+  zeppActivityId?: string;
+
   @ApiPropertyOptional({
     description: 'UUID of the HKWorkout that executed this prescribed workout',
   })

@@ -15,7 +15,7 @@ Portal e requisitos: https://devopen.zepp.com/docs/getting-started/partner-onboa
 
 ## Configuração e implantação
 
-1. Aplicar as migrações `20261115000000_zepp` e `20261117000000_zepp_backfill` no ambiente desejado. No App Runner, `npm run start:prod:migrate` aplica as migrações antes de iniciar a API. Não há alteração dos dados Garmin.
+1. Aplicar as migrações `20261115000000_zepp` , `20261117000000_zepp_backfill` e `20261118000000_zepp_candidates` no ambiente desejado. No App Runner, `npm run start:prod:migrate` aplica as migrações antes de iniciar a API. Não há alteração dos dados Garmin.
 2. Configurar as variáveis `ZEPP_*` de `.env.example`. Chave de tokens: 32 bytes aleatórios em base64. Segredo do webhook: pelo menos 32 caracteres aleatórios URL-safe. Manter fora do repositório e ocultar caminho de webhook, query OAuth e headers Authorization nos logs de infraestrutura.
 3. Com aprovação e credenciais, habilitar `ZEPP_ENABLED=true` em ambiente de teste. Conectar pelo iPhone; depois da página de confirmação, voltar à Athly.
 4. Manter `ZEPP_WORKOUTS_VALIDATED=false` até validar unidades e comportamentos abaixo. A recepção das corridas funciona independentemente do envio de treinos.
@@ -29,13 +29,13 @@ Rotas autenticadas pelo JWT Athly: `GET /zepp/status`, `POST /zepp/authorize {ti
 
 OAuth usa state aleatório de uso único com 10 minutos de validade. Os tokens são AES-256-GCM. O webhook aceita o array de strings JSON servido como text/plain; exige o segredo do caminho pois a documentação atual não prevê assinatura HMAC. URLs FIT aceitas somente em `https://api-open.zepp.com/api/activity/file`, sem redirecionamento. Outra origem oficial exigirá revisão explícita.
 
-Histórico: `POST /zepp/activities/backfill {startTime, endTime}` usa timestamps Unix em segundos e o token da conta autenticada, com intervalo passado de até 30 dias. O botão iOS “Buscar corridas de hoje” envia apenas o período entre o início do dia no fuso do iPhone e o instante atual. O backend chama `GET /wellness-api/rest/backfill/activities` na Zepp e retorna HTTP 202 somente quando a Zepp confirma `ACCEPTED` com um `requestId`. O comprovante, a data do pedido e eventuais erros ficam na conexão. Há intervalo mínimo persistente de um minuto entre pedidos, inclusive após falhas; não há repetição automática de solicitações. Recebimento e deduplicação usam o webhook existente. HTTP 202 confirma o pedido, não a entrega de corridas. Contrato: https://devopen.zepp.com/docs/data-apis/backfill-api.
+Histórico: `POST /zepp/activities/backfill {startTime, endTime}` usa timestamps Unix em segundos e o token da conta autenticada, com intervalo passado de até 30 dias. O iOS solicita o histórico em Concluir treino/Adicionar dados, usando a mesma janela do Apple Health: dia planejado até o fim de D+2, limitada ao instante atual para o backfill. O backend chama `GET /wellness-api/rest/backfill/activities` na Zepp e retorna HTTP 202 somente quando a Zepp confirma `ACCEPTED` com um `requestId`. O comprovante, a data do pedido e eventuais erros ficam na conexão. Há intervalo mínimo persistente de um minuto entre pedidos, inclusive após falhas; pedidos aceitos para a mesma janela são reutilizados por cinco minutos. Recebimento e deduplicação usam o webhook existente. HTTP 202 confirma o pedido, não a entrega de corridas. Contrato: https://devopen.zepp.com/docs/data-apis/backfill-api.
 
-`GET /zepp/status` também informa `historyImportAvailable`, `workoutsEnabled`, `backfillRequestedAt`, `backfillRequestId` e `backfillError`. O app oculta a busca enquanto o servidor antigo estiver em produção e oculta o envio de treinos quando não estiver validado.
+`GET /zepp/status` também informa `historyImportAvailable`, `workoutsEnabled`, `backfillRequestedAt`, `backfillRequestId` e `backfillError`. O app oculta o envio de treinos quando não estiver validado.
 
 Worker a cada 5 segundos, filas no PostgreSQL com leases de 120 segundos. Sincronização de treinos verifica a janela completa de sete dias a cada cinco minutos e compara hash. IDs numéricos estáveis preservam o vínculo com UUIDs Athly. FITs são deduplicados por usuário e summaryId, limitados a 50 MB e expurgados em 30 dias. Download tem timeout de 60 segundos e tentativas exponenciais até dez tentativas ou 24h. A URL é de uso único: interrupção após consumo remoto e antes da gravação local pode exigir reentrega pela Zepp.
 
-O iOS usa o importador FIT existente, preservando dados originais, inclusive FC sem ponto GPS. As chaves locais `zepp:<id>` são separadas de Garmin. Com a conta Zepp conectada, a detecção do Apple Health aguarda até duas horas pela cópia completa, como no Garmin. A comparação por início/duração/distância evita oferecer novamente corridas já importadas manualmente ou pelo Apple Health. Não se presume vínculo automático com um treino planejado.
+O iOS usa o importador FIT existente, preservando dados originais, inclusive FC sem ponto GPS. As chaves locais `zepp:<id>` são separadas de Garmin. A conexão Zepp não atrasa o aviso do Apple Health. Uma decisão sobre a corrida reconhece também a contraparte equivalente que chegar depois; a seleção manual continua disponível para complementar dados. A comparação por início/duração/distância evita oferecer novamente corridas já importadas manualmente ou pelo Apple Health. Não se presume vínculo automático com um treino planejado.
 
 ## Compatibilidade e homologação obrigatória
 
@@ -50,3 +50,13 @@ A conversão V2 implementa duração por tempo/distância, repetições (inclusi
 - No iPhone: vincular, salvar livre, ignorar e repetir a mesma atividade via Apple Health/importação manual. Testar Garmin como regressão.
 
 Monitorar filas pending/failed, idade dos downloads e `ZeppConnection.error/lastSyncAt`; não registrar tokens ou URLs assinadas. Atividades failed ficam disponíveis para diagnóstico no banco até o expurgo. O envio ao relógio não implica sucesso antes da sincronização do próprio Zepp.
+
+## Seleção e vínculo de atividade
+
+`GET /zepp/activities/candidates?workoutId=…&startTime=…&endTime=…&cursor=…` lista atividades pela data da corrida, com início inclusivo e fim exclusivo em segundos Unix. Retorna `items` e `nextCursor` (50 por página). Exige propriedade do workout. Inclui atividades ignoradas ou salvas como corrida livre, mas exclui as vinculadas a outro workout.
+
+A conclusão recebe `zeppActivityId` opcional e grava o vínculo junto com o workout em uma única transação. `ZeppActivityLink` mantém a associação após o expurgo do FIT; desfazer a conclusão libera o vínculo. Um workout aceita apenas uma atividade Zepp e uma atividade só pode pertencer a um workout.
+
+Para corridas equivalentes: Apple Health com rota tem prioridade; sem rota no Health e com rota na Zepp, somente Zepp aparece; sem rota em ambas, Health aparece. Leitura de rota inconclusiva ou correspondência ambígua mantém as opções acessíveis. As fontes carregam independentemente; o app consulta atividades a cada cinco segundos por até um minuto após o pedido de histórico. Receber o comprovante não significa que o FIT já chegou.
+
+Homologar no iPhone: selecionar corrida em Concluir treino, repetir em Adicionar dados, conferir rota/FC e ausência de cópia indevida no Health. Reabrir o app e verificar que não há segundo aviso; desfazer conclusão e confirmar que a corrida volta a ficar disponível.

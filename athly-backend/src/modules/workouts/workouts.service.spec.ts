@@ -19,6 +19,8 @@ describe('WorkoutsService', () => {
     workoutFeedback: {
       deleteMany: jest.Mock;
     };
+    zeppActivityLink: { deleteMany: jest.Mock; findUnique: jest.Mock; upsert: jest.Mock };
+    zeppActivity: { updateMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -42,6 +44,8 @@ describe('WorkoutsService', () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
 
     prisma = {
+      zeppActivityLink: { deleteMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
+      zeppActivity: { updateMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       workout: {
         updateMany: jest.fn(),
         findFirst: jest.fn(),
@@ -61,6 +65,25 @@ describe('WorkoutsService', () => {
   });
 
   describe('completeWorkout', () => {
+    it('links the Zepp activity in the completion transaction', async () => {
+      prisma.workout.updateMany.mockResolvedValue({ count: 1 });
+      prisma.workout.findFirst.mockResolvedValue(workout);
+      prisma.zeppActivity.findFirst.mockResolvedValue({ id: 'a', summaryId: 's' });
+      await service.completeWorkout('user-1', 'workout-1', { zeppActivityId: 'a' });
+      expect(prisma.zeppActivityLink.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: { userId: 'user-1', summaryId: 's', workoutId: 'workout-1' },
+        }),
+      );
+    });
+    it('refuses an activity linked to another workout', async () => {
+      prisma.zeppActivity.findFirst.mockResolvedValue({ id: 'a', summaryId: 's' });
+      prisma.zeppActivityLink.findUnique.mockResolvedValue({ workoutId: 'other' });
+      await expect(
+        service.completeWorkout('user-1', 'workout-1', { zeppActivityId: 'a' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(prisma.workout.updateMany).not.toHaveBeenCalled();
+    });
     it('marks a workout as done without requiring a linked HealthKit workout', async () => {
       prisma.workout.updateMany.mockResolvedValue({ count: 1 });
       prisma.workout.findFirst.mockResolvedValue(workout);
