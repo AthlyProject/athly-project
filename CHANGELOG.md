@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/AthlyProject/athly-project/compare/v1.17.2...v1.18.0) (2026-11-18)
+
+
+### Features
+
+* **zepp:** request historical running activities ([974c1bb](https://github.com/AthlyProject/athly-project/commit/974c1bba1e61981d2308bf6a8a1dcbd7f5827e36))
+
 ## [1.17.2](https://github.com/AthlyProject/athly-project/compare/v1.17.1...v1.17.2) (2026-11-16)
 
 
