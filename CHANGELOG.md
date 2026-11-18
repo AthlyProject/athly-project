@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/AthlyProject/athly-project/compare/v1.20.0...v1.20.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **ios:** preview runs before linking and simplify completion flow ([ca99290](https://github.com/AthlyProject/athly-project/commit/ca992900112c2542c00b9a062380573205ff0b6c))
+
 # [1.20.0](https://github.com/AthlyProject/athly-project/compare/v1.19.0...v1.20.0) (2026-11-18)
 
 
