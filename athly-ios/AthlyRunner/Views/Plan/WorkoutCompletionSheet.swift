@@ -1,6 +1,7 @@
 import SwiftUI
 import os
 import UniformTypeIdentifiers
+import CoreLocation
 
 struct WorkoutCompletionSheet: View {
     let workout: WorkoutModel
@@ -12,6 +13,7 @@ struct WorkoutCompletionSheet: View {
 
     enum Step {
         case healthKit
+        case preview
         case feedback
         case completed
     }
@@ -19,6 +21,11 @@ struct WorkoutCompletionSheet: View {
     @State private var heartRateSuggestion: WorkoutHeartRateSuggestion?
     @State private var step: Step
     @State private var selection: WorkoutCompletionSelection = .none
+    @State private var previewHealthRun: HealthKitRunItem?
+    @State private var previewDetail: RunRouteDetail?
+    @State private var previewSourceIsHealth = false
+    @State private var isLoadingPreview = false
+    @State private var feedbackOrigin: Step = .healthKit
 
     init(
         workout: WorkoutModel,
@@ -61,11 +68,29 @@ struct WorkoutCompletionSheet: View {
     @State private var saveImportedToHealthKit = true
     @State private var importError: String?
     @State private var showOutsideDateConfirmation = false
+    @State private var includeFeedbackAfterDateConfirmation = false
     @State private var showHealthKitFallback = false
     @State private var healthKitFallbackMessage: String?
 
+    private var loadsCandidates = true
     private let calendar = Calendar.current
     private static let diagLogger = Logger(subsystem: "com.athly.healthkit.diag", category: "WorkoutQuery")
+
+    #if DEBUG
+    static func renderFixture(workout: WorkoutModel, activity: ImportedWorkout, showPreview: Bool) -> Self {
+        var view = Self(workout: workout, onComplete: { _, _ in .success(nil) }, onDismiss: {})
+        view.loadsCandidates = false
+        view._isLoading = State(initialValue: false)
+        view._zeppConnected = State(initialValue: true)
+        view._zeppRuns = State(initialValue: [activity])
+        if showPreview {
+            view._selectedImportedWorkout = State(initialValue: activity)
+            view._selection = State(initialValue: .imported(activity, saveToHealthKit: true))
+            view._step = State(initialValue: .preview)
+        }
+        return view
+    }
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -83,6 +108,8 @@ struct WorkoutCompletionSheet: View {
                     }
                 } else if step == .healthKit {
                     healthKitContent
+                } else if step == .preview {
+                    activityPreview
                 } else {
                     feedbackContent
                 }
@@ -91,17 +118,34 @@ struct WorkoutCompletionSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    if step == .feedback {
-                        Button("Voltar") { step = .healthKit }
+                    if step == .feedback || step == .preview {
+                        Button("Voltar") { step = step == .feedback ? feedbackOrigin : .healthKit }
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                     } else {
                         Button(step == .completed ? String(localized: "Concluir") : String(localized: "Cancelar")) { onDismiss() }
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if step == .healthKit {
+                        Menu {
+                            Button { isShowingFileImporter = true } label: {
+                                Label("Importar FIT, TCX ou GPX", systemImage: "doc.badge.plus")
+                            }
+                            if zeppConnected {
+                                Button { refreshZepp() } label: {
+                                    Label("Atualizar atividades", systemImage: "arrow.clockwise")
+                                }
+                            }
+                        } label: { Image(systemName: "ellipsis.circle") }
+                        .accessibilityLabel("Mais opções")
+                    }
+                }
             }
+            .disabled(isCompleting || isSubmitting)
         }
         .task {
+            guard loadsCandidates else { return }
             zeppTask = Task { await loadZeppCandidates() }
             await loadCandidateRuns()
         }
@@ -139,104 +183,92 @@ struct WorkoutCompletionSheet: View {
         }
     }
 
-    // MARK: - Loading
-
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .tint(AthlyTheme.Color.primary)
-            Text("Buscando corridas no Apple Health…")
-                .font(AthlyTheme.Typography.body(15))
-                .foregroundStyle(AthlyTheme.Color.textSecondary)
-        }
-    }
-
     // MARK: - Step 1: HealthKit selection
 
     private var healthKitContent: some View {
         ScrollView {
-            VStack(spacing: AthlyTheme.Spacing.sm) {
-                workoutSummaryCard
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(workout.title)
+                        .font(AthlyTheme.Typography.semibold(17))
+                        .foregroundStyle(AthlyTheme.Color.textPrimary)
+                    Text("Escolha uma corrida para conferir os dados antes de vincular.")
+                        .font(AthlyTheme.Typography.body(14))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+                .padding(.horizontal, AthlyTheme.Spacing.sm)
 
                 if isLoading {
-                    loadingView.padding()
+                    ProgressView("Buscando no Apple Health…").padding(.horizontal, AthlyTheme.Spacing.sm)
                 } else if let error = loadError {
-                    errorView(error)
-                } else if !todayRuns.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Image(systemName: "heart.fill")
-                                .foregroundStyle(AthlyTheme.Color.primary)
-                            Text("Apple Health · \(formattedWorkoutDate)")
-                                .font(AthlyTheme.Typography.semibold(15))
-                                .foregroundStyle(AthlyTheme.Color.textPrimary)
-                        }
+                    Text(error).font(.footnote).foregroundStyle(AthlyTheme.Color.textSecondary)
                         .padding(.horizontal, AthlyTheme.Spacing.sm)
-
-                        Text("Selecione a corrida que corresponde a este treino (até 2 dias após o planejado):")
-                            .font(AthlyTheme.Typography.body(13))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+                if !visibleHealthRuns.isEmpty {
+                    sourceHeading("Apple Health")
+                    ForEach(visibleHealthRuns) { run in healthRunCard(run) }
+                }
+                if zeppConnected && !visibleZeppRuns.isEmpty {
+                    sourceHeading("Zepp")
+                    ForEach(visibleZeppRuns) { imported in
+                        Button { selectZepp(imported) } label: { importedActivityRow(imported) }
+                            .buttonStyle(.plain)
                             .padding(.horizontal, AthlyTheme.Spacing.sm)
-
-                        ForEach(visibleHealthRuns) { run in
-                            healthRunCard(run)
-                        }
                     }
-                } else {
-                    noRunsView
                 }
-
-                if zeppConnected {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Zepp").font(.headline)
-                        Toggle("Salvar também no Apple Health", isOn: $saveImportedToHealthKit)
-                        if zeppLoading { ProgressView("Buscando atividades…") }
-                        if let zeppError { Text(zeppError).foregroundStyle(.secondary) }
-                        ForEach(visibleZeppRuns) { imported in
-                            Button { selectZepp(imported) } label: { importedActivityRow(imported) }
-                        }
-                        if !zeppLoading && visibleZeppRuns.isEmpty { Text("Nenhuma corrida adicional disponível neste período.").font(.footnote) }
-                        Button("Atualizar atividades") {
-                            zeppTask?.cancel()
-                            zeppTask = Task { await loadZeppCandidates() }
-                        }
-                    }.padding()
+                if zeppConnected && zeppLoading && zeppRuns.isEmpty {
+                    ProgressView("Buscando no Zepp…")
+                        .font(.footnote).padding(.horizontal, AthlyTheme.Spacing.sm)
                 }
-                importSection
-
-                Divider()
-                    .background(AthlyTheme.Color.borderDark)
-                    .padding(.horizontal, AthlyTheme.Spacing.sm)
-
+                if let zeppError, zeppConnected {
+                    Text(zeppError).font(.footnote).foregroundStyle(AthlyTheme.Color.textSecondary)
+                        .padding(.horizontal, AthlyTheme.Spacing.sm)
+                }
+                if !isLoading && !zeppLoading && visibleHealthRuns.isEmpty && visibleZeppRuns.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "figure.run").font(.title)
+                        Text("Nenhuma corrida disponível neste período")
+                            .font(AthlyTheme.Typography.semibold(16))
+                        Text("Buscamos no dia planejado e nos dois dias seguintes. Sincronize o relógio ou importe um arquivo em Mais opções.")
+                            .font(AthlyTheme.Typography.body(14)).multilineTextAlignment(.center)
+                    }.foregroundStyle(AthlyTheme.Color.textSecondary).padding()
+                }
+                if isImportingFile { ProgressView("Lendo atividade…").padding() }
+                if let importError { Text(importError).font(.footnote).foregroundStyle(AthlyTheme.Color.error).padding() }
+                if importedCandidates.count > 1 {
+                    sourceHeading(String(localized: "Atividades do arquivo"))
+                    ForEach(importedCandidates) { imported in
+                        Button { openImportedPreview(imported) } label: { importedActivityRow(imported) }
+                            .buttonStyle(.plain).padding(.horizontal, AthlyTheme.Spacing.sm)
+                    }
+                }
                 if !isEnrichment {
-                    Button {
+                    Button("Concluir sem uma corrida") {
                         selection = .none
+                        feedbackOrigin = .healthKit
                         step = .feedback
-                    } label: {
-                        HStack {
-                            Image(systemName: "checkmark.circle")
-                            Text("Apenas marcar como concluído")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .foregroundStyle(AthlyTheme.Color.textSecondary)
-                        .background(AthlyTheme.Color.surfaceDark)
-                        .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: AthlyTheme.Radius.button, style: .continuous)
-                                .stroke(AthlyTheme.Color.borderDark, lineWidth: 1)
-                        )
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, AthlyTheme.Spacing.sm)
+                    .font(AthlyTheme.Typography.body(14))
+                    .foregroundStyle(AthlyTheme.Color.textSecondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
                 }
-            }
-            .padding(.vertical, AthlyTheme.Spacing.sm)
+            }.padding(.vertical, 20)
         }
         .scrollContentBackground(.hidden)
     }
 
-    // MARK: - Step 2: Feedback
+    private func sourceHeading(_ source: String) -> some View {
+        Text(source).font(AthlyTheme.Typography.semibold(13))
+            .foregroundStyle(AthlyTheme.Color.textSecondary)
+            .padding(.horizontal, AthlyTheme.Spacing.sm)
+    }
+
+    private func refreshZepp() {
+        zeppTask?.cancel()
+        zeppTask = Task { await loadZeppCandidates() }
+    }
+
+    // MARK: - Optional feedback
 
     private var feedbackContent: some View {
         ScrollView {
@@ -475,93 +507,44 @@ struct WorkoutCompletionSheet: View {
         }
     }
 
-    // MARK: - Workout Summary Card
-
-    private var workoutSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: workout.sportType.sfSymbol)
-                    .foregroundStyle(AthlyTheme.Color.primary)
-                Text(workout.title)
-                    .font(AthlyTheme.Typography.semibold(16))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                Spacer()
-            }
-            if let desc = workout.description, !desc.isEmpty {
-                Text(desc)
-                    .font(AthlyTheme.Typography.body(13))
-                    .foregroundStyle(AthlyTheme.Color.textSecondary)
-                    .lineLimit(2)
-            }
-        }
-        .padding(AthlyTheme.Spacing.sm)
-        .athlyCard()
-        .padding(.horizontal, AthlyTheme.Spacing.sm)
-    }
-
     // MARK: - HealthKit Run Card
 
     private func healthRunCard(_ run: HealthKitRunItem) -> some View {
         Button {
+            previewHealthRun = run
+            previewSourceIsHealth = true
+            previewDetail = nil
+            isLoadingPreview = true
+            submitError = nil
+            saveImportedToHealthKit = true
             if var imported = matchingZepp(run) {
                 imported.preferredHealthKitUUID = run.id
+                selectedImportedWorkout = imported
                 selection = .imported(imported, saveToHealthKit: true)
             } else {
+                selectedImportedWorkout = nil
                 selection = .healthKit(run)
             }
-            if isEnrichment {
-                Task { await finishCompletion() }
-            } else {
-                step = .feedback
-            }
+            step = .preview
         } label: {
-            VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    VStack(spacing: 2) {
-                        Image(systemName: "figure.run")
-                            .font(.system(size: 18))
-                            .foregroundStyle(AthlyTheme.Color.primary)
-                        Text(timeString(run.startDate))
-                            .font(AthlyTheme.Typography.body(11))
-                            .foregroundStyle(AthlyTheme.Color.textTertiary)
-                        if let label = relativeDayLabel(for: run.startDate) {
-                            Text(label)
-                                .font(AthlyTheme.Typography.body(10))
-                                .foregroundStyle(AthlyTheme.Color.primary)
-                        }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(run.startDate.formatted(date: .abbreviated, time: .shortened))
+                            .font(AthlyTheme.Typography.semibold(14))
+                            .foregroundStyle(AthlyTheme.Color.textPrimary)
+                        Text("\(run.formattedDistance) km · \(run.formattedDuration)")
+                            .font(AthlyTheme.Typography.body(14))
+                            .foregroundStyle(AthlyTheme.Color.textSecondary)
                     }
-                    .frame(width: 52)
-
-                    HStack(spacing: 0) {
-                        metricCell(value: run.formattedDistance, label: "km")
-                        metricDivider
-                        metricCell(value: run.formattedDuration, label: "tempo")
-                        metricDivider
-                        metricCell(value: String(localized: "\(run.formattedPace)/km"), label: "pace")
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(AthlyTheme.Color.primary.opacity(0.6))
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(AthlyTheme.Color.primary)
                 }
-                .padding(14)
+                activityIndicators(hasRoute: healthRoutes[run.id], hasHeartRate: WorkoutCompletionSelection.healthKit(run).hasHeartRate || (matchingZepp(run).map { WorkoutCompletionSelection.imported($0, saveToHealthKit: true).hasHeartRate } ?? false))
             }
-            .background(
-                ZStack {
-                    AthlyTheme.Color.surfaceCard
-                    LinearGradient(
-                        colors: [AthlyTheme.Color.primary.opacity(0.06), Color.clear],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                }
-            )
+            .padding(14)
+            .background(AthlyTheme.Color.surfaceCard)
             .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
-                    .stroke(AthlyTheme.Color.primary.opacity(0.3), lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
         .padding(.horizontal, AthlyTheme.Spacing.sm)
@@ -585,164 +568,181 @@ struct WorkoutCompletionSheet: View {
             .frame(width: 1, height: 32)
     }
 
-    // MARK: - File import
+    // MARK: - Activity preview and file import
 
-    private var importSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                isShowingFileImporter = true
-            } label: {
-                HStack {
-                    if isImportingFile {
-                        ProgressView().tint(AthlyTheme.Color.primary)
-                    } else {
-                        Image(systemName: "doc.badge.plus")
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(isImportingFile ? String(localized: "Lendo atividade…") : String(localized: "Importar FIT, TCX ou GPX"))
-                            .font(AthlyTheme.Typography.semibold(15))
-                        Text("Use o arquivo exportado pelo Zepp ou outro relógio")
-                            .font(AthlyTheme.Typography.body(12))
-                            .foregroundStyle(AthlyTheme.Color.textSecondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                }
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-                .padding(14)
-                .background(AthlyTheme.Color.surfaceDark)
-                .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
-                        .stroke(AthlyTheme.Color.primary.opacity(0.35), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(isImportingFile)
-
-            if let importError {
-                Text(importError)
-                    .font(AthlyTheme.Typography.body(13))
-                    .foregroundStyle(AthlyTheme.Color.error)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if importedCandidates.count > 1 && selectedImportedWorkout == nil {
-                Text("O arquivo contém mais de uma atividade. Escolha a corrida:")
-                    .font(AthlyTheme.Typography.semibold(14))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                ForEach(importedCandidates) { imported in
-                    Button {
-                        selectedImportedWorkout = imported
-                    } label: {
-                        importedActivityRow(imported)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            if let imported = selectedImportedWorkout {
-                importedPreview(imported)
-            }
+    private func activityIndicators(hasRoute: Bool?, hasHeartRate: Bool) -> some View {
+        HStack(spacing: 16) {
+            Label(hasRoute == true ? String(localized: "Com rota") : hasRoute == false ? String(localized: "Sem rota") : String(localized: "Rota não verificada"),
+                  systemImage: hasRoute == true ? "map.fill" : "map")
+            Label(hasHeartRate ? String(localized: "Com FC") : String(localized: "Sem FC"), systemImage: hasHeartRate ? "heart.fill" : "heart")
         }
-        .padding(.horizontal, AthlyTheme.Spacing.sm)
+        .font(AthlyTheme.Typography.body(12))
+        .foregroundStyle(AthlyTheme.Color.textSecondary)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func importedActivityRow(_ imported: ImportedWorkout) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(imported.activityName ?? String(localized: "Corrida"))
-                    .font(AthlyTheme.Typography.semibold(14))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                Text(imported.startDate.formatted(date: .abbreviated, time: .shortened))
-                    .font(AthlyTheme.Typography.body(12))
-                    .foregroundStyle(AthlyTheme.Color.textSecondary)
-            }
-            Spacer()
-            Text(String(localized: "\(LocalizedFormatting.formattedDistanceKm(imported.distanceMeters / 1_000)) km"))
-                .font(AthlyTheme.Typography.semibold(14))
-                .foregroundStyle(AthlyTheme.Color.primary)
-            Image(systemName: "chevron.right")
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-        }
-        .padding(12)
-        .background(AthlyTheme.Color.surfaceCard)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private func importedPreview(_ imported: ImportedWorkout) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label("Prévia \(imported.format.displayName)", systemImage: "doc.text.magnifyingglass")
-                    .font(AthlyTheme.Typography.semibold(15))
-                    .foregroundStyle(AthlyTheme.Color.textPrimary)
-                Spacer()
-                Button("Trocar") {
-                    selectedImportedWorkout = nil
-                    importedCandidates = []
-                    isShowingFileImporter = true
-                }
-                .font(AthlyTheme.Typography.body(12))
-            }
-
-            if imported.hasRoute {
-                SummaryMapView(coordinates: imported.route.map(\.coordinate))
-                    .allowsHitTesting(false)
-                    .frame(height: 150)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-
-            HStack(spacing: 0) {
-                metricCell(value: LocalizedFormatting.formattedDistanceKm(imported.distanceMeters / 1_000), label: "km")
-                metricDivider
-                metricCell(value: formatDuration(imported.activeDurationSeconds), label: "tempo")
-                metricDivider
-                metricCell(value: formatPace(imported.averagePaceSecondsPerKm), label: "pace/km")
-            }
-
-            HStack(spacing: 14) {
-                Label("\(imported.route.count) pontos", systemImage: "map")
-                Label("\(imported.heartRateSamples.count) FC", systemImage: "heart")
-                Label("\(imported.laps.count) laps", systemImage: "flag.checkered")
-            }
-            .font(AthlyTheme.Typography.body(11))
-            .foregroundStyle(AthlyTheme.Color.textSecondary)
-
-            ForEach(imported.warnings, id: \.self) { warning in
-                Label(warning, systemImage: "exclamationmark.triangle")
-                    .font(AthlyTheme.Typography.body(12))
-                    .foregroundStyle(AthlyTheme.Color.warning)
-            }
-
-            Toggle(isOn: $saveImportedToHealthKit) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Salvar também no Apple Health")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(imported.startDate.formatted(date: .abbreviated, time: .shortened))
                         .font(AthlyTheme.Typography.semibold(14))
                         .foregroundStyle(AthlyTheme.Color.textPrimary)
-                    Text("O Athly evita duplicar uma corrida equivalente")
-                        .font(AthlyTheme.Typography.body(11))
+                    Text("\(LocalizedFormatting.formattedDistanceKm(imported.distanceMeters / 1_000)) km · \(formatDuration(imported.activeDurationSeconds))")
+                        .font(AthlyTheme.Typography.body(14))
                         .foregroundStyle(AthlyTheme.Color.textSecondary)
                 }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(AthlyTheme.Color.primary)
             }
-            .tint(AthlyTheme.Color.primary)
-
-            Button("Usar esta atividade") {
-                if isOutsideWorkoutWindow(imported.startDate) {
-                    showOutsideDateConfirmation = true
-                } else {
-                    selectImportedForCompletion()
-                }
-            }
-            .buttonStyle(AthlyGradientButtonStyle())
+            activityIndicators(hasRoute: imported.hasRoute,
+                hasHeartRate: WorkoutCompletionSelection.imported(imported, saveToHealthKit: false).hasHeartRate)
         }
         .padding(14)
         .background(AthlyTheme.Color.surfaceCard)
         .clipShape(RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AthlyTheme.Radius.card, style: .continuous)
-                .stroke(AthlyTheme.Color.primary.opacity(0.35), lineWidth: 1)
-        )
+    }
+
+    private var previewCoordinates: [CLLocationCoordinate2D] {
+        if let detail = previewDetail, detail.hasRoute {
+            return detail.coordinates.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+        }
+        return selectedImportedWorkout?.route.map(\.coordinate) ?? []
+    }
+
+    private var previewHasHeartRate: Bool {
+        selection.hasHeartRate || (previewHealthRun.map { WorkoutCompletionSelection.healthKit($0).hasHeartRate } ?? false)
+            || (previewDetail?.avgHR.map { $0.isFinite && $0 > 0 } ?? false)
+            || (previewDetail?.maxHR.map { $0.isFinite && $0 > 0 } ?? false)
+    }
+
+    private var activityPreview: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(previewSourceIsHealth ? "Apple Health" : selectedImportedWorkout?.zeppActivityId != nil ? "Zepp" : selectedImportedWorkout?.format.displayName ?? "")
+                        .font(AthlyTheme.Typography.semibold(13)).foregroundStyle(AthlyTheme.Color.primary)
+                    if let date = previewHealthRun?.startDate ?? selectedImportedWorkout?.startDate {
+                        Text(date.formatted(date: .abbreviated, time: .shortened))
+                            .font(AthlyTheme.Typography.heading(20))
+                    }
+                    Text("Treino: \(workout.title)").font(AthlyTheme.Typography.body(14))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                }
+                if isLoadingPreview {
+                    ProgressView("Carregando rota e frequência cardíaca…").frame(maxWidth: .infinity, minHeight: 180)
+                } else if previewCoordinates.count >= 2 {
+                    SummaryMapView(coordinates: previewCoordinates)
+                        .allowsHitTesting(false).frame(height: 210)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                } else {
+                    Label(previewRouteUnavailableText, systemImage: "map")
+                        .font(AthlyTheme.Typography.body(14))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary)
+                        .frame(maxWidth: .infinity, minHeight: 100)
+                        .background(AthlyTheme.Color.surfaceCard)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                HStack(spacing: 0) {
+                    metricCell(value: previewHealthRun?.formattedDistance ?? LocalizedFormatting.formattedDistanceKm((selectedImportedWorkout?.distanceMeters ?? 0) / 1_000), label: "km")
+                    metricDivider
+                    metricCell(value: previewHealthRun?.formattedDuration ?? formatDuration(selectedImportedWorkout?.activeDurationSeconds ?? 0), label: "tempo")
+                    metricDivider
+                    metricCell(value: previewHealthRun?.formattedPace ?? formatPace(selectedImportedWorkout?.averagePaceSecondsPerKm ?? 0), label: "pace/km")
+                }.padding(.vertical, 8)
+                if !isLoadingPreview {
+                    let average = [previewHealthRun?.avgHR, previewDetail?.avgHR, selectedImportedWorkout?.averageHeartRate]
+                        .compactMap { $0 }.first { $0.isFinite && $0 > 0 }
+                    let maximum = [previewHealthRun?.maxHR, previewDetail?.maxHR, selectedImportedWorkout?.maximumHeartRate]
+                        .compactMap { $0 }.first { $0.isFinite && $0 > 0 }
+                    if previewHasHeartRate {
+                        HStack {
+                            Label("Frequência cardíaca", systemImage: "heart.fill")
+                                .foregroundStyle(AthlyTheme.Color.primary)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                if let average, average.isFinite, average > 0 { Text("Média: \(Int(average)) bpm") }
+                                if let maximum, maximum.isFinite, maximum > 0 { Text("Máxima: \(Int(maximum)) bpm") }
+                            }
+                        }.font(AthlyTheme.Typography.body(14))
+                    } else {
+                        Label("Esta corrida não tem frequência cardíaca disponível.", systemImage: "heart")
+                            .font(AthlyTheme.Typography.body(14)).foregroundStyle(AthlyTheme.Color.textSecondary)
+                    }
+                }
+                if let imported = selectedImportedWorkout {
+                    if !previewSourceIsHealth {
+                        Toggle("Salvar também no Apple Health", isOn: $saveImportedToHealthKit)
+                            .font(AthlyTheme.Typography.body(14)).tint(AthlyTheme.Color.primary)
+                    }
+                    ForEach(imported.warnings, id: \.self) { warning in
+                        Label(warning, systemImage: "exclamationmark.triangle").font(.footnote)
+                            .foregroundStyle(AthlyTheme.Color.warning)
+                    }
+                }
+                if let submitError {
+                    Text(submitError).font(.footnote).foregroundStyle(AthlyTheme.Color.error)
+                }
+                Button { requestPreviewConfirmation() } label: {
+                    Text(isEnrichment ? String(localized: "Adicionar dados ao treino") : previewHasHeartRate ? String(localized: "Vincular e concluir") : String(localized: "Continuar"))
+                }
+                .buttonStyle(AthlyGradientButtonStyle())
+                .disabled(isLoadingPreview || isCompleting || isSubmitting)
+                if !isEnrichment && previewHasHeartRate {
+                    Button("Adicionar como me senti (opcional)") { requestPreviewConfirmation(includeFeedback: true) }
+                        .font(AthlyTheme.Typography.body(14))
+                        .foregroundStyle(AthlyTheme.Color.textSecondary).frame(maxWidth: .infinity)
+                        .disabled(isLoadingPreview || isCompleting || isSubmitting)
+                }
+                if isCompleting { ProgressView("Salvando…").frame(maxWidth: .infinity) }
+            }.padding(20)
+        }
+        .foregroundStyle(AthlyTheme.Color.textPrimary)
+        .task { await loadPreviewDetail() }
+    }
+
+    private var previewRouteUnavailableText: String {
+        if let run = previewHealthRun, healthRoutes[run.id] != false {
+            return String(localized: "Não foi possível confirmar a rota no Apple Health.")
+        }
+        return String(localized: "Esta corrida não tem rota disponível.")
+    }
+
+    private func loadPreviewDetail() async {
+        guard let run = previewHealthRun else { isLoadingPreview = false; return }
+        isLoadingPreview = true
+        defer { isLoadingPreview = false }
+        let detail = await HealthKitService().fetchRunDetail(workoutUUID: run.id)
+        guard !Task.isCancelled else { return }
+        previewDetail = detail
+    }
+
+    private func openImportedPreview(_ imported: ImportedWorkout) {
+        selectedImportedWorkout = imported
+        previewHealthRun = nil
+        previewDetail = nil
+        previewSourceIsHealth = false
+        isLoadingPreview = false
+        submitError = nil
+        selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
+        step = .preview
+    }
+
+    private func confirmPreview(includeFeedback: Bool = false) {
+        submitError = nil
+        if let imported = selectedImportedWorkout {
+            if saveImportedToHealthKit && !previewSourceIsHealth && todayRuns.filter({ Self.matches(imported, $0) }).count > 1 {
+                submitError = String(localized: "Há mais de uma corrida equivalente no Apple Health. Escolha o registro na lista Apple Health ou desative Salvar também no Apple Health.")
+                return
+            }
+            selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
+        }
+        if isEnrichment || (previewHasHeartRate && !includeFeedback) {
+            Task { await finishCompletion() }
+        } else {
+            feedbackOrigin = .preview
+            step = .feedback
+        }
     }
 
     private var supportedImportTypes: [UTType] {
@@ -763,8 +763,8 @@ struct WorkoutCompletionSheet: View {
                     try WorkoutImportService().importActivities(from: url)
                 }.value
                 importedCandidates = activities
-                selectedImportedWorkout = activities.count == 1 ? activities[0] : nil
                 saveImportedToHealthKit = true
+                if activities.count == 1 { openImportedPreview(activities[0]) }
             } catch {
                 importError = error.localizedDescription
                 importedCandidates = []
@@ -774,59 +774,20 @@ struct WorkoutCompletionSheet: View {
     }
 
     private func selectImportedForCompletion() {
-        guard let imported = selectedImportedWorkout else { return }
-        selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
-        if isEnrichment {
-            Task { await finishCompletion() }
-        } else {
-            step = .feedback
-        }
+        confirmPreview(includeFeedback: includeFeedbackAfterDateConfirmation)
+    }
+
+    private func requestPreviewConfirmation(includeFeedback: Bool = false) {
+        includeFeedbackAfterDateConfirmation = includeFeedback
+        if let imported = selectedImportedWorkout, isOutsideWorkoutWindow(imported.startDate) {
+            showOutsideDateConfirmation = true
+        } else { confirmPreview(includeFeedback: includeFeedback) }
     }
 
     private func isOutsideWorkoutWindow(_ date: Date) -> Bool {
         let start = calendar.startOfDay(for: workout.parsedDate)
         guard let end = calendar.date(byAdding: .day, value: 3, to: start) else { return true }
         return date < start || date >= end
-    }
-
-    // MARK: - Empty / Error states
-
-    private var noRunsView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "heart.slash")
-                .font(.system(size: 40))
-                .foregroundStyle(AthlyTheme.Color.textTertiary)
-            Text("Nenhuma corrida no Apple Health entre \(formattedWorkoutDate) e os 2 dias seguintes")
-                .font(AthlyTheme.Typography.semibold(16))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-            Text("Se você correu, verifique se o Apple Health está ativado nas configurações do app.")
-                .font(AthlyTheme.Typography.body(14))
-                .foregroundStyle(AthlyTheme.Color.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(32)
-        .frame(maxWidth: .infinity)
-        .athlyCard()
-        .padding(.horizontal, AthlyTheme.Spacing.sm)
-    }
-
-    private func errorView(_ error: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 32))
-                .foregroundStyle(AthlyTheme.Color.warning)
-            Text("Erro ao acessar o Apple Health")
-                .font(AthlyTheme.Typography.semibold(15))
-                .foregroundStyle(AthlyTheme.Color.textPrimary)
-            Text(error)
-                .font(AthlyTheme.Typography.body(13))
-                .foregroundStyle(AthlyTheme.Color.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .athlyCard()
-        .padding(.horizontal, AthlyTheme.Spacing.sm)
     }
 
     // MARK: - Load HealthKit
@@ -932,14 +893,12 @@ struct WorkoutCompletionSheet: View {
     private func selectZepp(_ imported: ImportedWorkout) {
         var imported = imported
         let matches = todayRuns.filter { Self.matches(imported, $0) }
-        if matches.count > 1 && saveImportedToHealthKit {
-            zeppError = "Há mais de uma corrida equivalente no Apple Health. Selecione o registro desejado na seção Apple Health ou desative Salvar também no Apple Health."
-            return
+        imported.preferredHealthKitUUID = matches.count == 1 ? matches.first?.id : nil
+        openImportedPreview(imported)
+        if matches.count == 1 {
+            previewHealthRun = matches.first
+            isLoadingPreview = true
         }
-        imported.preferredHealthKitUUID = matches.first?.id
-        selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
-        if isEnrichment { Task { await finishCompletion() } }
-        else { step = .feedback }
     }
     @MainActor private func loadZeppCandidates() async {
         guard FeatureFlags.zeppSync else { return }
@@ -961,7 +920,7 @@ struct WorkoutCompletionSheet: View {
             try await APIClient.shared.requestZeppHistory(start: start, end: min(end.addingTimeInterval(-1), Date()))
             try Task.checkCancellation()
             guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
-            zeppError = "Histórico solicitado. As atividades podem levar alguns minutos para chegar."
+            // The receipt is not a completed import. Show progress while polling; keep available runs visible.
             for _ in 0..<12 {
                 try await Task.sleep(nanoseconds: 5_000_000_000)
                 try Task.checkCancellation()
@@ -980,7 +939,7 @@ struct WorkoutCompletionSheet: View {
                 if let cached = zeppRuns.first(where: { $0.zeppActivityId == candidate.id }) { loaded.append(cached) }
                 else {
                     do { loaded.append(try await APIClient.shared.importZeppActivity(id: candidate.id)) }
-                    catch { if !Task.isCancelled { zeppError = "Uma atividade Zepp não pôde ser carregada. Tente atualizar novamente." } }
+                    catch { if !Task.isCancelled { zeppError = String(localized: "Uma atividade Zepp não pôde ser carregada. Tente atualizar novamente.") } }
                 }
             }
             guard !Task.isCancelled, session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
@@ -990,14 +949,6 @@ struct WorkoutCompletionSheet: View {
 
     // MARK: - Helpers
 
-    private var formattedWorkoutDate: String {
-        let df = DateFormatter()
-        df.dateStyle = .short
-        df.timeStyle = .none
-        df.locale = .current
-        return df.string(from: workout.parsedDate)
-    }
-
     private var isEnrichment: Bool {
         workout.status == .done || workout.status == .partial
     }
@@ -1005,6 +956,7 @@ struct WorkoutCompletionSheet: View {
     private var navigationTitle: String {
         if step == .completed { return String(localized: "Treino concluído") }
         if step == .feedback { return String(localized: "Como foi o treino?") }
+        if step == .preview { return String(localized: "Prévia da corrida") }
         return isEnrichment ? String(localized: "Adicionar dados") : String(localized: "Concluir Treino")
     }
 

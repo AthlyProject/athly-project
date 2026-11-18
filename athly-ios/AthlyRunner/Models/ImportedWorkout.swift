@@ -190,6 +190,16 @@ enum WorkoutCompletionSelection: Sendable {
     case none
     case healthKit(HealthKitRunItem)
     case imported(ImportedWorkout, saveToHealthKit: Bool)
+
+    var hasHeartRate: Bool {
+        switch self {
+        case .none: return false
+        case .healthKit(let run):
+            return [run.avgHR, run.maxHR].compactMap { $0 }.contains { $0.isFinite && $0 > 0 }
+        case .imported(let imported, _):
+            return imported.heartRateSamples.contains { $0.beatsPerMinute.isFinite && $0.beatsPerMinute > 0 }
+        }
+    }
 }
 
 /// Regras conservadoras para decidir se um arquivo exportado representa o mesmo treino

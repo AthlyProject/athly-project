@@ -1,6 +1,454 @@
 {
   "sourceLanguage" : "pt-BR",
   "strings" : {
+  "Mais opções": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mais opções"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "More options"
+        }
+      }
+    }
+  },
+  "Atualizar atividades": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Atualizar atividades"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Refresh activities"
+        }
+      }
+    }
+  },
+  "Escolha uma corrida para conferir os dados antes de vincular.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escolha uma corrida para conferir os dados antes de vincular."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Choose a run to review its details before linking."
+        }
+      }
+    }
+  },
+  "Buscando no Apple Health…": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Buscando no Apple Health…"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Searching Apple Health…"
+        }
+      }
+    }
+  },
+  "Buscando no Zepp…": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Buscando no Zepp…"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Searching Zepp…"
+        }
+      }
+    }
+  },
+  "Nenhuma corrida disponível neste período": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nenhuma corrida disponível neste período"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No runs available in this date range"
+        }
+      }
+    }
+  },
+  "Buscamos no dia planejado e nos dois dias seguintes. Sincronize o relógio ou importe um arquivo em Mais opções.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Buscamos no dia planejado e nos dois dias seguintes. Sincronize o relógio ou importe um arquivo em Mais opções."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "We search the planned day and the following two days. Sync your watch or import a file under More options."
+        }
+      }
+    }
+  },
+  "Atividades do arquivo": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Atividades do arquivo"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Activities in file"
+        }
+      }
+    }
+  },
+  "Concluir sem uma corrida": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Concluir sem uma corrida"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Complete without a run"
+        }
+      }
+    }
+  },
+  "Com rota": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Com rota"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Route available"
+        }
+      }
+    }
+  },
+  "Sem rota": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sem rota"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No route"
+        }
+      }
+    }
+  },
+  "Rota não verificada": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rota não verificada"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Route unverified"
+        }
+      }
+    }
+  },
+  "Com FC": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Com FC"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Heart rate available"
+        }
+      }
+    }
+  },
+  "Sem FC": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sem FC"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No heart rate"
+        }
+      }
+    }
+  },
+  "%@ km · %@": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ km · %@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ km · %@"
+        }
+      }
+    }
+  },
+  "Treino: %@": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Treino: %@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Workout: %@"
+        }
+      }
+    }
+  },
+  "Carregando rota e frequência cardíaca…": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Carregando rota e frequência cardíaca…"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Loading route and heart rate…"
+        }
+      }
+    }
+  },
+  "Média: %lld bpm": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Média: %lld bpm"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Average: %lld bpm"
+        }
+      }
+    }
+  },
+  "Máxima: %lld bpm": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Máxima: %lld bpm"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Maximum: %lld bpm"
+        }
+      }
+    }
+  },
+  "Esta corrida não tem frequência cardíaca disponível.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Esta corrida não tem frequência cardíaca disponível."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No heart rate data is available for this run."
+        }
+      }
+    }
+  },
+  "Adicionar dados ao treino": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Adicionar dados ao treino"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Add data to workout"
+        }
+      }
+    }
+  },
+  "Vincular e concluir": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vincular e concluir"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Link and complete"
+        }
+      }
+    }
+  },
+  "Adicionar como me senti (opcional)": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Adicionar como me senti (opcional)"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Add how I felt (optional)"
+        }
+      }
+    }
+  },
+  "Não foi possível confirmar a rota no Apple Health.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Não foi possível confirmar a rota no Apple Health."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "The route could not be verified in Apple Health."
+        }
+      }
+    }
+  },
+  "Esta corrida não tem rota disponível.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Esta corrida não tem rota disponível."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No route is available for this run."
+        }
+      }
+    }
+  },
+  "Há mais de uma corrida equivalente no Apple Health. Escolha o registro na lista Apple Health ou desative Salvar também no Apple Health.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Há mais de uma corrida equivalente no Apple Health. Escolha o registro na lista Apple Health ou desative Salvar também no Apple Health."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "More than one matching run was found in Apple Health. Choose a record from the Apple Health list or turn off Also save to Apple Health."
+        }
+      }
+    }
+  },
+  "Uma atividade Zepp não pôde ser carregada. Tente atualizar novamente.": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Uma atividade Zepp não pôde ser carregada. Tente atualizar novamente."
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "A Zepp activity could not be loaded. Try refreshing again."
+        }
+      }
+    }
+  },
+  "Prévia da corrida": {
+    "localizations": {
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prévia da corrida"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Run preview"
+        }
+      }
+    }
+  },
   "Treino guiado indisponível": {
     "localizations": {
       "pt-BR": {

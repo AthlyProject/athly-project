@@ -1,4 +1,6 @@
 import XCTest
+import SwiftUI
+import CoreLocation
 @testable import AthlyRunner
 
 @MainActor
@@ -71,6 +73,66 @@ final class WorkoutCompletionTests: XCTestCase {
         guard case .success = await vm.completeWorkoutSelection(pending, selection: selection, runStore: runs) else { return XCTFail("Retry must confirm") }
         XCTAssertEqual(attempts, 2)
         XCTAssertEqual(vm.allWorkouts.first?.status, .done)
+    }
+
+    func testHeartRateAvailabilityDoesNotInferMeasurementsFromDistanceOrPace() {
+        XCTAssertFalse(WorkoutCompletionSelection.none.hasHeartRate)
+        XCTAssertFalse(WorkoutCompletionSelection.imported(imported, saveToHealthKit: false).hasHeartRate)
+        var health = healthRun
+        health.avgHR = .nan
+        health.maxHR = 0
+        XCTAssertFalse(WorkoutCompletionSelection.healthKit(health).hasHeartRate)
+        health.maxHR = 165
+        XCTAssertTrue(WorkoutCompletionSelection.healthKit(health).hasHeartRate)
+        let withHeartRate = ImportedWorkout(format: .fit, fingerprint: "hr-fit", originalFileName: "run.fit",
+            startDate: imported.startDate, endDate: imported.endDate,
+            activeDurationSeconds: imported.activeDurationSeconds, totalDurationSeconds: imported.totalDurationSeconds,
+            distanceMeters: imported.distanceMeters,
+            heartRateSamples: [ActivityHeartRateSample(timestamp: imported.startDate, beatsPerMinute: 150)])
+        XCTAssertTrue(WorkoutCompletionSelection.imported(withHeartRate, saveToHealthKit: false).hasHeartRate)
+    }
+
+    func testCompletionListAndPreviewRenderOnCompactPhone() async throws {
+        let start = Date(timeIntervalSince1970: 1794920820)
+        let coordinates = [(-23.587, -46.658), (-23.585, -46.657), (-23.583, -46.659), (-23.584, -46.661), (-23.586, -46.661), (-23.587, -46.658)]
+        var activity = ImportedWorkout(format: .fit, fingerprint: "preview-fixture", originalFileName: "demo.fit",
+            startDate: start, endDate: start.addingTimeInterval(1850), activeDurationSeconds: 1850,
+            totalDurationSeconds: 1850, distanceMeters: 5120,
+            route: coordinates.enumerated().map { index, pair in
+                CLLocation(coordinate: CLLocationCoordinate2D(latitude: pair.0, longitude: pair.1), altitude: 750,
+                    horizontalAccuracy: 5, verticalAccuracy: 5, timestamp: start.addingTimeInterval(Double(index) * 300))
+            }, heartRateSamples: [ActivityHeartRateSample(timestamp: start, beatsPerMinute: 152),
+                                  ActivityHeartRateSample(timestamp: start.addingTimeInterval(300), beatsPerMinute: 168)])
+        activity.zeppActivityId = "demo"
+        let planned = try workout()
+        var withoutSensors = imported
+        withoutSensors.zeppActivityId = "no-sensors"
+        for (name, candidate, preview) in [("completion-list", activity, false), ("completion-preview", activity, true), ("completion-no-sensors", withoutSensors, true)] {
+            let view = WorkoutCompletionSheet.renderFixture(workout: planned, activity: candidate, showPreview: preview)
+                .environment(\.locale, Locale(identifier: "en"))
+                .preferredColorScheme(.dark)
+            let controller = UIHostingController(rootView: view)
+            let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+            let window = UIWindow(windowScene: scene)
+            window.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
+            window.rootViewController = controller
+            window.makeKeyAndVisible()
+            defer { window.isHidden = true }
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            controller.view.layoutIfNeeded()
+            var drewHierarchy = false
+            let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+                drewHierarchy = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+            }
+            XCTAssertTrue(drewHierarchy, "The preview must render into a visible window")
+            let attachment = XCTAttachment(image: image)
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(name).png")
+            try XCTUnwrap(image.pngData()).write(to: url)
+            print("COMPLETION_RENDER: \(url.path)")
+        }
     }
 
     func testFailedHealthCompletionDoesNotHideRunAndRetryConfirmsIt() async throws {
