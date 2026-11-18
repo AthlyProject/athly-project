@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/AthlyProject/athly-project/compare/v1.19.0...v1.20.0) (2026-11-18)
+
+
+### Features
+
+* **ios:** select Zepp runs when completing planned workouts ([57f4def](https://github.com/AthlyProject/athly-project/commit/57f4defafc4b5d61699f8783d243e5bb44f51af8))
+
 # [1.19.0](https://github.com/AthlyProject/athly-project/compare/v1.18.0...v1.19.0) (2026-11-18)
 
 
