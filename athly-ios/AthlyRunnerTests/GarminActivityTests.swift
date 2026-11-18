@@ -40,6 +40,55 @@ final class GarminActivityTests: XCTestCase {
         try! Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(iso)
     }
 
+    func testZeppAcknowledgmentDoesNotCollideWithGarmin() throws {
+        let imported = try decodeDetail().importedWorkout()
+        let summary = imported.detectedRunSummary(id: "same-id", averageHeartRate: nil, maximumHeartRate: nil)
+        let garmin = GarminDetectedRun(activityId: "same-id", imported: imported, summary: summary, matchingHealthKitUUIDs: [])
+        let zepp = GarminDetectedRun(activityId: "same-id", imported: imported, summary: summary, matchingHealthKitUUIDs: [], provider: "zepp")
+        XCTAssertEqual(garmin.ackKey, "garmin:same-id")
+        XCTAssertEqual(zepp.ackKey, "zepp:same-id")
+        XCTAssertNotEqual(garmin.ackKey, zepp.ackKey)
+    }
+
+    func testRemoteFITRejectsInvalidPayload() {
+        XCTAssertThrowsError(try WorkoutImportService().importFIT(data: Data("invalid".utf8), fileName: "zepp.fit"))
+    }
+
+    func testZeppHistoryRequestsOnlyTodayInThePhonesTimeZone() async throws {
+        let now = date("2026-11-17T14:00:00.000Z")
+        let expectedStart = Int(date("2026-11-17T03:00:00.000Z").timeIntervalSince1970)
+        let expectedEnd = Int(now.timeIntervalSince1970)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Sao_Paulo"))
+        let client = APIClient(transport: { request in
+            XCTAssertEqual(request.url?.path, "/zepp/activities/backfill")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer access")
+            let body = try JSONDecoder().decode([String: Int].self, from: XCTUnwrap(request.httpBody))
+            XCTAssertEqual(body, ["startTime": expectedStart, "endTime": expectedEnd])
+            let data = Data(#"{"requestId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","status":"ACCEPTED"}"#.utf8)
+            return (data, HTTPURLResponse(url: request.url!, statusCode: 202, httpVersion: nil, headerFields: nil)!)
+        })
+        await client.setTokens(access: "access", refresh: "refresh")
+        let response = try await client.importTodayZeppActivities(now: now, calendar: calendar)
+        XCTAssertEqual(response.status, "ACCEPTED")
+    }
+
+    func testZeppStatusRemainsCompatibleBeforeBackendDeployment() throws {
+        let data = Data(#"{"enabled":true,"connected":true,"lastSyncAt":null,"error":null}"#.utf8)
+        let status = try JSONDecoder().decode(ZeppStatus.self, from: data)
+        XCTAssertTrue(status.connected)
+        XCTAssertNil(status.historyImportAvailable)
+        XCTAssertNil(status.workoutsEnabled)
+    }
+
+    func testRoutePriorityAndUnknownRead() {
+        XCTAssertEqual(CompletionSourcePreference.prefersZepp(healthHasRoute: true, zeppHasRoute: true), false)
+        XCTAssertEqual(CompletionSourcePreference.prefersZepp(healthHasRoute: true, zeppHasRoute: false), false)
+        XCTAssertEqual(CompletionSourcePreference.prefersZepp(healthHasRoute: false, zeppHasRoute: true), true)
+        XCTAssertEqual(CompletionSourcePreference.prefersZepp(healthHasRoute: false, zeppHasRoute: false), false)
+        XCTAssertNil(CompletionSourcePreference.prefersZepp(healthHasRoute: nil, zeppHasRoute: true))
+    }
     // MARK: - Conversão
 
     func testConvertsRouteHeartRateLapsAndPauses() throws {

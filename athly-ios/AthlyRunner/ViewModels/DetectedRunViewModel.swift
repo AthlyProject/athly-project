@@ -61,6 +61,10 @@ final class DetectedRunViewModel: ObservableObject {
         defer { isLoadingDetail = false }
         if let garmin {
             routeDetail = garmin.imported.routeDetail
+            if garmin.provider == "zepp", garmin.matchingHealthKitUUIDs.contains(run.id),
+               let healthDetail = await HealthKitService().fetchRunDetail(workoutUUID: run.id), healthDetail.hasRoute {
+                routeDetail = healthDetail
+            }
             return
         }
         #if targetEnvironment(simulator)
@@ -193,6 +197,7 @@ final class DetectedRunViewModel: ObservableObject {
     /// Marca a corrida como resolvida para não perguntar de novo. Numa corrida do Garmin também
     /// avisa o backend e dispensa a cópia do Apple Health.
     private func acknowledge(resolution: GarminActivityResolution, workoutId: String? = nil) {
+        DetectedRunAckStore.shared.acknowledge(run: run)
         guard let garmin else {
             DetectedRunAckStore.shared.acknowledge(healthKitUUID: run.id)
             return
@@ -203,7 +208,11 @@ final class DetectedRunViewModel: ObservableObject {
         }
         let activityId = garmin.activityId
         Task {
-            try? await APIClient.shared.resolveGarminActivity(id: activityId, resolution: resolution, workoutId: workoutId)
+            if garmin.provider == "zepp" {
+                try? await APIClient.shared.resolveZeppActivity(id: activityId, resolution: resolution, workoutId: workoutId)
+            } else {
+                try? await APIClient.shared.resolveGarminActivity(id: activityId, resolution: resolution, workoutId: workoutId)
+            }
         }
     }
 }

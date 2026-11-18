@@ -19,8 +19,9 @@ final class DetectedRunAckStore: @unchecked Sendable {
     private let fileURL: URL
     private lazy var persistence = SnapshotFile<[String: Date]>(url: fileURL)
     private var cache: [String: Date] = [:]
+    private var evidence: [HealthKitRunItem] = []
 
-    private init() {
+    init(fileURL: URL? = nil) {
         let fm = FileManager.default
         let base = (try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
             ?? fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -28,8 +29,12 @@ final class DetectedRunAckStore: @unchecked Sendable {
         if !fm.fileExists(atPath: dir.path) {
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         }
-        self.fileURL = dir.appendingPathComponent("detected-run-acks.json")
+        self.fileURL = fileURL ?? dir.appendingPathComponent("detected-run-acks.json")
         loadFromDisk()
+        if let data = try? Data(contentsOf: self.fileURL.appendingPathExtension("evidence")),
+           let records = try? JSONDecoder().decode([HealthKitRunItem].self, from: data) {
+            evidence = records.filter { Date().timeIntervalSince($0.endDate) < Self.retention }
+        }
     }
 
     func acknowledge(healthKitUUID: String, at date: Date = Date()) {
@@ -47,9 +52,27 @@ final class DetectedRunAckStore: @unchecked Sendable {
         queue.sync { Set(cache.keys) }
     }
 
+    func acknowledge(run: HealthKitRunItem) {
+        queue.sync {
+            evidence.removeAll { $0.id == run.id || Date().timeIntervalSince($0.endDate) > Self.retention }
+            evidence.append(run)
+            if let data = try? JSONEncoder().encode(evidence) { try? data.write(to: fileURL.appendingPathExtension("evidence"), options: .atomic) }
+        }
+    }
+    func isAcknowledged(run: HealthKitRunItem) -> Bool {
+        queue.sync {
+            evidence.contains {
+                abs($0.startDate.timeIntervalSince(run.startDate)) <= 120 &&
+                abs($0.durationSeconds-run.durationSeconds) <= 180 &&
+                abs($0.distanceMeters-run.distanceMeters) <= max(100, run.distanceMeters*0.03)
+            }
+        }
+    }
     func clear() {
         queue.sync {
             cache = [:]
+            evidence = []
+            try? FileManager.default.removeItem(at: fileURL.appendingPathExtension("evidence"))
             persistence.clear()
         }
     }

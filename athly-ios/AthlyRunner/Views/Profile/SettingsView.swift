@@ -187,6 +187,14 @@ struct SettingsView: View {
             }
             .buttonStyle(.plain)
 
+            if FeatureFlags.zeppSync {
+                AthlyRowDivider()
+                NavigationLink { ZeppConnectView() } label: {
+                    AthlyListRow(systemImage: "stopwatch.fill", tint: AthlyTheme.Color.primary,
+                                 title: Text("Amazfit / Zepp"), subtitle: Text("Treinos e corridas")) { AthlyChevron() }
+                }.buttonStyle(.plain)
+            }
+
             if FeatureFlags.garminWatchSync {
                 AthlyRowDivider()
 

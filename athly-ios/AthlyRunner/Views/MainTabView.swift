@@ -156,12 +156,18 @@ struct MainTabView: View {
         }
     }
 
+    private var hasPresentedModal: Bool {
+        UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows).first(where: \.isKeyWindow)?.rootViewController?.presentedViewController != nil
+    }
+
     /// Procura uma corrida (do Garmin ou do Apple Health) que o Athly não iniciou nem vinculou.
     /// Oportunista: nunca bloqueia a abertura do app e nunca mostra erro.
     private func detectUnclaimedRun() async {
         // Não interromper uma corrida em andamento, nem empilhar detecções/telas.
-        guard !isRunInProgress, !isDetecting, detectedRun == nil else { return }
+        guard !isRunInProgress, !isDetecting, detectedRun == nil, !hasPresentedModal else { return }
         isDetecting = true
+        let session = await APIClient.shared.heartRateSessionIdentifier
         defer { isDetecting = false }
 
         // O caminho "vincular a um treino" precisa do plano carregado para ter candidatos.
@@ -170,7 +176,8 @@ struct MainTabView: View {
         }
 
         guard let run = await DetectedRunService.detect(localSessions: runStore.sessions) else { return }
-        guard !isRunInProgress, detectedRun == nil else { return }
+        guard !isRunInProgress, detectedRun == nil, !hasPresentedModal,
+              session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
         detectedRun = run
     }
 }

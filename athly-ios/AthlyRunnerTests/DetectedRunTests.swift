@@ -63,6 +63,25 @@ final class DetectedRunTests: XCTestCase {
         )
     }
 
+    func testLateCounterpartAcknowledgmentSurvivesReopenAndClearsOnLogout() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("acks.json")
+        let start = Date().addingTimeInterval(-3600)
+        func run(_ id: String, offset: Double = 0) -> HealthKitRunItem {
+            HealthKitRunItem(id: id, startDate: start.addingTimeInterval(offset), endDate: start.addingTimeInterval(1800 + offset),
+                durationSeconds: 1800, distanceMeters: 5000, averagePaceSecondsPerKm: 360,
+                activeEnergyBurned: 300, elevationGainMeters: nil)
+        }
+        DetectedRunAckStore(fileURL: file).acknowledge(run: run("health"))
+        let reopened = DetectedRunAckStore(fileURL: file)
+        XCTAssertTrue(reopened.isAcknowledged(run: run("zepp:late", offset: 20)))
+        XCTAssertFalse(reopened.isAcknowledged(run: run("different", offset: 3600)))
+        reopened.clear()
+        XCTAssertFalse(DetectedRunAckStore(fileURL: file).isAcknowledged(run: run("zepp:late")))
+    }
+
     // MARK: - Janela de detecção
 
     func testRunInsideWindowIsDetected() {

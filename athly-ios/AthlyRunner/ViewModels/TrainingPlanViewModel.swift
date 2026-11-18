@@ -37,6 +37,10 @@ struct WorkoutCompletionDependencies {
         try await APIClient.shared.completeWorkout(workoutId: $0, appleHealthWorkoutUUID: $1,
             actualDistanceMeters: $2, actualDurationSeconds: $3, executionDetails: $4)
     }
+    var requestZepp: @MainActor (String, String?, Double?, Double?, DetailedSessionPayload?, String) async throws -> WorkoutModel = {
+        try await APIClient.shared.completeWorkout(workoutId: $0, appleHealthWorkoutUUID: $1,
+            actualDistanceMeters: $2, actualDurationSeconds: $3, executionDetails: $4, zeppActivityId: $5)
+    }
     var fetchHealthRun: @MainActor (String) async throws -> HealthKitRunItem? = {
         try await HealthKitService().fetchRunningWorkout(uuid: $0)
     }
@@ -595,13 +599,19 @@ final class TrainingPlanViewModel: ObservableObject {
         executionDetails: DetailedSessionPayload? = nil,
         segmentation: WorkoutSegmentationResult? = nil,
         measuredPeak: Double? = nil, measuredDate: Date? = nil,
+        zeppActivityId: String? = nil,
         onConfirmed: () -> Void = {}
     ) async -> WorkoutCompletionOutcome {
         do {
             let accountSession = await APIClient.shared.heartRateSessionIdentifier
             await LocalStoresBootstrap.prepare()
             try Task.checkCancellation()
-            let updated = try await completionDependencies.request(workout.id, healthKitUUID, distance, duration, executionDetails)
+            let updated: WorkoutModel
+            if let zeppActivityId {
+                updated = try await completionDependencies.requestZepp(workout.id, healthKitUUID, distance, duration, executionDetails, zeppActivityId)
+            } else {
+                updated = try await completionDependencies.request(workout.id, healthKitUUID, distance, duration, executionDetails)
+            }
             guard updated.id == workout.id, updated.status == .done || updated.status == .partial else {
                 let message = String(localized: "O servidor não confirmou a conclusão do treino. Tente novamente.")
                 return .failure(message)
@@ -674,6 +684,7 @@ final class TrainingPlanViewModel: ObservableObject {
         let localOnly = !saveToHealthKit || fallback == .localOnly
         var oldHealthKitUUIDToDelete: String?
         var healthKitUUID = workout.appleHealthWorkoutUUID
+            ?? imported.preferredHealthKitUUID
             ?? completionDependencies.links.healthKitUUID(forAthlyWorkoutId: workout.id)
             ?? runStore.session(forImportedFingerprint: imported.fingerprint, workoutId: workout.id)?.healthKitWorkoutUUID
         // Keeping the imported file locally must work even if HealthKit is unreadable.
@@ -866,7 +877,7 @@ final class TrainingPlanViewModel: ObservableObject {
 
         let outcome = await confirmCompletion(workout, healthKitUUID: healthKitUUID,
             distance: actualDistance, duration: actualDuration, pace: actualPace,
-            executionDetails: details, segmentation: segmentation, onConfirmed: {
+            executionDetails: details, segmentation: segmentation, zeppActivityId: imported.zeppActivityId, onConfirmed: {
                 session.athlyWorkoutId = workout.id
                 runStore.update(session)
             })

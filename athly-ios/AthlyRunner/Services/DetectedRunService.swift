@@ -29,9 +29,10 @@ struct GarminDetectedRun: Sendable {
     let matchingHealthKitUUIDs: [String]
     /// Treino que o app Athly executou no relógio: o pop-up já abre com ele escolhido.
     var plannedWorkoutId: String? = nil
+    var provider: String = "garmin"
 
     /// Chave no `DetectedRunAckStore` — guarda a decisão mesmo se o backend estiver fora.
-    var ackKey: String { Self.ackKey(activityId) }
+    var ackKey: String { "\(provider):\(activityId)" }
 
     static func ackKey(_ activityId: String) -> String { "garmin:\(activityId)" }
 }
@@ -150,8 +151,22 @@ enum DetectedRunService {
             return .garmin(garmin)
         }
 
+        if FeatureFlags.zeppSync, let zepp = await detectZepp(healthRuns: health.runs, localSessions: localSessions,
+                linkedUUIDs: health.linked, acknowledgedUUIDs: acknowledged) {
+            let matches = health.runs.filter { zepp.matchingHealthKitUUIDs.contains($0.id) }
+            if matches.count == 1, let run = matches.first,
+               let detail = await HealthKitService().fetchRunDetail(workoutUUID: run.id),
+               detail.hasRoute || !zepp.imported.hasRoute {
+                var imported = zepp.imported
+                imported.preferredHealthKitUUID = run.id
+                return .garmin(GarminDetectedRun(activityId: zepp.activityId, imported: imported,
+                    summary: run, matchingHealthKitUUIDs: zepp.matchingHealthKitUUIDs, provider: "zepp"))
+            }
+            return .garmin(zepp)
+        }
+
         let detected = firstUnclaimed(
-            runs: health.runs,
+            runs: health.runs.filter { !DetectedRunAckStore.shared.isAcknowledged(run: $0) },
             localSessions: localSessions,
             linkedUUIDs: health.linked,
             acknowledgedUUIDs: acknowledged,
@@ -196,6 +211,31 @@ enum DetectedRunService {
             logger.info("Detecção no Health adiada: \(error.localizedDescription, privacy: .public)")
             return ([], [])
         }
+    }
+
+    @MainActor
+    private static func detectZepp(healthRuns: [HealthKitRunItem], localSessions: [RunSession],
+                                  linkedUUIDs: Set<String>, acknowledgedUUIDs: Set<String>) async -> GarminDetectedRun? {
+        guard let pending = try? await APIClient.shared.pendingZeppActivities() else { return nil }
+        for activity in pending {
+            let key = "zepp:\(activity.id)"
+            if acknowledgedUUIDs.contains(key) { continue }
+            guard let imported = try? await APIClient.shared.importZeppActivity(id: activity.id) else { continue }
+            let cutoff = Calendar.current.date(byAdding: .day, value: -windowDays, to: Calendar.current.startOfDay(for: Date())) ?? Date()
+            guard imported.startDate >= cutoff && imported.startDate <= Date() else { continue }
+            let summary = imported.detectedRunSummary(id: key, averageHeartRate: nil, maximumHeartRate: nil)
+            if DetectedRunAckStore.shared.isAcknowledged(run: summary) { continue }
+            switch garminStatus(imported: imported, healthRuns: healthRuns, localSessions: localSessions,
+                                linkedUUIDs: linkedUUIDs, acknowledgedUUIDs: acknowledgedUUIDs) {
+            case .alreadyHandled:
+                try? await APIClient.shared.resolveZeppActivity(id: activity.id, resolution: .dismissed)
+            case .offer(let matching):
+                return GarminDetectedRun(activityId: activity.id, imported: imported,
+                    summary: imported.detectedRunSummary(id: key, averageHeartRate: nil, maximumHeartRate: nil),
+                    matchingHealthKitUUIDs: matching, provider: "zepp")
+            }
+        }
+        return nil
     }
 
     /// Corrida mais recente do campo de dados ainda sem decisão. As que o atleta já tratou pelo

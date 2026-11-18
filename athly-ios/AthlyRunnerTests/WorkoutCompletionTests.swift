@@ -47,6 +47,32 @@ final class WorkoutCompletionTests: XCTestCase {
         guard case .failure = outcome else { return XCTFail("Expected an explicit failure", file: file, line: line) }
     }
 
+    func testZeppCompletionSendsActivityWithWorkoutAndOnlyConfirmsAfterSuccess() async throws {
+        let pending = try workout(), done = try workout(status: "done")
+        var activity = imported
+        activity.zeppActivityId = "zepp-fit"
+        var dependencies = WorkoutCompletionDependencies(links: links)
+        var attempts = 0
+        dependencies.requestZepp = { workoutID, healthUUID, distance, duration, _, activityID in
+            XCTAssertEqual(workoutID, pending.id)
+            XCTAssertEqual(activityID, "zepp-fit")
+            XCTAssertNil(healthUUID)
+            XCTAssertEqual(distance, activity.distanceMeters)
+            XCTAssertEqual(duration, activity.activeDurationSeconds)
+            attempts += 1
+            if attempts == 1 { throw URLError(.notConnectedToInternet) }
+            return done
+        }
+        let vm = TrainingPlanViewModel(completionDependencies: dependencies)
+        vm.allWorkouts = [pending]
+        let selection = WorkoutCompletionSelection.imported(activity, saveToHealthKit: false)
+        assertFailure(await vm.completeWorkoutSelection(pending, selection: selection, runStore: runs))
+        XCTAssertEqual(vm.allWorkouts.first?.status, .scheduled)
+        guard case .success = await vm.completeWorkoutSelection(pending, selection: selection, runStore: runs) else { return XCTFail("Retry must confirm") }
+        XCTAssertEqual(attempts, 2)
+        XCTAssertEqual(vm.allWorkouts.first?.status, .done)
+    }
+
     func testFailedHealthCompletionDoesNotHideRunAndRetryConfirmsIt() async throws {
         let pending = try workout(), done = try workout(status: "done", uuid: "ABC")
         var requests = 0

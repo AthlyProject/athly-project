@@ -51,6 +51,9 @@ struct ActivityLap: Codable, Equatable, Sendable, Identifiable {
 
 /// Activity normalized from a FIT, TCX or GPX file. The raw source file is never retained.
 struct ImportedWorkout: Identifiable, Sendable {
+    var zeppActivityId: String? = nil
+    var preferredHealthKitUUID: String? = nil
+
     let id: UUID
     let format: WorkoutImportFormat
     let fingerprint: String
@@ -238,4 +241,12 @@ enum WorkoutCompletionOutcome: Sendable {
     case success(WorkoutHeartRateSuggestion? = nil)
     case failure(String)
     case healthKitFallbackRequired(String)
+}
+
+/// Unknown Health route availability never hides either source.
+enum CompletionSourcePreference {
+    static func prefersZepp(healthHasRoute: Bool?, zeppHasRoute: Bool) -> Bool? {
+        guard let healthHasRoute else { return nil }
+        return !healthHasRoute && zeppHasRoute
+    }
 }

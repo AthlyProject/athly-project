@@ -258,7 +258,8 @@ actor APIClient {
         appleHealthWorkoutUUID: String? = nil,
         actualDistanceMeters: Double? = nil,
         actualDurationSeconds: Double? = nil,
-        executionDetails: DetailedSessionPayload? = nil
+        executionDetails: DetailedSessionPayload? = nil,
+        zeppActivityId: String? = nil
     ) async throws -> WorkoutModel {
         let context = try? await PlannerHealthSyncService.shared.capture()
         return try await patchWithBody(
@@ -266,7 +267,7 @@ actor APIClient {
             body: CompleteWorkoutRequest(appleHealthWorkoutUUID: appleHealthWorkoutUUID,
                                          actualDistanceMeters: actualDistanceMeters,
                                          actualDurationSeconds: actualDurationSeconds,
-                                         executionDetails: executionDetails, planningContext: context)
+                                         executionDetails: executionDetails, planningContext: context, zeppActivityId: zeppActivityId)
         )
     }
 
@@ -338,6 +339,55 @@ actor APIClient {
 
     func unregisterPushDevice(token: String) async throws {
         let _: EmptyResponse = try await delete("/notifications/devices/\(token)")
+    }
+
+    // MARK: - Zepp partner integration
+    func zeppStatus() async throws -> ZeppStatus { try await get("/zepp/status") }
+    func authorizeZepp() async throws -> ZeppAuthorization {
+        try await post("/zepp/authorize", body: ["timeZone": TimeZone.current.identifier])
+    }
+    func syncZepp() async throws {
+        let _: EmptyResponse = try await post("/zepp/sync", body: [String: String]())
+    }
+    func importTodayZeppActivities(now: Date = Date(), calendar: Calendar = .current) async throws -> ZeppBackfillResponse {
+        let result: ZeppBackfillResponse = try await post("/zepp/activities/backfill", body: [
+            "startTime": Int(calendar.startOfDay(for: now).timeIntervalSince1970),
+            "endTime": Int(now.timeIntervalSince1970)
+        ])
+        guard result.status == "ACCEPTED" else { throw APIError.invalidResponse }
+        return result
+    }
+    func disconnectZepp() async throws {
+        let _: EmptyResponse = try await delete("/zepp/connection")
+    }
+    func zeppCandidates(workoutId: String, start: Date, end: Date) async throws -> [ZeppActivity] {
+        var items: [ZeppActivity] = []
+        var cursor: String?
+        repeat {
+            var query = URLComponents()
+            query.queryItems = [URLQueryItem(name:"workoutId",value:workoutId), URLQueryItem(name:"startTime",value:String(Int(start.timeIntervalSince1970))), URLQueryItem(name:"endTime",value:String(Int(end.timeIntervalSince1970)))]
+            if let cursor { query.queryItems?.append(URLQueryItem(name:"cursor",value:cursor)) }
+            let page: ZeppCandidatePage = try await get("/zepp/activities/candidates?" + (query.percentEncodedQuery ?? ""))
+            items += page.items
+            cursor = page.nextCursor
+            try Task.checkCancellation()
+        } while cursor != nil
+        return items
+    }
+    func requestZeppHistory(start: Date, end: Date) async throws {
+        let _: ZeppBackfillResponse = try await post("/zepp/activities/backfill", body:["startTime":Int(start.timeIntervalSince1970),"endTime":Int(end.timeIntervalSince1970)])
+    }
+    func pendingZeppActivities() async throws -> [ZeppActivity] { try await get("/zepp/activities") }
+    func importZeppActivity(id: String) async throws -> ImportedWorkout {
+        let request = try buildRequest(path: "/zepp/activities/\(id)/fit", method: "GET", authenticated: true)
+        let (data, response) = try await authenticatedData(for: request)
+        guard response.statusCode == 200 else { throw APIError.serverError(response.statusCode, "Não foi possível receber a corrida do Zepp.") }
+        var imported = try WorkoutImportService().importFIT(data: data, fileName: "zepp-\(id).fit")
+        imported.zeppActivityId = id
+        return imported
+    }
+    func resolveZeppActivity(id: String, resolution: GarminActivityResolution, workoutId: String? = nil) async throws {
+        let _: EmptyResponse = try await post("/zepp/activities/\(id)/resolve", body: ResolveGarminActivityRequest(resolution: resolution, workoutId: workoutId))
     }
 
     // MARK: - Relógio Garmin (app Connect IQ)
@@ -730,6 +780,7 @@ struct CompleteWorkoutRequest: Encodable {
     let actualDurationSeconds: Double?
     let executionDetails: DetailedSessionPayload?
     let planningContext: PlannerHealthContextPayload?
+    var zeppActivityId: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case appleHealthWorkoutUUID = "appleHealthWorkoutUUID"
@@ -737,6 +788,7 @@ struct CompleteWorkoutRequest: Encodable {
         case actualDurationSeconds
         case executionDetails
         case planningContext
+        case zeppActivityId
     }
 }
 

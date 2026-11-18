@@ -4,6 +4,13 @@ import CryptoKit
 import FITSwiftSDK
 
 struct WorkoutImportService: Sendable {
+    func importFIT(data: Data, fileName: String) throws -> ImportedWorkout {
+        guard data.count <= Self.maximumFileSize else { throw WorkoutImportError.fileTooLarge }
+        let activities = try FITWorkoutParser.parse(data: data, fileName: fileName)
+        guard activities.count == 1, let activity = activities.first else { throw WorkoutImportError.noActivities }
+        return activity
+    }
+
     static let maximumFileSize = 50 * 1_024 * 1_024
 
     func importActivities(from url: URL) throws -> [ImportedWorkout] {

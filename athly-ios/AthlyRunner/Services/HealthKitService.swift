@@ -445,6 +445,24 @@ final class HealthKitService: HealthKitRunningWorkoutsProviding, HeartRateHealth
         try await fetchLatestRawRunningWorkouts(limit: limit, beforeEndDate: nil)
     }
 
+    func routeAvailability(workoutUUID: String) async -> Bool? {
+        do {
+            guard let workout = try await fetchRawWorkout(uuid: workoutUUID) else { return nil }
+            let routes = try await queryRoutes(for: workout)
+            if routes.isEmpty { return false }
+            for route in routes {
+                let locations = await fetchLocations(for: route)
+                if locations.filter({ CLLocationCoordinate2DIsValid($0.coordinate) }).count >= 2 { return true }
+            }
+            return nil
+        } catch { return nil }
+    }
+    func runningWorkouts(start: Date, end: Date) async throws -> [HealthKitRunItem] {
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: .strictStartDate)
+        let raw = try await queryWorkouts(sampleType: HKObjectType.workoutType(), predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)])
+        return try await enrichHeartRates(raw.filter { isRunningWorkoutCandidate($0) && $0.startDate < end }.map { map($0) })
+    }
+
     /// Busca uma página de `HKWorkout` brutos usando `endDate` como cursor.
     func fetchLatestRawRunningWorkouts(limit: Int, beforeEndDate: Date?) async throws -> [HKWorkout] {
         guard isHealthDataAvailable else {

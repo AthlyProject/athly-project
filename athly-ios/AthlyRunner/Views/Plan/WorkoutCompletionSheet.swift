@@ -34,6 +34,13 @@ struct WorkoutCompletionSheet: View {
     }
 
     // HealthKit loading
+    @State private var windowHealthRuns: [HealthKitRunItem] = []
+    @State private var zeppRuns: [ImportedWorkout] = []
+    @State private var healthRoutes: [String: Bool] = [:]
+    @State private var zeppConnected = false
+    @State private var zeppLoading = false
+    @State private var zeppError: String?
+    @State private var zeppTask: Task<Void, Never>?
     @State private var todayRuns: [HealthKitRunItem] = []
     @State private var isLoading = true
     @State private var loadError: String?
@@ -75,11 +82,7 @@ struct WorkoutCompletionSheet: View {
                         }.padding()
                     }
                 } else if step == .healthKit {
-                    if isLoading {
-                        loadingView
-                    } else {
-                        healthKitContent
-                    }
+                    healthKitContent
                 } else {
                     feedbackContent
                 }
@@ -98,7 +101,11 @@ struct WorkoutCompletionSheet: View {
                 }
             }
         }
-        .task { await loadCandidateRuns() }
+        .task {
+            zeppTask = Task { await loadZeppCandidates() }
+            await loadCandidateRuns()
+        }
+        .onDisappear { zeppTask?.cancel() }
         .fileImporter(
             isPresented: $isShowingFileImporter,
             allowedContentTypes: supportedImportTypes,
@@ -151,14 +158,16 @@ struct WorkoutCompletionSheet: View {
             VStack(spacing: AthlyTheme.Spacing.sm) {
                 workoutSummaryCard
 
-                if let error = loadError {
+                if isLoading {
+                    loadingView.padding()
+                } else if let error = loadError {
                     errorView(error)
                 } else if !todayRuns.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Image(systemName: "heart.fill")
                                 .foregroundStyle(AthlyTheme.Color.primary)
-                            Text("Corridas próximas a \(formattedWorkoutDate)")
+                            Text("Apple Health · \(formattedWorkoutDate)")
                                 .font(AthlyTheme.Typography.semibold(15))
                                 .foregroundStyle(AthlyTheme.Color.textPrimary)
                         }
@@ -169,7 +178,7 @@ struct WorkoutCompletionSheet: View {
                             .foregroundStyle(AthlyTheme.Color.textSecondary)
                             .padding(.horizontal, AthlyTheme.Spacing.sm)
 
-                        ForEach(todayRuns) { run in
+                        ForEach(visibleHealthRuns) { run in
                             healthRunCard(run)
                         }
                     }
@@ -177,6 +186,22 @@ struct WorkoutCompletionSheet: View {
                     noRunsView
                 }
 
+                if zeppConnected {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Zepp").font(.headline)
+                        Toggle("Salvar também no Apple Health", isOn: $saveImportedToHealthKit)
+                        if zeppLoading { ProgressView("Buscando atividades…") }
+                        if let zeppError { Text(zeppError).foregroundStyle(.secondary) }
+                        ForEach(visibleZeppRuns) { imported in
+                            Button { selectZepp(imported) } label: { importedActivityRow(imported) }
+                        }
+                        if !zeppLoading && visibleZeppRuns.isEmpty { Text("Nenhuma corrida adicional disponível neste período.").font(.footnote) }
+                        Button("Atualizar atividades") {
+                            zeppTask?.cancel()
+                            zeppTask = Task { await loadZeppCandidates() }
+                        }
+                    }.padding()
+                }
                 importSection
 
                 Divider()
@@ -478,7 +503,12 @@ struct WorkoutCompletionSheet: View {
 
     private func healthRunCard(_ run: HealthKitRunItem) -> some View {
         Button {
-            selection = .healthKit(run)
+            if var imported = matchingZepp(run) {
+                imported.preferredHealthKitUUID = run.id
+                selection = .imported(imported, saveToHealthKit: true)
+            } else {
+                selection = .healthKit(run)
+            }
             if isEnrichment {
                 Task { await finishCompletion() }
             } else {
@@ -766,7 +796,7 @@ struct WorkoutCompletionSheet: View {
             Image(systemName: "heart.slash")
                 .font(.system(size: 40))
                 .foregroundStyle(AthlyTheme.Color.textTertiary)
-            Text("Nenhuma corrida encontrada entre \(formattedWorkoutDate) e os 2 dias seguintes")
+            Text("Nenhuma corrida no Apple Health entre \(formattedWorkoutDate) e os 2 dias seguintes")
                 .font(AthlyTheme.Typography.semibold(16))
                 .foregroundStyle(AthlyTheme.Color.textPrimary)
             Text("Se você correu, verifique se o Apple Health está ativado nas configurações do app.")
@@ -831,13 +861,19 @@ struct WorkoutCompletionSheet: View {
             let df = ISO8601DateFormatter()
             Self.diagLogger.debug("[ConcluirTreino] workoutId=\(workout.id) title=\(workout.title) parsedDate=\(df.string(from: workout.parsedDate)) windowStart=\(df.string(from: windowStart)) windowEnd=\(df.string(from: windowEnd))")
 
-            let allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
+            let allRuns: [HealthKitRunItem]
+            #if targetEnvironment(simulator)
+            allRuns = try await service.fetchLatestRunningWorkouts(limit: 30)
+            #else
+            allRuns = try await HealthKitService().runningWorkouts(start: windowStart, end: windowEnd)
+            #endif
             Self.diagLogger.debug("[ConcluirTreino] fetchLatestRunningWorkouts(limit:30) retornou \(allRuns.count) corrida(s)")
             for r in allRuns {
                 Self.diagLogger.debug("  [fetch] id=\(r.id) start=\(df.string(from: r.startDate)) distM=\(String(format: "%.0f", r.distanceMeters))")
             }
 
             let inWindow = allRuns.filter { $0.startDate >= windowStart && $0.startDate < windowEnd }
+            windowHealthRuns = inWindow
             Self.diagLogger.debug("[ConcluirTreino] após filtro de janela: \(inWindow.count) corrida(s)")
             for r in inWindow {
                 Self.diagLogger.debug("  [inWindow] id=\(r.id) start=\(df.string(from: r.startDate))")
@@ -857,11 +893,99 @@ struct WorkoutCompletionSheet: View {
                 .sorted { $0.startDate < $1.startDate }
             Self.diagLogger.debug("[ConcluirTreino] todayRuns final: \(todayRuns.count) corrida(s)")
 
+            for run in todayRuns {
+                try Task.checkCancellation()
+                healthRoutes[run.id] = await HealthKitService().routeAvailability(workoutUUID: run.id)
+            }
             await service.diagnose(windowStart: windowStart, windowEnd: windowEnd, contextLabel: "ConcluirTreino:\(workout.id)")
         } catch {
             loadError = error.localizedDescription
             Self.diagLogger.debug("[ConcluirTreino] ERRO: \(error.localizedDescription)")
         }
+    }
+
+    private func matchingZepp(_ run: HealthKitRunItem) -> ImportedWorkout? {
+        let matches = zeppRuns.filter { Self.matches($0, run) }
+        return matches.count == 1 ? matches.first : nil
+    }
+    private static func matches(_ imported: ImportedWorkout, _ run: HealthKitRunItem) -> Bool {
+        ImportedWorkoutMatch.evaluate(imported: imported, healthStartDate: run.startDate, healthDurationSeconds: run.durationSeconds, healthDistanceMeters: run.distanceMeters).isMatch
+    }
+    private var visibleHealthRuns: [HealthKitRunItem] {
+        todayRuns.filter { run in
+            guard let imported = matchingZepp(run), todayRuns.filter({ Self.matches(imported, $0) }).count == 1 else { return true }
+            return CompletionSourcePreference.prefersZepp(healthHasRoute: healthRoutes[run.id], zeppHasRoute: imported.hasRoute) != true
+        }
+    }
+    private var visibleZeppRuns: [ImportedWorkout] {
+        zeppRuns.filter { imported in
+            if windowHealthRuns.contains(where: { run in
+                guard Self.matches(imported, run), let linked = RunWorkoutLinkStore.shared.athlyWorkoutId(for: run.id) else { return false }
+                return linked != workout.id
+            }) { return false }
+            let matches = todayRuns.filter { Self.matches(imported, $0) }
+            guard matches.count == 1, let run = matches.first, matchingZepp(run) != nil else { return true }
+            guard let route = healthRoutes[run.id] else { return true }
+            return !route && imported.hasRoute
+        }
+    }
+    private func selectZepp(_ imported: ImportedWorkout) {
+        var imported = imported
+        let matches = todayRuns.filter { Self.matches(imported, $0) }
+        if matches.count > 1 && saveImportedToHealthKit {
+            zeppError = "Há mais de uma corrida equivalente no Apple Health. Selecione o registro desejado na seção Apple Health ou desative Salvar também no Apple Health."
+            return
+        }
+        imported.preferredHealthKitUUID = matches.first?.id
+        selection = .imported(imported, saveToHealthKit: saveImportedToHealthKit)
+        if isEnrichment { Task { await finishCompletion() } }
+        else { step = .feedback }
+    }
+    @MainActor private func loadZeppCandidates() async {
+        guard FeatureFlags.zeppSync else { return }
+        zeppLoading = true
+        defer { zeppLoading = false }
+        let start = calendar.startOfDay(for: workout.parsedDate)
+        guard let end = calendar.date(byAdding: .day, value: 3, to: start) else { return }
+        let session = await APIClient.shared.heartRateSessionIdentifier
+        do {
+            let status = try await APIClient.shared.zeppStatus()
+            try Task.checkCancellation()
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            zeppConnected = status.connected
+            guard status.connected && status.enabled else { return }
+            zeppError = nil
+            await readZeppCandidates(start: start, end: end, session: session)
+            try Task.checkCancellation()
+            guard start < Date(), session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            try await APIClient.shared.requestZeppHistory(start: start, end: min(end.addingTimeInterval(-1), Date()))
+            try Task.checkCancellation()
+            guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            zeppError = "Histórico solicitado. As atividades podem levar alguns minutos para chegar."
+            for _ in 0..<12 {
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+                try Task.checkCancellation()
+                guard session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+                await readZeppCandidates(start: start, end: end, session: session)
+            }
+        } catch is CancellationError { }
+        catch { if !Task.isCancelled, session == (await APIClient.shared.heartRateSessionIdentifier) { zeppError = error.localizedDescription } }
+    }
+    @MainActor private func readZeppCandidates(start: Date, end: Date, session: UUID) async {
+        do {
+            let candidates = try await APIClient.shared.zeppCandidates(workoutId: workout.id, start: start, end: end)
+            var loaded: [ImportedWorkout] = []
+            for candidate in candidates {
+                try Task.checkCancellation()
+                if let cached = zeppRuns.first(where: { $0.zeppActivityId == candidate.id }) { loaded.append(cached) }
+                else {
+                    do { loaded.append(try await APIClient.shared.importZeppActivity(id: candidate.id)) }
+                    catch { if !Task.isCancelled { zeppError = "Uma atividade Zepp não pôde ser carregada. Tente atualizar novamente." } }
+                }
+            }
+            guard !Task.isCancelled, session == (await APIClient.shared.heartRateSessionIdentifier) else { return }
+            zeppRuns = loaded
+        } catch { if !Task.isCancelled, session == (await APIClient.shared.heartRateSessionIdentifier) { zeppError = error.localizedDescription } }
     }
 
     // MARK: - Helpers

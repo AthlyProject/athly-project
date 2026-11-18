@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2D83917F56986227A5BCE1D7 /* ZeppConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026E0CA83047B81BAD745025 /* ZeppConnectView.swift */; };
 		C904BD91DA634809B184B811 /* HealthKitAuthorizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */; };
 		D7A3CB6FE5144DF7956BCE11 /* WorkoutCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */; };
 		0365DDE0D12FD9921E153C17 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771F104A20AD0B32E98D4010 /* HistoryView.swift */; };
@@ -222,6 +223,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		026E0CA83047B81BAD745025 /* ZeppConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZeppConnectView.swift; sourceTree = "<group>"; };
 		C904BD91DA634809B184B810 /* HealthKitAuthorizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitAuthorizationTests.swift; sourceTree = "<group>"; };
 		D7A3CB6FE5144DF7956BCE10 /* WorkoutCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCompletionTests.swift; sourceTree = "<group>"; };
 		0192367746B3C25C781AE6AD /* AthlyWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AthlyWebView.swift; sourceTree = "<group>"; };
@@ -592,6 +594,7 @@
 				27FE2E2C10F1A4E40C125F62 /* ConnectedAccountsView.swift */,
 				96383EA62C2EBCB9BF0F422A /* EditProfileView.swift */,
 				8052524A80ECF157CFFF8719 /* GarminConnectView.swift */,
+				026E0CA83047B81BAD745025 /* ZeppConnectView.swift */,
 				9F259A6A3920393FE909C9D3 /* PrivacyPolicyView.swift */,
 				75C8C266EED9B982F852E4B4 /* ProfileComponents.swift */,
 				43825FAB86DD6123B208E2F0 /* ProfileView.swift */,
@@ -1030,6 +1033,7 @@
 				77436C363DE402F3721AE62D /* FloatingTabBar.swift in Sources */,
 				22550825FBEC5B2FD1C0FA9A /* ForgotPasswordView.swift in Sources */,
 				8A144DCDEAB6314A9386D47B /* GarminConnectView.swift in Sources */,
+				2D83917F56986227A5BCE1D7 /* ZeppConnectView.swift in Sources */,
 				95A66A24108A2894D2B85360 /* GarminConnectViewModel.swift in Sources */,
 				6951F16A940EB91EA3CCA496 /* GeneralProgressCard.swift in Sources */,
 				BA17E64500AF2DF4BF811E26 /* HapticService.swift in Sources */,
