@@ -3,7 +3,7 @@ import type { FitIntensity, FitWorkoutPlan, FitWorkoutStep } from './workout-fit
 /** Alvo de um passo no player do app Athly no relógio. */
 export type WatchPlanTarget =
   | { type: 'pace'; fastSecPerKm: number; slowSecPerKm: number }
-  | { type: 'hr'; zone: number };
+  | { type: 'hr'; zone: number; minBpm?: number; maxBpm?: number };
 
 export interface WatchPlanStep {
   name?: string;
@@ -45,7 +45,12 @@ function targetOf(step: FitWorkoutStep): WatchPlanTarget | null {
     };
   }
   if (step.targetType === 'heartRate' && typeof step.targetValue === 'number') {
-    return { type: 'hr', zone: step.targetValue };
+    return {
+      type: 'hr',
+      zone: step.targetValue,
+      ...(step.hrMinBpm !== undefined ? { minBpm: step.hrMinBpm } : {}),
+      ...(step.hrMaxBpm !== undefined ? { maxBpm: step.hrMaxBpm } : {}),
+    };
   }
   return null;
 }

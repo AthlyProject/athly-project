@@ -74,10 +74,17 @@ export function zeppSteps(
       }
       if (step.duration.type === 'open' || !step.duration.value || !step.target)
         throw new Error('Treino incompatível: passo aberto ou sem alvo Zepp homologado.');
-      const hr = step.target.type === 'hr' ? hrZones?.[`zone${step.target.zone}`] : undefined;
+      const hr =
+        step.target.type === 'hr'
+          ? step.target.minBpm !== undefined || step.target.maxBpm !== undefined
+            ? { min: step.target.minBpm, max: step.target.maxBpm }
+            : hrZones?.[`zone${step.target.zone}`]
+          : undefined;
       if (
         step.target.type === 'hr' &&
         (!hr ||
+          typeof hr.min !== 'number' ||
+          typeof hr.max !== 'number' ||
           !Number.isFinite(hr.min) ||
           !Number.isFinite(hr.max) ||
           hr.min <= 0 ||

@@ -53,6 +53,18 @@ const decode = (bytes: Uint8Array) => {
 describe('encodeWorkoutFit', () => {
   const timeCreated = new Date('2026-10-04T12:00:00.000Z');
   const bytes = encodeWorkoutFit(plan, { serialNumber: 0x3f2a9c1e, timeCreated });
+  it('keeps Garmin FIT bytes unchanged when the prescription includes an absolute HR snapshot', () => {
+    const snapshotPlan = {
+      ...plan,
+      steps: plan.steps.map((step) =>
+        step.targetType === 'heartRate' ? { ...step, hrMinBpm: 138, hrMaxBpm: 150 } : step,
+      ),
+    };
+    expect(encodeWorkoutFit(snapshotPlan, { serialNumber: 0x3f2a9c1e, timeCreated })).toEqual(
+      bytes,
+    );
+    expect(snapshotPlan.steps[2].hrMinBpm).toBe(138);
+  });
 
   it('gera um arquivo FIT íntegro com cabeçalho de protocolo 1.0', () => {
     expect(bytes[0]).toBe(14);

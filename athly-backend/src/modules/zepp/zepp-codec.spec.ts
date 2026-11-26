@@ -94,6 +94,24 @@ describe('Zepp workout groups', () => {
     });
     expect(() => zeppSteps(plan)).toThrow('zona de FC');
   });
+  it.each([
+    { minBpm: 138 },
+    { maxBpm: 150 },
+    { minBpm: 151, maxBpm: 138 },
+    { minBpm: NaN, maxBpm: 150 },
+    { minBpm: 138, maxBpm: Infinity },
+    { minBpm: 0, maxBpm: 150 },
+  ])(
+    'rejects an invalid snapshot instead of replacing the prescription with profile zones: %s',
+    (bounds) => {
+      expect(() =>
+        zeppSteps(
+          { name: '', rev: '', steps: [{ ...step, target: { type: 'hr', zone: 2, ...bounds } }] },
+          { zone2: { min: 130, max: 145 } },
+        ),
+      ).toThrow('zona de FC');
+    },
+  );
 });
 
 import { Encoder, Profile } from '@garmin/fitsdk';

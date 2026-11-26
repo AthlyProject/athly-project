@@ -48,7 +48,11 @@ export function encodeWorkoutFit(
   encoder.onMesg(Profile.MesgNum.FILE_ID, fileId);
   encoder.onMesg(Profile.MesgNum.WORKOUT, workout);
   plan.steps.forEach((step, messageIndex) => {
-    const mesg: WorkoutStepMesg = compact({ messageIndex, ...step });
+    const fitStep = { ...step };
+    // These prescription fields are metadata, not Garmin FIT message fields.
+    delete fitStep.hrMinBpm;
+    delete fitStep.hrMaxBpm;
+    const mesg: WorkoutStepMesg = compact({ messageIndex, ...fitStep });
     encoder.onMesg(Profile.MesgNum.WORKOUT_STEP, mesg);
   });
   const bytes = encoder.close();

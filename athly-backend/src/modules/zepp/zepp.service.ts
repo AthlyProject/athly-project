@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { buildFitPlan } from '../connect-iq/fit/workout-fit-plan';
 import { toWatchPlan } from '../connect-iq/fit/workout-watch-plan';
+import { calculateHeartRateZones } from '../users/heart-rate-zones';
 import { localCalendar, addCalendarDays } from '../ai-planner/weekly-calendar';
 import {
   digest,
@@ -631,20 +632,31 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       },
       orderBy: [{ dateScheduled: 'asc' }, { id: 'asc' }],
     });
-    const zones = await this.db.userEffortZone.findFirst({
-      where: { userId, validUntil: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
+    const profile = await this.db.user.findUnique({
+      where: { id: userId },
+      select: {
+        restingHeartRate: true,
+        maxHeartRate: true,
+        dateOfBirth: true,
+        appleHealthRestingHeartRate: true,
+        appleHealthRestingHeartRateMeasuredAt: true,
+      },
     });
+    // Legacy prescriptions may only contain a zone number. Saved bpm snapshots take
+    // precedence in zeppSteps so profile changes never rewrite an existing prescription.
+    const hrZones = Object.fromEntries(
+      calculateHeartRateZones(profile ?? {}).zones.map(({ zone, minBpm, maxBpm }) => [
+        `zone${zone}`,
+        { min: minBpm, max: maxBpm },
+      ]),
+    );
     const workouts: object[] = [];
     for (const w of rows) {
       const plan = buildFitPlan(w);
       if (!plan.ok) throw new BadRequestException(`Treino incompatível com a Zepp: ${w.title}`);
       let steps: ReturnType<typeof zeppSteps>;
       try {
-        steps = zeppSteps(
-          toWatchPlan(plan.plan),
-          zones?.hrZones as Record<string, { min: number; max: number }> | undefined,
-        );
+        steps = zeppSteps(toWatchPlan(plan.plan), hrZones);
       } catch (e) {
         throw new BadRequestException(
           `${w.title} (${w.dateScheduled.toISOString().slice(0, 10)}): ${e instanceof Error ? e.message : 'Treino incompatível com a Zepp.'}`,

@@ -34,6 +34,9 @@ export interface FitWorkoutStep {
   /** Velocidade em mm/s; `Low` é o limite lento. */
   customTargetValueLow?: number;
   customTargetValueHigh?: number;
+  /** Prescription snapshot for providers that require absolute bpm rather than zone numbers. */
+  hrMinBpm?: number;
+  hrMaxBpm?: number;
 }
 
 export interface FitWorkoutPlan {
@@ -136,7 +139,16 @@ const targetOf = (
     };
   }
   // Zona da Athly (1–5) vira a zona configurada no próprio relógio.
-  if (zone) return { fields: { targetType: 'heartRate', targetValue: zone }, notes };
+  if (zone)
+    return {
+      fields: {
+        targetType: 'heartRate',
+        targetValue: zone,
+        ...(target?.hrMinBpm !== undefined ? { hrMinBpm: target.hrMinBpm } : {}),
+        ...(target?.hrMaxBpm !== undefined ? { hrMaxBpm: target.hrMaxBpm } : {}),
+      },
+      notes,
+    };
   return { fields: { targetType: 'open' }, notes };
 };
 

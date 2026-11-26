@@ -367,13 +367,15 @@ describe('Zepp manual workout delivery', () => {
         findMany: jest.fn().mockResolvedValue([connection]),
       },
       workout: { findMany: jest.fn().mockResolvedValue([workout]) },
-      userEffortZone: { findFirst: jest.fn().mockResolvedValue(null) },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
       zeppWorkoutMapping: { upsert: jest.fn().mockResolvedValue({ id: 42 }) },
       zeppActivity: { deleteMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     };
     fetcher = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ code: 1, message: 'success', data: [] })));
+      .mockImplementation(
+        async () => new Response(JSON.stringify({ code: 1, message: 'success', data: [] })),
+      );
     service = new ZeppService(db);
   });
   afterEach(() => {
@@ -427,6 +429,53 @@ describe('Zepp manual workout delivery', () => {
     expect(db.zeppActivity.findMany).toHaveBeenCalled();
     expect(fetcher).not.toHaveBeenCalled();
     expect((await service.status('u')).workoutsEnabled).toBe(true);
+  });
+  it('sends the bpm snapshot displayed in Plan even when profile zones are unavailable or changed', async () => {
+    db.workout.findMany.mockResolvedValue([
+      {
+        ...workout,
+        segments: {
+          ...workout.segments,
+          segments: [
+            {
+              ...workout.segments.segments[0],
+              target: { hrZone: 2, hrMinBpm: 138, hrMaxBpm: 150, rpe: 3 },
+            },
+          ],
+        },
+      },
+    ]);
+    for (const profile of [null, { restingHeartRate: 65, maxHeartRate: 195 }]) {
+      db.user.findUnique.mockResolvedValue(profile);
+      await expect(service.requestSync('u')).resolves.toMatchObject({ status: 'ACCEPTED' });
+      const body = JSON.parse(fetcher.mock.calls.at(-1)![1].body);
+      expect(body.workouts[0].steps[0]).toMatchObject({
+        targetType: 'HEART_RATE_LAP',
+        targetValueLow: 138,
+        targetValueHigh: 150,
+      });
+    }
+  });
+  it('uses current profile HR zones only for legacy prescriptions without a bpm snapshot', async () => {
+    db.user.findUnique.mockResolvedValue({ restingHeartRate: 60, maxHeartRate: 190 });
+    db.workout.findMany.mockResolvedValue([
+      {
+        ...workout,
+        segments: {
+          ...workout.segments,
+          segments: [{ ...workout.segments.segments[0], target: { hrZone: 2 } }],
+        },
+      },
+    ]);
+    await service.requestSync('u');
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).workouts[0].steps[0]).toMatchObject({
+      targetType: 'HEART_RATE_LAP',
+      targetValueLow: 138,
+      targetValueHigh: 150,
+    });
+    db.user.findUnique.mockResolvedValue(null);
+    await expect(service.requestSync('u')).rejects.toThrow('zona de FC');
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it('requires the delivery flag, integration flag and a connected account', async () => {
     process.env.ZEPP_WORKOUTS_MANUAL_ENABLED = 'false';

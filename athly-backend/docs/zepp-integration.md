@@ -43,7 +43,7 @@ O iOS usa o importador FIT existente, preservando dados originais, inclusive FC 
 
 ## Compatibilidade e homologação obrigatória
 
-A conversão V2 implementa duração por tempo/distância, repetições (inclusive grupos consecutivos/aninhados), alvo de pace e alvo de FC convertido para bpm pelas zonas válidas da Athly. Confirmar na API e no relógio as unidades dos campos: a documentação V2 é ambígua para distância. Passos abertos e sem alvo não têm representação V2 confirmada; geram erro visível e impedem enviar uma janela parcial. Não são substituídos por tempos/alvos fictícios. A paridade completa depende de a Zepp confirmar esses formatos.
+A conversão V2 implementa duração por tempo/distância, repetições (inclusive grupos consecutivos/aninhados), alvo de pace e alvo de FC em bpm. Para FC, o envio preserva `hrMinBpm`/`hrMaxBpm` gravados nos segmentos, os mesmos limites exibidos no Plan, mesmo se o perfil mudar depois. Somente treinos antigos sem esses limites usam as zonas atuais do perfil (`calculateHeartRateZones`); o cache de categorias de pace `UserEffortZone` não é fonte de FC. Limites gravados incompletos ou inválidos impedem o envio, sem substituir a prescrição por outra faixa. Confirmar na API e no relógio as unidades dos campos: a documentação V2 é ambígua para distância. Passos abertos e sem alvo não têm representação V2 confirmada; geram erro visível e impedem enviar uma janela parcial. Não são substituídos por tempos/alvos fictícios. A paridade completa depende de a Zepp confirmar esses formatos.
 
 - Conectar, cancelar autorização, renovar token, desconectar e revogar pelo Zepp.
 - Executar aquecimento + 6×400m/recuperação + volta à calma; conferir duração, pace, FC, repetições e alertas. Usar alvos explícitos na primeira homologação.
