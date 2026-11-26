@@ -1,6 +1,6 @@
 # Athly / Zepp — integração nativa
 
-Alvo de homologação: Active 3 Premium + iPhone. O treino é executado pelo app nativo do relógio. Não há aplicativo Zepp OS próprio. O frontend iOS está disponível apenas em DEBUG. O backend depende de `ZEPP_ENABLED`; no App Runner, a conexão está habilitada e o envio de treinos permanece desativado.
+Alvo de homologação: Active 3 Premium + iPhone. O treino é executado pelo app nativo do relógio. Não há aplicativo Zepp OS próprio. O frontend iOS está disponível apenas em DEBUG. O backend depende de `ZEPP_ENABLED`; a configuração do App Runner habilita a conexão e o envio manual para homologação. O envio automático permanece desativado.
 
 ## Cadastro de parceiro (ação do responsável pela Athly)
 
@@ -18,7 +18,7 @@ Portal e requisitos: https://devopen.zepp.com/docs/getting-started/partner-onboa
 1. Aplicar as migrações `20261115000000_zepp` , `20261117000000_zepp_backfill` e `20261118000000_zepp_candidates` no ambiente desejado. No App Runner, `npm run start:prod:migrate` aplica as migrações antes de iniciar a API. Não há alteração dos dados Garmin.
 2. Configurar as variáveis `ZEPP_*` de `.env.example`. Chave de tokens: 32 bytes aleatórios em base64. Segredo do webhook: pelo menos 32 caracteres aleatórios URL-safe. Manter fora do repositório e ocultar caminho de webhook, query OAuth e headers Authorization nos logs de infraestrutura.
 3. Com aprovação e credenciais, habilitar `ZEPP_ENABLED=true` em ambiente de teste. Conectar pelo iPhone; depois da página de confirmação, voltar à Athly.
-4. Manter `ZEPP_WORKOUTS_VALIDATED=false` até validar unidades e comportamentos abaixo. A recepção das corridas funciona independentemente do envio de treinos.
+4. Para testar no relógio, habilitar `ZEPP_WORKOUTS_MANUAL_ENABLED=true`, mantendo `ZEPP_WORKOUTS_VALIDATED=false` até validar unidades e comportamentos abaixo. A flag manual libera somente envios solicitados pelo usuário autenticado. A flag de validação habilita também a sincronização automática. A recepção das corridas funciona independentemente do envio de treinos.
 5. Liberar produção somente após homologação; habilitar explicitamente `FeatureFlags.zeppSync` no release iOS.
 
 Sem credenciais, os testes usam mocks. Não é possível afirmar funcionamento no relógio apenas com testes locais.
@@ -31,9 +31,13 @@ OAuth usa state aleatório de uso único com 10 minutos de validade. Os tokens s
 
 Histórico: `POST /zepp/activities/backfill {startTime, endTime}` usa timestamps Unix em segundos e o token da conta autenticada, com intervalo passado de até 30 dias. O iOS solicita o histórico em Concluir treino/Adicionar dados, usando a mesma janela do Apple Health: dia planejado até o fim de D+2, limitada ao instante atual para o backfill. O backend chama `GET /wellness-api/rest/backfill/activities` na Zepp e retorna HTTP 202 somente quando a Zepp confirma `ACCEPTED` com um `requestId`. O comprovante, a data do pedido e eventuais erros ficam na conexão. Há intervalo mínimo persistente de um minuto entre pedidos, inclusive após falhas; pedidos aceitos para a mesma janela são reutilizados por cinco minutos. Recebimento e deduplicação usam o webhook existente. HTTP 202 confirma o pedido, não a entrega de corridas. Contrato: https://devopen.zepp.com/docs/data-apis/backfill-api.
 
-`GET /zepp/status` também informa `historyImportAvailable`, `workoutsEnabled`, `backfillRequestedAt`, `backfillRequestId` e `backfillError`. O app oculta o envio de treinos quando não estiver validado.
+`GET /zepp/status` também informa `historyImportAvailable`, `workoutsEnabled`, `backfillRequestedAt`, `backfillRequestId` e `backfillError`. `workoutsEnabled` exige a integração ativa e pelo menos uma das flags de envio. O app oculta o envio se ambas estiverem desativadas.
 
-Worker a cada 5 segundos, filas no PostgreSQL com leases de 120 segundos. Sincronização de treinos verifica a janela completa de sete dias a cada cinco minutos e compara hash. IDs numéricos estáveis preservam o vínculo com UUIDs Athly. FITs são deduplicados por usuário e summaryId, limitados a 50 MB e expurgados em 30 dias. Download tem timeout de 60 segundos e tentativas exponenciais até dez tentativas ou 24h. A URL é de uso único: interrupção após consumo remoto e antes da gravação local pode exigir reentrega pela Zepp.
+`POST /zepp/sync` envia a janela completa de hoje até hoje + 6 dias no fuso salvo da conexão. Exige conta conectada e reserva exclusiva de 120 segundos, compartilhada com o worker automático; um envio simultâneo recebe HTTP 409. Aguarda a confirmação `code: 1` da Zepp e retorna `{status: "ACCEPTED", workoutCount, startDate, endDate}`. Essa resposta confirma aceitação na nuvem, não entrega ao relógio. Falha de validação identifica o título/data do treino e não envia uma janela parcial. Erros não confirmam sucesso e liberam a reserva. O iOS permite até 90 segundos para renovação do token e envio.
+
+No iPhone de desenvolvimento: **Perfil → Ajustes → Amazfit / Zepp → Enviar treinos planejados**. Após a confirmação, abrir o Zepp e sincronizar o relógio. Conferir no relógio cada duração, alvo e repetição antes de executar. Uma semana sem treinos agendados envia `workouts: []`, removendo os treinos anteriormente enviados na janela calculada pela Zepp. Enviar novamente atualiza toda a janela, preservando os IDs Athly.
+
+Worker a cada 5 segundos, filas no PostgreSQL com leases de 120 segundos. Quando `ZEPP_WORKOUTS_VALIDATED=true`, a sincronização automática de treinos verifica a janela completa de sete dias a cada cinco minutos e compara hash. IDs numéricos estáveis preservam o vínculo com UUIDs Athly. FITs são deduplicados por usuário e summaryId, limitados a 50 MB e expurgados em 30 dias. Download tem timeout de 60 segundos e tentativas exponenciais até dez tentativas ou 24h. A URL é de uso único: interrupção após consumo remoto e antes da gravação local pode exigir reentrega pela Zepp.
 
 O iOS usa o importador FIT existente, preservando dados originais, inclusive FC sem ponto GPS. As chaves locais `zepp:<id>` são separadas de Garmin. A conexão Zepp não atrasa o aviso do Apple Health. Uma decisão sobre a corrida reconhece também a contraparte equivalente que chegar depois; a seleção manual continua disponível para complementar dados. A comparação por início/duração/distância evita oferecer novamente corridas já importadas manualmente ou pelo Apple Health. Não se presume vínculo automático com um treino planejado.
 

@@ -14,6 +14,8 @@ run:
       value: "true"
     - name: ZEPP_WORKOUTS_VALIDATED
       value: "false"
+    - name: ZEPP_WORKOUTS_MANUAL_ENABLED
+      value: "true"
     - name: ZEPP_REDIRECT_URI
       value: "https://api.athlyproject.app/zepp/callback"
     - name: REFRESH_TOKEN_EXPIRES_IN

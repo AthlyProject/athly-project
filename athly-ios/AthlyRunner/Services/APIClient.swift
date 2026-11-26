@@ -346,8 +346,10 @@ actor APIClient {
     func authorizeZepp() async throws -> ZeppAuthorization {
         try await post("/zepp/authorize", body: ["timeZone": TimeZone.current.identifier])
     }
-    func syncZepp() async throws {
-        let _: EmptyResponse = try await post("/zepp/sync", body: [String: String]())
+    func syncZepp() async throws -> ZeppWorkoutSyncResponse {
+        let receipt: ZeppWorkoutSyncResponse = try await post("/zepp/sync", body: [String: String](), timeout: 90)
+        guard receipt.status == "ACCEPTED" else { throw APIError.invalidResponse }
+        return receipt
     }
     func importTodayZeppActivities(now: Date = Date(), calendar: Calendar = .current) async throws -> ZeppBackfillResponse {
         let result: ZeppBackfillResponse = try await post("/zepp/activities/backfill", body: [

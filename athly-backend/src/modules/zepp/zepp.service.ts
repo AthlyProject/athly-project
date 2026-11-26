@@ -30,6 +30,15 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
   get enabled() {
     return process.env.ZEPP_ENABLED === 'true';
   }
+  private get automaticWorkoutsEnabled() {
+    return process.env.ZEPP_WORKOUTS_VALIDATED === 'true';
+  }
+  private get workoutsEnabled() {
+    return (
+      this.enabled &&
+      (this.automaticWorkoutsEnabled || process.env.ZEPP_WORKOUTS_MANUAL_ENABLED === 'true')
+    );
+  }
   private config(name: string): string {
     const v = process.env[name];
     if (!v) throw new ServiceUnavailableException('Integração Zepp não configurada');
@@ -51,7 +60,7 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       connected: c?.connected ?? false,
       lastSyncAt: c?.lastSyncAt ?? null,
       error: c?.error ?? null,
-      workoutsEnabled: process.env.ZEPP_WORKOUTS_VALIDATED === 'true',
+      workoutsEnabled: this.workoutsEnabled,
       historyImportAvailable: true,
       backfillRequestedAt: c?.backfillRequestedAt ?? null,
       backfillRequestId: c?.backfillRequestId ?? null,
@@ -164,14 +173,27 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       signal: AbortSignal.timeout(30_000),
       redirect: 'error',
     });
-    if (!response.ok) throw new Error(`Zepp HTTP ${response.status}`);
+    if (!response.ok) {
+      if (path.startsWith('/users/-/workouts')) {
+        if (response.status === 401 || response.status === 403)
+          throw new ServiceUnavailableException(
+            'A Zepp recusou o envio. Reconecte a conta e confira a permissão Training Plan.',
+          );
+        throw new ServiceUnavailableException(
+          `A Zepp não aceitou os treinos (HTTP ${response.status}). Tente novamente mais tarde.`,
+        );
+      }
+      throw new Error(`Zepp HTTP ${response.status}`);
+    }
     const text = await response.text();
     const result = text ? JSON.parse(text) : null;
     if (
       (path.startsWith('/users/-/workouts') && result?.code !== 1) ||
       (result && result.code < 0)
     ) {
-      throw new Error('Zepp recusou a sincronização');
+      throw new ServiceUnavailableException(
+        'Zepp recusou a sincronização. Confira a permissão Training Plan e a compatibilidade dos treinos.',
+      );
     }
   }
   async disconnect(userId: string) {
@@ -204,11 +226,47 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
   }
   async requestSync(userId: string) {
     this.requireEnabled();
-    await this.db.zeppConnection.updateMany({
-      where: { userId, connected: true },
-      data: { nextSyncAt: new Date(), syncHash: null },
+    if (!this.workoutsEnabled)
+      throw new ServiceUnavailableException('Envio de treinos ainda indisponível.');
+    const connection = await this.db.zeppConnection.findUnique({ where: { userId } });
+    if (!connection?.connected)
+      throw new BadRequestException('Conecte sua conta Zepp antes de enviar treinos.');
+    const now = new Date();
+    const lease = new Date(now.getTime() + 120_000);
+    const claim = await this.db.zeppConnection.updateMany({
+      where: {
+        userId,
+        connected: true,
+        OR: [{ leaseUntil: null }, { leaseUntil: { lt: now } }],
+      },
+      data: { leaseUntil: lease },
     });
-    return {};
+    if (!claim.count)
+      throw new HttpException(
+        'Já existe um envio em andamento. Aguarde e atualize a conexão.',
+        409,
+      );
+    try {
+      // Manual sends await the provider receipt; queued work is not delivery confirmation.
+      const result = await this.sync(userId, connection.timeZone, null);
+      return { status: 'ACCEPTED', ...result };
+    } catch (e) {
+      const message =
+        e instanceof HttpException
+          ? e.message
+          : 'Não foi possível confirmar o envio à Zepp. Atualize a conexão e tente novamente.';
+      await this.db.zeppConnection.updateMany({
+        where: { userId, leaseUntil: lease },
+        data: { error: message },
+      });
+      if (e instanceof HttpException) throw e;
+      throw new ServiceUnavailableException(message);
+    } finally {
+      await this.db.zeppConnection.updateMany({
+        where: { userId, leaseUntil: lease },
+        data: { leaseUntil: null, nextSyncAt: new Date(Date.now() + 300_000) },
+      });
+    }
   }
   async requestBackfill(userId: string, startTime: number, endTime: number) {
     this.requireEnabled();
@@ -457,14 +515,16 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       });
       if (!this.enabled) return;
       const now = new Date();
-      const connections = await this.db.zeppConnection.findMany({
-        where: {
-          connected: true,
-          nextSyncAt: { lte: now },
-          OR: [{ leaseUntil: null }, { leaseUntil: { lt: now } }],
-        },
-        take: 10,
-      });
+      const connections = this.automaticWorkoutsEnabled
+        ? await this.db.zeppConnection.findMany({
+            where: {
+              connected: true,
+              nextSyncAt: { lte: now },
+              OR: [{ leaseUntil: null }, { leaseUntil: { lt: now } }],
+            },
+            take: 10,
+          })
+        : [];
       for (const c of connections) {
         const lease = new Date(Date.now() + 120_000);
         const claim = await this.db.zeppConnection.updateMany({
@@ -559,8 +619,6 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
     }
   }
   private async sync(userId: string, timeZone: string, previous: string | null) {
-    if (process.env.ZEPP_WORKOUTS_VALIDATED !== 'true')
-      throw new Error('Envio de treinos aguardando homologação Zepp.');
     const day = localCalendar(new Date(), timeZone).date;
     const end = addCalendarDays(day, 6);
     const rows = await this.db.workout.findMany({
@@ -580,7 +638,18 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
     const workouts: object[] = [];
     for (const w of rows) {
       const plan = buildFitPlan(w);
-      if (!plan.ok) throw new Error(`Treino incompatível: ${w.title}`);
+      if (!plan.ok) throw new BadRequestException(`Treino incompatível com a Zepp: ${w.title}`);
+      let steps: ReturnType<typeof zeppSteps>;
+      try {
+        steps = zeppSteps(
+          toWatchPlan(plan.plan),
+          zones?.hrZones as Record<string, { min: number; max: number }> | undefined,
+        );
+      } catch (e) {
+        throw new BadRequestException(
+          `${w.title} (${w.dateScheduled.toISOString().slice(0, 10)}): ${e instanceof Error ? e.message : 'Treino incompatível com a Zepp.'}`,
+        );
+      }
       const mapping = await this.db.zeppWorkoutMapping.upsert({
         where: { workoutId: w.id },
         create: { workoutId: w.id },
@@ -591,10 +660,7 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
         workoutDate: w.dateScheduled.toISOString().slice(0, 10),
         sport: 'RUNNING',
         workoutName: w.title,
-        steps: zeppSteps(
-          toWatchPlan(plan.plan),
-          zones?.hrZones as Record<string, { min: number; max: number }> | undefined,
-        ),
+        steps,
       });
     }
     const body = {
@@ -608,5 +674,6 @@ export class ZeppService implements OnApplicationBootstrap, OnApplicationShutdow
       where: { userId, connected: true },
       data: { syncHash: hash, lastSyncAt: new Date(), error: null },
     });
+    return { workoutCount: workouts.length, startDate: body.startDate, endDate: body.endDate };
   }
 }

@@ -7,6 +7,8 @@ describe('Zepp integration', () => {
   const env = { ...process.env };
   beforeEach(() => {
     process.env.ZEPP_ENABLED = 'true';
+    process.env.ZEPP_WORKOUTS_VALIDATED = 'false';
+    process.env.ZEPP_WORKOUTS_MANUAL_ENABLED = 'false';
     process.env.ZEPP_TOKEN_KEY = Buffer.alloc(32, 7).toString('base64');
     process.env.ZEPP_CLIENT_ID = 'client';
     process.env.ZEPP_CLIENT_SECRET = 'secret';
@@ -318,6 +320,175 @@ describe('Zepp integration', () => {
     db.workout.findFirst.mockResolvedValue(null);
     await expect(service.resolve('u', 'id', 'linked', 'foreign')).rejects.toThrow('Treino');
     expect(db.zeppActivity.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('Zepp manual workout delivery', () => {
+  const env = { ...process.env };
+  let db: any;
+  let service: ZeppService;
+  let fetcher: jest.SpyInstance;
+  const workout = {
+    id: 'w',
+    title: 'Ritmo 30 minutos',
+    sportType: 'running',
+    dateScheduled: new Date('2026-11-26T00:00:00Z'),
+    segments: {
+      schemaVersion: 1,
+      sport: 'running',
+      segments: [
+        {
+          id: 'work',
+          kind: 'work',
+          end: { by: 'durationSec', value: 1800 },
+          target: { paceSecPerKmMin: 300, paceSecPerKmMax: 340 },
+        },
+      ],
+    },
+  };
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-11-27T01:00:00Z'));
+    process.env.ZEPP_ENABLED = 'true';
+    process.env.ZEPP_WORKOUTS_VALIDATED = 'false';
+    process.env.ZEPP_WORKOUTS_MANUAL_ENABLED = 'true';
+    process.env.ZEPP_TOKEN_KEY = Buffer.alloc(32, 7).toString('base64');
+    const connection = {
+      userId: 'u',
+      connected: true,
+      timeZone: 'America/Sao_Paulo',
+      tokens: seal(JSON.stringify({ access_token: 'access' }), process.env.ZEPP_TOKEN_KEY),
+      expiresAt: new Date(Date.now() + 3600_000),
+    };
+    db = {
+      zeppConnection: {
+        findUnique: jest.fn().mockResolvedValue(connection),
+        findUniqueOrThrow: jest.fn().mockResolvedValue(connection),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findMany: jest.fn().mockResolvedValue([connection]),
+      },
+      workout: { findMany: jest.fn().mockResolvedValue([workout]) },
+      userEffortZone: { findFirst: jest.fn().mockResolvedValue(null) },
+      zeppWorkoutMapping: { upsert: jest.fn().mockResolvedValue({ id: 42 }) },
+      zeppActivity: { deleteMany: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+    };
+    fetcher = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ code: 1, message: 'success', data: [] })));
+    service = new ZeppService(db);
+  });
+  afterEach(() => {
+    process.env = { ...env };
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+  it('sends the complete local seven-day window and returns the provider receipt', async () => {
+    await expect(service.requestSync('u')).resolves.toEqual({
+      status: 'ACCEPTED',
+      workoutCount: 1,
+      startDate: '2026-11-26',
+      endDate: '2026-12-02',
+    });
+    expect(db.workout.findMany.mock.calls[0][0].where).toEqual({
+      userId: 'u',
+      status: 'scheduled',
+      sportType: 'running',
+      trainingPlan: { status: 'ACTIVE' },
+      dateScheduled: { gte: new Date('2026-11-26'), lte: new Date('2026-12-02') },
+    });
+    const [url, request] = fetcher.mock.calls[0];
+    expect(url).toBe('https://api-open.zepp.com/users/-/workouts?version=2.0.0');
+    expect(request.headers.Authorization).toBe('Bearer access');
+    expect(JSON.parse(request.body)).toMatchObject({
+      startDate: '2026-11-26',
+      endDate: '2026-12-02',
+      workouts: [
+        {
+          workoutId: 42,
+          workoutDate: '2026-11-26',
+          sport: 'RUNNING',
+          steps: [{ durationType: 'TIME', durationValue: 1800, targetType: 'PACE_LAP' }],
+        },
+      ],
+    });
+    expect(db.zeppConnection.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { syncHash: expect.any(String), lastSyncAt: expect.any(Date), error: null },
+      }),
+    );
+    expect(db.zeppConnection.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: { leaseUntil: null, nextSyncAt: expect.any(Date) },
+      }),
+    );
+  });
+  it('does not start automatic delivery while only manual testing is enabled', async () => {
+    await service.drain();
+    expect(db.zeppConnection.findMany).not.toHaveBeenCalled();
+    expect(db.zeppActivity.findMany).toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect((await service.status('u')).workoutsEnabled).toBe(true);
+  });
+  it('requires the delivery flag, integration flag and a connected account', async () => {
+    process.env.ZEPP_WORKOUTS_MANUAL_ENABLED = 'false';
+    await expect(service.requestSync('u')).rejects.toThrow('indisponível');
+    expect((await service.status('u')).workoutsEnabled).toBe(false);
+    process.env.ZEPP_WORKOUTS_VALIDATED = 'true';
+    expect((await service.status('u')).workoutsEnabled).toBe(true);
+    process.env.ZEPP_ENABLED = 'false';
+    await expect(service.requestSync('u')).rejects.toThrow('indisponível');
+    expect((await service.status('u')).workoutsEnabled).toBe(false);
+    process.env.ZEPP_ENABLED = 'true';
+    db.zeppConnection.findUnique.mockResolvedValue(null);
+    await expect(service.requestSync('u')).rejects.toThrow('Conecte');
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('does not overlap another delivery or release its lease', async () => {
+    db.zeppConnection.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.requestSync('u')).rejects.toMatchObject({ status: 409 });
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(db.zeppConnection.updateMany).toHaveBeenCalledTimes(1);
+  });
+  it('identifies incompatible prescriptions and never sends a partial week', async () => {
+    const invalid = {
+      ...workout,
+      id: 'other',
+      title: 'Corrida leve',
+      segments: {
+        ...workout.segments,
+        segments: [{ ...workout.segments.segments[0], target: { rpe: 3 } }],
+      },
+    };
+    db.workout.findMany.mockResolvedValue([workout, invalid]);
+    await expect(service.requestSync('u')).rejects.toThrow('Corrida leve (2026-11-26)');
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(db.zeppConnection.updateMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: { leaseUntil: null, nextSyncAt: expect.any(Date) },
+      }),
+    );
+  });
+  it.each([401, 403, 500, 200])(
+    'does not confirm a rejected delivery (HTTP %s)',
+    async (status) => {
+      fetcher.mockResolvedValue(new Response(JSON.stringify({ code: -1 }), { status }));
+      await expect(service.requestSync('u')).rejects.toThrow('Zepp');
+      expect(db.zeppConnection.updateMany.mock.calls.some(([arg]) => arg.data.lastSyncAt)).toBe(
+        false,
+      );
+    },
+  );
+  it('does not leak provider or network credentials in errors', async () => {
+    fetcher.mockRejectedValue(new Error('Authorization: Bearer secret'));
+    await expect(service.requestSync('u')).rejects.toThrow('Não foi possível confirmar');
+    expect(JSON.stringify(db.zeppConnection.updateMany.mock.calls)).not.toContain('secret');
+  });
+  it('sends an empty window to clear obsolete prescriptions', async () => {
+    db.workout.findMany.mockResolvedValue([]);
+    await expect(service.requestSync('u')).resolves.toMatchObject({
+      workoutCount: 0,
+      status: 'ACCEPTED',
+    });
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).workouts).toEqual([]);
   });
 });
 

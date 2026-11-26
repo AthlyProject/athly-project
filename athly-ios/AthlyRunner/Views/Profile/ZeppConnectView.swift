@@ -14,6 +14,12 @@ struct ZeppBackfillResponse: Decodable, Sendable {
     let requestId: String
     let status: String
 }
+struct ZeppWorkoutSyncResponse: Decodable, Sendable {
+    let status: String
+    let workoutCount: Int
+    let startDate: String
+    let endDate: String
+}
 struct ZeppAuthorization: Decodable { let url: URL }
 struct ZeppActivity: Decodable, Identifiable, Sendable { let id: String }
 
@@ -38,7 +44,20 @@ struct ZeppConnectView: View {
                         if status.connected {
                             Text("Para vincular uma corrida, abra o workout planejado e escolha Concluir treino ou Adicionar dados.")
                             if status.workoutsEnabled == true {
-                                Button("Enviar treinos planejados") { perform { try await APIClient.shared.syncZepp() } }
+                                Text("Envie os treinos de corrida de hoje e dos próximos seis dias. Depois, abra o Zepp para sincronizar com o relógio.")
+                                    .foregroundStyle(.secondary)
+                                Button("Enviar treinos planejados") {
+                                    perform {
+                                        let receipt = try await APIClient.shared.syncZepp()
+                                        message = receipt.workoutCount == 0
+                                            ? "Nenhum treino agendado nos próximos sete dias. A Zepp confirmou a limpeza dos treinos enviados para esse período."
+                                            : "Zepp aceitou \(receipt.workoutCount) treino(s). Abra o Zepp, sincronize o relógio e confira os treinos antes de começar."
+                                    }
+                                }
+                                if let date = status.lastSyncAt {
+                                    Text("Último envio confirmado: \(formattedSyncDate(date))")
+                                        .font(.footnote).foregroundStyle(.secondary)
+                                }
                             }
                             Button("Desconectar", role: .destructive) { perform { try await APIClient.shared.disconnectZepp() } }
                         } else {
@@ -72,6 +91,12 @@ struct ZeppConnectView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active { Task { await refresh() } }
         }
+    }
+    private func formattedSyncDate(_ value: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+        return date?.formatted(date: .abbreviated, time: .shortened) ?? value
     }
     @MainActor private func refresh() async {
         guard !refreshing else { return }
