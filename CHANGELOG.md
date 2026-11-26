@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/AthlyProject/athly-project/compare/v1.20.1...v1.21.0) (2026-11-26)
+
+
+### Features
+
+* **zepp:** enable manual prescribed workout delivery for watch validation ([42e5a69](https://github.com/AthlyProject/athly-project/commit/42e5a6977c381a03674defefadba57fdb739039a))
+
 ## [1.20.1](https://github.com/AthlyProject/athly-project/compare/v1.20.0...v1.20.1) (2026-11-18)
 
 
